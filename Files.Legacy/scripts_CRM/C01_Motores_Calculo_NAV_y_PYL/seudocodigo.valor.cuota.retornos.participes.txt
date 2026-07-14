@@ -1,0 +1,55 @@
+# SEUDOCODIGO: VALOR CUOTA, RETORNOS Y PARTÍCIPES
+# Fecha: 2026-03-06
+# Referencia Base: V25 + Audio Transcrip + Reporte V23 Daily
+
+Este documento consolida la lógica de negocio para la gestión de certificados, el cálculo de rendimientos y el historial de eventos en el CRM.
+
+1. NACIMIENTO Y EVOLUCIÓN DEL CERTIFICADO
+------------------------------------------
+- El certificado nace tras la aprobación de un contrato (Mutación UUID -> ID Natural).
+- Nomenclatura Integral: [ID_FONDO]-[ID_CONTRATO].[FECHA_INICIO].[FECHA_FIN_VIGENCIA]
+- Cada vez que ocurre un evento significativo (Corte, Aumento, Rescate), el certificado "evoluciona":
+    * Se cierra la vigencia del registro actual (FECHA_FIN = Fecha Evento).
+    * Se crea un nuevo registro con la nueva situación de capital/cuotas y FECHA_INICIO = Fecha Evento.
+
+2. LEDGER DE EVENTOS (crm_certificados_eventos)
+----------------------------------------------
+- Todos los movimientos se registran cronológicamente.
+- Tipos de Eventos:
+    * BIRTH (Emisión Inicial): Saldo base al inicio del periodo o contrato.
+    * AUMENTO DE CAPITAL: Inyección de dinero fresco que compra cuotas al Valor Cuota del día.
+    * CORTE DE RENDIMIENTO: Capitalización o reparto de utilidades (Mensual).
+    * DEDUCCIONES (Cargos): Seguros, préstamos, comisiones extraordinarias.
+        - Se registran como variaciones NEGATIVAS en el ledger.
+        - Afectan el capital final para el cálculo de intereses del día siguiente.
+    * RESCATE: Retiro de capital (Parcial o Total).
+    * VENCIMIENTO: Cierre definitivo del certificado.
+
+3. MATEMÁTICA DEL VALOR CUOTA Y RETORNOS (Daily V23/V25)
+--------------------------------------------------------
+A) Valor Cuota (VC):
+    - Es el precio de una unidad de participación del fondo.
+    - VC_hoy = (Patrimonio_ayer + Utilidad_Neta_dia) / Total_Cuotas_ayer.
+    - Se maneja con 6 DECIMALES de precisión.
+
+B) Retorno del Partícipe (Inversionista):
+    - Devengue Diario: Capital_vigente * (Tasa / Base_Días).
+    - Base de Días: Puede ser 360 o 365 según el reglamento del fondo (V23 usa 365).
+    - Visualización: Los aumentos se muestran con una flecha (⬆) indicando monto y fecha, afectando el cálculo de intereses desde el día de ingreso.
+    - El interés ganado se acumula durante el mes y se "inyecta" (capitaliza o paga) en el evento de CORTE.
+
+4. FLUJO DE LIQUIDACIÓN INTEGRAL
+-------------------------------
+1. Identificar Capital Base y Eventos del periodo.
+2. Realizar simulación diaria aplicando:
+    a. Tasa Activa (Ingreso Bruto).
+    b. Deducción de Comisiones (Admin, Captación, Misc).
+    c. Netear Impuestos (Tax).
+    d. Aplicar Cargos (Deducciones del Ledger).
+3. Obtener el NETO FINAL disponible para el partícipe.
+4. Generar Outputs:
+    - Estado de Cuenta (Resumen V20 + Detalle Diario V24).
+    - Certificado de Participación (Situación actual de cuotas).
+
+---
+Documento Consolidado - Antigravity Logic V25+
