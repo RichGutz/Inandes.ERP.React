@@ -20,6 +20,7 @@ export const InversionistasPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedRange, setSelectedRange] = useState<string>('TODOS');
 
   // Estado del Formulario de Edición/Creación
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -697,13 +698,34 @@ export const InversionistasPage: React.FC = () => {
 
   // Filtrado de partícipes reactivo
   const filteredInversionistas = inversionistas.filter(item => {
+    // Filtro por texto
     const term = searchTerm.toLowerCase();
     const fullName = item.nombre_completo || `${item.apellido_1} ${item.apellido_2 || ''} ${item.nombre_1} ${item.nombre_2 || ''}`;
-    return (
+    const matchesText = (
       fullName.toLowerCase().includes(term) ||
       item.documento_identidad.toLowerCase().includes(term) ||
       (item.email && item.email.toLowerCase().includes(term))
     );
+
+    // Filtro por rango alfabético
+    let matchesRange = true;
+    if (selectedRange !== 'TODOS') {
+      const apellido = (item.apellido_1 || item.nombre_completo || 'Z').trim();
+      const firstLetter = apellido.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
+      
+      if (selectedRange === 'ABC') matchesRange = /^[A-C]/.test(firstLetter);
+      else if (selectedRange === 'DEF') matchesRange = /^[D-F]/.test(firstLetter);
+      else if (selectedRange === 'GHI') matchesRange = /^[G-I]/.test(firstLetter);
+      else if (selectedRange === 'JKL') matchesRange = /^[J-L]/.test(firstLetter);
+      else if (selectedRange === 'MNO') matchesRange = /^[M-O]/.test(firstLetter);
+      else if (selectedRange === 'PQR') matchesRange = /^[P-R]/.test(firstLetter);
+      else if (selectedRange === 'STU') matchesRange = /^[S-U]/.test(firstLetter);
+      else if (selectedRange === 'VWX') matchesRange = /^[V-X]/.test(firstLetter);
+      else if (selectedRange === 'YZ') matchesRange = /^[Y-Z]/.test(firstLetter);
+      else matchesRange = false;
+    }
+
+    return matchesText && matchesRange;
   });
 
   return (
@@ -780,6 +802,23 @@ export const InversionistasPage: React.FC = () => {
                 <span>Actualizar</span>
               </button>
             </div>
+          </div>
+
+          {/* Rango Alfabético (Tabs) */}
+          <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
+            {['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQR', 'STU', 'VWX', 'YZ', 'TODOS'].map((rango) => (
+              <button
+                key={rango}
+                onClick={() => setSelectedRange(rango)}
+                className={`px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all ${
+                  selectedRange === rango 
+                    ? 'bg-slate-800 text-white shadow-md dark:bg-emerald-600 border border-transparent' 
+                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-400 hover:text-slate-700 dark:hover:border-emerald-500 dark:hover:text-emerald-400'
+                }`}
+              >
+                {rango}
+              </button>
+            ))}
           </div>
 
           {/* Listado en Tarjetas Premium */}

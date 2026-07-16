@@ -849,6 +849,22 @@ export const InversionesPage: React.FC = () => {
     activeGroupedByFund[fName].push(c);
   });
 
+  // Ordenar numéricamente por el código correlativo de contrato (e.g. NSGPEN03-041.20221011 -> 41)
+  Object.keys(activeGroupedByFund).forEach(fName => {
+    activeGroupedByFund[fName].sort((a, b) => {
+      const getNum = (id: string) => {
+        try {
+          const numStr = (id || '').split('-')[1]?.split('.')[0];
+          const val = parseInt(numStr || '0', 10);
+          return isNaN(val) ? 0 : val;
+        } catch {
+          return 0;
+        }
+      };
+      return getNum(a.id_contrato) - getNum(b.id_contrato);
+    });
+  });
+
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       

@@ -72,7 +72,7 @@ def oficializar_retornos(
     codigo_fondo: Optional[str] = Query(None)
 ):
     try:
-        from src.data.supabase_client import get_supabase_client
+        from data.supabase_client import get_supabase_client
         supabase = get_supabase_client()
         
         asientos, _, _ = generate_retornos_v40(
@@ -141,7 +141,7 @@ def rollback_retornos(
     fecha_corte: str = Query(..., description="Fecha fin del periodo a revertir YYYY-MM-DD")
 ):
     try:
-        from src.data.supabase_client import get_supabase_client
+        from data.supabase_client import get_supabase_client
         supabase = get_supabase_client()
         
         TIPOS_v40 = ['cierre_fin_ciclo', 'cierre_fin_contrato']

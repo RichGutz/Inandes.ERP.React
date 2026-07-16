@@ -9,6 +9,10 @@ export interface Asesor {
   codigo?: string | null;
   tipo_documento?: string | null;
   documento_identidad: string;
+  nombre_1?: string | null;
+  nombre_2?: string | null;
+  apellido_1?: string | null;
+  apellido_2?: string | null;
   nombre_completo: string;
   email?: string | null;
   telefono?: string | null;

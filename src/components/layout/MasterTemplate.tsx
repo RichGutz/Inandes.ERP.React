@@ -1,9 +1,8 @@
 // src/components/layout/MasterTemplate.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LogOut, 
   ExternalLink, 
-  Database, 
   Sun, 
   Moon, 
   Key, 
@@ -12,15 +11,7 @@ import {
   Users,
   Briefcase,
   Calculator,
-  Coins,
-  ShieldCheck,
-  Home,
-  FileEdit,
   FileText,
-  CheckSquare,
-  DollarSign,
-  BarChart2,
-  FolderOpen,
   Lock,
   Building2,
   Award,
@@ -30,6 +21,7 @@ import {
   Trash2,
   Settings
 } from 'lucide-react';
+import type { UserModuleAccess } from '../../services/authService';
 
 interface MasterTemplateProps {
   title: string;
@@ -39,6 +31,9 @@ interface MasterTemplateProps {
   setActiveTab: (tab: string) => void;
   onExportExcel?: () => void;
   onExportPDF?: () => void;
+  userEmail: string;
+  userFullName: string;
+  userRoles: UserModuleAccess[];
 }
 
 export const MasterTemplate: React.FC<MasterTemplateProps> = ({
@@ -48,12 +43,44 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
   activeTab,
   setActiveTab,
   onExportExcel,
-  onExportPDF
+  onExportPDF,
+  userEmail,
+  userFullName,
+  userRoles
 }) => {
   // Estado local para Dark/Light mode
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('theme') === 'dark';
   });
+
+  // Acordeon exclusivo: solo un grupo abierto a la vez
+  const isCRM       = activeTab.startsWith('crm_') || activeTab === 'dashboard';
+  const isFactoring = activeTab.startsWith('factoring_');
+  const isConfirming = activeTab.startsWith('confirming_');
+  const isHerr      = activeTab.startsWith('herramientas_');
+  const isMant      = activeTab.startsWith('mantenimiento_');
+
+  const hasCRMAccess = userRoles.some(r => r.modulo === 'CRM');
+  const hasFactoringAccess = userRoles.some(r => r.modulo === 'FACTORING');
+
+  const defaultOpen = activeTab === 'home' ? null : (isCRM ? 'crm' : isFactoring ? 'factoring' : isConfirming ? 'confirming' : isHerr ? 'herramientas' : isMant ? 'mantenimiento' : null);
+  const [openGroup, setOpenGroup] = useState<string | null>(defaultOpen);
+  const toggleGroup = useCallback((g: string) => {
+    setOpenGroup(prev => (prev === g ? null : g));
+  }, []);
+
+  // Breadcrumb dinámico
+  const moduleMap: Record<string, string> = {
+    dashboard: 'ERP - CRM',
+    crm_asesores: 'ERP - CRM', crm_fondos: 'ERP - CRM',
+    crm_inversionistas: 'ERP - CRM', crm_contratos: 'ERP - CRM',
+    crm_certificados: 'ERP - CRM', crm_deducciones: 'ERP - CRM', crm_chat: 'ERP - CRM',
+    factoring_core: 'ERP - Factoring',
+    confirming_futuros: 'ERP - Confirming',
+    herramientas_calculadora: 'Herramientas', herramientas_agentes: 'Herramientas',
+    mantenimiento_limpieza: 'Mantenimiento', mantenimiento_roles: 'Mantenimiento',
+  };
+  const currentModule = moduleMap[activeTab] || 'InAndes ERP';
 
   // Estado para el modal ficticio de cambio de contraseña
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -79,15 +106,17 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
 
   const handleLogout = () => {
     if (confirm('¿Desea cerrar la sesión de usuario?')) {
-      alert('Sesión cerrada (Simulación)');
+      window.location.reload();
     }
   };
 
-  // Datos mockeados de usuario
+  // Datos de usuario reales inyectados
+  const isGlobalAdmin = userRoles.some(r => r.modulo === 'CRM' && r.rol === 'ADMIN') && userRoles.some(r => r.modulo === 'FACTORING' && r.rol === 'ADMIN');
+  const highestRole = isGlobalAdmin ? 'Administrador Global' : userRoles.some(r => r.rol === 'ADMIN') ? 'Administrador' : 'Visor';
   const currentUser = {
-    full_name: 'Jorge Parra',
-    role: 'ADMIN',
-    email: 'jparra@inandes.com'
+    email: userEmail,
+    fullName: userFullName,
+    role: highestRole
   };
 
   return (
@@ -99,19 +128,15 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
           
           {/* Logos y Título de App */}
           <div className="flex items-center gap-3">
-            <img src="/Logo.Inandes.jpeg" alt="InAndes Inversiones" className="h-8 rounded object-contain" />
+            <img src="/Logo.Inandes.jpeg" alt="InAndes Inversiones" className="h-[32px] rounded object-contain" />
             <div className="flex flex-col border-l border-slate-200 dark:border-slate-700 pl-3">
-              <h1 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">INANDES</h1>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-wider uppercase">CRM de Inversionistas</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-250 tracking-wider uppercase">{currentModule}</span>
             </div>
           </div>
 
           {/* Título Central del Módulo */}
           <div className="hidden md:flex flex-col items-center">
-            <div className="flex items-center gap-2">
-              <Database size={16} className="text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">{title}</h2>
-            </div>
+            <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">{title}</h2>
             {subtitle && <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5 uppercase tracking-wider">{subtitle}</p>}
           </div>
 
@@ -155,16 +180,16 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
             {/* Widget de Usuario e Imagen de Geeksoft */}
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-end hidden lg:flex">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">{currentUser.full_name}</span>
-                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Administrador Senior</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">{currentUser.fullName}</span>
+                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">{currentUser.role}</span>
               </div>
 
               {/* Avatar Dinámico */}
               <div 
                 className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 text-white flex items-center justify-center text-xs font-black shadow-sm tracking-wider uppercase border border-emerald-250 select-none"
-                title={`${currentUser.full_name} (${currentUser.role})`}
+                title={`${currentUser.fullName} (${currentUser.email}) - ${currentUser.role}`}
               >
-                JP
+                {currentUser.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
               </div>
 
               {/* Botón Cambiar Contraseña */}
@@ -208,7 +233,7 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
                 </button>
               </div>
 
-              <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-8 object-contain pl-1 hidden sm:block" />
+              <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-[53px] object-contain pl-1 hidden sm:block" />
             </div>
           </div>
 
@@ -219,128 +244,143 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
       <div className="flex-1 flex max-w-full w-full mx-auto p-4 gap-4 overflow-hidden">
         
         {/* Sidebar Izquierdo */}
-        <aside className="w-64 shrink-0 flex flex-col gap-4 hidden md:flex overflow-y-auto max-h-[calc(100vh-120px)] pr-2 scrollbar-thin">
+        <aside className="w-64 shrink-0 flex flex-col gap-3 hidden md:flex h-fit max-h-[calc(100vh-90px)] overflow-y-auto pr-2 scrollbar-thin">
           
-          {/* INICIO */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-1">
-            <button 
-              onClick={() => setActiveTab('dashboard')}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === 'dashboard' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+
+          {/* SECCIÓN 1: FACTORING (Acceso Directo) */}
+          {hasFactoringAccess && (
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => setActiveTab('factoring_core')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                isFactoring ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+              }`}
             >
-              <Home size={14} /> Inicio
+              <span>FACTORING</span>
             </button>
           </div>
+          )}
 
-          {/* SECCIÓN 1: FACTORING */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-2">
-            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1">📊 Factoring</div>
-            <nav className="flex flex-col gap-1">
-              {[
-                { id: 'factoring_registro', label: 'Registro', icon: <FileEdit size={14} /> },
-                { id: 'factoring_originacion', label: 'Originación', icon: <FileText size={14} /> },
-                { id: 'factoring_aprobacion', label: 'Aprobación', icon: <CheckSquare size={14} /> },
-                { id: 'factoring_desembolso', label: 'Desembolso', icon: <DollarSign size={14} /> },
-                { id: 'factoring_liquidacion', label: 'Liquidación', icon: <Coins size={14} /> },
-                { id: 'factoring_reportes', label: 'Reportes', icon: <BarChart2 size={14} /> },
-                { id: 'factoring_repositorio', label: 'Repositorio', icon: <FolderOpen size={14} /> },
-              ].map(item => (
+          {/* SECCIÓN 2: CONFIRMING (colapsable) */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => toggleGroup('confirming')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                isConfirming ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+              }`}
+            >
+              <span>Confirming</span>
+              <span className="text-slate-400">{openGroup === 'confirming' ? '▲' : '▼'}</span>
+            </button>
+            {openGroup === 'confirming' && (
+              <nav className="flex flex-col gap-0.5 px-2 pb-2">
                 <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                  onClick={() => setActiveTab('confirming_futuros')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === 'confirming_futuros' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <Lock size={14} /> Proximamente
                 </button>
-              ))}
-            </nav>
+              </nav>
+            )}
           </div>
 
-          {/* SECCIÓN 2: CONFIRMING */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-2">
-            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1">🔄 Confirming (Reserved)</div>
-            <nav className="flex flex-col gap-1">
-              <button 
-                onClick={() => setActiveTab('confirming_futuros')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === 'confirming_futuros' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-              >
-                <Lock size={14} /> Futuros Módulos
-              </button>
-            </nav>
+          {/* SECCIÓN 3: CRM (colapsable) */}
+          {hasCRMAccess && (
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => toggleGroup('crm')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                isCRM ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+              }`}
+            >
+              <span>CRM Inversionistas</span>
+              <span className="text-slate-400">{openGroup === 'crm' ? '▲' : '▼'}</span>
+            </button>
+            {openGroup === 'crm' && (
+              <nav className="flex flex-col gap-0.5 px-2 pb-2">
+                {[
+                  { id: 'crm_inversionistas', label: 'Inversionistas', icon: <Users size={14} /> },
+                  { id: 'crm_fondos', label: 'Fondos & Tasas', icon: <Building2 size={14} /> },
+                  { id: 'crm_asesores', label: 'Asesores', icon: <Briefcase size={14} /> },
+                  { id: 'crm_contratos', label: 'Contratos', icon: <FileText size={14} /> },
+                  { id: 'crm_certificados', label: 'Certificados', icon: <Award size={14} /> },
+                  { id: 'crm_deducciones', label: 'Deducciones / Rescates', icon: <MinusCircle size={14} /> },
+                  { id: 'crm_chat', label: 'Chat WhatsApp', icon: <MessageSquare size={14} /> },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
+          </div>
+          )}
+
+          {/* SECCIÓN 4: HERRAMIENTAS (colapsable) */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => toggleGroup('herramientas')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                isHerr ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+              }`}
+            >
+              <span>Herramientas</span>
+              <span className="text-slate-400">{openGroup === 'herramientas' ? '▲' : '▼'}</span>
+            </button>
+            {openGroup === 'herramientas' && (
+              <nav className="flex flex-col gap-0.5 px-2 pb-2">
+                {[
+                  { id: 'herramientas_calculadora', label: 'Calculadora', icon: <Calculator size={14} /> },
+                  { id: 'herramientas_agentes', label: 'Agentes IA', icon: <Bot size={14} /> },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
           </div>
 
-          {/* SECCIÓN 3: CRM */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-2">
-            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1">👥 CRM</div>
-            <nav className="flex flex-col gap-1">
-              {[
-                { id: 'crm_asesores', label: 'Gestión de Asesores', icon: <Briefcase size={14} /> },
-                { id: 'crm_fondos', label: 'Gestión de Fondos', icon: <Building2 size={14} /> },
-                { id: 'crm_inversionistas', label: 'Gestión de Inversionistas', icon: <Users size={14} /> },
-                { id: 'crm_contratos', label: 'Gestión de Contratos', icon: <FileText size={14} /> },
-                { id: 'crm_certificados', label: 'Gestión de Certificados', icon: <Award size={14} /> },
-                { id: 'crm_deducciones', label: 'Gestión de Deducciones / Rescates', icon: <MinusCircle size={14} /> },
-                { id: 'crm_chat', label: 'Chat WhatsApp', icon: <MessageSquare size={14} /> },
-              ].map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
+          {/* SECCIÓN 5: MANTENIMIENTO (colapsable) */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+            <button
+              onClick={() => toggleGroup('mantenimiento')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                isMant ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'
+              }`}
+            >
+              <span>Mantenimiento</span>
+              <span className="text-slate-400">{openGroup === 'mantenimiento' ? '▲' : '▼'}</span>
+            </button>
+            {openGroup === 'mantenimiento' && (
+              <nav className="flex flex-col gap-0.5 px-2 pb-2">
+                {[
+                  { id: 'mantenimiento_limpieza', label: 'Limpieza BD', icon: <Trash2 size={14} /> },
+                  { id: 'mantenimiento_roles', label: 'Admin Roles', icon: <Settings size={14} /> },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
           </div>
 
-          {/* SECCIÓN 4: HERRAMIENTAS */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-2">
-            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1">🛠️ Herramientas</div>
-            <nav className="flex flex-col gap-1">
-              {[
-                { id: 'herramientas_calculadora', label: 'Calculadora', icon: <Calculator size={14} /> },
-                { id: 'herramientas_agentes', label: 'Agentes IA', icon: <Bot size={14} /> },
-              ].map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* SECCIÓN 5: MANTENIMIENTO */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3.5 flex flex-col gap-2">
-            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1">⚙️ Mantenimiento</div>
-            <nav className="flex flex-col gap-1">
-              {[
-                { id: 'mantenimiento_limpieza', label: 'Limpieza BD', icon: <Trash2 size={14} /> },
-                { id: 'mantenimiento_roles', label: 'Admin Roles', icon: <Settings size={14} /> },
-              ].map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* SSL */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-3 flex flex-col gap-2 mt-auto">
-            <div className="flex items-center gap-2 px-3 text-slate-500 dark:text-slate-400">
-              <ShieldCheck size={14} className="text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">SSL Cifrado Activo</span>
-            </div>
-          </div>
         </aside>
 
         {/* Contenido Principal de Vistas */}

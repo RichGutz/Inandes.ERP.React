@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import retornos, comisiones, valor_cuota
+from routers import retornos, comisiones, valor_cuota, originacion, liquidaciones
 import uvicorn
 from dotenv import load_dotenv
 
@@ -33,6 +33,8 @@ app.add_middleware(
 app.include_router(retornos.router, prefix="/api/retornos", tags=["Retornos"])
 app.include_router(comisiones.router, prefix="/api/comisiones", tags=["Comisiones"])
 app.include_router(valor_cuota.router, prefix="/api/valor-cuota", tags=["Valor Cuota"])
+app.include_router(originacion.router, prefix="/api/originacion", tags=["originacion"])
+app.include_router(liquidaciones.router, prefix="/api/liquidaciones", tags=["liquidaciones"])
 
 @app.get("/")
 def read_root():

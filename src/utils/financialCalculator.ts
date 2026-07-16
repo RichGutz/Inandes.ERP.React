@@ -130,9 +130,7 @@ export const generateRetornosV40 = async (
   const cidsActivos = contratosMaster.map(c => c.id_contrato);
 
   // 4. Historial Ledger (Eventos previos)
-  const historialMap: Record<string, any[]> = {};
-  const aumMap: Record<string, Array<{ fecha: Date; monto: number }>> = {};
-  const balPrevMap: Record<string, number> = {};
+  const tempHistorialMap: Record<string, any[]> = {};
 
   const chunkSize = 100;
   for (let i = 0; i < cidsActivos.length; i += chunkSize) {
@@ -148,9 +146,28 @@ export const generateRetornosV40 = async (
     if (events) {
       for (const e of events) {
         const cid = e.id_certificado;
-        if (!historialMap[cid]) historialMap[cid] = [];
-        historialMap[cid].push(e);
+        if (!tempHistorialMap[cid]) tempHistorialMap[cid] = [];
+        tempHistorialMap[cid].push(e);
+      }
+    }
+  }
 
+  // Filtrar para desduplicar: solo conservar versiones de certificado válidas al inicio del periodo
+  const historialMap: Record<string, any[]> = {};
+  const aumMap: Record<string, Array<{ fecha: Date; monto: number }>> = {};
+  const balPrevMap: Record<string, number> = {};
+
+  for (const [cid, events] of Object.entries(tempHistorialMap)) {
+    events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
+    const firstEv = events[0];
+    const rawFin = firstEv.fecha_periodo_fin || '2000-01-01';
+    const fFin = new Date(rawFin.split('T')[0] + 'T00:00:00');
+    const isEmision = firstEv.tipo_evento === 'emision_inicial';
+
+    // Si el certificado inició antes del periodo o es la emisión inicial del contrato en este periodo, se procesa
+    if (fFin < fStart || isEmision) {
+      historialMap[cid] = events;
+      for (const e of events) {
         const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
         const fEv = new Date(rawF.split('T')[0] + 'T00:00:00');
 

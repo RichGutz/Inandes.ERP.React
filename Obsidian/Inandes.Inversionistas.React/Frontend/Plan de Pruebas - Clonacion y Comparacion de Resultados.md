@@ -1,6 +1,10 @@
 # 🧪 Plan de Pruebas: Clonación de Base de Datos y Comparación de Resultados
 
-Esta nota detalla el plan y el protocolo de pruebas de integridad para clonar la base de datos de Supabase activa del proyecto Streamlit a un nuevo proyecto independiente de pruebas, asegurando que las ejecuciones del motor financiero y contable en **React** arrojen resultados idénticos centavo a centavo frente a los reportes auditados de **Streamlit**.
+> [!WARNING]
+> **Actualización de Estrategia de Pruebas**
+> El ERP en Streamlit ya operaba correctamente tanto en Railway como en el VPS (Hostinger) en el pasado, como parte del esfuerzo para apagar Railway por temas de costos. Dado que la salida a producción se pausó, estandarizaremos todas las pruebas de auditoría y comparación retomando y ejecutando el proyecto original **exclusivamente en el VPS** bajo el dominio **inandesh.geeksoft.tech**.
+
+Esta nota detalla el plan y el protocolo de pruebas de integridad para clonar la base de datos de Supabase activa del proyecto a un nuevo proyecto independiente de pruebas, asegurando que las ejecuciones del motor financiero y contable en **React** arrojen resultados idénticos centavo a centavo frente a los reportes auditados del **proyecto original (Streamlit VPS)**.
 
 ---
 
@@ -130,9 +134,10 @@ Para lograr la migración directa y transparente entre las dos instancias de Sup
   * Intentamos usar el registro automático `register_default_jsonb`, el cual falló porque la versión de psycopg2 instalada no aceptaba el argumento por palabra clave `conn_or_cursor`.
   * La solución final fue registrar el adaptador de tipos global de psycopg2 para diccionarios: `register_adapter(dict, Json)`. De esta manera, cada diccionario se convierte automáticamente a su representación JSON al momento del guardado.
 
+### 8. Error de Duplicación por Asientos Previos (Corte 28.02)
+* **Qué pasó**: Dado que la base de datos clonada de producción ya contenía los asientos oficializados al 28/02/2026, el motor contable v40 cargó tanto los certificados base anteriores (vigentes al 31/12/2025) como los nuevos certificados generados al 28/02/2026. Al no filtrar las versiones, calculó intereses para ambas de forma paralela en el mismo rango de fechas, duplicando las filas de cada inversionista en los reportes de Excel/PDF.
+* **Solución**: Se implementó una lógica de filtrado de desduplicación inteligente en el motor contable Python (`CALCULO_Retornos_Intereses_v40.py`) y en el motor del frontend React (`financialCalculator.ts`). Esta lógica ordena el historial de eventos de cada certificado y conserva únicamente la versión del certificado activa al inicio del periodo evaluado (cuyo último corte sea igual a `fecha_inicio - 1 día` o que represente la `emision_inicial` del contrato dentro del periodo). Se logró una desduplicación perfecta al 100% (36 filas únicas correspondientes a los 36 certificados en circulación).
+
 ### 7. Optimización de Rendimiento (`executemany` vs `execute_values`)
 * **Qué pasó**: Las bases de datos se encuentran en continentes distintos (Tokio y Virginia). El método clásico de psycopg2 `executemany` ejecuta sentencias `INSERT` fila por fila de forma secuencial. Con cientos de filas, la latencia de ida y vuelta de red (RTT ~150ms) provocaba que la inserción de 220 registros tardara más de 30 segundos, colgando la consola.
 * **Solución**: Reemplazamos la inserción por `execute_values` de `psycopg2.extras`. Este método compacta todos los registros en una sola consulta estructurada (`VALUES %s`), realizando una sola llamada de red y reduciendo el tiempo de migración de minutos a menos de 1 segundo por tabla.
-
-
-

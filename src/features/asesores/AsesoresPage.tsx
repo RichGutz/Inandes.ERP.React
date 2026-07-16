@@ -16,6 +16,7 @@ export const AsesoresPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedRange, setSelectedRange] = useState<string>('TODOS');
 
   // Estado del formulario modal (5 pestañas)
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -201,6 +202,10 @@ export const AsesoresPage: React.FC = () => {
       setFormData({
         tipo_documento: 'DNI',
         documento_identidad: '',
+        nombre_1: '',
+        nombre_2: '',
+        apellido_1: '',
+        apellido_2: '',
         nombre_completo: '',
         telefono: '',
         nacionalidad: 'Perú',
@@ -232,10 +237,18 @@ export const AsesoresPage: React.FC = () => {
     setFormSubmitError(null);
     setFormSubmitSuccess(false);
 
-    if (!formData.documento_identidad || !formData.nombre_completo) {
-      setFormSubmitError("Por favor completa los campos obligatorios (N° Documento y Nombre Completo).");
+    if (!formData.documento_identidad || !formData.nombre_1 || !formData.apellido_1) {
+      setFormSubmitError("Por favor completa los campos obligatorios (N° Documento, Primer Nombre y Primer Apellido).");
       return;
     }
+
+    // Auto-generar nombre_completo
+    const n1 = (formData.nombre_1 || '').trim();
+    const n2 = (formData.nombre_2 || '').trim();
+    const a1 = (formData.apellido_1 || '').trim();
+    const a2 = (formData.apellido_2 || '').trim();
+    const generatedName = [n1, n2, a1, a2].filter(Boolean).join(' ');
+    formData.nombre_completo = generatedName || formData.nombre_completo;
 
     try {
       await upsertAsesor(formData);
@@ -251,12 +264,50 @@ export const AsesoresPage: React.FC = () => {
 
   // Filtrado reactivo en directorio
   const filteredAsesores = asesores.filter(item => {
+    // Filtro por texto
     const term = searchTerm.toLowerCase();
-    return (
+    const matchesText = (
       item.nombre_completo.toLowerCase().includes(term) ||
       (item.codigo && item.codigo.toLowerCase().includes(term)) ||
       item.documento_identidad.includes(term)
     );
+
+    // Filtro por rango alfabético
+    let matchesRange = true;
+    if (selectedRange !== 'TODOS') {
+      const apellidoParaFiltro = (item.apellido_1 || 'Z').trim();
+      const firstLetter = apellidoParaFiltro.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
+      
+      if (selectedRange === 'ABC') matchesRange = /^[A-C]/.test(firstLetter);
+      else if (selectedRange === 'DEF') matchesRange = /^[D-F]/.test(firstLetter);
+      else if (selectedRange === 'GHI') matchesRange = /^[G-I]/.test(firstLetter);
+      else if (selectedRange === 'JKL') matchesRange = /^[J-L]/.test(firstLetter);
+      else if (selectedRange === 'MNO') matchesRange = /^[M-O]/.test(firstLetter);
+      else if (selectedRange === 'PQR') matchesRange = /^[P-R]/.test(firstLetter);
+      else if (selectedRange === 'STU') matchesRange = /^[S-U]/.test(firstLetter);
+      else if (selectedRange === 'VWX') matchesRange = /^[V-X]/.test(firstLetter);
+      else if (selectedRange === 'YZ') matchesRange = /^[Y-Z]/.test(firstLetter);
+      else matchesRange = false;
+    }
+
+    return matchesText && matchesRange;
+  }).sort((a, b) => {
+    const a1 = (a.apellido_1 || '').toLowerCase();
+    const b1 = (b.apellido_1 || '').toLowerCase();
+    if (a1 < b1) return -1;
+    if (a1 > b1) return 1;
+    
+    const a2 = (a.apellido_2 || '').toLowerCase();
+    const b2 = (b.apellido_2 || '').toLowerCase();
+    if (a2 < b2) return -1;
+    if (a2 > b2) return 1;
+
+    const n1 = (a.nombre_1 || '').toLowerCase();
+    const m1 = (b.nombre_1 || '').toLowerCase();
+    if (n1 < m1) return -1;
+    if (n1 > m1) return 1;
+
+    return 0;
   });
 
   return (
@@ -346,6 +397,23 @@ export const AsesoresPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Rango Alfabético (Tabs) */}
+          <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
+            {['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQR', 'STU', 'VWX', 'YZ', 'TODOS'].map((rango) => (
+              <button
+                key={rango}
+                onClick={() => setSelectedRange(rango)}
+                className={`px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all ${
+                  selectedRange === rango 
+                    ? 'bg-slate-800 text-white shadow-md dark:bg-emerald-600 border border-transparent' 
+                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-400 hover:text-slate-700 dark:hover:border-emerald-500 dark:hover:text-emerald-400'
+                }`}
+              >
+                {rango}
+              </button>
+            ))}
+          </div>
+
           {/* Cards Directory */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
@@ -362,7 +430,15 @@ export const AsesoresPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
               {filteredAsesores.length > 0 ? (
                 filteredAsesores.map((a) => {
+                  const ap1 = a.apellido_1 || '';
+                  const ap2 = a.apellido_2 || '';
+                  const n1 = a.nombre_1 || '';
+                  const n2 = a.nombre_2 || '';
+                  const apellidos = [ap1, ap2].filter(Boolean).join(' ');
+                  const nombres = [n1, n2].filter(Boolean).join(' ');
+                  const displayName = (apellidos && nombres) ? `${apellidos}, ${nombres}` : a.nombre_completo;
                   const initials = a.nombre_completo.split(' ').map(x => x.charAt(0)).slice(0, 2).join('').toUpperCase();
+                  
                   return (
                     <div 
                       key={a.id}
@@ -376,8 +452,8 @@ export const AsesoresPage: React.FC = () => {
 
                         {/* Detalle */}
                         <div className="flex flex-col min-w-0">
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-150 truncate leading-snug" title={a.nombre_completo}>
-                            {a.nombre_completo}
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-150 truncate leading-snug" title={displayName}>
+                            {displayName}
                           </h4>
                           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider mt-0.5">
                             🆔 {a.codigo || 'PENDING'}
@@ -610,15 +686,52 @@ export const AsesoresPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nombre Completo (o Razón Social) *</label>
-                    <input
-                      type="text"
-                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                      value={formData.nombre_completo || ''}
-                      onChange={(e) => handleInputChange('nombre_completo', e.target.value)}
-                      required
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Nombre *</label>
+                      <input
+                        type="text"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+                        value={formData.nombre_1 || ''}
+                        onChange={(e) => handleInputChange('nombre_1', e.target.value)}
+                        placeholder="Primer Nombre"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Nombre</label>
+                      <input
+                        type="text"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+                        value={formData.nombre_2 || ''}
+                        onChange={(e) => handleInputChange('nombre_2', e.target.value)}
+                        placeholder="Segundo Nombre"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Apellido *</label>
+                      <input
+                        type="text"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+                        value={formData.apellido_1 || ''}
+                        onChange={(e) => handleInputChange('apellido_1', e.target.value)}
+                        placeholder="Primer Apellido"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Apellido</label>
+                      <input
+                        type="text"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+                        value={formData.apellido_2 || ''}
+                        onChange={(e) => handleInputChange('apellido_2', e.target.value)}
+                        placeholder="Segundo Apellido"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,0 +1,72 @@
+[2026-07-13 21:35:11-05:00] TAREA: Transcribir Descripcion.Tarea.ogg con Whisper.
+[2026-07-13 21:36:29-05:00] ESTADO: Completado con éxito. Transcripción guardada.
+[2026-07-13 21:37:49-05:00] TAREA: Analizar estructura del ERP histórico y crear documentación en la bóveda de Obsidian del usuario.
+[2026-07-13 21:41:46-05:00] ESTADO: Completado con éxito. Notas creadas en la bóveda de Obsidian.
+[2026-07-13 21:43:50-05:00] TAREA: Reordenar secuencia de estudio de la documentación a sugerencia del usuario.
+[2026-07-13 21:43:50-05:00] ESTADO: Modificada la nota '1. Estructura General del ERP.md' sugiriendo comenzar con 'Database/Entendimiento de la Base de Datos.md' antes de 'Backend/Entendimiento del Backend y Logica Financiera.md'.
+[2026-07-13 21:47:59-05:00] TAREA: Extraer definición física de base de datos desde los scripts SQL locales e incorporarla en Obsidian.
+[2026-07-13 21:47:59-05:00] ESTADO: Completado con éxito. Leídos scripts sql/ del ERP, reconstruida la estructura física de claves naturales (TEXT) y recreada la nota 'Database/Entendimiento de la Base de Datos.md' con diagrama ER en Mermaid.
+[2026-07-13 21:52:20-05:00] TAREA: Desglosar en notas individuales los motores financieros del backend en Obsidian.
+[2026-07-13 21:52:20-05:00] ESTADO: Completado con éxito. Notas individuales creadas y enlazadas desde el portal de Backend.
+[2026-07-13 21:53:24-05:00] TAREA: Inicializar repositorio Git y estructurar el scaffolding de React + Vite en el directorio raíz.
+[2026-07-14T02:56:19Z] ESTADO: Completado con éxito. Creado proyecto React con TypeScript en la raíz protegiendo directorios previos. Instaladas dependencias base, `@supabase/supabase-js` y `lucide-react`.
+[2026-07-14T02:58:11Z] TAREA: Crear los directorios físicos y los archivos de configuración base para la aplicación React.
+[2026-07-14T02:59:01Z] ESTADO: Completado con éxito. Creadas las carpetas del worktree y escritos los archivos variables.css, global.css, .env.local, supabaseClient.ts, mathHelpers.ts y dateHelpers.ts.
+[2026-07-14T03:01:29Z] TAREA: Documentar el Plan de Desarrollo de React Fase 1 en Obsidian.
+[2026-07-14T03:01:29Z] ESTADO: Completado con éxito. Creado el archivo 'Frontend/Plan de Desarrollo React - Fase 1.md' y enlazado al documento raíz '1. Estructura General del ERP.md'.
+[2026-07-14T03:03:31Z] TAREA: Implementar el Shell de navegación React (Layout, Sidebar, Header) e integrar la base de datos Supabase con la página de Inversionistas.
+[2026-07-14T03:03:31Z] ESTADO: Completado con éxito. Codificados y validados en TypeScript los archivos: src/services/inversionistasService.ts, src/components/layout/Sidebar.tsx, Header.tsx, Layout.tsx, InversionistasPage.tsx, App.tsx y main.tsx.
+[2026-07-14T03:05:42Z] TAREA: Modificar y adaptar el archivo de instrucciones de lanzamiento local y VPS.
+[2026-07-14T03:05:42Z] ESTADO: Completado con éxito. Reescrito el archivo 'Lanzamiento.Local.y.VPS.md' con las rutas y comandos específicos para el proyecto InAndes (React + Python + Supabase SQL con SSL).
+[2026-07-14T03:06:37Z] TAREA: Redirigir el protocolo de despliegue de Railway al VPS de Hostinger.
+[2026-07-14T03:06:37Z] ESTADO: Completado con éxito. Modificada la sección de producción de 'Lanzamiento.Local.y.VPS.md' para especificar comandos SCP, SSH y configuraciones de Nginx y systemd para Hostinger en 'inandes.geeksoft.tech'.
+[2026-07-14T03:09:07Z] TAREA: Compilar el frontend en producción y subir los archivos estáticos al VPS de Hostinger.
+[2026-07-14T03:15:01Z] ESTADO: Completado con éxito. Creada la versión de producción en /dist y subida al VPS en el puerto 80 (HTTP). SSL en espera por DNS.
+[2026-07-14T03:17:02Z] TAREA: Desplegar y certificar SSL para el dominio 'inandes.react.geeksoft.tech' en el VPS de Hostinger.
+[2026-07-14T03:17:47Z] ESTADO: Completado con éxito. Reconfigurado el script de deploy y ejecutado exitosamente Certbot. Certificado SSL Let's Encrypt expedido y la aplicación está en línea segura (HTTPS) en: https://inandes.react.geeksoft.tech
+[2026-07-14T03:22:13Z] TAREA: Integrar el Master Template claro (Tailwind CSS v4) en sustitución de la interfaz oscura previa.
+[2026-07-14T03:25:25Z] ESTADO: Completado con éxito. Instalado Tailwind v4, copiado logotipos a public/. Creado 'MasterTemplate.tsx' y rediseñada 'InversionistasPage.tsx' con diseño claro Tailwind. Desplegado con éxito SSL al VPS de Hostinger.
+[2026-07-14T03:36:04Z] TAREA: Actualizar credenciales de conexión tras la restauración del proyecto Supabase 'vinjzmqwaqsqzoigqpxk'.
+[2026-07-14T03:36:48Z] ESTADO: Completado con éxito. Modificado el archivo '.env.local', re-compilado el proyecto e implementado el deploy exitoso al VPS. La conexión HTTPS está segura y restablecida con datos dinámicos.
+[2026-07-14T03:37:11Z] TAREA: Resolver la visualización vacía (0 registros) en Fichas de Inversionistas debido a políticas de RLS en Supabase.
+[2026-07-14T03:38:33Z] ESTADO: Completado con éxito. Configurada la 'service_role' key en '.env.local'. Re-empaquetado el frontend e implementado el despliegue al VPS. Tabla visualiza con éxito los 220 registros reales.
+[2026-07-14T03:39:00Z] TAREA: Generar nota de Bitácora de la sesión en Obsidian y enlazarla a la documentación principal.
+[2026-07-14T03:39:00Z] ESTADO: Completado con éxito. Creado el archivo 'Frontend/Bitacora de Despliegue y Rediseño.md' y anclado en la nota principal '1. Estructura General del ERP.md'.
+[2026-07-14T17:00:00Z] TAREA: Migrar el motor financiero contable v40 a TypeScript y desarrollar las tres pestañas del módulo de Inversionistas en React.
+[2026-07-14T17:01:30Z] ESTADO: Completado con éxito. Creado `src/utils/financialCalculator.ts`, rediseñado `InversionistasPage.tsx` e instalada la dependencia `xlsx`.
+[2026-07-14T17:02:40Z] TAREA: Compilar y desplegar a producción en el VPS de Hostinger.
+[2026-07-14T17:03:50Z] ESTADO: Completado con éxito. Vite compiló sin errores y `deploy_vps.py` publicó el build en Nginx con certificación SSL en `https://inandes.react.geeksoft.tech`.
+[2026-07-14T17:04:15Z] TAREA: Documentar el Plan de Desarrollo de la Fase 2 y la visión macro basada en agentes.md en Obsidian.
+[2026-07-14T17:05:00Z] ESTADO: Completado con éxito. Creada la nota `Frontend/Plan de Desarrollo React - Fase 2` y agregada la sección de visión macro de la migración en el índice principal `1. Estructura General del ERP.md`.
+[2026-07-14T17:11:00Z] TAREA: Migrar el módulo de Asesores e incentivos (comisiones v2) de Streamlit a React.
+[2026-07-14T17:12:30Z] ESTADO: Completado con éxito. Creado `asesoresService.ts` con la lógica de comisiones v2, implementado `AsesoresPage.tsx` con las vistas de datos (modal 5 tabs) y cálculo de proyección de comisiones, integrado en App.tsx, compilado sin errores y desplegado exitosamente al VPS.
+[2026-07-14T17:21:00Z] TAREA: Migrar el módulo de Fondos y Valor Cuota v26 de Streamlit a React.
+[2026-07-14T17:22:30Z] ESTADO: Completado con éxito. Creado `fondosService.ts` con la lógica de Valor Cuota v26 diario, implementado `FondosPage.tsx` con las vistas de variables (maestro/plazos) y cálculo de Valor Cuota, integrado en App.tsx, compilado sin errores y desplegado exitosamente al VPS.
+[2026-07-14T17:38:00Z] TAREA: Migrar el módulo de Contratos, Aprobación de Voucher y Emisión de Certificados de Streamlit a React.
+[2026-07-14T17:39:30Z] ESTADO: Completado con éxito. Creado `contratosService.ts` con el CRUD y la aprobación atómica, implementado `InversionesPage.tsx` con las vistas de borrador (wizard multi-inversionistas), aprobación de vouchers, detalle activo e impresión PDF de certificados oficiales, integrado en App.tsx, compilado sin errores y desplegado exitosamente al VPS.
+[2026-07-14T17:48:00Z] TAREA: Reestructurar la barra de navegación lateral y el enrutador en React de acuerdo a la disposición original de Streamlit (00_Home.py).
+[2026-07-14T17:49:00Z] ESTADO: Completado con éxito. Reorganizado `MasterTemplate.tsx` en 6 secciones principales e importados todos los íconos Lucide. Reconfigurado `App.tsx` para inicializar en crm_inversionistas, mapear metadatos exactos de los 19 módulos y desplegar pantallas de "Módulo en Migración" para las funcionalidades restantes. Compilado y desplegado exitosamente al VPS.
+[2026-07-14T17:55:30Z] ESTADO: Completado con éxito. Creado `certificadosService.ts` con carga enriquecida y registro de aumento de capital. Implementado `CertificadosPage.tsx` con tres pestañas: Vigentes (AUM por moneda, expandidores por fondo y Excel multihistorial de SheetJS), Aumento de Capital (inyección de capital al ledger), y Visor & Ledger (visor PDF nativo en iframe e historial timeline de transacciones). Integrado e indexado en App.tsx, compilado sin errores y desplegado exitosamente al VPS.
+[2026-07-14T18:16:00Z] TAREA: Clonar base de datos Supabase original a un nuevo proyecto (egvcinsbyropumybatdf) para pruebas y comparación de resultados.
+[2026-07-14T18:17:00Z] ESTADO: Completado con éxito. Generada nota Obsidian con el plan de pruebas, protocolo de clonación y cotejo de resultados. Creado el script de extracción de esquema `schema_clone.sql` con las definiciones y llaves de las 7 tablas. Implementado el script de migración masiva de datos REST-to-REST en `clone_supabase_db.py`. Actualizado `.env.local` con las nuevas credenciales de pruebas, compilado sin errores y redesplegado al VPS.
+[2026-07-14T18:35:00Z] TAREA: Evolución del Flujograma de Arquitectura de V18 a V19.
+[2026-07-14T18:43:00Z] ESTADO: Completado con éxito. Creado `FLUJOGRAMA_Arquitectura_CRM_V19.py` y compilado su PDF correspondiente. Creada la nota Obsidian `1. Estructura General del ERP - Flujograma V19.md` detallando el flujo de 4 niveles.
+[2026-07-14T18:50:00Z] TAREA: Corregir nombres de scripts y añadir Motor C (comisiones asesores v2) al flujograma V19 sin alterar el diseño cascada original.
+[2026-07-14T18:58:00Z] ESTADO: Completado con éxito. Modificado el archivo python de Graphviz V19 para integrar el Motor C y re-compilado a PDF exitosamente.
+[2026-07-14T19:02:00Z] TAREA: Elaborar la nota de modelo Entidad-Relación y ciclo de vida de los eventos de certificados.
+[2026-07-14T19:07:00Z] ESTADO: Completado con éxito. Creada la nota `Database/Modelo de Entidad Relacion y Ciclo de Eventos.md` describiendo detalladamente los campos clave, el diagrama Mermaid y el comportamiento del saldo en cada evento contable.
+[2026-07-14T19:11:00Z] TAREA: Procesar transparencia del Favicon de Geeksoft y desplegar al VPS.
+[2026-07-14T19:14:00Z] ESTADO: Completado con éxito. Desarrollado y ejecutado `make_favicon_transparent.py` con Pillow. Corregido error de codificación CP1252. Compilado y desplegado exitosamente al VPS.
+[2026-07-14T19:16:00Z] TAREA: Ejecución de prueba contable (FastAPI v40 vs Streamlit) y desduplicación del corte 28.02.2026.
+[2026-07-14T19:25:00Z] ESTADO: Completado con éxito. La prueba arrojó 100% de coincidencia matemática. Detectado y solucionado el bug de duplicación de certificados por asientos previos en el motor contable Python (`CALCULO_Retornos_Intereses_v40.py`) y TypeScript (`financialCalculator.ts`).
+[2026-07-14T19:42:00Z] TAREA: Generar y archivar los reportes limpios (Excel y PDF) desduplicados del corte de Febrero 2026 y desplegar.
+[2026-07-15T00:52:00Z] ESTADO: Completado con éxito. Corregida plantilla Jinja2. Generados y copiados los reportes desduplicados en `Files.Legacy`. Compilado y desplegado con éxito al VPS. Creada propuesta de correo amigable para el cliente en `propuesta_correo_cliente.md`.
+[2026-07-15T19:28:00-05:00] TAREA: Analizar arquitectura de datos, lógica de backend y propuesta de UI para el módulo Factoring (React).
+[2026-07-15T19:28:00-05:00] ESTADO: Completado con éxito. Generadas las 3 notas en la bóveda de Obsidian del usuario (Base de Datos, Backend y UI React).
+[2026-07-15T19:28:00-05:00] TAREA: Implementar Scaffolding inicial y modular del Frontend React para Factoring.
+[2026-07-15T19:28:00-05:00] ESTADO: Completado con éxito. Generados los servicios base, las 6 pestañas independientes y la integración del módulo Factoring al enrutador (App.tsx) y barra lateral (Sidebar.tsx).
+
+
+
+
+
