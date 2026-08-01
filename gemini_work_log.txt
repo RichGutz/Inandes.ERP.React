@@ -65,6 +65,10 @@
 [2026-07-15T19:28:00-05:00] ESTADO: Completado con éxito. Generadas las 3 notas en la bóveda de Obsidian del usuario (Base de Datos, Backend y UI React).
 [2026-07-15T19:28:00-05:00] TAREA: Implementar Scaffolding inicial y modular del Frontend React para Factoring.
 [2026-07-15T19:28:00-05:00] ESTADO: Completado con éxito. Generados los servicios base, las 6 pestañas independientes y la integración del módulo Factoring al enrutador (App.tsx) y barra lateral (Sidebar.tsx).
+[2026-08-01T12:15:00-05:00] TAREA: Diagnóstico de fallo de OAuth por suspensión automática de Supabase.
+[2026-08-01T12:17:00-05:00] ESTADO: Completado con éxito. Proyecto reanudado por el usuario en Supabase Dashboard y login reestablecido.
+[2026-08-01T13:34:00-05:00] TAREA: Sincronización masiva de 68 empresas en el proyecto oficial de Supabase (egvcinsbyropumybatdf) usando Service Role Key.
+[2026-08-01T13:37:00-05:00] ESTADO: Completado con éxito. Se mantuvieron intactas las credenciales oficiales con Google OAuth activo (`egvcinsbyropumybatdf`). Se inyectaron exitosamente las 68 empresas (con ZEN HOLDINGS SAC 20563361761 y datos SUNAT limpios). Actualizado factoringService.ts y RegistroTab.tsx con soporte dual de columnas, compilado y redesplegado a producción (HTTPS).
 
 
 

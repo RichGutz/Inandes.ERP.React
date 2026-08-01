@@ -13,7 +13,8 @@ const TABLE = 'EMISORES.ACEPTANTES';
 interface Registro {
   RUC: string;
   TIPO: 'EMISOR' | 'ACEPTANTE' | null;
-  'Razon Social': string | null;
+  RAZON_SOCIAL: string | null;
+  'Razon Social'?: string | null;
   SECTOR: string | null;
   GRUPO: string | null;
   // Contacto
@@ -90,7 +91,7 @@ interface Registro {
 }
 
 const emptyRegistro = (): Registro => ({
-  RUC: '', TIPO: 'EMISOR', 'Razon Social': '', SECTOR: '', GRUPO: '',
+  RUC: '', TIPO: 'EMISOR', RAZON_SOCIAL: '', 'Razon Social': '', SECTOR: '', GRUPO: '',
   'Correo Electronico 1': '', 'Correo Electronico 2': '',
   'Correo Electronico 3': '', 'Correo Electronico 4': '',
   CONTACTO_COMERCIAL: '', CELULAR_CONTACTO: '', CORREO_CONTACTO: '',
@@ -200,7 +201,7 @@ const RegistroForm: React.FC<{
           <ArrowLeft size={14} /> Volver a Busqueda
         </button>
         <h3 className="text-sm font-black text-slate-700 dark:text-slate-200">
-          {isEdit ? `Editar: ${initial['Razon Social']} (${initial.RUC})` : 'Crear Emisor / Aceptante'}
+          {isEdit ? `Editar: ${initial.RAZON_SOCIAL || initial['Razon Social']} (${initial.RUC})` : 'Crear Emisor / Aceptante'}
         </h3>
       </div>
 
@@ -233,7 +234,9 @@ const RegistroForm: React.FC<{
                 ))}
               </div>
             </F>
-            <F label="Razon Social *" span2><TI value={d['Razon Social']} onChange={f('Razon Social')} placeholder="EMPRESA EJEMPLO SAC" /></F>
+            <F label="Razon Social *" span2>
+              <TI value={d.RAZON_SOCIAL || d['Razon Social'] || ''} onChange={v => { f('RAZON_SOCIAL')(v); f('Razon Social')(v); }} placeholder="EMPRESA EJEMPLO SAC" />
+            </F>
             <F label="Sector"><TI value={d.SECTOR} onChange={f('SECTOR')} placeholder="Industria, Comercio..." /></F>
             <F label="Grupo Economico"><TI value={d.GRUPO} onChange={f('GRUPO')} placeholder="Nombre del grupo..." /></F>
           </div>
@@ -432,7 +435,7 @@ type Vista = 'busqueda' | 'crear' | 'editar';
 
 export const RegistroTab: React.FC = () => {
   const [vista, setVista] = useState<Vista>('busqueda');
-  const [lista, setLista] = useState<{ RUC: string; 'Razon Social': string | null; TIPO: string | null }[]>([]);
+  const [lista, setLista] = useState<{ RUC: string; RAZON_SOCIAL: string | null; 'Razon Social'?: string | null; TIPO: string | null }[]>([]);
   const [selected, setSelected] = useState<Registro | null>(null);
   const [loadingLista, setLoadingLista] = useState(true);
   const [search, setSearch] = useState('');
@@ -442,10 +445,12 @@ export const RegistroTab: React.FC = () => {
 
   const fetchLista = useCallback(async () => {
     setLoadingLista(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from(TABLE)
-      .select('RUC, "Razon Social", TIPO')
-      .order('"Razon Social"', { ascending: true });
+      .select('*');
+    if (error) {
+      console.error('Error fetching list from EMISORES.ACEPTANTES:', error.message);
+    }
     setLista((data as typeof lista) || []);
     setLoadingLista(false);
   }, []);
@@ -461,7 +466,8 @@ export const RegistroTab: React.FC = () => {
   };
 
   const handleSave = async (d: Registro) => {
-    if (!d.RUC || !d['Razon Social']) { setErrorMsg('RUC y Razon Social son obligatorios.'); return; }
+    const rName = d.RAZON_SOCIAL || d['Razon Social'];
+    if (!d.RUC || !rName) { setErrorMsg('RUC y Razon Social son obligatorios.'); return; }
     setSaving(true); setErrorMsg(null); setSuccessMsg(null);
     try {
       const clean = Object.fromEntries(
@@ -499,15 +505,15 @@ export const RegistroTab: React.FC = () => {
   }
 
   // ── Vista busqueda ──────────────────────────────────────────────────────────
-  const opciones = lista.filter(e =>
-    !search ||
-    (e['Razon Social'] ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    e.RUC.toString().includes(search)
-  );
+  const opciones = lista.filter(e => {
+    const name = e.RAZON_SOCIAL || e['Razon Social'] || '';
+    const rucStr = String(e.RUC || '');
+    return !search || name.toLowerCase().includes(search.toLowerCase()) || rucStr.includes(search);
+  });
 
   const exportColumns: ExportColumn[] = [
     { header: 'RUC', key: 'RUC', type: 'string' },
-    { header: 'Razón Social', key: 'Razon Social', type: 'string' },
+    { header: 'Razón Social', key: 'RAZON_SOCIAL', type: 'string' },
     { header: 'Tipo', key: 'TIPO', type: 'string' }
   ];
 
@@ -572,7 +578,7 @@ export const RegistroTab: React.FC = () => {
                 <tr key={r.RUC} onClick={() => handleSelectRUC(r.RUC.toString())}
                   className="hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer">
                   <td className="px-4 py-3 font-mono text-xs text-slate-500">{r.RUC}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{r['Razon Social']}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{r.RAZON_SOCIAL || r['Razon Social']}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       r.TIPO === 'EMISOR' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'

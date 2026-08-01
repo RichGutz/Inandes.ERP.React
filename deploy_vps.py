@@ -80,20 +80,53 @@ def deploy():
             f"chown -R www-data:www-data {APP_DIR} 2>/dev/null || true", 
             "3. Configurar permisos de lectura en el servidor")
 
-        # 4. Crear configuración de Nginx temporal para el puerto 80 (Certbot la actualizará a HTTPS)
+        # 4. Crear configuración de Nginx para el dominio con proxy a FastAPI (Puerto 8502)
         nginx_cfg = f"""server {{
     listen 80;
     server_name {DOMAIN};
     root {APP_DIR};
     index index.html;
+    client_max_body_size 50M;
 
-    # Proxy para el Backend en el VPS
+    # Proxy para FastAPI Backend (Puerto 8502)
     location /api/ {{
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
+    }}
+
+    location /calcular_desembolso_lote {{
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
+    }}
+
+    location /desembolsar_lote {{
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
+    }}
+
+    location /liquidaciones/ {{
+        proxy_pass http://127.0.0.1:8502;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120;
     }}
 
     # Rutas SPA de React (redirección al index.html para React Router)
@@ -101,7 +134,6 @@ def deploy():
         try_files $uri $uri/ /index.html;
     }}
 
-    # Compresión Gzip para optimizar velocidad de carga
     gzip on;
     gzip_types text/plain text/css application/javascript application/json;
 }}"""

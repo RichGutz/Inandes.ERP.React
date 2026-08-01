@@ -28,9 +28,6 @@
 [2026-07-14 13:17:00-05:00] PRUEBAS: Configuración de la clonación de la base de datos de producción (vinjzmqwaqsqzoigqpxk) al nuevo proyecto de pruebas de Supabase (egvcinsbyropumybatdf). Creado el archivo DDL `schema_clone.sql` de las 7 tablas del CRM e implementado el script de migración masiva `clone_supabase_db.py` por API REST. Actualizado `.env.local` en React, compilado y desplegado al VPS para validación.
 [2026-07-15 19:29:00-05:00] DOCUMENTACIÓN: Análisis de la arquitectura de datos, lógica de backend y propuesta de UI para el módulo Factoring (React). Generadas 3 notas en la bóveda de Obsidian (`01. Entendimiento de la Base de Datos.md`, `02. Flujo Operativo y Backend.md`, `03. Diseño del Frontend (React).md`).
 [2026-07-15 19:30:00-05:00] ARQUITECTURA: Implementación inicial del Scaffolding modular del Frontend React para Factoring. Creado el servicio `factoringService.ts`, componente envoltorio `FactoringPage.tsx`, y 6 pestañas independientes. Módulo integrado al enrutador central y menú lateral.
-
-
-
-
-
-
+[2026-08-01 12:17:00-05:00] INCIDENCIA: Diagnóstico de fallo en el endpoint de Supabase (URL inalcanzable por suspensión automática). Solucionado tras la reactivación por el usuario.
+[2026-08-01 13:37:00-05:00] SINCRONIZACIÓN Y SOLUCIÓN DEFINITIVA: Se utilizó la Service Role Key para sincronizar e inyectar directamente las 68 empresas (con ZEN HOLDINGS 20563361761 y datos limpios de SUNAT) en la tabla `EMISORES.ACEPTANTES` del proyecto oficial de Supabase `egvcinsbyropumybatdf`. Se mantuvo intacto el Login de Google Auth. Re-compilado y redesplegado exitosamente a producción HTTPS en https://inandes.react.geeksoft.tech.
+[2026-08-01 16:21:00-05:00] REFACTORIZACIÓN ORIGINACIÓN: Refactorización total de OriginacionTab.tsx y deploy_vps.py. Implementadas 4 secciones continuas en pantalla, selector de Número de Grupos (1 por defecto), Fecha de Pago por Bucket, selector nativo Browse files de Windows, autocompletado DB por RUC Emisor y botones de acción prominentes. Nginx proxy corregido a puerto 8502. Creada nota técnica 01.B. ORIGINACION.md en Obsidian. Compilado y desplegado exitosamente a https://inandes.react.geeksoft.tech.

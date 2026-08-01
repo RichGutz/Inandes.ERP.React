@@ -11,7 +11,7 @@ Metodologia: **Entender a fondo -> Documentar -> Aprobar -> Codificar.**
 | Modulo Streamlit | Tab React | Estado | Nota |
 |---|---|---|---|
 | `01_Registro.py` | Registro | ✅ Implementado y desplegado | Ver [[04. Modulo Registro - Implementacion]] |
-| `02_Originacion.py` | Originacion | 🟡 UI base creada | Pendiente fidelizar |
+| `02_Originacion.py` | Originacion | 🟠 QC en progreso | Ver [[07. QC Loops - Streamlit vs React - Originacion]] |
 | `03_Aprobacion.py` | Aprobaciones | 🔴 Placeholder | Pendiente |
 | `04_Desembolso.py` | Desembolsos | 🔴 Placeholder | Pendiente |
 | `05_Liquidacion.py` | Liquidaciones | 🔴 Placeholder | Pendiente |
@@ -58,7 +58,15 @@ Ver: [[03. Diseño del Frontend (React)]]
 
 ---
 
+## QC Loops Activos
+
+| Nota | Módulo | Estado |
+|------|--------|--------|
+| [[07. QC Loops - Streamlit vs React - Originacion]] | Originación | 🟠 En progreso — 30 facturas de prueba |
+
+---
+
 ## Proximos Pasos
-1. Leer y fidelizar `02_Originacion.py` en React
-2. Leer y fidelizar `03_Aprobacion.py` en React
-3. Continuar en orden hasta `07_Repositorio.py`
+1. Ejecutar QC Loop #001 con `E001-859.pdf` (Streamlit → React → comparar)
+2. Conectar backend Python de parseo a Originación React
+3. Continuar con `03_Aprobacion.py` en React
