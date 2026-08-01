@@ -10,7 +10,6 @@ import {
   FileText
 } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
-import { supabase } from '../../../services/supabaseClient';
 
 const fmt = (n: number, dec = 2) =>
   n.toLocaleString('es-PE', { minimumFractionDigits: dec, maximumFractionDigits: dec });
@@ -42,6 +41,19 @@ export interface InvoiceEntry {
   comision_afiliacion_pen: number;
   comision_afiliacion_usd: number;
 }
+
+const toIsoDate = (dateStr: any): string => {
+  if (!dateStr || typeof dateStr !== 'string') return today();
+  const trimmed = dateStr.trim();
+  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(trimmed)) {
+    const parts = trimmed.split(/[-/]/);
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return today();
+};
 
 export const OriginacionTab: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -181,54 +193,26 @@ export const OriginacionTab: React.FC = () => {
 
       const data = await res.json();
 
-      const parsedInvoices: InvoiceEntry[] = await Promise.all((data.results || []).map(async (r: any, idx: number) => {
+      const parsedInvoices: InvoiceEntry[] = (data.results || []).map((r: any, idx: number) => {
         const p = r.parsed_data || {};
         const match = r.filename ? r.filename.match(/^\[G(\d+)\]_/) : null;
         const bId = match ? parseInt(match[1]) : 1;
         const fechaPagoGrupo = bucketDates[bId] || defaultDueDate();
 
-        // Buscar razón social y tasas en Supabase por RUC Emisor
-        let emisorNombre = r.emisor_nombre || p.emisor_nombre || '';
-        let aceptanteNombre = r.aceptante_nombre || p.aceptante_nombre || '';
-        let dbRates: any = r.db_rates || {};
-
-        if (p.emisor_ruc) {
-          try {
-            const { data: dbEmisor } = await supabase
-              .from('EMISORES.ACEPTANTES')
-              .select('*')
-              .eq('RUC', String(p.emisor_ruc).trim())
-              .maybeSingle();
-            if (dbEmisor) {
-              if (dbEmisor.RAZON_SOCIAL) emisorNombre = dbEmisor.RAZON_SOCIAL;
-              dbRates = dbEmisor;
-            }
-          } catch (e) {
-            console.warn("No se encontraron datos para RUC Emisor:", p.emisor_ruc);
-          }
-        }
-
-        if (p.aceptante_ruc) {
-          try {
-            const { data: dbAceptante } = await supabase
-              .from('EMISORES.ACEPTANTES')
-              .select('RAZON_SOCIAL')
-              .eq('RUC', String(p.aceptante_ruc).trim())
-              .maybeSingle();
-            if (dbAceptante && dbAceptante.RAZON_SOCIAL) {
-              aceptanteNombre = dbAceptante.RAZON_SOCIAL;
-            }
-          } catch (e) {
-            console.warn("No se encontraron datos para RUC Aceptante:", p.aceptante_ruc);
-          }
-        }
+        const emisorNombre = r.emisor_nombre || p.emisor_nombre || '';
+        const aceptanteNombre = r.aceptante_nombre || p.aceptante_nombre || '';
+        const dbRates: any = r.db_rates || {};
 
         const montoTotal = Number(p.monto_total || 0);
         const montoNeto = Number(p.monto_neto || montoTotal);
         const detraccionPct = montoTotal > 0 ? ((montoTotal - montoNeto) / montoTotal) * 100 : 0;
 
-        const dDesembolso = new Date(fechaDesembolsoGlobal);
-        const dPago = new Date(fechaPagoGrupo);
+        const fechaEmisionIso = toIsoDate(p.fecha_emision);
+        const fechaDesembolsoIso = toIsoDate(fechaDesembolsoGlobal);
+        const fechaPagoIso = toIsoDate(fechaPagoGrupo);
+
+        const dDesembolso = new Date(fechaDesembolsoIso);
+        const dPago = new Date(fechaPagoIso);
         const plazoDias = Math.max(0, differenceInDays(dPago, dDesembolso));
 
         return {
@@ -244,9 +228,9 @@ export const OriginacionTab: React.FC = () => {
           monto_neto_factura: montoNeto,
           moneda_factura: (p.moneda === 'USD' ? 'USD' : 'PEN') as 'PEN' | 'USD',
           detraccion_porcentaje: detraccionPct,
-          fecha_emision_factura: p.fecha_emision || today(),
-          fecha_desembolso_factoring: fechaDesembolsoGlobal,
-          fecha_pago_calculada: fechaPagoGrupo,
+          fecha_emision_factura: fechaEmisionIso,
+          fecha_desembolso_factoring: fechaDesembolsoIso,
+          fecha_pago_calculada: fechaPagoIso,
           plazo_operacion_calculado: plazoDias,
           dias_minimos_interes_individual: Number(dbRates.dias_minimos_interes || 15),
           tasa_de_avance: Number(dbRates.tasa_avance || 90),
@@ -255,7 +239,7 @@ export const OriginacionTab: React.FC = () => {
           comision_afiliacion_pen: Number(dbRates.comision_afiliacion_pen || 0),
           comision_afiliacion_usd: Number(dbRates.comision_afiliacion_usd || 0),
         };
-      }));
+      });
 
       setInvoices(parsedInvoices);
     } catch (err: any) {
@@ -320,36 +304,89 @@ export const OriginacionTab: React.FC = () => {
     }));
   };
 
-  // --- Simulación Financiera (Sección 4) ---
+  // --- Simulación Financiera (Sección 4) con Doble Cálculo y Goal Seek ---
   const handleSimulate = async () => {
     if (invoices.length === 0) return;
     setLoadingStep(true);
     setErrorMsg(null);
 
     try {
-      const payload = invoices.map(inv => ({
-        mfn: inv.monto_neto_factura,
-        monto_objetivo: inv.monto_neto_factura,
-        tasa_avance: inv.tasa_de_avance / 100,
-        interes_mensual: inv.interes_mensual / 100,
-        plazo_operacion: Math.max(inv.plazo_operacion_calculado, inv.dias_minimos_interes_individual),
-        igv_pct: 0.18,
-        comision_estructuracion_pct: aplicarComisionEstructuracion ? comisionEstructuracionPct / 100 : 0,
-        comision_minima_aplicable: aplicarComisionEstructuracion ? (inv.moneda_factura === 'PEN' ? comisionEstructuracionMinPen : comisionEstructuracionMinUsd) : 0,
-        aplicar_comision_afiliacion: aplicarComisionAfiliacion,
-        comision_afiliacion_aplicable: aplicarComisionAfiliacion ? (inv.moneda_factura === 'PEN' ? comisionAfiliacionPen : comisionAfiliacionUsd) : 0
-      }));
-
       const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
-      const res = await fetch(`${API_BASE}/calcular_desembolso_lote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+
+      // 1. Primer Payload: Cálculo teórico directo
+      const totalCapPen = invoices
+        .filter(i => i.moneda_factura === 'PEN')
+        .reduce((sum, i) => sum + i.monto_neto_factura * (i.tasa_de_avance / 100), 0);
+      const totalCapUsd = invoices
+        .filter(i => i.moneda_factura === 'USD')
+        .reduce((sum, i) => sum + i.monto_neto_factura * (i.tasa_de_avance / 100), 0);
+
+      const payload1 = invoices.map(inv => {
+        const cap = inv.monto_neto_factura * (inv.tasa_de_avance / 100);
+        const isSol = inv.moneda_factura === 'PEN';
+        const totalCap = isSol ? totalCapPen : totalCapUsd;
+        const share = totalCap > 0 ? cap / totalCap : 0;
+
+        const comMin = (isSol ? comisionEstructuracionMinPen : comisionEstructuracionMinUsd) * share;
+        const comAfi = (isSol ? comisionAfiliacionPen : comisionAfiliacionUsd) * share;
+
+        const plazo = Math.max(inv.plazo_operacion_calculado, inv.dias_minimos_interes_individual);
+
+        return {
+          plazo_operacion: plazo,
+          mfn: inv.monto_neto_factura,
+          tasa_avance: inv.tasa_de_avance / 100,
+          interes_mensual: inv.interes_mensual / 100,
+          interes_moratorio_mensual: inv.interes_moratorio / 100,
+          comision_estructuracion_pct: aplicarComisionEstructuracion ? comisionEstructuracionPct / 100 : 0,
+          comision_minima_aplicable: aplicarComisionEstructuracion ? comMin : 0,
+          igv_pct: 0.18,
+          comision_afiliacion_aplicable: aplicarComisionAfiliacion ? comAfi : 0,
+          aplicar_comision_afiliacion: aplicarComisionAfiliacion
+        };
       });
 
-      if (!res.ok) throw new Error("Error al calcular el desembolso en el servidor.");
-      const calcData = await res.json();
-      setSimulacionResult(calcData);
+      const res1 = await fetch(`${API_BASE}/calcular_desembolso_lote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload1)
+      });
+
+      if (!res1.ok) throw new Error("Error en el primer cálculo de desembolso en el servidor.");
+      const calcData1 = await res1.json();
+      const resCalc1 = calcData1.resultados_por_factura || [];
+
+      // 2. Segundo Payload: Goal Seek (redondeo del abono a múltiplos de 10)
+      const payload2 = invoices.map((_inv, idx) => {
+        const item1 = resCalc1[idx] || {};
+        const abonoTeorico = item1.abono_real_teorico || 0;
+        const goal = Math.floor(abonoTeorico / 10) * 10;
+
+        const basePayload = { ...payload1[idx] };
+        delete (basePayload as any).tasa_avance; // Quitar tasa fija para resolver tasa de avance objetiva
+        return {
+          ...basePayload,
+          monto_objetivo: goal
+        };
+      });
+
+      const res2 = await fetch(`${API_BASE}/calcular_desembolso_lote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload2)
+      });
+
+      if (!res2.ok) throw new Error("Error en el cálculo Goal-Seek de desembolso.");
+      const calcData2 = await res2.json();
+
+      setSimulacionResult(calcData2);
+
+      // Adjuntar resultado individual a cada factura
+      setInvoices(prev => prev.map((inv, idx) => ({
+        ...inv,
+        recalculate_result: calcData2.resultados_por_factura ? calcData2.resultados_por_factura[idx] : null
+      } as any)));
+
     } catch (err: any) {
       setErrorMsg(err.message || "Error al simular la operación.");
     } finally {
@@ -357,46 +394,173 @@ export const OriginacionTab: React.FC = () => {
     }
   };
 
-  // --- Formalización (Sección 4) ---
+  // State para Google Drive Navigator & Auto-Extracción (Paridad 100% Streamlit)
+  const REPOSITORIO_ROOT_ID = '1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq';
+  const [driveHistory, setDriveHistory] = useState<Array<{ id: string; name: string }>>([]);
+  const [currentDriveId, setCurrentDriveId] = useState<string>(REPOSITORIO_ROOT_ID);
+  const [currentDriveName, setCurrentDriveName] = useState<string>('Inicio');
+  const [driveSubfolders, setDriveSubfolders] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingDrive, setLoadingDrive] = useState<boolean>(false);
+
+  // State para Generación de Documentos
+  const [perfilPdfGenerated, setPerfilPdfGenerated] = useState<boolean>(false);
+  const [liquidacionPdfGenerated, setLiquidacionPdfGenerated] = useState<boolean>(false);
+  const [perfilPdfUrl, setPerfilPdfUrl] = useState<string | null>(null);
+  const [liquidacionPdfUrl, setLiquidacionPdfUrl] = useState<string | null>(null);
+
+  // --- Cargar Subcarpetas de Google Drive ---
+  const fetchDriveSubfolders = async (targetId: string) => {
+    setLoadingDrive(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+      const res = await fetch(`${API_BASE}/api/originacion/drive/list?folder_id=${targetId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDriveSubfolders(data.folders || []);
+      } else {
+        setDriveSubfolders([]);
+      }
+    } catch (e) {
+      setDriveSubfolders([]);
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (invoices.length > 0) {
+      fetchDriveSubfolders(currentDriveId);
+    }
+  }, [currentDriveId, invoices.length]);
+
+  // --- Manejo de Navegación por Carpetas y Auto-Extracción por RegEx ---
+  const handleDriveFolderClick = (subfolder: { id: string; name: string }) => {
+    setDriveHistory(prev => [...prev, { id: currentDriveId, name: currentDriveName }]);
+    setCurrentDriveId(subfolder.id);
+    setCurrentDriveName(subfolder.name);
+    setFolderId(subfolder.id);
+
+    // 1. Anexo (de la carpeta actual seleccionada)
+    const anexoMatch = subfolder.name.match(/Anexo.?(\d+)/i);
+    if (anexoMatch && anexoMatch[1]) {
+      setAnexoNumber(anexoMatch[1]);
+    }
+
+    // 2. Contrato (de la carpeta padre en el historial)
+    if (currentDriveName && currentDriveName !== 'Inicio') {
+      const contratoMatch = currentDriveName.match(/Contrato[_ ]+(.+)/i);
+      if (contratoMatch && contratoMatch[1]) {
+        setContractNumber(contratoMatch[1].trim());
+      } else {
+        const cm2 = currentDriveName.match(/Contrato\s*(\d+)/i);
+        if (cm2 && cm2[1]) setContractNumber(cm2[1]);
+      }
+    }
+  };
+
+  const handleDriveGoBack = () => {
+    if (driveHistory.length === 0) return;
+    const newHistory = [...driveHistory];
+    const last = newHistory.pop();
+    setDriveHistory(newHistory);
+    if (last) {
+      setCurrentDriveId(last.id);
+      setCurrentDriveName(last.name);
+      setFolderId(last.id);
+    }
+  };
+
+  // --- Generación de PDFs ---
+  const handleGeneratePdf = async (_type?: 'PERFIL' | 'LIQUIDACION') => {
+    if (invoices.length === 0) return;
+    setLoadingStep(true);
+    try {
+      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+
+      const payload = {
+        invoices: invoices
+      };
+
+      const res = await fetch(`${API_BASE}/api/originacion/generate-pdfs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || "Error al generar PDFs en el servidor.");
+      }
+      const data = await res.json();
+
+      if (data.perfil_pdf_base64) {
+        setPerfilPdfGenerated(true);
+        setPerfilPdfUrl(`data:application/pdf;base64,${data.perfil_pdf_base64}`);
+      }
+
+      if (data.liquidacion_pdf_base64) {
+        setLiquidacionPdfGenerated(true);
+        setLiquidacionPdfUrl(`data:application/pdf;base64,${data.liquidacion_pdf_base64}`);
+      }
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setLoadingStep(false);
+    }
+  };
+
+  // --- Formalización (Sección 4 - Consumo Backend FastAPI) ---
   const handleConfirmFormalize = async () => {
     if (invoices.length === 0 || !simulacionResult) return;
+    if (!folderId) {
+      alert("Por favor selecciona una carpeta destino en el navegador de Google Drive.");
+      return;
+    }
     setFormalizing(true);
     try {
-      const firstInv = invoices[0];
-      const resCalc = simulacionResult.resultados_por_factura || [];
+      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
 
-      const montoBrutoTotal = invoices.reduce((sum, i) => sum + i.monto_total_factura, 0);
-      const montoNetoTotal = invoices.reduce((sum, i) => sum + i.monto_neto_factura, 0);
-      const interesTotal = resCalc.reduce((sum: number, r: any) => sum + (r.interes || 0), 0);
-      const abonoRealTotal = resCalc.reduce((sum: number, r: any) => sum + (r.abono_real_teorico || 0), 0);
-      const comisionesFijas = resCalc.reduce((sum: number, r: any) => sum + (r.comision_estructuracion || 0), 0);
-      const diasPromedio = Math.round(invoices.reduce((sum, i) => sum + i.plazo_operacion_calculado, 0) / invoices.length);
+      // Preparar archivos generados para subida (Perfil y Liquidación)
+      const filesToUpload: Array<{ filename: string; content_base64: string }> = [];
 
-      const proposalId = `FACT-${format(new Date(), 'yyMMdd')}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const { error: opErr } = await supabase
-        .from('factoring_operaciones')
-        .insert({
-          proposal_id: proposalId,
-          emisor_ruc: firstInv.emisor_ruc,
-          emisor_nombre: firstInv.emisor_nombre,
-          aceptante_ruc: firstInv.aceptante_ruc,
-          aceptante_nombre: firstInv.aceptante_nombre,
-          moneda: firstInv.moneda_factura,
-          monto_bruto_total: montoBrutoTotal,
-          monto_neto_total: montoNetoTotal,
-          interes_total: interesTotal,
-          abono_real_total: abonoRealTotal,
-          comisiones_fijas: comisionesFijas,
-          dias_promedio: diasPromedio,
-          estado: 'ORIGINADO',
-          fecha_desembolso_esperada: fechaDesembolsoGlobal,
-          meta_drive_folder_id: folderId,
-          meta_contract_number: contractNumber,
-          meta_anexo_number: anexoNumber
+      if (perfilPdfUrl && perfilPdfUrl.includes('base64,')) {
+        const b64 = perfilPdfUrl.split('base64,')[1];
+        filesToUpload.push({
+          filename: `Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`,
+          content_base64: b64
         });
+      }
 
-      if (opErr) throw opErr;
+      if (liquidacionPdfUrl && liquidacionPdfUrl.includes('base64,')) {
+        const b64 = liquidacionPdfUrl.split('base64,')[1];
+        filesToUpload.push({
+          filename: `Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`,
+          content_base64: b64
+        });
+      }
 
+      const payload = {
+        folder_id: folderId,
+        lote_id: currentDriveName || "REPOSITORIO",
+        contract_number: contractNumber,
+        anexo_number: anexoNumber,
+        invoices: invoices,
+        files_to_upload: filesToUpload
+      };
+
+      const res = await fetch(`${API_BASE}/api/originacion/formalize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || "Error al formalizar la operación en el servidor.");
+      }
+
+      const data = await res.json();
+      const proposalId = data.proposal_id || `FACT-${format(new Date(), 'yyMMdd')}-${Math.floor(1000 + Math.random() * 9000)}`;
       setSuccessId(proposalId);
     } catch (err: any) {
       alert(`Error al formalizar: ${err.message}`);
@@ -951,6 +1115,97 @@ export const OriginacionTab: React.FC = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* --- Perfil de la Operación (Desglose Financiero por Factura - Paridad 100% Streamlit) --- */}
+                      {(inv as any).recalculate_result && (() => {
+                        const r = (inv as any).recalculate_result;
+                        const mon = inv.moneda_factura;
+                        const cap = r.capital || (inv.monto_neto_factura * (inv.tasa_de_avance / 100));
+                        const interes = r.interes || 0;
+                        const comision = r.comision_estructuracion || 0;
+                        const igvTotal = (r.igv_interes || 0) + (r.igv_comision || 0) + (r.igv_afiliacion || 0);
+                        const abonoLíquido = r.abono_real_teorico || 0;
+                        const tasaAvance = inv.monto_neto_factura > 0 ? (cap / inv.monto_neto_factura) * 100 : inv.tasa_de_avance;
+
+                        return (
+                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xs">
+                            <h5 className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">
+                              Perfil de la Operación
+                            </h5>
+                            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                              <b>Emisor:</b> {inv.emisor_nombre} | <b>Aceptante:</b> {inv.aceptante_nombre} | <b>Factura:</b> {inv.numero_factura} | <b>Neto:</b> {mon} {fmt(inv.monto_neto_factura)}
+                            </p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-[11px] text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase text-[10px]">
+                                    <th className="py-2 px-2">Item</th>
+                                    <th className="py-2 px-2">Monto ({mon})</th>
+                                    <th className="py-2 px-2">% Neto</th>
+                                    <th className="py-2 px-2">Fórmula de Cálculo</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                                  <tr>
+                                    <td className="py-1.5 px-2">Monto Total Factura</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(inv.monto_total_factura)}</td>
+                                    <td className="py-1.5 px-2">-</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Dato de entrada con IGV</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2">Detracción / Retención</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(inv.monto_total_factura - inv.monto_neto_factura)}</td>
+                                    <td className="py-1.5 px-2">{fmt(inv.detraccion_porcentaje)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Monto Total - Monto Neto</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2">Monto Neto Factura</td>
+                                    <td className="py-1.5 px-2 font-bold text-emerald-600">{fmt(inv.monto_neto_factura)}</td>
+                                    <td className="py-1.5 px-2">100.00%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Monto a financiar</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2">Tasa de Avance Aplicada</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(tasaAvance)}%</td>
+                                    <td className="py-1.5 px-2">{fmt(tasaAvance)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Goal-Seek resuelto</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2">Capital Avance</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(cap)}</td>
+                                    <td className="py-1.5 px-2">{fmt(inv.monto_neto_factura ? (cap / inv.monto_neto_factura) * 100 : 0)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Monto Neto * Tasa Avance</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2 text-amber-600 font-semibold">Intereses</td>
+                                    <td className="py-1.5 px-2 font-bold text-amber-600">{fmt(interes)}</td>
+                                    <td className="py-1.5 px-2">{fmt(inv.monto_neto_factura ? (interes / inv.monto_neto_factura) * 100 : 0)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Capital * ((1+TasaDiaria)^Plazo - 1)</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2 font-semibold">Comisión Estructuración</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(comision)}</td>
+                                    <td className="py-1.5 px-2">{fmt(inv.monto_neto_factura ? (comision / inv.monto_neto_factura) * 100 : 0)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">MAX(Capital * %, Mínima)</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-1.5 px-2">IGV Total (Interés + Comisiones)</td>
+                                    <td className="py-1.5 px-2 font-bold">{fmt(igvTotal)}</td>
+                                    <td className="py-1.5 px-2">{fmt(inv.monto_neto_factura ? (igvTotal / inv.monto_neto_factura) * 100 : 0)}%</td>
+                                    <td className="py-1.5 px-2 text-slate-400">Costos * 18%</td>
+                                  </tr>
+                                  <tr className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold border-t-2 border-emerald-200 dark:border-emerald-800">
+                                    <td className="py-2 px-2 uppercase">Monto a Desembolsar (Abono Líquido)</td>
+                                    <td className="py-2 px-2 text-sm text-emerald-600 font-black">{mon} {fmt(abonoLíquido)}</td>
+                                    <td className="py-2 px-2">{fmt(inv.monto_neto_factura ? (abonoLíquido / inv.monto_neto_factura) * 100 : 0)}%</td>
+                                    <td className="py-2 px-2">Capital - Costos Totales - IGV</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -993,76 +1248,216 @@ export const OriginacionTab: React.FC = () => {
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 font-semibold block mb-1">Interés Total + IGV</span>
                   <span className="text-lg font-black text-amber-600 dark:text-amber-400">
-                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => s + (r.interes || 0) + (r.igv_interes || 0), 0))}
+                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => {
+                      const d = r.desglose_final_detallado || {};
+                      const c = r.calculo_con_tasa_encontrada || {};
+                      return s + (d.interes?.monto || c.interes || 0) + (c.igv_interes || 0);
+                    }, 0))}
                   </span>
                 </div>
 
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 font-semibold block mb-1">Comisión Estructuración</span>
                   <span className="text-lg font-black text-slate-700 dark:text-slate-300">
-                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => s + (r.comision_estructuracion || 0), 0))}
+                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => {
+                      const d = r.desglose_final_detallado || {};
+                      const c = r.calculo_con_tasa_encontrada || {};
+                      return s + (d.comision_estructuracion?.monto || c.comision_estructuracion || 0);
+                    }, 0))}
                   </span>
                 </div>
 
                 <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl border border-emerald-200 dark:border-emerald-900/60">
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1">Abono Real a Cedente</span>
                   <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => s + (r.abono_real_teorico || 0), 0))}
+                    S/ {fmt((simulacionResult.resultados_por_factura || []).reduce((s: number, r: any) => {
+                      const d = r.desglose_final_detallado || {};
+                      const c = r.calculo_con_tasa_encontrada || {};
+                      return s + (d.abono?.monto || c.abono_real_teorico || 0);
+                    }, 0))}
                   </span>
                 </div>
               </div>
 
-              {/* Formulario de Formalización */}
+              {/* Navegador del Repositorio Google Drive (Streamlit Parity) */}
               <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
-                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2">
-                  <Send size={14} className="text-red-600" />
-                  Metadatos de Formalización y Google Drive
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide block border-b border-slate-200 dark:border-slate-800 pb-2">
+                  📂 Seleccionar Destino en Repositorio Google Drive
                 </span>
 
+                {/* Ruta Pan de Migas (Breadcrumb) */}
+                <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 font-semibold truncate">
+                    <span className="text-slate-400">Ruta:</span>
+                    <span className="font-mono text-red-600 dark:text-red-400">
+                      {driveHistory.length > 0 ? [...driveHistory.map(h => h.name), currentDriveName].join(" > ") : currentDriveName}
+                    </span>
+                  </div>
+                  {driveHistory.length > 0 && (
+                    <button
+                      onClick={handleDriveGoBack}
+                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold shrink-0 transition-colors"
+                    >
+                      ⬅️ Subir Nivel
+                    </button>
+                  )}
+                </div>
+
+                {/* Grid de Subcarpetas */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase">Subcarpetas Disponibles:</span>
+                  {loadingDrive ? (
+                    <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                      <RefreshCw className="animate-spin h-4 w-4 text-red-600" />
+                      <span>Cargando carpetas de Google Drive...</span>
+                    </div>
+                  ) : driveSubfolders.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400 italic bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                      (Carpeta vacía o sin subcarpetas)
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {driveSubfolders.map(sub => (
+                        <button
+                          key={sub.id}
+                          onClick={() => handleDriveFolderClick(sub)}
+                          className="p-3 text-left bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-slate-200 dark:border-slate-800 hover:border-red-300 dark:hover:border-red-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 transition-all cursor-pointer shadow-xs truncate"
+                        >
+                          <span className="text-amber-500 shrink-0">📁</span>
+                          <span className="truncate">{sub.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Formulario de Metadatos y Generación de Documentos */}
+              <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <FileText size={14} className="text-red-600" />
+                  📄 Metadatos de Formalización y Generación de Documentos
+                </span>
+
+                {/* Campos Auto-completados */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">ID Carpeta Google Drive</label>
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                      ID Carpeta Google Drive
+                    </label>
                     <input
                       type="text"
-                      placeholder="Ej: 1A2b3C4d5E..."
+                      readOnly
+                      placeholder="Selecciona una carpeta arriba..."
                       value={folderId}
-                      onChange={(e) => setFolderId(e.target.value)}
-                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-mono text-xs"
+                      className="w-full p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs text-slate-600 dark:text-slate-300"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">N° de Contrato Marco</label>
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                      N° de Contrato Marco (Auto-detectado)
+                    </label>
                     <input
                       type="text"
-                      placeholder="Ej: CTR-2026-001"
+                      placeholder="Ej: 2025_Enero"
                       value={contractNumber}
                       onChange={(e) => setContractNumber(e.target.value)}
-                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium"
+                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-red-600 dark:text-red-400"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">N° de Anexo de Liquidación</label>
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                      N° de Anexo (Auto-detectado)
+                    </label>
                     <input
                       type="text"
-                      placeholder="Ej: ANX-2026-088"
+                      placeholder="Ej: 1"
                       value={anexoNumber}
                       onChange={(e) => setAnexoNumber(e.target.value)}
-                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium"
+                      className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-red-600 dark:text-red-400"
                     />
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={handleConfirmFormalize}
-                    disabled={formalizing}
-                    className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 transition-colors cursor-pointer"
-                  >
-                    {formalizing && <RefreshCw className="animate-spin h-4 w-4" />}
-                    FORMALIZAR OPERACIÓN
-                  </button>
+                {/* Botones 2x2 para Generar PDFs */}
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Botón PDF Perfil */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className="text-slate-600 dark:text-slate-400">PDF Perfil de Operación:</span>
+                        {perfilPdfGenerated ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 size={14} /> Generado
+                          </span>
+                        ) : (
+                          <span className="text-amber-500 font-medium">Pendiente</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleGeneratePdf('PERFIL')}
+                        disabled={loadingStep || !contractNumber || !anexoNumber}
+                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <FileText size={14} />
+                        {perfilPdfGenerated ? "🔄 Regenerar PDF Perfil" : "Generar PDF Perfil"}
+                      </button>
+                      {perfilPdfUrl && (
+                        <a
+                          href={perfilPdfUrl}
+                          download={`Perfil_Operacion_${contractNumber}_Anexo_${anexoNumber}.pdf`}
+                          className="block text-center text-xs font-bold text-emerald-600 hover:underline pt-1"
+                        >
+                          📥 Descargar PDF Perfil
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Botón PDF Liquidación */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className="text-slate-600 dark:text-slate-400">PDF Anexo de Liquidación:</span>
+                        {liquidacionPdfGenerated ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 size={14} /> Generado
+                          </span>
+                        ) : (
+                          <span className="text-amber-500 font-medium">Pendiente</span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleGeneratePdf('LIQUIDACION')}
+                        disabled={loadingStep || !contractNumber || !anexoNumber}
+                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <FileText size={14} />
+                        {liquidacionPdfGenerated ? "🔄 Regenerar PDF Liquidación" : "Generar PDF Liquidación"}
+                      </button>
+                      {liquidacionPdfUrl && (
+                        <a
+                          href={liquidacionPdfUrl}
+                          download={`Anexo_Liquidacion_${contractNumber}_Anexo_${anexoNumber}.pdf`}
+                          className="block text-center text-xs font-bold text-emerald-600 hover:underline pt-1"
+                        >
+                          📥 Descargar PDF Liquidación
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Botón Rojo Principal FORMALIZAR Y SUBIR TODO */}
+                  <div className="pt-4 flex justify-end border-t border-slate-200 dark:border-slate-800">
+                    <button
+                      onClick={handleConfirmFormalize}
+                      disabled={formalizing || !folderId}
+                      className="px-8 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      {formalizing ? <RefreshCw className="animate-spin h-4 w-4" /> : <Send size={16} />}
+                      💾 GUARDAR Y SUBIR TODO A GOOGLE DRIVE & SUPABASE
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

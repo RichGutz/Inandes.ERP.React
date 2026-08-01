@@ -88,9 +88,9 @@ def deploy():
     index index.html;
     client_max_body_size 50M;
 
-    # Proxy para FastAPI Backend (Puerto 8502)
+    # Proxy para FastAPI Backend (Puerto 8010)
     location /api/ {{
-        proxy_pass http://127.0.0.1:8502;
+        proxy_pass http://127.0.0.1:8010;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -100,7 +100,7 @@ def deploy():
     }}
 
     location /calcular_desembolso_lote {{
-        proxy_pass http://127.0.0.1:8502;
+        proxy_pass http://127.0.0.1:8010;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -110,7 +110,7 @@ def deploy():
     }}
 
     location /desembolsar_lote {{
-        proxy_pass http://127.0.0.1:8502;
+        proxy_pass http://127.0.0.1:8010;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -120,7 +120,7 @@ def deploy():
     }}
 
     location /liquidaciones/ {{
-        proxy_pass http://127.0.0.1:8502;
+        proxy_pass http://127.0.0.1:8010;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

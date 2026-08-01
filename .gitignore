@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary python scripts
+*.py
+!deploy_vps.py
+backups.supabase/
+facturas_inandes/
