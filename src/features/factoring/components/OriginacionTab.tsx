@@ -7,7 +7,9 @@ import {
   CheckCircle2, 
   RefreshCw, 
   UploadCloud, 
-  FileText
+  FileText,
+  Eye,
+  Download
 } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 
@@ -407,6 +409,25 @@ export const OriginacionTab: React.FC = () => {
   const [liquidacionPdfGenerated, setLiquidacionPdfGenerated] = useState<boolean>(false);
   const [perfilPdfUrl, setPerfilPdfUrl] = useState<string | null>(null);
   const [liquidacionPdfUrl, setLiquidacionPdfUrl] = useState<string | null>(null);
+  const [perfilPdfBase64, setPerfilPdfBase64] = useState<string | null>(null);
+  const [liquidacionPdfBase64, setLiquidacionPdfBase64] = useState<string | null>(null);
+
+  // Helper para convertir base64 a Blob URL seguro para navegadores
+  const base64ToBlobUrl = (base64: string, contentType = 'application/pdf'): string => {
+    try {
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: contentType });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      console.error("Error al generar Blob URL:", e);
+      return `data:${contentType};base64,${base64}`;
+    }
+  };
 
   // --- Cargar Subcarpetas de Google Drive ---
   const fetchDriveSubfolders = async (targetId: string) => {
@@ -473,6 +494,11 @@ export const OriginacionTab: React.FC = () => {
   // --- Generación de PDFs ---
   const handleGeneratePdf = async (_type?: 'PERFIL' | 'LIQUIDACION') => {
     if (invoices.length === 0) return;
+
+    if (!simulacionResult) {
+      alert("Primero debes hacer clic en 'CALCULAR DESEMBOLSO' para que los PDFs tengan los desgloses financieros actualizados.");
+    }
+
     setLoadingStep(true);
     try {
       const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
@@ -495,12 +521,14 @@ export const OriginacionTab: React.FC = () => {
 
       if (data.perfil_pdf_base64) {
         setPerfilPdfGenerated(true);
-        setPerfilPdfUrl(`data:application/pdf;base64,${data.perfil_pdf_base64}`);
+        setPerfilPdfBase64(data.perfil_pdf_base64);
+        setPerfilPdfUrl(base64ToBlobUrl(data.perfil_pdf_base64));
       }
 
       if (data.liquidacion_pdf_base64) {
         setLiquidacionPdfGenerated(true);
-        setLiquidacionPdfUrl(`data:application/pdf;base64,${data.liquidacion_pdf_base64}`);
+        setLiquidacionPdfBase64(data.liquidacion_pdf_base64);
+        setLiquidacionPdfUrl(base64ToBlobUrl(data.liquidacion_pdf_base64));
       }
     } catch (err: any) {
       alert(`Error: ${err.message}`);
@@ -523,19 +551,17 @@ export const OriginacionTab: React.FC = () => {
       // Preparar archivos generados para subida (Perfil y Liquidación)
       const filesToUpload: Array<{ filename: string; content_base64: string }> = [];
 
-      if (perfilPdfUrl && perfilPdfUrl.includes('base64,')) {
-        const b64 = perfilPdfUrl.split('base64,')[1];
+      if (perfilPdfBase64) {
         filesToUpload.push({
           filename: `Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`,
-          content_base64: b64
+          content_base64: perfilPdfBase64
         });
       }
 
-      if (liquidacionPdfUrl && liquidacionPdfUrl.includes('base64,')) {
-        const b64 = liquidacionPdfUrl.split('base64,')[1];
+      if (liquidacionPdfBase64) {
         filesToUpload.push({
           filename: `Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`,
-          content_base64: b64
+          content_base64: liquidacionPdfBase64
         });
       }
 
@@ -1398,20 +1424,31 @@ export const OriginacionTab: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleGeneratePdf('PERFIL')}
-                        disabled={loadingStep || !contractNumber || !anexoNumber}
+                        disabled={loadingStep || invoices.length === 0}
                         className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                       >
                         <FileText size={14} />
                         {perfilPdfGenerated ? "🔄 Regenerar PDF Perfil" : "Generar PDF Perfil"}
                       </button>
                       {perfilPdfUrl && (
-                        <a
-                          href={perfilPdfUrl}
-                          download={`Perfil_Operacion_${contractNumber}_Anexo_${anexoNumber}.pdf`}
-                          className="block text-center text-xs font-bold text-emerald-600 hover:underline pt-1"
-                        >
-                          📥 Descargar PDF Perfil
-                        </a>
+                        <div className="flex items-center justify-center gap-3 pt-1 text-xs font-bold">
+                          <a
+                            href={perfilPdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            <Eye size={13} /> 👁️ Previsualizar
+                          </a>
+                          <span className="text-slate-300">|</span>
+                          <a
+                            href={perfilPdfUrl}
+                            download={`Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                            className="text-emerald-600 hover:underline flex items-center gap-1"
+                          >
+                            <Download size={13} /> 📥 Descargar
+                          </a>
+                        </div>
                       )}
                     </div>
 
@@ -1429,20 +1466,31 @@ export const OriginacionTab: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleGeneratePdf('LIQUIDACION')}
-                        disabled={loadingStep || !contractNumber || !anexoNumber}
+                        disabled={loadingStep || invoices.length === 0}
                         className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                       >
                         <FileText size={14} />
                         {liquidacionPdfGenerated ? "🔄 Regenerar PDF Liquidación" : "Generar PDF Liquidación"}
                       </button>
                       {liquidacionPdfUrl && (
-                        <a
-                          href={liquidacionPdfUrl}
-                          download={`Anexo_Liquidacion_${contractNumber}_Anexo_${anexoNumber}.pdf`}
-                          className="block text-center text-xs font-bold text-emerald-600 hover:underline pt-1"
-                        >
-                          📥 Descargar PDF Liquidación
-                        </a>
+                        <div className="flex items-center justify-center gap-3 pt-1 text-xs font-bold">
+                          <a
+                            href={liquidacionPdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            <Eye size={13} /> 👁️ Previsualizar
+                          </a>
+                          <span className="text-slate-300">|</span>
+                          <a
+                            href={liquidacionPdfUrl}
+                            download={`Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                            className="text-emerald-600 hover:underline flex items-center gap-1"
+                          >
+                            <Download size={13} /> 📥 Descargar
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>

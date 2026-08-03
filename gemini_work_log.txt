@@ -75,3 +75,5 @@
 
 
 [2026-08-01 18:36:33-05:00] COMPLETADO PARIDAD 100% ORIGINACION: Integrado Navegador de Google Drive (GET /api/originacion/drive/list) con credenciales Service Account (Shared Drive ID 1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq), auto-extracción por RegEx de N° Contrato y N° Anexo, tabla Perfil de la Operación 1:1, generación de PDFs Perfil y Liquidación vía WeasyPrint (POST /api/originacion/generate-pdfs) y formalización completa en Supabase 'propuestas' y subida a Google Drive (POST /api/originacion/formalize). Corregidas plantillas Jinja2, eliminados procesos zombie en puerto 8010. Actualizado Obsidian 00.B. ORIGINACION.md y desplegado en https://inandes.react.geeksoft.tech.
+[2026-08-03 16:15:00-05:00] TAREA: Resolver bloqueo y fallo de descarga de PDFs en el módulo de Originación (React).
+[2026-08-03 16:15:00-05:00] ESTADO: Completado con éxito. Flexibilizadas condiciones de botones de generación en OriginacionTab.tsx, implementadas Blob URLs para vista/descarga directa y añadidos enlaces de Previsualizar y Descargar. Verificación de compilación TypeScript limpia.
