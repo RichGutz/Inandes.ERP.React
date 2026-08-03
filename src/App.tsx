@@ -58,6 +58,21 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    const isDevLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && sessionStorage.getItem('dev_local_login') === 'true';
+
+    if (isDevLocal) {
+      const email = 'rgutil@gmail.com';
+      setIsAuthenticated(true);
+      setUserEmail(email);
+      setUserFullName('Richard Gutierrez (Dev Local)');
+      setUserRoles([
+        { modulo: 'CRM', rol: 'ADMIN', nombre_completo: 'Richard Gutierrez' },
+        { modulo: 'FACTORING', rol: 'ADMIN', nombre_completo: 'Richard Gutierrez' }
+      ]);
+      setAuthChecking(false);
+      return;
+    }
+
     const checkUser = async (session: any) => {
       if (session?.user?.email) {
         const email = session.user.email;

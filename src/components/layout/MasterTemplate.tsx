@@ -1,5 +1,5 @@
-// src/components/layout/MasterTemplate.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../services/supabaseClient';
 import { 
   LogOut, 
   ExternalLink, 
@@ -106,6 +106,8 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
 
   const handleLogout = () => {
     if (confirm('¿Desea cerrar la sesión de usuario?')) {
+      sessionStorage.removeItem('dev_local_login');
+      supabase.auth.signOut();
       window.location.reload();
     }
   };

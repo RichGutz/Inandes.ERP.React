@@ -28,6 +28,13 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
     }
   };
 
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const handleDevLogin = () => {
+    sessionStorage.setItem('dev_local_login', 'true');
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans p-4">
       <div className="max-w-[600px] w-full flex flex-col items-center gap-8">
@@ -55,7 +62,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         )}
 
         {/* Button */}
-        <div className="mt-6 w-full max-w-md">
+        <div className="mt-6 w-full max-w-md space-y-3">
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
@@ -73,6 +80,20 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
             )}
             {loading ? 'Iniciando sesión...' : 'Iniciar Sesión con Google'}
           </button>
+
+          {isLocalhost && (
+            <div className="pt-4 border-t border-slate-200 text-center">
+              <button
+                onClick={handleDevLogin}
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                ⚡ Acceso Rápido Local (Dev Bypass)
+              </button>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Modo Desarrollo: Inicia sesión directamente en localhost sin ser redirigido a la web.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

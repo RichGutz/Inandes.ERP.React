@@ -9,9 +9,11 @@ import {
   UploadCloud, 
   FileText,
   Eye,
-  Download
+  Download,
+  Folder
 } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
+import { DriveTreeView } from './DriveTreeView';
 
 const fmt = (n: number, dec = 2) =>
   n.toLocaleString('es-PE', { minimumFractionDigits: dec, maximumFractionDigits: dec });
@@ -396,13 +398,10 @@ export const OriginacionTab: React.FC = () => {
     }
   };
 
-  // State para Google Drive Navigator & Auto-Extracción (Paridad 100% Streamlit)
+  // State para Google Drive Navigator & Auto-Extracción (Árbol Interactivo)
   const REPOSITORIO_ROOT_ID = '1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq';
-  const [driveHistory, setDriveHistory] = useState<Array<{ id: string; name: string }>>([]);
-  const [currentDriveId, setCurrentDriveId] = useState<string>(REPOSITORIO_ROOT_ID);
   const [currentDriveName, setCurrentDriveName] = useState<string>('Inicio');
-  const [driveSubfolders, setDriveSubfolders] = useState<Array<{ id: string; name: string }>>([]);
-  const [loadingDrive, setLoadingDrive] = useState<boolean>(false);
+  const [selectedDrivePath, setSelectedDrivePath] = useState<string>('');
 
   // State para Generación de Documentos
   const [perfilPdfGenerated, setPerfilPdfGenerated] = useState<boolean>(false);
@@ -429,65 +428,135 @@ export const OriginacionTab: React.FC = () => {
     }
   };
 
-  // --- Cargar Subcarpetas de Google Drive ---
-  const fetchDriveSubfolders = async (targetId: string) => {
-    setLoadingDrive(true);
+  const SESSION_KEY = 'factoring_originacion_session';
+
+  // --- Restaurar Sesión desde sessionStorage al Montar el Componente ---
+  useEffect(() => {
     try {
-      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
-      const res = await fetch(`${API_BASE}/api/originacion/drive/list?folder_id=${targetId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setDriveSubfolders(data.folders || []);
-      } else {
-        setDriveSubfolders([]);
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.invoices && Array.isArray(data.invoices)) setInvoices(data.invoices);
+        if (data.numGrupos) setNumGrupos(data.numGrupos);
+        if (data.bucketDates) setBucketDates(data.bucketDates);
+        if (data.simulacionResult) setSimulacionResult(data.simulacionResult);
+        if (data.folderId) setFolderId(data.folderId);
+        if (data.contractNumber) setContractNumber(data.contractNumber);
+        if (data.anexoNumber) setAnexoNumber(data.anexoNumber);
+        if (data.selectedDrivePath) setSelectedDrivePath(data.selectedDrivePath);
+        if (data.perfilPdfGenerated) setPerfilPdfGenerated(data.perfilPdfGenerated);
+        if (data.liquidacionPdfGenerated) setLiquidacionPdfGenerated(data.liquidacionPdfGenerated);
+        if (data.perfilPdfBase64) {
+          setPerfilPdfBase64(data.perfilPdfBase64);
+          setPerfilPdfUrl(base64ToBlobUrl(data.perfilPdfBase64));
+        }
+        if (data.liquidacionPdfBase64) {
+          setLiquidacionPdfBase64(data.liquidacionPdfBase64);
+          setLiquidacionPdfUrl(base64ToBlobUrl(data.liquidacionPdfBase64));
+        }
       }
     } catch (e) {
-      setDriveSubfolders([]);
-    } finally {
-      setLoadingDrive(false);
+      console.error("Error al restaurar sesión de Originación:", e);
     }
+  }, []);
+
+  // --- Guardar Sesión Automáticamente en sessionStorage ---
+  useEffect(() => {
+    if (invoices.length === 0 && !folderId && !contractNumber && !anexoNumber) return;
+    try {
+      const dataToSave = {
+        invoices,
+        numGrupos,
+        bucketDates,
+        simulacionResult,
+        folderId,
+        contractNumber,
+        anexoNumber,
+        selectedDrivePath,
+        perfilPdfGenerated,
+        liquidacionPdfGenerated,
+        perfilPdfBase64,
+        liquidacionPdfBase64,
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(dataToSave));
+    } catch (e) {
+      console.error("Error al guardar sesión de Originación:", e);
+    }
+  }, [
+    invoices,
+    numGrupos,
+    bucketDates,
+    simulacionResult,
+    folderId,
+    contractNumber,
+    anexoNumber,
+    selectedDrivePath,
+    perfilPdfGenerated,
+    liquidacionPdfGenerated,
+    perfilPdfBase64,
+    liquidacionPdfBase64
+  ]);
+
+  const handleClearSession = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    setInvoices([]);
+    setSimulacionResult(null);
+    setFolderId('');
+    setContractNumber('');
+    setAnexoNumber('');
+    setSelectedDrivePath('');
+    setPerfilPdfGenerated(false);
+    setLiquidacionPdfGenerated(false);
+    setPerfilPdfUrl(null);
+    setLiquidacionPdfUrl(null);
+    setPerfilPdfBase64(null);
+    setLiquidacionPdfBase64(null);
   };
 
-  useEffect(() => {
-    if (invoices.length > 0) {
-      fetchDriveSubfolders(currentDriveId);
-    }
-  }, [currentDriveId, invoices.length]);
+  // --- Manejo de Selección de Carpeta en Árbol de Google Drive y Auto-Extracción por RegEx ---
+  const handleSelectTreeFolder = (folder: { id: string; name: string; path: string[] }) => {
+    setFolderId(folder.id);
+    setCurrentDriveName(folder.name);
+    setSelectedDrivePath(folder.path.join(' > '));
 
-  // --- Manejo de Navegación por Carpetas y Auto-Extracción por RegEx ---
-  const handleDriveFolderClick = (subfolder: { id: string; name: string }) => {
-    setDriveHistory(prev => [...prev, { id: currentDriveId, name: currentDriveName }]);
-    setCurrentDriveId(subfolder.id);
-    setCurrentDriveName(subfolder.name);
-    setFolderId(subfolder.id);
-
-    // 1. Anexo (de la carpeta actual seleccionada)
-    const anexoMatch = subfolder.name.match(/Anexo.?(\d+)/i);
+    // 1. Anexo (de la carpeta seleccionada o su ruta)
+    const fullPathStr = folder.path.join(' / ');
+    const anexoMatch = folder.name.match(/Anexo.?(\d+)/i) || fullPathStr.match(/Anexo.?(\d+)/i);
     if (anexoMatch && anexoMatch[1]) {
       setAnexoNumber(anexoMatch[1]);
     }
 
-    // 2. Contrato (de la carpeta padre en el historial)
-    if (currentDriveName && currentDriveName !== 'Inicio') {
-      const contratoMatch = currentDriveName.match(/Contrato[_ ]+(.+)/i);
-      if (contratoMatch && contratoMatch[1]) {
-        setContractNumber(contratoMatch[1].trim());
-      } else {
-        const cm2 = currentDriveName.match(/Contrato\s*(\d+)/i);
-        if (cm2 && cm2[1]) setContractNumber(cm2[1]);
+    // 2. Contrato (de la carpeta o de sus carpetas padre en la ruta)
+    let foundContract = '';
+    for (let i = folder.path.length - 1; i >= 0; i--) {
+      const pName = folder.path[i];
+      const match1 = pName.match(/Contrato[_ ]+(.+)/i);
+      if (match1 && match1[1]) {
+        foundContract = match1[1].trim();
+        break;
+      }
+      const match2 = pName.match(/Contrato\s*(\d+)/i);
+      if (match2 && match2[1]) {
+        foundContract = match2[1].trim();
+        break;
+      }
+      const match3 = pName.match(/Contrato.?([A-Za-z0-9_]+)/i);
+      if (match3 && match3[1]) {
+        foundContract = match3[1].trim();
+        break;
       }
     }
-  };
 
-  const handleDriveGoBack = () => {
-    if (driveHistory.length === 0) return;
-    const newHistory = [...driveHistory];
-    const last = newHistory.pop();
-    setDriveHistory(newHistory);
-    if (last) {
-      setCurrentDriveId(last.id);
-      setCurrentDriveName(last.name);
-      setFolderId(last.id);
+    // Fallback: Si no tiene la palabra "Contrato", usar el nombre de la carpeta padre si existe
+    if (!foundContract && folder.path.length >= 2) {
+      const parentFolder = folder.path[folder.path.length - 2];
+      if (parentFolder && parentFolder !== 'Repositorio InAndes' && parentFolder !== 'Inicio') {
+        foundContract = parentFolder;
+      }
+    }
+
+    if (foundContract) {
+      setContractNumber(foundContract);
     }
   };
 
@@ -633,86 +702,107 @@ export const OriginacionTab: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 1. CARGA DE FACTURAS (STREAMLIT PARITY)                                  */}
+      {/* 1. CARGA DE FACTURAS (COMPACTED GRID LAYOUT)                             */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-          1. Carga de Facturas
-        </h3>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        {/* Header Inline (Título + Selector + Limpiar) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-4">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+              1. Carga de Facturas
+            </h3>
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400 shrink-0">Número de Grupos:</label>
+              <select
+                value={numGrupos}
+                onChange={(e) => setNumGrupos(Number(e.target.value))}
+                className="p-1 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-none"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                  <option key={num} value={num}>{num}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-        {/* Selector Número de Grupos */}
-        <div className="space-y-1 max-w-xs">
-          <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Número de Grupos</label>
-          <select
-            value={numGrupos}
-            onChange={(e) => setNumGrupos(Number(e.target.value))}
-            className="w-full p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200"
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-              <option key={num} value={num}>{num}</option>
-            ))}
-          </select>
+          {(invoices.length > 0 || folderId) && (
+            <button
+              onClick={handleClearSession}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 dark:bg-slate-800 dark:hover:bg-red-950/40 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Trash2 size={13} /> 🧹 Limpiar Lote Actual
+            </button>
+          )}
         </div>
 
-        {/* Tarjetas de Grupos / Buckets */}
-        <div className="space-y-6">
+        {/* Grid de Grupos / Buckets (Hasta 4 columnas por fila) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {activeGroups.map((bId) => (
-            <div key={bId} className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-              <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide block border-b border-slate-200 dark:border-slate-800 pb-2">
-                GRUPO {bId}
-              </span>
-
-              {/* Campo Fecha de Pago */}
-              <div className="space-y-1 max-w-xs">
-                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Fecha de Pago</label>
-                <input
-                  type="date"
-                  value={bucketDates[bId] || defaultDueDate()}
-                  onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
-                  className="w-full p-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 font-bold"
-                />
-              </div>
-
-              {/* Botón Browse Files Nativo de Windows + Drag and Drop */}
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(bId, e)}
-                className="border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-xl p-6 text-center bg-white dark:bg-slate-900 space-y-3"
-              >
-                <UploadCloud className="h-8 w-8 text-slate-400 mx-auto" />
-                <p className="text-xs text-slate-500 font-medium">Drag and drop files here</p>
-
-                <label className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl cursor-pointer transition-colors border border-slate-200 dark:border-slate-700 shadow-xs">
-                  <span>Browse files</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf"
-                    onChange={(e) => handleNativeFileSelect(bId, e)}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Lista de Archivos Subidos */}
-              {(bucketsFiles[bId] || []).length > 0 && (
-                <div className="space-y-1.5 pt-2">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase">Archivos subidos (Grupo {bId}):</span>
-                  {bucketsFiles[bId].map((f, fIdx) => (
-                    <div key={fIdx} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 rounded-xl text-xs border border-slate-200 dark:border-slate-800 shadow-xs">
-                      <span className="truncate max-w-[280px] font-mono text-slate-700 dark:text-slate-300" title={f.name}>
-                        {f.name}
-                      </span>
-                      <button
-                        onClick={() => removeFile(bId, fIdx)}
-                        className="text-slate-400 hover:text-red-500 p-1"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
+            <div key={bId} className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 space-y-2.5 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                    📁 GRUPO {bId}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">
+                    {(bucketsFiles[bId] || []).length} PDFs
+                  </span>
                 </div>
-              )}
+
+                {/* Campo Fecha de Pago */}
+                <div className="space-y-0.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Fecha de Pago:</label>
+                  <input
+                    type="date"
+                    value={bucketDates[bId] || defaultDueDate()}
+                    onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
+                    className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 font-bold"
+                  />
+                </div>
+
+                {/* Área compacta Browse files / Drag and Drop */}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(bId, e)}
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-lg p-2 text-center bg-white dark:bg-slate-900 space-y-1 hover:border-red-400 transition-colors"
+                >
+                  <UploadCloud className="h-4 w-4 text-slate-400 mx-auto" />
+                  <label className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg cursor-pointer transition-colors border border-slate-200 dark:border-slate-700">
+                    <span>Seleccionar PDFs</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf"
+                      onChange={(e) => handleNativeFileSelect(bId, e)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Lista compacta de Archivos Subidos */}
+                {(bucketsFiles[bId] || []).length > 0 ? (
+                  <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
+                    {bucketsFiles[bId].map((f, fIdx) => (
+                      <div key={fIdx} className="flex items-center justify-between p-1.5 bg-white dark:bg-slate-900 rounded-lg text-[11px] border border-slate-200 dark:border-slate-800">
+                        <span className="truncate max-w-[120px] font-mono text-slate-700 dark:text-slate-300 text-[10px]" title={f.name}>
+                          {f.name}
+                        </span>
+                        <button
+                          onClick={() => removeFile(bId, fIdx)}
+                          className="text-slate-400 hover:text-red-500 p-0.5"
+                          title="Eliminar archivo"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[10px] italic text-slate-400 text-center py-0.5">
+                    (Sin archivos)
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -1305,57 +1395,35 @@ export const OriginacionTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Navegador del Repositorio Google Drive (Streamlit Parity) */}
-              <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
-                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide block border-b border-slate-200 dark:border-slate-800 pb-2">
-                  📂 Seleccionar Destino en Repositorio Google Drive
-                </span>
+              {/* Navegador del Repositorio Google Drive (Tree View Interactivo) */}
+              <div className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2">
+                    <Folder className="h-4 w-4 text-amber-500" />
+                    📂 Seleccionar Destino en Repositorio Google Drive (Árbol Interactivo)
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    Haz clic en ▶ para desplegar subcarpetas
+                  </span>
+                </div>
 
-                {/* Ruta Pan de Migas (Breadcrumb) */}
-                <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 font-semibold truncate">
-                    <span className="text-slate-400">Ruta:</span>
-                    <span className="font-mono text-red-600 dark:text-red-400">
-                      {driveHistory.length > 0 ? [...driveHistory.map(h => h.name), currentDriveName].join(" > ") : currentDriveName}
+                {/* Ruta Seleccionada (Breadcrumb) */}
+                <div className="flex items-center justify-between text-xs bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-semibold truncate">
+                    <span className="text-slate-400 shrink-0">Ruta Seleccionada:</span>
+                    <span className="font-mono text-red-600 dark:text-red-400 truncate">
+                      {selectedDrivePath || currentDriveName || 'Inicio (Repositorio InAndes)'}
                     </span>
                   </div>
-                  {driveHistory.length > 0 && (
-                    <button
-                      onClick={handleDriveGoBack}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold shrink-0 transition-colors"
-                    >
-                      ⬅️ Subir Nivel
-                    </button>
-                  )}
                 </div>
 
-                {/* Grid de Subcarpetas */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase">Subcarpetas Disponibles:</span>
-                  {loadingDrive ? (
-                    <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                      <RefreshCw className="animate-spin h-4 w-4 text-red-600" />
-                      <span>Cargando carpetas de Google Drive...</span>
-                    </div>
-                  ) : driveSubfolders.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-400 italic bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-                      (Carpeta vacía o sin subcarpetas)
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {driveSubfolders.map(sub => (
-                        <button
-                          key={sub.id}
-                          onClick={() => handleDriveFolderClick(sub)}
-                          className="p-3 text-left bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/40 border border-slate-200 dark:border-slate-800 hover:border-red-300 dark:hover:border-red-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 transition-all cursor-pointer shadow-xs truncate"
-                        >
-                          <span className="text-amber-500 shrink-0">📁</span>
-                          <span className="truncate">{sub.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Visor en Árbol */}
+                <DriveTreeView
+                  rootFolderId={REPOSITORIO_ROOT_ID}
+                  rootFolderName="Repositorio InAndes"
+                  selectedFolderId={folderId}
+                  onSelectFolder={handleSelectTreeFolder}
+                />
               </div>
 
               {/* Formulario de Metadatos y Generación de Documentos */}
