@@ -740,6 +740,7 @@ export const OriginacionTab: React.FC = () => {
           {activeGroups.map((bId) => (
             <div key={bId} className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 space-y-2.5 flex flex-col justify-between">
               <div className="space-y-2">
+                {/* Header del Grupo */}
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
                   <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
                     📁 GRUPO {bId}
@@ -749,59 +750,73 @@ export const OriginacionTab: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Campo Fecha de Pago */}
-                <div className="space-y-0.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Fecha de Pago:</label>
-                  <input
-                    type="date"
-                    value={bucketDates[bId] || defaultDueDate()}
-                    onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
-                    className="w-full p-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 font-bold"
-                  />
+                {/* Fila Controles: Fecha de Pago + Botón Adjuntar PDFs */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 space-y-0.5">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block">Fecha Pago:</label>
+                    <input
+                      type="date"
+                      value={bucketDates[bId] || defaultDueDate()}
+                      onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
+                      className="w-full p-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 font-bold"
+                    />
+                  </div>
+
+                  <div className="shrink-0 self-end">
+                    <label className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg cursor-pointer transition-colors shadow-2xs">
+                      <UploadCloud size={12} />
+                      <span>+ Adjuntar</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf"
+                        onChange={(e) => handleNativeFileSelect(bId, e)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
-                {/* Área compacta Browse files / Drag and Drop */}
+                {/* Contenedor Grid 3-Columnas (Zona Activa de Drag and Drop) */}
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(bId, e)}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-lg p-2 text-center bg-white dark:bg-slate-900 space-y-1 hover:border-red-400 transition-colors"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-600 rounded-lg p-2 bg-white dark:bg-slate-900 transition-colors min-h-[90px] space-y-1.5"
                 >
-                  <UploadCloud className="h-4 w-4 text-slate-400 mx-auto" />
-                  <label className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg cursor-pointer transition-colors border border-slate-200 dark:border-slate-700">
-                    <span>Seleccionar PDFs</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf"
-                      onChange={(e) => handleNativeFileSelect(bId, e)}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800/60 pb-1">
+                    <span>📥 ARCHIVOS ADJUNTOS ({ (bucketsFiles[bId] || []).length })</span>
+                    <span className="text-[8px] font-normal italic">(Arrastra PDFs aquí)</span>
+                  </div>
 
-                {/* Lista compacta de Archivos Subidos */}
-                {(bucketsFiles[bId] || []).length > 0 ? (
-                  <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                    {bucketsFiles[bId].map((f, fIdx) => (
-                      <div key={fIdx} className="flex items-center justify-between p-1.5 bg-white dark:bg-slate-900 rounded-lg text-[11px] border border-slate-200 dark:border-slate-800">
-                        <span className="truncate max-w-[120px] font-mono text-slate-700 dark:text-slate-300 text-[10px]" title={f.name}>
-                          {f.name}
-                        </span>
-                        <button
-                          onClick={() => removeFile(bId, fIdx)}
-                          className="text-slate-400 hover:text-red-500 p-0.5"
-                          title="Eliminar archivo"
+                  {(bucketsFiles[bId] || []).length > 0 ? (
+                    <div className="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-0.5">
+                      {bucketsFiles[bId].map((f, fIdx) => (
+                        <div
+                          key={fIdx}
+                          className="flex items-center justify-between p-1 bg-slate-50 dark:bg-slate-800/80 rounded border border-slate-200 dark:border-slate-700 text-[9px] group"
                         >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-[10px] italic text-slate-400 text-center py-0.5">
-                    (Sin archivos)
-                  </div>
-                )}
+                          <span
+                            className="truncate font-mono font-medium text-slate-700 dark:text-slate-200 pr-0.5"
+                            title={f.name}
+                          >
+                            {f.name}
+                          </span>
+                          <button
+                            onClick={() => removeFile(bId, fIdx)}
+                            className="text-slate-400 hover:text-red-500 shrink-0 p-0.5"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-[10px] italic text-slate-400 text-center py-4">
+                      Arrastra tus facturas PDF aquí o usa el botón superior.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
