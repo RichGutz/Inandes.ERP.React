@@ -1591,31 +1591,31 @@ export const OriginacionTab: React.FC = () => {
                       </div>
                     )}
                   </div>
-
-                  {/* Botones de Acción Final */}
-                  <div className="pt-4 flex justify-between border-t border-slate-200 dark:border-slate-800 gap-4">
-                    <button
-                      onClick={handleSimulate}
-                      disabled={loadingStep}
-                      className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                      {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <Calculator size={16} />}
-                      CALCULAR DESEMBOLSO Y GENERAR PDFs
-                    </button>
-
-                    <button
-                      onClick={handleConfirmFormalize}
-                      disabled={formalizing || !folderId || !simulacionResult}
-                      className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                      {formalizing ? <RefreshCw className="animate-spin h-4 w-4" /> : <Send size={16} />}
-                      💾 GUARDAR Y SUBIR A GOOGLE DRIVE
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Botones de Acción Final SIEMPRE VISIBLES en Paso 4 */}
+          <div className="pt-4 flex justify-between gap-4 mt-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+            <button
+              onClick={handleSimulate}
+              disabled={loadingStep}
+              className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <Calculator size={16} />}
+              CALCULAR DESEMBOLSO Y GENERAR PDFs
+            </button>
+
+            <button
+              onClick={handleConfirmFormalize}
+              disabled={formalizing || !folderId || !simulacionResult}
+              className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
+              {formalizing ? <RefreshCw className="animate-spin h-4 w-4" /> : <Send size={16} />}
+              💾 GUARDAR Y SUBIR A GOOGLE DRIVE
+            </button>
+          </div>
         </div>
       )}
     </div>
