@@ -350,7 +350,7 @@ export const OriginacionTab: React.FC = () => {
         };
       });
 
-      const res1 = await fetch(`${API_BASE}/calcular_desembolso_lote`, {
+      const res1 = await fetch(`${API_BASE}/api/originacion/calcular_desembolso_lote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload1)
@@ -374,7 +374,7 @@ export const OriginacionTab: React.FC = () => {
         };
       });
 
-      const res2 = await fetch(`${API_BASE}/calcular_desembolso_lote`, {
+      const res2 = await fetch(`${API_BASE}/api/originacion/calcular_desembolso_lote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload2)
