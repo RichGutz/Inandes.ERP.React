@@ -74,6 +74,20 @@ export const DesembolsosTab: React.FC = () => {
     }
   };
 
+  const getMontoDesembolso = (inv: FacturaDesembolso) => {
+    try {
+      if (inv.recalculate_result_json) {
+        const data = JSON.parse(inv.recalculate_result_json);
+        if (data?.desglose_final_detallado?.abono?.monto) {
+          return data.desglose_final_detallado.abono.monto;
+        }
+      }
+      return inv.monto_a_desembolsar || 0;
+    } catch {
+      return inv.monto_a_desembolsar || 0;
+    }
+  };
+
   const getGroupId = (inv: FacturaDesembolso) => {
     try {
       if (!inv.recalculate_result_json) return 'General';
@@ -174,7 +188,7 @@ export const DesembolsosTab: React.FC = () => {
   }, [selectedIds, invoices]);
 
   const montoTotal = useMemo(() => {
-    return selectedInvoices.reduce((acc, inv) => acc + (inv.monto_a_desembolsar || 0), 0);
+    return selectedInvoices.reduce((acc, inv) => acc + getMontoDesembolso(inv), 0);
   }, [selectedInvoices]);
 
   const monedaUnica = selectedInvoices.length > 0 ? selectedInvoices[0].moneda_factura : 'PEN';
@@ -205,7 +219,7 @@ export const DesembolsosTab: React.FC = () => {
         facturas: selectedInvoices.map(f => ({
           numero_factura: parseInvoiceNumber(f.proposal_id),
           emisor_nombre: f.emisor_nombre || 'N/A',
-          monto: f.monto_a_desembolsar || 0
+          monto: getMontoDesembolso(f)
         }))
       };
 
@@ -288,7 +302,7 @@ export const DesembolsosTab: React.FC = () => {
       const payload = {
         desembolsos: selectedInvoices.map(inv => ({
           proposal_id: inv.proposal_id,
-          monto: inv.monto_a_desembolsar,
+          monto: getMontoDesembolso(inv),
           fecha: fechaDesembolso
         })),
         folder_id: selectedFolder.id,
@@ -428,12 +442,16 @@ export const DesembolsosTab: React.FC = () => {
                                           <tr>
                                             <th className="px-2 py-2 w-10">Sel</th>
                                             <th className="px-2 py-2">Factura</th>
+                                            <th className="px-2 py-2">Emisor</th>
                                             <th className="px-2 py-2">Aceptante</th>
-                                            <th className="px-2 py-2 text-right">Monto</th>
+                                            <th className="px-2 py-2">M. Neto</th>
+                                            <th className="px-2 py-2">Desembolso</th>
                                           </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                                          {fList.map(inv => (
+                                          {fList.map(inv => {
+                                            const monto = getMontoDesembolso(inv);
+                                            return (
                                             <tr key={inv.proposal_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                               <td className="px-2 py-3">
                                                 <input 
@@ -446,14 +464,20 @@ export const DesembolsosTab: React.FC = () => {
                                               <td className="px-2 py-3 font-mono font-bold text-slate-700 dark:text-slate-300">
                                                 {parseInvoiceNumber(inv.proposal_id)}
                                               </td>
-                                              <td className="px-2 py-3 truncate max-w-[200px] text-slate-600 dark:text-slate-400">
+                                              <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
+                                                {inv.emisor_nombre || 'N/A'}
+                                              </td>
+                                              <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
                                                 {inv.aceptante_nombre || 'N/A'}
                                               </td>
-                                              <td className="px-2 py-3 text-right text-emerald-600 font-bold">
-                                                {formatCurrency(inv.monto_a_desembolsar || 0, inv.moneda_factura)}
+                                              <td className="px-2 py-3 text-slate-700 dark:text-slate-300">
+                                                {formatCurrency(inv.monto_neto_factura || 0, inv.moneda_factura)}
+                                              </td>
+                                              <td className="px-2 py-3 text-emerald-600 font-bold">
+                                                {formatCurrency(monto, inv.moneda_factura)}
                                               </td>
                                             </tr>
-                                          ))}
+                                          )})}
                                         </tbody>
                                       </table>
                                     </div>
@@ -575,7 +599,7 @@ export const DesembolsosTab: React.FC = () => {
                       {parseInvoiceNumber(inv.proposal_id)}
                     </div>
                     <div className="w-1/3 text-emerald-600 font-bold">
-                      {formatCurrency(inv.monto_a_desembolsar || 0, inv.moneda_factura)}
+                      {formatCurrency(getMontoDesembolso(inv), inv.moneda_factura)}
                     </div>
                     <div className="w-1/2">
                       <input 
