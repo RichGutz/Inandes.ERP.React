@@ -1491,92 +1491,91 @@ export const OriginacionTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Botones 2x2 para Generar PDFs */}
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Botón PDF Perfil */}
-                    <div className="space-y-2">
+                {/* Visores PDF Inline (Iframes) */}
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                  <div className="flex flex-col gap-6">
+                    {/* Contenedor PDF Perfil */}
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-slate-600 dark:text-slate-400">PDF Perfil de Operación:</span>
-                        {perfilPdfGenerated ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                            <CheckCircle2 size={14} /> Generado
-                          </span>
-                        ) : (
-                          <span className="text-amber-500 font-medium">Pendiente</span>
-                        )}
+                        <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">1. PDF Perfil de Operación</span>
+                        <div className="flex items-center gap-3">
+                          {perfilPdfGenerated && perfilPdfUrl ? (
+                            <>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                <CheckCircle2 size={14} /> Generado
+                              </span>
+                              <span className="text-slate-300">|</span>
+                              <a
+                                href={perfilPdfUrl}
+                                download={`Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                                className="text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <Download size={13} /> Descargar
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-amber-500 font-medium">Pendiente</span>
+                          )}
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleGeneratePdf('PERFIL')}
-                        disabled={loadingStep || invoices.length === 0}
-                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                      >
-                        <FileText size={14} />
-                        {perfilPdfGenerated ? "🔄 Regenerar PDF Perfil" : "Generar PDF Perfil"}
-                      </button>
-                      {perfilPdfUrl && (
-                        <div className="flex items-center justify-center gap-3 pt-1 text-xs font-bold">
-                          <a
-                            href={perfilPdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1"
-                          >
-                            <Eye size={13} /> 👁️ Previsualizar
-                          </a>
-                          <span className="text-slate-300">|</span>
-                          <a
-                            href={perfilPdfUrl}
-                            download={`Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
-                            className="text-emerald-600 hover:underline flex items-center gap-1"
-                          >
-                            <Download size={13} /> 📥 Descargar
-                          </a>
+                      
+                      {!perfilPdfUrl ? (
+                        <button
+                          onClick={() => handleGeneratePdf('PERFIL')}
+                          disabled={loadingStep || invoices.length === 0}
+                          className="w-full py-4 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <FileText size={16} />
+                          Generar Documentos (Perfil y Liquidación)
+                        </button>
+                      ) : (
+                        <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
+                          <iframe
+                            src={perfilPdfUrl}
+                            title="Visor PDF Perfil de Operación"
+                            className="w-full h-full border-none"
+                          />
                         </div>
                       )}
                     </div>
 
-                    {/* Botón PDF Liquidación */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-slate-600 dark:text-slate-400">PDF Anexo de Liquidación:</span>
-                        {liquidacionPdfGenerated ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                            <CheckCircle2 size={14} /> Generado
-                          </span>
-                        ) : (
-                          <span className="text-amber-500 font-medium">Pendiente</span>
+                    {/* Contenedor PDF Liquidación */}
+                    {(liquidacionPdfUrl || perfilPdfUrl) && (
+                      <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between text-xs font-semibold">
+                          <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">2. PDF Anexo de Liquidación</span>
+                          <div className="flex items-center gap-3">
+                            {liquidacionPdfGenerated && liquidacionPdfUrl ? (
+                              <>
+                                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                  <CheckCircle2 size={14} /> Generado
+                                </span>
+                                <span className="text-slate-300">|</span>
+                                <a
+                                  href={liquidacionPdfUrl}
+                                  download={`Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                                  className="text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                  <Download size={13} /> Descargar
+                                </a>
+                              </>
+                            ) : (
+                              <span className="text-amber-500 font-medium">Generando...</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {liquidacionPdfUrl && (
+                          <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
+                            <iframe
+                              src={liquidacionPdfUrl}
+                              title="Visor PDF Anexo de Liquidación"
+                              className="w-full h-full border-none"
+                            />
+                          </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleGeneratePdf('LIQUIDACION')}
-                        disabled={loadingStep || invoices.length === 0}
-                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                      >
-                        <FileText size={14} />
-                        {liquidacionPdfGenerated ? "🔄 Regenerar PDF Liquidación" : "Generar PDF Liquidación"}
-                      </button>
-                      {liquidacionPdfUrl && (
-                        <div className="flex items-center justify-center gap-3 pt-1 text-xs font-bold">
-                          <a
-                            href={liquidacionPdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1"
-                          >
-                            <Eye size={13} /> 👁️ Previsualizar
-                          </a>
-                          <span className="text-slate-300">|</span>
-                          <a
-                            href={liquidacionPdfUrl}
-                            download={`Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
-                            className="text-emerald-600 hover:underline flex items-center gap-1"
-                          >
-                            <Download size={13} /> 📥 Descargar
-                          </a>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {/* Botón Rojo Principal FORMALIZAR Y SUBIR TODO */}
