@@ -8,7 +8,6 @@ import {
   RefreshCw, 
   UploadCloud, 
   FileText,
-  Eye,
   Download,
   Folder
 } from 'lucide-react';
@@ -1502,7 +1501,6 @@ export const OriginacionTab: React.FC = () => {
                       className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-red-600 dark:text-red-400"
                     />
                   </div>
-                </div>
                 </div>
               </div>
             </div>
