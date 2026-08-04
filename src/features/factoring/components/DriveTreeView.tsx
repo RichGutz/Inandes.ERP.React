@@ -58,6 +58,8 @@ const DriveTreeNode: React.FC<TreeNodeProps> = ({
     }
   };
 
+  const nodeRef = React.useRef<HTMLDivElement>(null);
+
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelectFolder({ id, name, path: currentPath });
@@ -66,14 +68,14 @@ const DriveTreeNode: React.FC<TreeNodeProps> = ({
         await fetchChildren();
       }
       setIsOpen(true);
+      setTimeout(() => {
+        if (nodeRef.current) {
+          nodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
     } else {
       setIsOpen(false);
     }
-  };
-
-  const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelectFolder({ id, name, path: currentPath });
   };
 
   const handleRefreshNode = async (e: React.MouseEvent) => {
@@ -83,9 +85,9 @@ const DriveTreeNode: React.FC<TreeNodeProps> = ({
   };
 
   return (
-    <div className="select-none">
+    <div className="select-none" ref={nodeRef}>
       <div
-        onClick={handleSelect}
+        onClick={handleToggle}
         className={`flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
           isSelected
             ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 font-bold'
