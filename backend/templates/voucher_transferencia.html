@@ -17,11 +17,36 @@
             color: #333;
         }
 
+        .header-logos {
+            width: 100%;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #2c3e50;
+        }
+        .header-logos table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-logos td {
+            vertical-align: middle;
+            border: none;
+        }
+        .logo-geeksoft {
+            text-align: left;
+        }
+        .logo-geeksoft img {
+            max-height: 40px;
+        }
+        .logo-inandes {
+            text-align: right;
+        }
+        .logo-inandes img {
+            max-height: 50px;
+        }
+
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
         }
 
         .header h1 {
@@ -154,6 +179,19 @@
 </head>
 
 <body>
+    <div class="header-logos">
+        <table>
+            <tr>
+                <td class="logo-geeksoft">
+                    <img src="file:///C:/Users/rguti/Inandes.ERP.React/public/Logo.Geeksoft.png" alt="Geeksoft">
+                </td>
+                <td class="logo-inandes">
+                    <img src="file:///C:/Users/rguti/Inandes.ERP.React/public/Logo.Inandes.jpeg" alt="InAndes">
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="header">
         <h1>VOUCHER DE TRANSFERENCIA BANCARIA</h1>
         <div class="subtitle">Documento de Referencia para Desembolso</div>

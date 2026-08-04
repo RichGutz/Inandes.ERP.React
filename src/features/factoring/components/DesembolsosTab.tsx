@@ -592,25 +592,33 @@ export const DesembolsosTab: React.FC = () => {
                 />
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {selectedInvoices.map(inv => (
-                  <div key={inv.proposal_id} className="flex items-center gap-4 border border-slate-200 dark:border-slate-700 p-3 rounded-lg">
+                  <div key={inv.proposal_id} className="flex items-center gap-4 border border-slate-200 dark:border-slate-700 p-4 rounded-lg bg-white dark:bg-slate-800">
                     <div className="flex-1 font-mono text-sm font-bold text-slate-700 dark:text-slate-300">
                       {parseInvoiceNumber(inv.proposal_id)}
                     </div>
-                    <div className="w-1/3 text-emerald-600 font-bold">
+                    <div className="w-1/4 text-emerald-600 font-bold text-lg">
                       {formatCurrency(getMontoDesembolso(inv), inv.moneda_factura)}
                     </div>
-                    <div className="w-1/2">
-                      <input 
-                        type="file"
-                        accept=".pdf, .png, .jpg, .jpeg"
-                        className="text-xs w-full text-slate-500"
-                        onChange={e => {
-                          const f = e.target.files?.[0];
-                          if (f) setIndividualFiles(prev => ({...prev, [inv.proposal_id]: f}));
-                        }}
-                      />
+                    <div className="flex-1 flex justify-end">
+                      <label className="cursor-pointer flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-md p-2 bg-slate-50 dark:bg-slate-900 transition-colors">
+                        <Upload size={18} className="text-indigo-500" />
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          {individualFiles[inv.proposal_id] 
+                            ? individualFiles[inv.proposal_id].name 
+                            : 'Subir Voucher Indiv.'}
+                        </span>
+                        <input 
+                          type="file"
+                          accept=".pdf, .png, .jpg, .jpeg"
+                          className="hidden"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) setIndividualFiles(prev => ({...prev, [inv.proposal_id]: f}));
+                          }}
+                        />
+                      </label>
                     </div>
                   </div>
                 ))}
