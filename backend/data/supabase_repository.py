@@ -128,7 +128,7 @@ def save_proposal(session_data: Proposal, identificador_lote: str) -> tuple[bool
         data_to_insert['proposal_id'] = f"{emisor_nombre_id}-{numero_factura}-{fecha_propuesta}"
 
         print(f"DEBUG: Data being sent to Supabase -> {json.dumps(data_to_insert, indent=4, default=str)}")
-        response = supabase.table('propuestas').insert(data_to_insert).execute()
+        response = supabase.table('propuestas').upsert(data_to_insert).execute()
         if hasattr(response, 'error') and response.error:
             raise Exception(response.error.message)
 
