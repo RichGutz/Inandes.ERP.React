@@ -299,7 +299,8 @@ export const OriginacionTab: React.FC = () => {
 
       if (field === 'monto_total_factura' || field === 'monto_neto_factura') {
         if (updated.monto_total_factura > 0) {
-          updated.detraccion_porcentaje = ((updated.monto_total_factura - updated.monto_neto_factura) / updated.monto_total_factura) * 100;
+          updated.detraccion_monto = updated.monto_total_factura - updated.monto_neto_factura;
+          updated.detraccion_porcentaje = (updated.detraccion_monto / updated.monto_total_factura) * 100;
         }
       }
 
@@ -389,6 +390,7 @@ export const OriginacionTab: React.FC = () => {
         const p1 = payload1[idx];
         return {
           ...inv,
+          detraccion_monto: inv.monto_total_factura - inv.monto_neto_factura,
           interes_mensual: inv.interes_mensual || interesMensualGlobal,
           interes_moratorio: inv.interes_moratorio || interesMoratorioGlobal,
           comision_de_estructuracion_global: aplicarComisionEstructuracion ? comisionEstructuracionPct : 0,
