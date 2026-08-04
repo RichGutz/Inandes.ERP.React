@@ -500,6 +500,7 @@ export const OriginacionTab: React.FC = () => {
   const handleClearSession = () => {
     sessionStorage.removeItem(SESSION_KEY);
     setInvoices([]);
+    setBucketsFiles({ 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] });
     setSimulacionResult(null);
     setFolderId('');
     setContractNumber('');
@@ -725,7 +726,7 @@ export const OriginacionTab: React.FC = () => {
             </div>
           </div>
 
-          {(invoices.length > 0 || folderId) && (
+          {(invoices.length > 0 || folderId || getTotalFiles() > 0) && (
             <button
               onClick={handleClearSession}
               className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 dark:bg-slate-800 dark:hover:bg-red-950/40 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
