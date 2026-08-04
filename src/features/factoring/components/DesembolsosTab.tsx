@@ -50,6 +50,7 @@ export const DesembolsosTab: React.FC = () => {
   const [sustentoUnico, setSustentoUnico] = useState(false);
   const [consolidatedFile, setConsolidatedFile] = useState<File | null>(null);
   const [individualFiles, setIndividualFiles] = useState<Record<string, File>>({});
+  const [individualDates, setIndividualDates] = useState<Record<string, string>>({});
 
   // Drive & Final
   const [selectedFolder, setSelectedFolder] = useState<{ id: string; name: string } | null>(null);
@@ -303,7 +304,7 @@ export const DesembolsosTab: React.FC = () => {
         desembolsos: selectedInvoices.map(inv => ({
           proposal_id: inv.proposal_id,
           monto: getMontoDesembolso(inv),
-          fecha: fechaDesembolso
+          fecha: sustentoUnico ? fechaDesembolso : (individualDates[inv.proposal_id] || fechaDesembolso)
         })),
         folder_id: selectedFolder.id,
         files: filesPayload
@@ -600,6 +601,15 @@ export const DesembolsosTab: React.FC = () => {
                     </div>
                     <div className="w-1/4 text-emerald-600 font-bold text-lg">
                       {formatCurrency(getMontoDesembolso(inv), inv.moneda_factura)}
+                    </div>
+                    <div className="w-1/4 flex flex-col gap-1 px-2">
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Fecha Desembolso</label>
+                      <input 
+                        type="date"
+                        value={individualDates[inv.proposal_id] || fechaDesembolso}
+                        onChange={e => setIndividualDates(prev => ({...prev, [inv.proposal_id]: e.target.value}))}
+                        className="w-full text-xs px-2 py-1.5 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
+                      />
                     </div>
                     <div className="flex-1 flex justify-end">
                       <label className="cursor-pointer flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-md p-2 bg-slate-50 dark:bg-slate-900 transition-colors">
