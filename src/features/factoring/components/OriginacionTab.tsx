@@ -386,10 +386,17 @@ export const OriginacionTab: React.FC = () => {
       setSimulacionResult(calcData2);
 
       // Adjuntar resultado individual a cada factura
-      const updatedInvoices = invoices.map((inv, idx) => ({
-        ...inv,
-        recalculate_result: calcData2.resultados_por_factura ? calcData2.resultados_por_factura[idx] : null
-      } as any));
+      const updatedInvoices = invoices.map((inv, idx) => {
+        const p1 = payload1[idx];
+        return {
+          ...inv,
+          interes_mensual: inv.interes_mensual || interesMensualGlobal,
+          interes_moratorio: inv.interes_moratorio || interesMoratorioGlobal,
+          comision_de_estructuracion_global: aplicarComisionEstructuracion ? comisionEstructuracionPct : 0,
+          comision_minima_calculada: p1.comision_minima_aplicable,
+          recalculate_result: calcData2.resultados_por_factura ? calcData2.resultados_por_factura[idx] : null
+        } as any;
+      });
       setInvoices(updatedInvoices);
 
       // Auto-generar PDFs inmediatamente después de simular
@@ -1375,16 +1382,6 @@ export const OriginacionTab: React.FC = () => {
             4. Resultados, Simulación y Formalización
           </h3>
 
-          {/* Botón Rojo Ancho CALCULAR DESEMBOLSO */}
-          <button
-            onClick={handleSimulate}
-            disabled={loadingStep}
-            className="w-full py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
-          >
-            {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <Calculator size={16} />}
-            CALCULAR DESEMBOLSO
-          </button>
-
           {/* Resumen Financiero post-simulación */}
           {simulacionResult && (
             <div className="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -1595,15 +1592,24 @@ export const OriginacionTab: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Botón Rojo Principal FORMALIZAR Y SUBIR TODO */}
-                  <div className="pt-4 flex justify-end border-t border-slate-200 dark:border-slate-800">
+                  {/* Botones de Acción Final */}
+                  <div className="pt-4 flex justify-between border-t border-slate-200 dark:border-slate-800 gap-4">
+                    <button
+                      onClick={handleSimulate}
+                      disabled={loadingStep}
+                      className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <Calculator size={16} />}
+                      CALCULAR DESEMBOLSO Y GENERAR PDFs
+                    </button>
+
                     <button
                       onClick={handleConfirmFormalize}
-                      disabled={formalizing || !folderId}
-                      className="px-8 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center gap-2 transition-colors cursor-pointer"
+                      disabled={formalizing || !folderId || !simulacionResult}
+                      className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
                       {formalizing ? <RefreshCw className="animate-spin h-4 w-4" /> : <Send size={16} />}
-                      💾 GUARDAR Y SUBIR TODO A GOOGLE DRIVE & SUPABASE
+                      💾 GUARDAR Y SUBIR A GOOGLE DRIVE
                     </button>
                   </div>
                 </div>
