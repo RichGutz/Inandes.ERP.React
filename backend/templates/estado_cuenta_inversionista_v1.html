@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 2.5cm 2cm 2.5cm 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .header table {
+            width: 100%;
+            border: none;
+        }
+
+        .header td {
+            vertical-align: top;
+            border: none;
+        }
+
+        .company-info {
+            font-size: 9pt;
+            width: 70%;
+        }
+
+        .company-name {
+            font-weight: bold;
+            font-size: 11pt;
+            text-decoration: underline;
+            margin-bottom: 5px;
+        }
+
+        .logo-container {
+            width: 30%;
+            text-align: right;
+            padding-top: 5px;
+        }
+
+        .logo-container img {
+            max-width: 173px;
+            max-height: 96px;
+        }
+
+        .title-box {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title-box h1 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .title-box h2 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .client-info {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .client-info p {
+            margin: 3px 0;
+        }
+
+        .client-name {
+            font-weight: bold;
+            margin-left: 20px;
+        }
+
+        .financial-data {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .fin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .fin-table td {
+            padding: 4px 0;
+            border: none;
+        }
+
+        .col-label {
+            width: 65%;
+        }
+
+        .col-currency {
+            width: 10%;
+            text-align: center;
+        }
+
+        .col-amount {
+            width: 25%;
+            text-align: right;
+            padding-right: 20px;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .spacer-row td {
+            padding: 8px 0;
+        }
+
+        .totals-section {
+            width: 100%;
+            margin-top: 40px;
+            margin-bottom: 40px;
+            border: 2px solid black;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .footer {
+            font-size: 8pt;
+            margin-top: 50px;
+            text-align: center;
+            color: #0d47a1;
+            /* Azul corporativo */
+        }
+
+        .footer p {
+            margin: 2px 0;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+
+<body>
+    {% for row in certs %}
+    <div class="header">
+        <table>
+            <tr>
+                <td class="company-info">
+                    <!-- Info movida al pie de página -->
+                </td>
+                <td class="logo-container">
+                    <img src="file:///{{ logo_path }}" alt="Logo Inandes" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="title-box">
+        <h1>ESTADO DE CUENTA DEL FONDO {{ row.fondo_nombre }} – FONDO DE INVERSION PRIVADO</h1>
+        <h2>DEL {{ row.fecha_inicio_str }} AL {{ row.fecha_fin_str }}</h2>
+    </div>
+
+    <div class="client-info">
+        <p>Sr(a)(s):</p>
+        <p class="client-name">{{ row.inversionista_nombre }}</p>
+        <p style="margin-top: 10px;">Certificado N°: {{ row.id_certificado }}</p>
+    </div>
+
+    <div class="financial-data">
+        <table class="fin-table">
+            <tr>
+                <td class="col-label">Monto inicial invertido:</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.capital_inicial) }}</td>
+            </tr>
+            <tr>
+                <td class="col-label">Ganancia bruta obtenida:</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.bruto_total) }}</td>
+            </tr>
+            <tr class="spacer-row">
+                <td colspan="3"></td>
+            </tr>
+
+            <tr>
+                <td class="col-label">(-) Impuesto a la renta retenido</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.impuesto) }}</td>
+            </tr>
+            <tr>
+                <td class="col-label">(-) Deducciones</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.deducciones) }}</td>
+            </tr>
+            <tr>
+                <td class="col-label bold">Ganancia disponible al inversionista</td>
+                <td class="col-currency bold">{{ row.moneda }}</td>
+                <td class="col-amount bold">{{ format_num(row.neto_disponible) }}</td>
+            </tr>
+            <tr class="spacer-row">
+                <td colspan="3"></td>
+            </tr>
+
+            <tr>
+                <td class="col-label">Ganancias capitalizadas para adquirir nuevas cuotas</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.capitalizacion) }}</td>
+            </tr>
+
+            <tr>
+                <td class="col-label">Rescates</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num(row.rescates) }}</td>
+            </tr>
+
+            <tr>
+                <td class="col-label bold">Monto transferido a su cuenta bancaria</td>
+                <td class="col-currency bold">{{ row.moneda }}</td>
+                <td class="col-amount bold">{{ format_num(row.monto_transferido) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="totals-section">
+        <table class="fin-table">
+            <tr>
+                <td class="col-label bold">Monto de la inversión al {{ row.fecha_fin_str }}</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount bold">{{ format_num(row.capital_final) }}</td>
+            </tr>
+            <tr>
+                <td class="col-label bold">Número de cuotas al {{ row.fecha_fin_str }}</td>
+                <td class="col-currency">CUOTAS</td>
+                <td class="col-amount bold">{{ format_vc(row.cuotas_final) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima |
+            Teléfono: + (511) 7121700 | info@inandes.com</p>
+    </div>
+
+    {% if not loop.last %}<div class="page-break"></div>{% endif %}
+    {% endfor %}
+</body>
+
+</html>

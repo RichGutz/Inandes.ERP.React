@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Condensado de Intereses V33</title>
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 0.7cm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 7pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .fondo-page {
+            page-break-after: always;
+        }
+
+        .fondo-page:last-child {
+            page-break-after: avoid;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4px;
+            border-bottom: 2px solid #004d40;
+            padding-bottom: 3px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 11pt;
+            color: #004d40;
+        }
+
+        .header p {
+            margin: 1px 0;
+            font-size: 7pt;
+            color: #555;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 1px 2px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        th {
+            background-color: #b2dfdb;
+            color: #004d40;
+            font-weight: bold;
+            text-align: center;
+            font-size: 6.5pt;
+        }
+
+        td {
+            font-size: 6.5pt;
+        }
+
+        /* --- Column classes --- */
+        .c-idx  { width: 15px; text-align: center; background: #f5f5f5; font-weight: bold; }
+        .c-cert { width: 114px; text-align: left; font-weight: bold; background: #f5f5f5; font-size: 6pt; color: #1a237e; }
+        .c-inv  { width: 252px; text-align: left; font-size: 6pt; }
+        .c-cap  { width: 48px; background: #e0f2f1; color: #004d40; }
+        .c-tasa { width: 29px; text-align: center; background: #e8eaf6; color: #283593; font-weight: bold; }
+
+        /* Period columns — orden: INT. DIARIO | INICIO | FIN | N° DÍAS */
+        .c-diario { width: 38px; background: #f3e5f5; color: #4a148c; font-weight: bold; }
+        .c-fecha  { width: 26px; text-align: center; background: #fce4ec; color: #880e4f; }
+        .c-ndias  { width: 24px; text-align: center; background: #ede7f6; color: #311b92; }
+
+        /* Summary columns */
+        .c-tot   { width: 40px; background: #fff9c4; font-weight: bold; color: #333; }
+        .c-ir    { width: 34px; background: #ffebee; color: #c62828; font-weight: bold; }
+        .c-neto  { width: 40px; background: #e3f2fd; color: #0d47a1; font-weight: bold; }
+        .c-cap2  { width: 38px; background: #f1f8e9; color: #1b5e20; }
+        .c-rep   { width: 38px; background: #e3f2fd; color: #004d40; }
+        .c-ded   { width: 36px; background: #fff8e1; color: #e65100; }
+        .c-netof { width: 40px; background: #c8e6c9; color: #1b5e20; font-weight: bold; }
+        .c-resc  { width: 38px; background: #fff3e0; color: #c62828; }
+        .c-pen   { width: 34px; background: #fbe9e7; color: #c62828; }
+        .c-aum   { width: 38px; background: #f9fbe7; color: #33691e; }
+        .c-capf  { width: 44px; background: #81c784; color: #000; font-weight: bold; }
+
+        /* Aumento sub-rows */
+        .aumento-row td {
+            background: #fafafa !important;
+            color: #777;
+            font-size: 6pt;
+        }
+        .aumento-cert {
+            color: #2e7d32 !important;
+            font-style: italic;
+            padding-left: 8px !important;
+            border-left: 3px solid #43a047;
+        }
+
+        .footer-note {
+            text-align: right;
+            color: #aaa;
+            font-size: 5pt;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+{% for f in fondos %}
+<div class="fondo-page">
+    <div class="header">
+        <h1>Reporte de Intereses Pasivos V32 (Deducciones Reales): {{ f.fondo.nombre_fondo }} ({{ f.fondo.id_fondo }})</h1>
+        <p>Tasa Pasiva: {{ f.vars.tasa_display }} (Base 365) &nbsp;|&nbsp;
+           Período: {{ f.blocks[0].month_name }} – {{ f.blocks[-1].month_name }}
+           &nbsp;|&nbsp; Formato Condensado V33
+        </p>
+    </div>
+
+    {# Identify the last block (contains summary columns) #}
+    {% set last_block = f.blocks[-1] %}
+
+    <table>
+        <thead>
+            <tr>
+                <th class="c-idx">#</th>
+                <th class="c-cert">CERTIFICADO</th>
+                <th class="c-inv">INVERSIONISTA</th>
+                <th class="c-cap">CAPITAL BASE</th>
+                <th class="c-tasa">TASA</th>
+                <th class="c-diario">INT. DIARIO</th>
+                <th class="c-fecha">INICIO</th>
+                <th class="c-fecha">FIN</th>
+                <th class="c-ndias">N° DÍAS</th>
+                <th class="c-tot">INT. BRUTO</th>
+                <th class="c-ir">IR (5%)</th>
+                <th class="c-neto">INT. NETO</th>
+                <th class="c-cap2">CAPITALIZ.</th>
+                <th class="c-rep">REPARTO</th>
+                <th class="c-ded">DEDUC.</th>
+                <th class="c-netof">NETO FINAL</th>
+                <th class="c-resc">RESCATES</th>
+                <th class="c-pen">PENALIDAD</th>
+                <th class="c-aum">AUM. CAP.</th>
+                <th class="c-capf">CAPITAL FINAL</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row_idx in range(last_block.rows|length) %}
+            {% set row = last_block.rows[row_idx] %}
+
+            {# Build combined values + days across ALL blocks for this row position #}
+            {% set ns = namespace(all_vals=[], all_days=[]) %}
+            {% for block in f.blocks %}
+                {% for vi in range(block.rows[row_idx].valores|length) %}
+                    {% set _ = ns.all_vals.append(block.rows[row_idx].valores[vi]) %}
+                    {% set _ = ns.all_days.append(block.days[vi]) %}
+                {% endfor %}
+            {% endfor %}
+
+            {# Compute period summary: first non-zero day, last non-zero day, count #}
+            {% set ps = namespace(int_diario=0.0, n_dias=0, inicio='–', fin='–') %}
+            {% for i in range(ns.all_vals|length) %}
+                {% if ns.all_vals[i] > 0 %}
+                    {% if ps.int_diario == 0.0 %}
+                        {% set ps.int_diario = ns.all_vals[i] %}
+                        {% set ps.inicio = ns.all_days[i] %}
+                    {% endif %}
+                    {% set ps.n_dias = ps.n_dias + 1 %}
+                    {% set ps.fin = ns.all_days[i] %}
+                {% endif %}
+            {% endfor %}
+
+            {% if row.tipo == 'CERT' %}
+            <tr>
+                <td class="c-idx">{{ row.n_orden }}</td>
+                <td class="c-cert">{{ row.id }}</td>
+                <td class="c-inv">{{ row.inversionista }}</td>
+                <td class="c-cap">{{ format_num(row.capital) }}</td>
+                <td class="c-tasa">{{ row.tasa_cert }}</td>
+                <td class="c-diario">{{ format_num(ps.int_diario) }}</td>
+                <td class="c-fecha">{{ ps.inicio }}</td>
+                <td class="c-fecha">{{ ps.fin }}</td>
+                <td class="c-ndias">{{ ps.n_dias if ps.n_dias > 0 else '–' }}</td>
+                <td class="c-tot">{{ format_num(row.bruto_total) }}</td>
+                <td class="c-ir">-{{ format_num(row.impuesto_total) }}</td>
+                <td class="c-neto">{{ format_num(row.base_neta) }}</td>
+                <td class="c-cap2">{{ format_num(row.capitalizacion) }}</td>
+                <td class="c-rep">{{ format_num(row.reparto_valor) }}</td>
+                <td class="c-ded">-{{ format_num(row.deducciones_total) }}</td>
+                <td class="c-netof">{{ format_num(row.neto_total) }}</td>
+                <td class="c-resc">-{{ format_num(row.devolucion_capital) }}</td>
+                <td class="c-pen">-{{ format_num(row.penalidad_rescate) }}</td>
+                <td class="c-aum">{{ format_num(row.aumentos) }}</td>
+                <td class="c-capf">{{ format_num(row.capital_final) }}</td>
+            </tr>
+            {% else %}
+            <tr class="aumento-row">
+                <td class="c-idx"></td>
+                <td class="c-cert aumento-cert">{{ row.id }}</td>
+                <td class="c-inv"></td>
+                <td class="c-cap">{{ format_num(row.capital) }}</td>
+                <td class="c-tasa">{{ row.tasa_cert }}</td>
+                <td class="c-diario">{{ format_num(ps.int_diario) }}</td>
+                <td class="c-fecha">{{ ps.inicio }}</td>
+                <td class="c-fecha">{{ ps.fin }}</td>
+                <td class="c-ndias">{{ ps.n_dias if ps.n_dias > 0 else '–' }}</td>
+                <td colspan="11" style="background:#fafafa;"></td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background:#b2dfdb; font-weight:bold; border-top:2px solid #004d40; font-size:6.5pt;">
+                <td class="c-idx"></td>
+                <td class="c-cert" style="text-align:center; color:#004d40;">TOTAL</td>
+                <td class="c-inv"></td>
+                <td class="c-cap" style="background:#80cbc4;">{{ format_num(f.totals.capital) }}</td>
+                <td class="c-tasa"></td>
+                <td class="c-diario" style="background:#ce93d8;">{{ format_num(f.totals.int_diario) }}</td>
+                <td class="c-fecha"></td>
+                <td class="c-fecha"></td>
+                <td class="c-ndias"></td>
+                <td class="c-tot" style="background:#f9a825;">{{ format_num(f.totals.bruto_total) }}</td>
+                <td class="c-ir" style="background:#ef9a9a;">-{{ format_num(f.totals.impuesto_total) }}</td>
+                <td class="c-neto" style="background:#90caf9;">{{ format_num(f.totals.base_neta) }}</td>
+                <td class="c-cap2" style="background:#a5d6a7;">{{ format_num(f.totals.capitalizacion) }}</td>
+                <td class="c-rep" style="background:#81d4fa;">{{ format_num(f.totals.reparto_valor) }}</td>
+                <td class="c-ded" style="background:#ffcc80;">-{{ format_num(f.totals.deducciones_total) }}</td>
+                <td class="c-netof" style="background:#66bb6a;">{{ format_num(f.totals.neto_total) }}</td>
+                <td class="c-resc" style="background:#ffb74d;">-{{ format_num(f.totals.devolucion_capital) }}</td>
+                <td class="c-pen" style="background:#ff8a65;">-{{ format_num(f.totals.penalidad_rescate) }}</td>
+                <td class="c-aum" style="background:#dce775;">{{ format_num(f.totals.aumentos) }}</td>
+                <td class="c-capf" style="background:#43a047; color:#fff;">{{ format_num(f.totals.capital_final) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="footer-note">
+        Generado por Antigravity V33 (Condensado) — {{ print_date }}
+        &nbsp;|&nbsp; El detalle diario completo se encuentra en el Excel de auditoría.
+    </div>
+</div>
+{% endfor %}
+</body>
+
+</html>

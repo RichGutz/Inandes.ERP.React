@@ -28,8 +28,9 @@ def _generate_pdf_in_memory(
     """
     Core PDF generation function that returns the PDF as bytes.
     """
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    templates_dir = os.path.join(project_root, 'src', 'templates')
+    # utils/pdf_generators.py -> backend/utils/ -> backend/
+    backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    templates_dir = os.path.join(backend_root, 'templates')
     
     env = Environment(loader=FileSystemLoader(templates_dir))
     env.filters['format_currency'] = _format_currency
@@ -37,7 +38,7 @@ def _generate_pdf_in_memory(
 
     html_out = template.render(template_data)
     
-    base_url = project_root
+    base_url = backend_root
     return HTML(string=html_out, base_url=base_url).write_pdf()
 
 # --- Public Functions for Specific Reports ---

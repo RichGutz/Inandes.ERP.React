@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Liquidación Universal</title>
+    <style>
+        @page {
+            size: portrait;
+            margin: 0.5in;
+
+            @top-right {
+                content: element(header-logo);
+                padding-top: 2cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 9px;
+        }
+
+        #header-logo {
+            position: running(header-logo);
+            width: 120px;
+            height: auto;
+            text-align: right;
+        }
+
+        #header-logo img {
+            max-width: 120px;
+            height: auto;
+        }
+
+        .liquidacion-page {
+            page-break-after: always;
+        }
+
+        .liquidacion-page:last-of-type {
+            page-break-after: always;
+        }
+
+        .resumen-page {
+            page-break-before: always;
+        }
+
+        .header {
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        .header h2 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 9px;
+        }
+
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .metric {
+            text-align: center;
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 8px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .metric-value {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 8px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: left;
+            line-height: 1.2;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            padding: 6px 5px;
+        }
+
+        .section-header {
+            background-color: #dee2e6;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .highlight-row {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+
+        .total-row {
+            background-color: #d1ecf1;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 15px;
+            font-size: 7px;
+            text-align: center;
+            color: #666;
+        }
+
+        .positive {
+            color: #28a745;
+        }
+
+        .negative {
+            color: #dc3545;
+        }
+
+        /* Estilos para resumen */
+        .resumen-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .resumen-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+
+        .resumen-table {
+            font-size: 9px;
+        }
+
+        .resumen-total {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header-logo">
+        <img src="static/logo_inandes.png" alt="Logo">
+    </div>
+
+    {% for liq in liquidaciones %}
+    <div class="liquidacion-page">
+        <div class="header">
+            <h2>Reporte de Liquidación Universal</h2>
+            <p><strong>Fecha:</strong> {{ print_date }} |
+                <strong>Factura:</strong> {{ liq.factura.numero_factura or 'N/A' }} |
+                <strong>Emisor:</strong> {{ liq.factura.emisor_nombre or 'N/A' }}
+            </p>
+        </div>
+
+        <!-- Métricas principales -->
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-label">Saldo Global Final</div>
+                <div class="metric-value">S/ {{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Estado</div>
+                <div class="metric-value">{{ liq.resultado.estado_operacion or 'N/A' }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Días de Mora</div>
+                <div class="metric-value">{{ liq.resultado.dias_mora or 0 }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Backdoor</div>
+                <div class="metric-value">{{ 'Sí' if liq.resultado.back_door_aplicado else 'No' }}</div>
+            </div>
+        </div>
+
+        <!-- Tabla detallada -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Item</th>
+                    <th style="width: 15%;">Monto (S/)</th>
+                    <th style="width: 25%;">Fórmula</th>
+                    <th style="width: 30%;">Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- DATOS DE LA OPERACIÓN -->
+                <tr class="section-header">
+                    <td colspan="4">DATOS DE LA OPERACIÓN</td>
+                </tr>
+                <tr>
+                    <td>Capital Operación</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
+                    <td>Dato original</td>
+                    <td>Capital financiado</td>
+                </tr>
+                <tr>
+                    <td>Monto Desembolsado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.monto_desembolsado or 0) }}</td>
+                    <td>Dato original</td>
+                    <td>Monto entregado al cliente</td>
+                </tr>
+                <tr>
+                    <td>Monto Pagado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>Dato de entrada</td>
+                    <td>Monto recibido del cliente</td>
+                </tr>
+
+                <!-- PERÍODOS -->
+                <tr class="section-header">
+                    <td colspan="4">PERÍODOS Y FECHAS</td>
+                </tr>
+                <tr>
+                    <td>Fecha de Desembolso</td>
+                    <td>-</td>
+                    <td>Dato original</td>
+                    <td>{{ liq.factura.fecha_desembolso or 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td>Fecha de Vencimiento</td>
+                    <td>-</td>
+                    <td>Dato original</td>
+                    <td>{{ liq.factura.fecha_pago_calculada or 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td>Fecha de Liquidación (Pago Real)</td>
+                    <td>-</td>
+                    <td>Dato de entrada</td>
+                    <td>{{ liq.resultado.fecha_liquidacion or 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td>Días Transcurridos</td>
+                    <td>{{ liq.resultado.dias_transcurridos or 0 }}</td>
+                    <td>Fecha Liq - Fecha Desemb</td>
+                    <td>Días desde desembolso hasta pago</td>
+                </tr>
+                <tr>
+                    <td>Días de Mora</td>
+                    <td>{{ liq.resultado.dias_mora or 0 }}</td>
+                    <td>Fecha Liq - Fecha Venc</td>
+                    <td>Días de atraso (si aplica)</td>
+                </tr>
+
+                <!-- TASAS APLICADAS -->
+                <tr class="section-header">
+                    <td colspan="4">TASAS APLICADAS</td>
+                </tr>
+                <tr>
+                    <td>Tasa Interés Compensatorio</td>
+                    <td>{{ "{:.2f}".format((liq.factura.interes_mensual or 0) * 100) }}%</td>
+                    <td>Mensual</td>
+                    <td>Tasa aplicada a la operación</td>
+                </tr>
+                <tr>
+                    <td>Tasa Interés Moratorio</td>
+                    <td>{{ "{:.2f}".format((liq.factura.interes_moratorio or 0) * 100) }}%</td>
+                    <td>Mensual</td>
+                    <td>Tasa aplicada en caso de mora</td>
+                </tr>
+
+                <!-- INTERÉS COMPENSATORIO -->
+                <tr class="section-header">
+                    <td colspan="4">INTERÉS COMPENSATORIO</td>
+                </tr>
+                <tr>
+                    <td>→ Facturado (Original)</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_original or 0) }}</td>
+                    <td>Valor original</td>
+                    <td>Interés cobrado al desembolsar</td>
+                </tr>
+                <tr>
+                    <td>→ Devengado (Calculado)</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }}</td>
+                    <td>Capital × Tasa × Días/30</td>
+                    <td>Interés real devengado</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>→ <strong>Delta{% if liq.resultado.back_door_aplicado %} (antes de backdoor){% endif %}</strong>
+                    </td>
+                    <td
+                        class="{{ 'positive' if (liq.resultado.delta_intereses_original if liq.resultado.back_door_aplicado else liq.resultado.delta_intereses or 0) >= 0 else 'negative' }}">
+                        <strong>{{ "{:+,.2f}".format(liq.resultado.delta_intereses_original if
+                            liq.resultado.back_door_aplicado else liq.resultado.delta_intereses or 0) }}</strong>
+                    </td>
+                    <td>Devengado - Facturado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }} - {{
+                        "{:,.2f}".format(liq.resultado.interes_original or 0) }}</td>
+                </tr>
+
+                <!-- IGV SOBRE INTERESES -->
+                <tr class="section-header">
+                    <td colspan="4">IGV SOBRE INTERESES</td>
+                </tr>
+                <tr>
+                    <td>→ Facturado (Original)</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.igv_original or 0) }}</td>
+                    <td>Valor original</td>
+                    <td>IGV cobrado al desembolsar</td>
+                </tr>
+                <tr>
+                    <td>→ Devengado (Calculado)</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.igv_interes_devengado or 0) }}</td>
+                    <td>Interés Devengado × 18%</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }} × 18%</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>→ <strong>Delta{% if liq.resultado.back_door_aplicado %} (antes de backdoor){% endif %}</strong>
+                    </td>
+                    <td
+                        class="{{ 'positive' if (liq.resultado.delta_igv_intereses_original if liq.resultado.back_door_aplicado else liq.resultado.delta_igv_intereses or 0) >= 0 else 'negative' }}">
+                        <strong>{{ "{:+,.2f}".format(liq.resultado.delta_igv_intereses_original if
+                            liq.resultado.back_door_aplicado else liq.resultado.delta_igv_intereses or 0) }}</strong>
+                    </td>
+                    <td>Devengado - Facturado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.igv_interes_devengado or 0) }} - {{
+                        "{:,.2f}".format(liq.resultado.igv_original or 0) }}</td>
+                </tr>
+
+                <!-- INTERESES MORATORIOS (si hay mora) -->
+                {% if (liq.resultado.dias_mora or 0) > 0 %}
+                <tr class="section-header">
+                    <td colspan="4">INTERESES MORATORIOS</td>
+                </tr>
+                <tr>
+                    <td>→ Interés Moratorio</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }}</td>
+                    <td>Capital × Tasa Mora × Días/30</td>
+                    <td>{{ liq.resultado.dias_mora or 0 }} días de mora</td>
+                </tr>
+                <tr>
+                    <td>→ IGV Moratorio</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.igv_moratorio or 0) }}</td>
+                    <td>Interés Mora × 18%</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }} × 18%</td>
+                </tr>
+                {% endif %}
+
+                <!-- CAPITAL -->
+                <tr class="section-header">
+                    <td colspan="4">CAPITAL</td>
+                </tr>
+                <tr>
+                    <td>→ Capital Operación</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
+                    <td>Dato original</td>
+                    <td>Capital a recuperar</td>
+                </tr>
+                <tr>
+                    <td>→ Monto Pagado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>Dato de entrada</td>
+                    <td>Monto recibido</td>
+                </tr>
+                <tr class="highlight-row">
+                    <td>→ <strong>Delta{% if liq.resultado.back_door_aplicado %} (antes de backdoor){% endif %}</strong>
+                    </td>
+                    <td
+                        class="{{ 'positive' if (liq.resultado.delta_capital_original if liq.resultado.back_door_aplicado else liq.resultado.delta_capital or 0) >= 0 else 'negative' }}">
+                        <strong>{{ "{:+,.2f}".format(liq.resultado.delta_capital_original if
+                            liq.resultado.back_door_aplicado else liq.resultado.delta_capital or 0) }}</strong>
+                    </td>
+                    <td>Capital - Pagado</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }} - {{
+                        "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                </tr>
+
+                <!-- SALDO GLOBAL -->
+                <tr class="section-header">
+                    <td colspan="4">SALDO GLOBAL{% if liq.resultado.back_door_aplicado %} (después de backdoor){% endif
+                        %}</td>
+                </tr>
+                <tr>
+                    <td>→ Delta Intereses</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.delta_intereses or 0) }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>→ Delta IGV Intereses</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.delta_igv_intereses or 0) }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>→ Interés Moratorio</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>→ IGV Moratorio</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.igv_moratorio or 0) }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>→ Delta Capital</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.delta_capital or 0) }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>Saldo antes de Backdoor</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(liq.resultado.saldo_original or 0) }}</strong></td>
+                    <td>Suma de componentes</td>
+                    <td>Suma de todos los deltas</td>
+                </tr>
+
+                <!-- BACKDOOR (si aplica) -->
+                {% if liq.resultado.back_door_aplicado %}
+                <tr class="section-header">
+                    <td colspan="4">BACKDOOR</td>
+                </tr>
+                <tr>
+                    <td>Condición</td>
+                    <td colspan="3">Saldo < {{ "{:,.2f}" .format(liq.resultado.monto_minimo_configurado or 0) }}</td>
+                </tr>
+                {% if liq.resultado.reducciones_aplicadas %}
+                {% for red in liq.resultado.reducciones_aplicadas %}
+                <tr>
+                    <td>{{ loop.index }}. {{ red.concepto or 'N/A' }}</td>
+                    <td>{{ "{:,.2f}".format(red.valor_antes or 0) }} → {{ "{:,.2f}".format(red.valor_despues or 0) }}
+                    </td>
+                    <td>Reducción</td>
+                    <td>Saldo: {{ "{:,.2f}".format(red.saldo_resultante or 0) }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+                {% endif %}
+
+                <!-- RESULTADO FINAL -->
+                <tr class="section-header">
+                    <td colspan="4">RESULTADO FINAL</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>Saldo Global Final</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}</strong></td>
+                    <td>Después de backdoor</td>
+                    <td>{{ liq.resultado.estado_operacion or 'N/A' }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Generado automáticamente por el Sistema de Liquidación Universal INANDES
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- PÁGINA DE RESUMEN CONSOLIDADO -->
+    <div class="resumen-page">
+        <div class="resumen-header">
+            <h1>Resumen Consolidado de Liquidación</h1>
+            <p><strong>Fecha de Generación:</strong> {{ print_date }}</p>
+            <p><strong>Total de Facturas Liquidadas:</strong> {{ liquidaciones|length }}</p>
+        </div>
+
+        <table class="resumen-table">
+            <thead>
+                <tr>
+                    <th>Factura</th>
+                    <th>Emisor</th>
+                    <th>Capital</th>
+                    <th>Monto Pagado</th>
+                    <th>Saldo Final</th>
+                    <th>Días Mora</th>
+                    <th>Estado</th>
+                    <th>Backdoor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(total_capital=0, total_pagado=0, total_saldo=0) %}
+                {% for liq in liquidaciones %}
+                {% set ns.total_capital = ns.total_capital + (liq.resultado.capital_operacion or 0) %}
+                {% set ns.total_pagado = ns.total_pagado + (liq.resultado.monto_pagado or 0) %}
+                {% set ns.total_saldo = ns.total_saldo + (liq.resultado.saldo_global or 0) %}
+                <tr>
+                    <td>{{ liq.factura.numero_factura or 'N/A' }}</td>
+                    <td>{{ liq.factura.emisor_nombre or 'N/A' }}</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
+                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td class="{{ 'positive' if (liq.resultado.saldo_global or 0) <= 0 else 'negative' }}">
+                        {{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}
+                    </td>
+                    <td>{{ liq.resultado.dias_mora or 0 }}</td>
+                    <td>{{ liq.resultado.estado_operacion or 'N/A' }}</td>
+                    <td>{{ 'Sí' if liq.resultado.back_door_aplicado else 'No' }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="resumen-total">
+                    <td colspan="2"><strong>TOTALES</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(ns.total_capital) }}</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(ns.total_pagado) }}</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(ns.total_saldo) }}</strong></td>
+                    <td colspan="3"></td>
+                </tr>
+            </tbody>
+        </table>
+
+
+
+        <div class="footer">
+            Generado automáticamente por el Sistema de Liquidación Universal INANDES
+        </div>
+    </div>
+</body>
+
+</html>

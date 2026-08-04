@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Simulación de Cupones</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 8pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #004d40;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16pt;
+            color: #004d40;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background-color: #004d40;
+            color: white;
+            font-weight: bold;
+            padding: 5px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        td {
+            padding: 4px;
+            border: 1px solid #ccc;
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .formula-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 7pt;
+            color: #555;
+            background-color: #f9f9f9;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .totals-row {
+            background-color: #e0f2f1 !important;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 7pt;
+            color: #999;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Simulación de Cálculo de Cupones - Periodo {{ periodo }}</h1>
+        <p>Fecha de Proceso: {{ print_date }} | Rango: {{ fecha_inicio }} al {{ fecha_fin }}</p>
+    </div>
+
+    {% for fondo_name, data in fondos_data.items() %}
+    <h2 style="color: #004d40; border-bottom: 1px solid #004d40; margin-top: 30px;">Fondo: {{ fondo_name }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>ID Certificado</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Días</th>
+                <th>Capital Inicial</th>
+                <th>Tasa Anual</th>
+                <th>Fórmula de Cálculo</th>
+                <th>Int. Bruto</th>
+                <th>I.R. (5%)</th>
+                <th>Int. Neto</th>
+                <th>% Rep.</th>
+                <th>Cupón (Reparto)</th>
+                <th>Capitalización</th>
+                <th>Deduc.</th>
+                <th>Nuevo Capital</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in data.certificados %}
+            <tr>
+                <td class="text-center">{{ c.correlativo }}</td>
+                <td class="text-left">{{ c.id_certificado }}</td>
+                <td class="text-center">{{ c.fecha_inicio }}</td>
+                <td class="text-center">{{ c.fecha_fin }}</td>
+                <td class="text-center">{{ c.dias }}</td>
+                <td>{{ c.capital_inicial | format_currency('') }}</td>
+                <td class="text-center">{{ (c.tasa * 100) | round(2) }}%</td>
+                <td class="text-left formula-cell">{{ c.formula }}</td>
+                <td>{{ c.interes_bruto | format_currency('') }}</td>
+                <td>{{ c.impuesto | format_currency('') }}</td>
+                <td>{{ c.interes_neto | format_currency('') }}</td>
+                <td class="text-center">{{ c.pct_reparto | round(0) }}%</td>
+                <td>{{ c.cupon | format_currency('') }}</td>
+                <td>{{ c.capitalizacion | format_currency('') }}</td>
+                <td>{{ c.deducciones | format_currency('') }}</td>
+                <td>{{ c.nuevo_capital | format_currency('') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="totals-row">
+                <td colspan="8" class="text-right">TOTALES {{ fondo_name }}:</td>
+                <td>{{ data.total_bruto | format_currency('') }}</td>
+                <td>{{ data.total_impuesto | format_currency('') }}</td>
+                <td>{{ data.total_neto | format_currency('') }}</td>
+                <td>-</td>
+                <td>{{ data.total_cupon | format_currency('') }}</td>
+                <td>{{ data.total_capitalizacion | format_currency('') }}</td>
+                <td>{{ data.total_deducciones | format_currency('') }}</td>
+                <td>{{ data.total_nuevo_capital | format_currency('') }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% endfor %}
+
+    <div class="footer">
+        Generado por Sistema CRM INANDES - Reporte de Verificación Matemática
+    </div>
+</body>
+
+</html>

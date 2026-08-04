@@ -52,6 +52,37 @@ def get_razon_social_by_ruc(ruc: str) -> str:
         print(f"[ERROR in get_razon_social_by_ruc]: {e}")
         return ""
 
+def get_bulk_emisor_data(rucs: List[str]) -> Dict[str, Any]:
+    """
+    1 sola query a Supabase para obtener Razon Social + condiciones financieras
+    de multiples RUCs a la vez.
+    Retorna dict keyed por RUC: { ruc: { 'razon_social': ..., 'rates': {...} } }
+    Reemplaza el patron N*3 queries por 1 query total en parse-invoices.
+    """
+    if not rucs:
+        return {}
+    clean_rucs = list({str(r).strip() for r in rucs if r})
+    if not clean_rucs:
+        return {}
+    supabase = get_supabase_client()
+    result: Dict[str, Any] = {}
+    try:
+        response = supabase.table('EMISORES.ACEPTANTES').select(
+            'RUC, "Razon Social", tasa_avance, interes_mensual_pen, interes_moratorio_pen, '
+            'interes_mensual_usd, interes_moratorio_usd, comision_estructuracion_pen, '
+            'comision_estructuracion_usd, comision_estructuracion_pct, '
+            'comision_afiliacion_pen, comision_afiliacion_usd, dias_minimos_interes'
+        ).in_('RUC', clean_rucs).execute()
+        for row in (response.data or []):
+            ruc_key = str(row.get('RUC', '')).strip()
+            result[ruc_key] = {
+                'razon_social': row.get('Razon Social', ''),
+                'rates': {k: v for k, v in row.items() if k not in ('RUC', 'Razon Social')}
+            }
+    except Exception as e:
+        print(f"[ERROR in get_bulk_emisor_data]: {e}")
+    return result
+
 @measure_latency(source="MiniERP", destination="Supabase DB", operation_name="Save Proposal")
 def save_proposal(session_data: Proposal, identificador_lote: str) -> tuple[bool, str]:
     """Saves a complete proposal to the 'propuestas' table."""

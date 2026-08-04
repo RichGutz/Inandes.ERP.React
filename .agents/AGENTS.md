@@ -40,3 +40,12 @@ Si se necesita ver la UI, pedirle al usuario que la abra el mismo y describa lo 
 Los agentes de IA NO deben intentar resolver problemas complejos o ambiguos de forma aislada a ciegas. 
 Deben consultar y apoyarse activamente en el usuario (quien conoce el negocio y el contexto) para diagnosticar y decidir la solucion correcta, evitando bucles fallidos y perdida de tiempo.
 
+## Regla 5 - LECTURA OBLIGATORIA al Iniciar Sesion
+
+AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer el siguiente archivo antes de tomar cualquier accion:
+
+  C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\Bienvenido.md
+
+Este archivo contiene los principios fundamentales, la arquitectura del proyecto, el estado de modulos y las URLs/credenciales clave.
+No leerlo equivale a operar sin contexto y es causa de errores graves.
+

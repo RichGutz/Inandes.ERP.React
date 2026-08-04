@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Maestro de Cuotas - V26 (NAV Focused)</title>
+    <style>
+        @page {
+            size: A2 landscape;
+            margin: 0.8cm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 8pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #01579b;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 13pt;
+            color: #01579b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-bottom: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 2px;
+            text-align: right;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #0288d1;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 7pt;
+        }
+
+        .num-col {
+            width: 25px;
+            text-align: center;
+            background-color: #f5f5f5;
+            color: #000 !important;
+            font-weight: bold;
+        }
+
+        .cert-id-col {
+            width: 160px;
+            text-align: left;
+            font-weight: bold;
+            background-color: #f5f5f5;
+            color: #333 !important;
+            font-size: 6.5pt;
+        }
+
+        .cap-col {
+            width: 70px;
+            background-color: #e3f2fd;
+            color: #333 !important;
+            font-size: 7pt;
+        }
+
+        .cuotas-col {
+            width: 65px;
+            background-color: #f1f8e9;
+            color: #000 !important;
+            font-size: 6.5pt;
+        }
+
+        .day-col {
+            width: 35px !important;
+            font-size: 6pt;
+        }
+
+        /* Estilo para sub-filas de aumentos */
+        .aumento-row td {
+            background-color: #fafafa;
+        }
+
+        .aumento-label {
+            padding-left: 10px !important;
+            color: #2e7d32 !important;
+            font-style: italic;
+            font-size: 6pt !important;
+            border-left: 3px solid #43a047;
+        }
+
+        /* Estilos de Totales (V20 Style) */
+        .summary-row td {
+            font-weight: bold !important;
+            background-color: #fff9c4 !important;
+            color: #000 !important;
+        }
+
+        .comision-row td {
+            color: #c62828 !important;
+            background-color: #ffebee !important;
+        }
+
+        .spacer-row td {
+            height: 8px;
+            background-color: #f5f5f5;
+            border: none;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        .vc-highlight {
+            color: #0d47a1 !important;
+            font-weight: bold !important;
+            background-color: #e3f2fd !important;
+        }
+    </style>
+</head>
+
+<body>
+    {% for f in fondos %}
+    {% for block in f.blocks %}
+    <div class="header">
+        <h1>REPORTE MAESTRO DE LIQUIDACIÓN V26 (Enfoque NAV)</h1>
+        <div class="repo-subtitle" style="font-weight: bold; font-size: 9pt; margin-top: 5px;">
+            FONDO: {{ f.fondo.nombre_fondo }} ({{ f.fondo.id_fondo }}) | MONEDA: {{ f.fondo.moneda }} |
+            TASA ACTIVA: {{ f.vars.activa }}% | ADMIN: {{ f.vars.admin }}% | Página {{ block.idx }}
+        </div>
+        <div class="repo-subtitle" style="font-size: 7.5pt; color: #555;">
+            {{ block.month_name }} | <b>Devengue Diario y Cálculo de Valor Cuota</b>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="num-col">N°</th>
+                <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
+                <th class="cap-col">CAPITAL / REF.</th>
+                <th class="cuotas-col">N° CUOTAS</th>
+                {% for day in block.days %}
+                <th class="day-col">{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in block.rows %}
+            <tr
+                class="{{ 'aumento-row' if row.tipo == 'AUMENTO' else '' }} {{ 'summary-row' if row.is_summary else '' }} {{ 'comision-row' if row.is_comision else '' }} {{ 'spacer-row' if row.tipo == 'SPACER' else '' }}">
+
+                {% if row.tipo == 'SPACER' %}
+                <td colspan="{{ 4 + block.days|length }}"></td>
+                {% else %}
+                <td class="num-col">{{ row.num if row.tipo == 'CERT' else '' }}</td>
+                <td class="cert-id-col {{ 'aumento-label' if row.tipo == 'AUMENTO' else '' }}">
+                    {{ row.id }}
+                </td>
+                <td class="cap-col">{{ format_num(row.capital) if row.capital is not none else '' }}</td>
+                <td class="cuotas-col">{{ format_num(row.cuotas, 6 if row.is_vc or 'CUOTA' in row.id else 2) if
+                    row.cuotas is not none else '' }}</td>
+
+                {% for val in row.valores %}
+                {% set day_str = block.days[loop.index0] %}
+                <td class="day-col {{ 'vc-highlight' if row.is_vc else '' }}" {% if row.id=='TOTAL CAPITAL' and
+                    (day_str=='01/01' or day_str=='01/02' ) %} style="background-color: white !important;" {% endif %}>
+                    {{ format_num(val, 6 if row.is_vc else 2) }}
+                </td>
+                {% endfor %}
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not loop.last %}<div class="page-break"></div>{% endif %}
+    {% endfor %}
+    {% if not loop.last %}<div class="page-break"></div>{% endif %}
+    {% endfor %}
+
+    <div style="text-align: right; color: #999; font-size: 6pt; margin-top: 10px;">
+        Generado por Motor V26 (Optimizado NAV - Columna acumulada retirada) - {{ print_date }}
+    </div>
+</body>
+
+</html>

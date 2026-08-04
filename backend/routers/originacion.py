@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from services import pdf_parser
 from utils import google_integration, pdf_generators
 from data import supabase_repository as db
+from core.factoring_calculator import procesar_lote_desembolso_inicial, procesar_lote_encontrar_tasa
 
 router = APIRouter()
 
@@ -66,54 +67,83 @@ class FormalizeBatchRequest(BaseModel):
 @router.post("/parse-invoices")
 async def parse_invoices(files: List[UploadFile] = File(...)):
     """
-    Recibe múltiples PDFs de facturas, los guarda temporalmente,
-    los parsea usando pdf_parser.py y retorna la data extraída.
+    Recibe multiples PDFs de facturas, los guarda temporalmente,
+    los parsea usando pdf_parser.py y retorna la data extraida.
+    Optimizacion: 1 query bulk a Supabase para todos los RUCs (en vez de 3 por PDF).
     """
-    results = []
+    # --- Fase 1: Parsear todos los PDFs sin tocar la DB ---
+    raw_results = []
     for file in files:
         file_bytes = await file.read()
-        
-        # Crear archivo temporal
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(file_bytes)
             temp_file_path = tmp.name
-            
         try:
             parsed_data = pdf_parser.extract_fields_from_pdf(temp_file_path)
-            
-            if parsed_data.get("error"):
-                results.append({"filename": file.filename, "error": parsed_data["error"]})
-                continue
-                
-            # Extraer info adicional de DB si es posible
-            emisor_ruc = parsed_data.get('emisor_ruc', '')
-            aceptante_ruc = parsed_data.get('aceptante_ruc', '')
-            emisor_nombre = db.get_razon_social_by_ruc(emisor_ruc) if emisor_ruc else ""
-            aceptante_nombre = db.get_razon_social_by_ruc(aceptante_ruc) if aceptante_ruc else ""
-            
-            # Buscar condiciones financieras del emisor
-            db_rates = {}
-            if emisor_ruc:
-                raw_rates = db.get_financial_conditions(str(emisor_ruc).strip())
-                if raw_rates:
-                    db_rates = raw_rates
-
-            results.append({
+            raw_results.append({
                 "filename": file.filename,
                 "parsed_data": parsed_data,
-                "emisor_nombre": emisor_nombre,
-                "aceptante_nombre": aceptante_nombre,
-                "db_rates": db_rates
+                "has_error": bool(parsed_data.get("error")) if isinstance(parsed_data, dict) else True,
             })
-            
         except Exception as e:
-            results.append({"filename": file.filename, "error": str(e)})
+            raw_results.append({"filename": file.filename, "parsed_data": {}, "has_error": True, "exc": str(e)})
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
-                
+
+    # --- Fase 2: Recolectar RUCs unicos -> 1 sola query a Supabase ---
+    unique_rucs = set()
+    for r in raw_results:
+        if not r["has_error"]:
+            p = r["parsed_data"] or {}
+            if p.get("emisor_ruc"):
+                unique_rucs.add(str(p["emisor_ruc"]).strip())
+            if p.get("aceptante_ruc"):
+                unique_rucs.add(str(p["aceptante_ruc"]).strip())
+
+    db_cache = db.get_bulk_emisor_data(list(unique_rucs))
+
+    # --- Fase 3: Armar respuesta usando el cache ---
+    results = []
+    for r in raw_results:
+        if r["has_error"]:
+            err_msg = r.get("exc") or r.get("parsed_data", {}).get("error", "Error desconocido")
+            results.append({"filename": r["filename"], "error": err_msg})
+            continue
+
+        p = r["parsed_data"] or {}
+        emisor_ruc = str(p.get("emisor_ruc", "")).strip()
+        aceptante_ruc = str(p.get("aceptante_ruc", "")).strip()
+
+        emisor_entry = db_cache.get(emisor_ruc, {})
+        aceptante_entry = db_cache.get(aceptante_ruc, {})
+
+        results.append({
+            "filename": r["filename"],
+            "parsed_data": p,
+            "emisor_nombre": emisor_entry.get("razon_social", ""),
+            "aceptante_nombre": aceptante_entry.get("razon_social", ""),
+            "db_rates": emisor_entry.get("rates", {}) if emisor_ruc else {},
+        })
+
     return {"results": results}
 
+
+@router.post("/calcular_desembolso_lote")
+def calcular_desembolso_lote_endpoint(payload: List[Dict[str, Any]] = Body(...)):
+    """
+    Realiza el calculo de simulacion de desembolso para un lote de facturas.
+    Si alguna factura trae "monto_objetivo", asume logica de Goal Seek.
+    """
+    try:
+        # Detectar si es Goal Seek o Calculo Inicial
+        is_goal_seek = any(inv.get("monto_objetivo") is not None for inv in payload)
+        if is_goal_seek:
+            return procesar_lote_encontrar_tasa(payload)
+        else:
+            return procesar_lote_desembolso_inicial(payload)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/drive/list")
 def list_drive_folders(folder_id: Optional[str] = None):
@@ -121,7 +151,8 @@ def list_drive_folders(folder_id: Optional[str] = None):
     Lista subcarpetas en Google Drive para el Drive Picker.
     """
     try:
-        folders = google_integration.list_folders_with_sa(folder_id)
+        sa_creds = google_integration.get_sa_credentials_dict()
+        folders = google_integration.list_folders_with_sa(folder_id, sa_creds)
         return {"folders": folders}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

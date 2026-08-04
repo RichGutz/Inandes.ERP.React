@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Maestro de Intereses - Transpuesto v20</title>
+    <style>
+        @page {
+            size: A2 landscape;
+            margin: 0.8cm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 9pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #004d40;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 14pt;
+            color: #004d40;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-bottom: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 2px;
+            text-align: right;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #b2dfdb;
+            color: #004d40;
+            font-weight: bold;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .index-col {
+            width: 30px;
+            text-align: center;
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .cert-id-col {
+            width: 149px;
+            text-align: left;
+            font-weight: bold;
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 9pt;
+            /* Aumento segun solicitud */
+        }
+
+        .cap-col {
+            width: 76px;
+            background-color: #e0f2f1;
+            color: #004d40;
+        }
+
+        .day-col {
+            width: 28px !important;
+            font-size: 8.5pt;
+            font-weight: 500;
+        }
+
+        .total-col {
+            width: 75px;
+            background-color: #fff9c4;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Aumentos UI */
+        .aumento-row td {
+            background-color: #fafafa;
+            color: #666;
+        }
+
+        .aumento-label {
+            padding-left: 10px !important;
+            color: #2e7d32 !important;
+            font-style: italic;
+            font-size: 7.5pt !important;
+            border-left: 3px solid #43a047;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        small {
+            color: #555;
+            font-weight: normal;
+            font-size: 7.5pt;
+        }
+    </style>
+</head>
+
+<body>
+    {% for f in fondos %}
+    {% for block in f.blocks %}
+    <div class="header">
+        <h1>Reporte de Intereses Pasivos V20 (Deducciones Reales): {{ f.fondo.nombre_fondo }} ({{ f.fondo.id_fondo }})
+        </h1>
+        <p style="margin: 2px 0;">Tasa Pasiva: {{ f.vars.pasiva }}% (Base 365) | Mes: {{ block.month_name }} | Página {{
+            block.idx }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="index-col">#</th>
+                <th class="cert-id-col">CERTIFICADO / INVERSIONISTA</th>
+                <th class="cap-col">CAPITAL BASE</th>
+                {% for day in block.days %}
+                <th class="day-col">{{ day }}</th>
+                {% endfor %}
+
+                {% if block.is_last %}
+                <th class="total-col">INT. BRUTO</th>
+                <th class="total-col" style="color: #c62828;">IR (5%)</th>
+                <th class="total-col" style="background-color: #bbdefb; color: #0d47a1;">INT. NETO</th>
+                <th class="total-col" style="color: #004d40; background-color: #e8f5e9;">CAPITALIZACIÓN</th>
+                <th class="total-col" style="color: #004d40; background-color: #e1f5fe;">REPARTO</th>
+                <th class="total-col" style="color: #c62828;">DEDUCCIONES</th>
+                <th class="total-col" style="background-color: #c8e6c9; color: #1b5e20;">NETO FINAL</th>
+                <th class="total-col" style="color: #c62828; background-color: #fff3e0;">RESCATES</th>
+                <th class="total-col" style="color: #c62828; background-color: #ffccbc;">PENALIDAD</th>
+                <th class="total-col" style="color: #2e7d32;">AUM. CAPITAL</th>
+                <th class="total-col" style="background-color: #81c784; color: #000;">CAPITAL FINAL</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in block.rows %}
+            <tr class="{{ 'aumento-row' if row.tipo == 'AUMENTO' else '' }}">
+                <td class="index-col">{{ row.n_orden if row.tipo == 'CERT' else '' }}</td>
+                <td class="cert-id-col {{ 'aumento-label' if row.tipo == 'AUMENTO' else '' }}">
+                    {{ row.id }}{% if row.tipo == 'CERT' %}<br><small>{{ row.inversionista }}</small>{% endif %}
+                </td>
+                <td class="cap-col">{{ format_num(row.capital) }}</td>
+                {% for val in row.valores %}
+                <td class="day-col">{{ format_num(val) if val > 0 else '-' }}</td>
+                {% endfor %}
+
+                {% if block.is_last %}
+                {% if row.tipo == 'CERT' %}
+                <td class="total-col">{{ format_num(row.bruto_total) }}</td>
+                <td class="total-col" style="color: #c62828;">-{{ format_num(row.impuesto_total) }}</td>
+                <td class="total-col" style="background-color: #e3f2fd; color: #0d47a1;">{{ format_num(row.base_neta) }}
+                </td>
+                <td class="total-col" style="color: #004d40; background-color: #f1f8e9;">{{
+                    format_num(row.capitalizacion) }}</td>
+                <td class="total-col" style="color: #004d40; background-color: #e3f2fd;">{{
+                    format_num(row.reparto_valor) }}</td>
+                <td class="total-col" style="color: #c62828;">-{{ format_num(row.deducciones_total) }}</td>
+                <td class="total-col" style="background-color: #e8f5e9; color: #1b5e20; font-weight: bold;">{{
+                    format_num(row.neto_total) }}</td>
+                <td class="total-col" style="color: #c62828; background-color: #fff3e0;">-{{
+                    format_num(row.devolucion_capital) }}</td>
+                <td class="total-col" style="color: #c62828; background-color: #fbe9e7;">-{{
+                    format_num(row.penalidad_rescate) }}</td>
+                <td class="total-col" style="color: #2e7d32;">{{ format_num(row.aumentos) }}</td>
+                <td class="total-col" style="background-color: #c8e6c9; font-weight: bold;">{{
+                    format_num(row.capital_final) }}</td>
+                {% else %}
+                <td colspan="11" style="background-color: #fafafa;"></td>
+                {% endif %}
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not loop.last %}<div class="page-break"></div>{% endif %}
+    {% endfor %}
+    {% if not loop.last %}<div class="page-break"></div>{% endif %}
+    {% endfor %}
+
+    <div style="text-align: right; color: #999; font-size: 6pt; margin-top: 2px;">
+        Generado por Antigravity V20 (Deducciones Cronograma) - {{ print_date }}
+    </div>
+</body>
+
+</html>
