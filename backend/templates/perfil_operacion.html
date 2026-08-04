@@ -14,6 +14,9 @@
             @top-right {
                 content: element(header-logo);
             }
+            @top-left {
+                content: element(header-logo-left);
+            }
         }
 
         body {
@@ -32,6 +35,19 @@
 
         #header-logo img {
             max-width: 150px;
+            height: auto;
+        }
+
+        #header-logo-left {
+            position: running(header-logo-left);
+            width: 150px;
+            height: auto;
+            text-align: left;
+            margin-top: 7.5mm;
+        }
+
+        #header-logo-left img {
+            max-width: 120px;
             height: auto;
         }
 
@@ -106,7 +122,10 @@
 
 <body>
     <div id="header-logo">
-        <img src="static/logo_inandes.png" alt="Logo">
+        <img src="../public/logo_inandes.png" alt="Logo Inandes">
+    </div>
+    <div id="header-logo-left">
+        <img src="../public/Logo.Geeksoft.png" alt="Logo Geeksoft">
     </div>
     {% for invoice in invoices %}
     <div class="invoice-page">
