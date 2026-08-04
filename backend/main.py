@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import retornos, comisiones, valor_cuota, originacion, liquidaciones
+from routers import retornos, comisiones, valor_cuota, originacion, liquidaciones, aprobacion
 import uvicorn
 from dotenv import load_dotenv
 
@@ -30,6 +30,7 @@ app.add_middleware(
 )
 
 # Registrar routers modulares
+app.include_router(aprobacion.router, prefix="/api/aprobacion", tags=["aprobacion"])
 app.include_router(retornos.router, prefix="/api/retornos", tags=["Retornos"])
 app.include_router(comisiones.router, prefix="/api/comisiones", tags=["Comisiones"])
 app.include_router(valor_cuota.router, prefix="/api/valor-cuota", tags=["Valor Cuota"])
