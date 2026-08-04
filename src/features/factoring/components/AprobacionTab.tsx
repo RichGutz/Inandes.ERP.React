@@ -279,6 +279,7 @@ export const AprobacionTab: React.FC = () => {
                               <tr>
                                 <th className="px-2 py-2 w-10">Sel</th>
                                 <th className="px-2 py-2">Factura</th>
+                                <th className="px-2 py-2">Emisor</th>
                                 <th className="px-2 py-2">Aceptante</th>
                                 <th className="px-2 py-2">M. Neto</th>
                                 <th className="px-2 py-2">Desembolso</th>
@@ -298,7 +299,8 @@ export const AprobacionTab: React.FC = () => {
                                     />
                                   </td>
                                   <td className="px-2 py-3 font-mono font-bold">{parseInvoiceNumber(inv.proposal_id)}</td>
-                                  <td className="px-2 py-3 truncate max-w-[200px]">{inv.aceptante_nombre || 'N/A'}</td>
+                                  <td className="px-2 py-3 truncate max-w-[150px]">{inv.emisor_nombre || 'N/A'}</td>
+                                  <td className="px-2 py-3 truncate max-w-[150px]">{inv.aceptante_nombre || 'N/A'}</td>
                                   <td className="px-2 py-3">{formatCurrency(inv.monto_neto_factura, inv.moneda_factura)}</td>
                                   <td className="px-2 py-3 font-bold text-emerald-600 dark:text-emerald-400">
                                     {formatCurrency(inv.monto_a_desembolsar || 0, inv.moneda_factura)}
