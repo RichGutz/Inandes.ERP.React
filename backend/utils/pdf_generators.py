@@ -9,9 +9,11 @@ from utils.latency import measure_latency
 
 # --- Helper Functions for Templates ---
 
-def _format_currency(value: float, currency: str = "PEN") -> str:
+import jinja2
+
+def _format_currency(value: Any, currency: str = "PEN") -> str:
     """Formats a number as currency with a thousands separator and symbol."""
-    if value is None:
+    if value is None or isinstance(value, jinja2.Undefined):
         return ""
     try:
         val = float(value)

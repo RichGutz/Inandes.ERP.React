@@ -150,9 +150,9 @@
             <!-- Column 2 -->
             <td style="width: 60%; padding: 0 10px 0 0;">
                 <table width="100%">
-                    <tr><td class="header-info-title">TASA DE INTERES COMPENSATORIO</td><td class="header-info-value">{{ "{:,.2f}".format(main_invoice.interes_mensual) }} %</td></tr>
-                    <tr><td class="header-info-title">COMISIÓN DE ESTRUCTURACION</td><td class="header-info-value">{{ "{:,.2f}".format(main_invoice.comision_de_estructuracion_global) }} %</td></tr>
-                    <tr><td class="header-info-title">TASA DE INTERES MORATORIO</td><td class="header-info-value">{{ "{:,.2f}".format(main_invoice.interes_moratorio) }} %</td></tr>
+                    <tr><td class="header-info-title">TASA DE INTERES COMPENSATORIO</td><td class="header-info-value">{{ main_invoice.interes_mensual | format_currency }} %</td></tr>
+                    <tr><td class="header-info-title">COMISIÓN DE ESTRUCTURACION</td><td class="header-info-value">{{ main_invoice.comision_de_estructuracion_global | format_currency }} %</td></tr>
+                    <tr><td class="header-info-title">TASA DE INTERES MORATORIO</td><td class="header-info-value">{{ main_invoice.interes_moratorio | format_currency }} %</td></tr>
                 </table>
             </td>
         </tr>
@@ -183,42 +183,42 @@
             {% for invoice in invoices %}
             <tr>
                 <td class="text-left">{{ invoice.numero_factura }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.monto_total_factura) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.detraccion_monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.monto_neto_factura) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.resultado_busqueda.tasa_avance_encontrada * 100) }}%</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.calculo_con_tasa_encontrada.capital) }}</td>
+                <td class="text-right">{{ invoice.monto_total_factura | format_currency }}</td>
+                <td class="text-right">{{ invoice.detraccion_monto | format_currency }}</td>
+                <td class="text-right">{{ invoice.monto_neto_factura | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.resultado_busqueda.tasa_avance_encontrada * 100 | format_currency }}%</td>
+                <td class="text-right">{{ invoice.recalculate_result.calculo_con_tasa_encontrada.capital | format_currency }}</td>
                 <td class="text-right">{{ invoice.fecha_desembolso_factoring }}</td>
                 <td class="text-right">{{ invoice.fecha_pago_calculada }}</td>
                 <td class="text-right">{{ invoice.plazo_operacion_calculado }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.desglose_final_detallado.margen_seguridad.monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.calculo_con_tasa_encontrada.capital) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.desglose_final_detallado.interes.monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.desglose_final_detallado.comision_estructuracion.monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.desglose_final_detallado.comision_afiliacion.monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.calculo_con_tasa_encontrada.igv_interes + invoice.recalculate_result.calculo_con_tasa_encontrada.igv_comision_estructuracion + invoice.recalculate_result.calculo_con_tasa_encontrada.igv_afiliacion) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(invoice.recalculate_result.desglose_final_detallado.abono.monto) }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.desglose_final_detallado.margen_seguridad.monto | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.calculo_con_tasa_encontrada.capital | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.desglose_final_detallado.interes.monto | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.desglose_final_detallado.comision_estructuracion.monto | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.desglose_final_detallado.comision_afiliacion.monto | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.calculo_con_tasa_encontrada.igv_interes + invoice.recalculate_result.calculo_con_tasa_encontrada.igv_comision_estructuracion + invoice.recalculate_result.calculo_con_tasa_encontrada.igv_afiliacion | format_currency }}</td>
+                <td class="text-right">{{ invoice.recalculate_result.desglose_final_detallado.abono.monto | format_currency }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr class="totals-row">
                 <td class="text-left">TOTALES</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_monto_total_factura) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_detraccion_monto) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_monto_neto_factura) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_tasa_avance_aplicada * 100) }}%</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_capital) }}</td>
+                <td class="text-right">{{ total_monto_total_factura | format_currency }}</td>
+                <td class="text-right">{{ total_detraccion_monto | format_currency }}</td>
+                <td class="text-right">{{ total_monto_neto_factura | format_currency }}</td>
+                <td class="text-right">{{ total_tasa_avance_aplicada * 100 | format_currency }}%</td>
+                <td class="text-right">{{ total_capital | format_currency }}</td>
                 <td class="text-right"></td> {# Placeholder for Fecha de Desembolso total #}
                 <td class="text-right"></td> {# Placeholder for Fecha de Vencimiento total #}
                 <td class="text-right">{{ total_plazo_operacion_calculado }}</td> {# Sum for days #}
-                <td class="text-right">{{ "{:,.2f}".format(total_margen_seguridad) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_capital) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_intereses) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_comision_estructuracion) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_comision_afiliacion) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_igv) }}</td>
-                <td class="text-right">{{ "{:,.2f}".format(total_monto_desembolsar) }}</td>
+                <td class="text-right">{{ total_margen_seguridad | format_currency }}</td>
+                <td class="text-right">{{ total_capital | format_currency }}</td>
+                <td class="text-right">{{ total_intereses | format_currency }}</td>
+                <td class="text-right">{{ total_comision_estructuracion | format_currency }}</td>
+                <td class="text-right">{{ total_comision_afiliacion | format_currency }}</td>
+                <td class="text-right">{{ total_igv | format_currency }}</td>
+                <td class="text-right">{{ total_monto_desembolsar | format_currency }}</td>
             </tr>
         </tfoot>
     </table>

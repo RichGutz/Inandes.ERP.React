@@ -179,7 +179,7 @@
         <div class="metrics">
             <div class="metric">
                 <div class="metric-label">Saldo Global Final</div>
-                <div class="metric-value">S/ {{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}</div>
+                <div class="metric-value">S/ {{ liq.resultado.saldo_global or 0 | format_currency }}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Estado</div>
@@ -212,19 +212,19 @@
                 </tr>
                 <tr>
                     <td>Capital Operación</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
+                    <td>{{ liq.resultado.capital_operacion or 0 | format_currency }}</td>
                     <td>Dato original</td>
                     <td>Capital financiado</td>
                 </tr>
                 <tr>
                     <td>Monto Desembolsado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.monto_desembolsado or 0) }}</td>
+                    <td>{{ liq.resultado.monto_desembolsado or 0 | format_currency }}</td>
                     <td>Dato original</td>
                     <td>Monto entregado al cliente</td>
                 </tr>
                 <tr>
                     <td>Monto Pagado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>{{ liq.resultado.monto_pagado or 0 | format_currency }}</td>
                     <td>Dato de entrada</td>
                     <td>Monto recibido del cliente</td>
                 </tr>
@@ -287,13 +287,13 @@
                 </tr>
                 <tr>
                     <td>→ Facturado (Original)</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_original or 0) }}</td>
+                    <td>{{ liq.resultado.interes_original or 0 | format_currency }}</td>
                     <td>Valor original</td>
                     <td>Interés cobrado al desembolsar</td>
                 </tr>
                 <tr>
                     <td>→ Devengado (Calculado)</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }}</td>
+                    <td>{{ liq.resultado.interes_devengado or 0 | format_currency }}</td>
                     <td>Capital × Tasa × Días/30</td>
                     <td>Interés real devengado</td>
                 </tr>
@@ -306,8 +306,7 @@
                             liq.resultado.back_door_aplicado else liq.resultado.delta_intereses or 0) }}</strong>
                     </td>
                     <td>Devengado - Facturado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }} - {{
-                        "{:,.2f}".format(liq.resultado.interes_original or 0) }}</td>
+                    <td>{{ liq.resultado.interes_devengado or 0 | format_currency }} - {{ liq.resultado.interes_original or 0 | format_currency }}</td>
                 </tr>
 
                 <!-- IGV SOBRE INTERESES -->
@@ -316,15 +315,15 @@
                 </tr>
                 <tr>
                     <td>→ Facturado (Original)</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.igv_original or 0) }}</td>
+                    <td>{{ liq.resultado.igv_original or 0 | format_currency }}</td>
                     <td>Valor original</td>
                     <td>IGV cobrado al desembolsar</td>
                 </tr>
                 <tr>
                     <td>→ Devengado (Calculado)</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.igv_interes_devengado or 0) }}</td>
+                    <td>{{ liq.resultado.igv_interes_devengado or 0 | format_currency }}</td>
                     <td>Interés Devengado × 18%</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_devengado or 0) }} × 18%</td>
+                    <td>{{ liq.resultado.interes_devengado or 0 | format_currency }} × 18%</td>
                 </tr>
                 <tr class="highlight-row">
                     <td>→ <strong>Delta{% if liq.resultado.back_door_aplicado %} (antes de backdoor){% endif %}</strong>
@@ -335,8 +334,7 @@
                             liq.resultado.back_door_aplicado else liq.resultado.delta_igv_intereses or 0) }}</strong>
                     </td>
                     <td>Devengado - Facturado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.igv_interes_devengado or 0) }} - {{
-                        "{:,.2f}".format(liq.resultado.igv_original or 0) }}</td>
+                    <td>{{ liq.resultado.igv_interes_devengado or 0 | format_currency }} - {{ liq.resultado.igv_original or 0 | format_currency }}</td>
                 </tr>
 
                 <!-- INTERESES MORATORIOS (si hay mora) -->
@@ -346,15 +344,15 @@
                 </tr>
                 <tr>
                     <td>→ Interés Moratorio</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }}</td>
+                    <td>{{ liq.resultado.interes_moratorio or 0 | format_currency }}</td>
                     <td>Capital × Tasa Mora × Días/30</td>
                     <td>{{ liq.resultado.dias_mora or 0 }} días de mora</td>
                 </tr>
                 <tr>
                     <td>→ IGV Moratorio</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.igv_moratorio or 0) }}</td>
+                    <td>{{ liq.resultado.igv_moratorio or 0 | format_currency }}</td>
                     <td>Interés Mora × 18%</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }} × 18%</td>
+                    <td>{{ liq.resultado.interes_moratorio or 0 | format_currency }} × 18%</td>
                 </tr>
                 {% endif %}
 
@@ -364,13 +362,13 @@
                 </tr>
                 <tr>
                     <td>→ Capital Operación</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
+                    <td>{{ liq.resultado.capital_operacion or 0 | format_currency }}</td>
                     <td>Dato original</td>
                     <td>Capital a recuperar</td>
                 </tr>
                 <tr>
                     <td>→ Monto Pagado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>{{ liq.resultado.monto_pagado or 0 | format_currency }}</td>
                     <td>Dato de entrada</td>
                     <td>Monto recibido</td>
                 </tr>
@@ -383,8 +381,7 @@
                             liq.resultado.back_door_aplicado else liq.resultado.delta_capital or 0) }}</strong>
                     </td>
                     <td>Capital - Pagado</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }} - {{
-                        "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>{{ liq.resultado.capital_operacion or 0 | format_currency }} - {{ liq.resultado.monto_pagado or 0 | format_currency }}</td>
                 </tr>
 
                 <!-- SALDO GLOBAL -->
@@ -394,37 +391,37 @@
                 </tr>
                 <tr>
                     <td>→ Delta Intereses</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.delta_intereses or 0) }}</td>
+                    <td>{{ liq.resultado.delta_intereses or 0 | format_currency }}</td>
                     <td>-</td>
                     <td>-</td>
                 </tr>
                 <tr>
                     <td>→ Delta IGV Intereses</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.delta_igv_intereses or 0) }}</td>
+                    <td>{{ liq.resultado.delta_igv_intereses or 0 | format_currency }}</td>
                     <td>-</td>
                     <td>-</td>
                 </tr>
                 <tr>
                     <td>→ Interés Moratorio</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.interes_moratorio or 0) }}</td>
+                    <td>{{ liq.resultado.interes_moratorio or 0 | format_currency }}</td>
                     <td>-</td>
                     <td>-</td>
                 </tr>
                 <tr>
                     <td>→ IGV Moratorio</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.igv_moratorio or 0) }}</td>
+                    <td>{{ liq.resultado.igv_moratorio or 0 | format_currency }}</td>
                     <td>-</td>
                     <td>-</td>
                 </tr>
                 <tr>
                     <td>→ Delta Capital</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.delta_capital or 0) }}</td>
+                    <td>{{ liq.resultado.delta_capital or 0 | format_currency }}</td>
                     <td>-</td>
                     <td>-</td>
                 </tr>
                 <tr class="total-row">
                     <td><strong>Saldo antes de Backdoor</strong></td>
-                    <td><strong>{{ "{:,.2f}".format(liq.resultado.saldo_original or 0) }}</strong></td>
+                    <td><strong>{{ liq.resultado.saldo_original or 0 | format_currency }}</strong></td>
                     <td>Suma de componentes</td>
                     <td>Suma de todos los deltas</td>
                 </tr>
@@ -442,10 +439,10 @@
                 {% for red in liq.resultado.reducciones_aplicadas %}
                 <tr>
                     <td>{{ loop.index }}. {{ red.concepto or 'N/A' }}</td>
-                    <td>{{ "{:,.2f}".format(red.valor_antes or 0) }} → {{ "{:,.2f}".format(red.valor_despues or 0) }}
+                    <td>{{ red.valor_antes or 0 | format_currency }} → {{ red.valor_despues or 0 | format_currency }}
                     </td>
                     <td>Reducción</td>
-                    <td>Saldo: {{ "{:,.2f}".format(red.saldo_resultante or 0) }}</td>
+                    <td>Saldo: {{ red.saldo_resultante or 0 | format_currency }}</td>
                 </tr>
                 {% endfor %}
                 {% endif %}
@@ -457,7 +454,7 @@
                 </tr>
                 <tr class="total-row">
                     <td><strong>Saldo Global Final</strong></td>
-                    <td><strong>{{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}</strong></td>
+                    <td><strong>{{ liq.resultado.saldo_global or 0 | format_currency }}</strong></td>
                     <td>Después de backdoor</td>
                     <td>{{ liq.resultado.estado_operacion or 'N/A' }}</td>
                 </tr>
@@ -500,10 +497,10 @@
                 <tr>
                     <td>{{ liq.factura.numero_factura or 'N/A' }}</td>
                     <td>{{ liq.factura.emisor_nombre or 'N/A' }}</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.capital_operacion or 0) }}</td>
-                    <td>{{ "{:,.2f}".format(liq.resultado.monto_pagado or 0) }}</td>
+                    <td>{{ liq.resultado.capital_operacion or 0 | format_currency }}</td>
+                    <td>{{ liq.resultado.monto_pagado or 0 | format_currency }}</td>
                     <td class="{{ 'positive' if (liq.resultado.saldo_global or 0) <= 0 else 'negative' }}">
-                        {{ "{:,.2f}".format(liq.resultado.saldo_global or 0) }}
+                        {{ liq.resultado.saldo_global or 0 | format_currency }}
                     </td>
                     <td>{{ liq.resultado.dias_mora or 0 }}</td>
                     <td>{{ liq.resultado.estado_operacion or 'N/A' }}</td>
@@ -512,9 +509,9 @@
                 {% endfor %}
                 <tr class="resumen-total">
                     <td colspan="2"><strong>TOTALES</strong></td>
-                    <td><strong>{{ "{:,.2f}".format(ns.total_capital) }}</strong></td>
-                    <td><strong>{{ "{:,.2f}".format(ns.total_pagado) }}</strong></td>
-                    <td><strong>{{ "{:,.2f}".format(ns.total_saldo) }}</strong></td>
+                    <td><strong>{{ ns.total_capital | format_currency }}</strong></td>
+                    <td><strong>{{ ns.total_pagado | format_currency }}</strong></td>
+                    <td><strong>{{ ns.total_saldo | format_currency }}</strong></td>
                     <td colspan="3"></td>
                 </tr>
             </tbody>

@@ -386,10 +386,14 @@ export const OriginacionTab: React.FC = () => {
       setSimulacionResult(calcData2);
 
       // Adjuntar resultado individual a cada factura
-      setInvoices(prev => prev.map((inv, idx) => ({
+      const updatedInvoices = invoices.map((inv, idx) => ({
         ...inv,
         recalculate_result: calcData2.resultados_por_factura ? calcData2.resultados_por_factura[idx] : null
-      } as any)));
+      } as any));
+      setInvoices(updatedInvoices);
+
+      // Auto-generar PDFs inmediatamente después de simular
+      await handleGeneratePdf(updatedInvoices, calcData2);
 
     } catch (err: any) {
       setErrorMsg(err.message || "Error al simular la operación.");
@@ -562,11 +566,12 @@ export const OriginacionTab: React.FC = () => {
   };
 
   // --- Generación de PDFs ---
-  const handleGeneratePdf = async (_type?: 'PERFIL' | 'LIQUIDACION') => {
-    if (invoices.length === 0) return;
+  const handleGeneratePdf = async (invoicesData = invoices, simData = simulacionResult) => {
+    if (invoicesData.length === 0) return;
 
-    if (!simulacionResult) {
+    if (!simData) {
       alert("Primero debes hacer clic en 'CALCULAR DESEMBOLSO' para que los PDFs tengan los desgloses financieros actualizados.");
+      return;
     }
 
     setLoadingStep(true);
@@ -574,7 +579,7 @@ export const OriginacionTab: React.FC = () => {
       const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
 
       const payload = {
-        invoices: invoices
+        invoices: invoicesData
       };
 
       const res = await fetch(`${API_BASE}/api/originacion/generate-pdfs`, {
@@ -616,6 +621,20 @@ export const OriginacionTab: React.FC = () => {
     }
     setFormalizing(true);
     try {
+      // Descargar PDFs localmente
+      if (perfilPdfUrl) {
+        const a = document.createElement('a');
+        a.href = perfilPdfUrl;
+        a.download = `Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`;
+        a.click();
+      }
+      if (liquidacionPdfUrl) {
+        const a = document.createElement('a');
+        a.href = liquidacionPdfUrl;
+        a.download = `Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`;
+        a.click();
+      }
+
       const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
 
       // Preparar archivos generados para subida (Perfil y Liquidación)
@@ -1519,16 +1538,14 @@ export const OriginacionTab: React.FC = () => {
                         </div>
                       </div>
                       
-                      {!perfilPdfUrl ? (
-                        <button
-                          onClick={() => handleGeneratePdf('PERFIL')}
-                          disabled={loadingStep || invoices.length === 0}
-                          className="w-full py-4 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                        >
+                      {!perfilPdfUrl && (
+                        <div className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-700">
                           <FileText size={16} />
-                          Generar Documentos (Perfil y Liquidación)
-                        </button>
-                      ) : (
+                          Los documentos se generarán automáticamente al calcular el desembolso.
+                        </div>
+                      )}
+                      
+                      {perfilPdfUrl && (
                         <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
                           <iframe
                             src={perfilPdfUrl}
