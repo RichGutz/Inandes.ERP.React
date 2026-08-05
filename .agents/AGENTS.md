@@ -49,3 +49,13 @@ AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer el sig
 Este archivo contiene los principios fundamentales, la arquitectura del proyecto, el estado de modulos y las URLs/credenciales clave.
 No leerlo equivale a operar sin contexto y es causa de errores graves.
 
+## Regla 6 - PROTECCION INTANGIBLE: Selector de Letras A-Z (Modulo Aprobaciones)
+
+El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANGIBLE y de cumplimiento obligatorio:
+
+1. Visualizacion Completa: Debe mostrar SIEMPRE TODAS las letras del abecedario en orden ('TODOS', 'A' a la 'Z', '#'). PROHIBIDO ocultar o filtrar botones de letras sin facturas.
+2. Diseno Visual: Burbujas cuadradas redondeadas ('w-10 h-10 rounded-xl font-black bg-indigo-600' para activas) con badge circular del conteo en la esquina superior derecha ('-top-1.5 -right-1.5').
+3. Filtro y Conteo Exclusivo por Emisor: El conteo por letra y el filtro alfabetico se evalua EXCLUSIVAMENTE sobre la inicial del EMISOR (Cedente) 'op.emisor_nombre'. Queda PROHIBIDO evaluar la inicial del Aceptante (Pagador).
+4. Ningun agente de IA o modelo de lenguaje puede modificar, reemplazar o refactorizar este selector de letras sin orden directa y explicita del usuario.
+
+
