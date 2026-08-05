@@ -6,7 +6,6 @@ import {
   XCircle, 
   Search, 
   FileText, 
-  Building2, 
   DollarSign, 
   Clock, 
   AlertCircle,
@@ -24,11 +23,19 @@ export const AprobacionesTab: React.FC = () => {
   const [observaciones, setObservaciones] = useState<string>('');
   const [processing, setProcessing] = useState<boolean>(false);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [forceApproval, setForceApproval] = useState<boolean>(false);
+
   const fetchOperaciones = async () => {
     try {
       setLoading(true);
       const data = await factoringService.getOperaciones('ORIGINADO');
-      setOperaciones(data);
+      const procesadas = data.map(op => ({
+        ...op,
+        status_cavali: op.status_cavali || 'ACEPTADA',
+        status_letra: op.status_letra || 'FIRMADA'
+      }));
+      setOperaciones(procesadas);
     } catch (err) {
       console.error('Error al cargar operaciones pendientes:', err);
     } finally {
@@ -40,13 +47,41 @@ export const AprobacionesTab: React.FC = () => {
     fetchOperaciones();
   }, []);
 
-  const filteredOps = operaciones.filter(op => 
-    op.proposal_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    op.emisor_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    op.emisor_ruc.includes(searchTerm) ||
-    op.aceptante_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    op.aceptante_ruc.includes(searchTerm)
-  );
+  const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+
+  const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const getLetterCount = (letter: string): number => {
+    if (letter === 'TODOS') return operaciones.length;
+    return operaciones.filter(op => {
+      const eInitial = op.emisor_nombre ? op.emisor_nombre.trim().charAt(0).toUpperCase() : '';
+      if (letter === '#') {
+        return eInitial && !/[A-Z]/.test(eInitial);
+      }
+      return eInitial === letter;
+    }).length;
+  };
+
+  const filteredOps = operaciones.filter(op => {
+    const matchesSearch = 
+      op.proposal_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      op.emisor_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      op.emisor_ruc.includes(searchTerm) ||
+      op.aceptante_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      op.aceptante_ruc.includes(searchTerm);
+
+    if (!matchesSearch) return false;
+
+    if (selectedLetter === 'TODOS') return true;
+
+    const eInitial = op.emisor_nombre ? op.emisor_nombre.trim().charAt(0).toUpperCase() : '';
+
+    if (selectedLetter === '#') {
+      return eInitial && !/[A-Z]/.test(eInitial);
+    }
+
+    return eInitial === selectedLetter;
+  });
 
   const totalPen = filteredOps
     .filter(op => op.moneda === 'PEN')
@@ -55,6 +90,57 @@ export const AprobacionesTab: React.FC = () => {
   const totalUsd = filteredOps
     .filter(op => op.moneda === 'USD')
     .reduce((sum, op) => sum + op.abono_real_total, 0);
+
+  const toggleSelect = (proposalId: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(proposalId)) next.delete(proposalId);
+    else next.add(proposalId);
+    setSelectedIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredOps.length && filteredOps.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOps.map(op => op.proposal_id)));
+    }
+  };
+
+  const handleAprobarSeleccionadas = async (action: 'aprobar' | 'rechazar') => {
+    if (selectedIds.size === 0) return;
+    const selectedOps = operaciones.filter(op => selectedIds.has(op.proposal_id));
+
+    if (action === 'aprobar' && !forceApproval) {
+      const issues = selectedOps.filter(op => (op.status_cavali || 'ACEPTADA') !== 'ACEPTADA' || (op.status_letra || 'FIRMADA') !== 'FIRMADA');
+      if (issues.length > 0) {
+        alert("No se puede aprobar. Existen operaciones sin Cavali 'ACEPTADA' o sin Letra 'FIRMADA'. Marca la casilla de 'Aprobación forzada' si deseas autorizar de todas formas.");
+        return;
+      }
+    }
+
+    setProcessing(true);
+    try {
+      for (const op of selectedOps) {
+        if (action === 'aprobar') {
+          await factoringService.cambiarEstadoOperacion(op.id || '', 'APROBADO', {
+            observaciones_aprobacion: 'Aprobación masiva desde panel',
+            fecha_aprobacion: new Date().toISOString()
+          });
+        } else {
+          await factoringService.cambiarEstadoOperacion(op.id || '', 'ORIGINADO', {
+            observaciones_rechazo: 'Rechazo masivo desde panel',
+            estado_detalle: 'RECHAZADO_COMITE'
+          });
+        }
+      }
+      setSelectedIds(new Set());
+      await fetchOperaciones();
+    } catch (err: any) {
+      alert(`Error al procesar la acción: ${err.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const handleActionClick = (op: OperacionFactoring, action: 'aprobar' | 'rechazar') => {
     setSelectedOp(op);
@@ -232,11 +318,43 @@ export const AprobacionesTab: React.FC = () => {
             <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
               $ {totalUsd.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-1">Moneda Extranjera</span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-center justify-center text-blue-600">
-            <Building2 size={24} />
-          </div>
+        </div>
+      </div>
+
+      {/* Alphabetical Filter Bar (Burbujas Azules con Contador en Esquina Superior Derecha) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="flex flex-wrap gap-2.5 items-center">
+          {ALPHABET.map((char) => {
+            const count = getLetterCount(char);
+            const isSelected = selectedLetter === char;
+            const hasData = count > 0;
+
+            return (
+              <button
+                key={char}
+                onClick={() => setSelectedLetter(char)}
+                className={`relative ${char === 'TODOS' ? 'px-4' : 'w-10'} h-10 rounded-xl font-black text-sm transition-all flex items-center justify-center ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 scale-105 ring-2 ring-indigo-400'
+                    : hasData
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 font-bold hover:bg-indigo-100'
+                      : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <span>{char}</span>
+                {hasData && (
+                  <span
+                    className={`absolute -top-1.5 -right-1.5 text-[9px] min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full font-black border-2 border-white dark:border-slate-900 shadow-xs ${
+                      isSelected ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -280,30 +398,45 @@ export const AprobacionesTab: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-4">Operación</th>
+                  <th className="py-3 px-3 w-10 text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={filteredOps.length > 0 && selectedIds.size === filteredOps.length} 
+                      onChange={toggleSelectAll} 
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                      title="Marcar / Desmarcar Todas"
+                    />
+                  </th>
                   <th className="py-3 px-4">Cedente (Emisor)</th>
                   <th className="py-3 px-4">Pagador (Aceptante)</th>
                   <th className="py-3 px-4 text-right">Monto Neto</th>
                   <th className="py-3 px-4 text-right">Interés Ganado</th>
                   <th className="py-3 px-4 text-right">Abono Neto Cedente</th>
-                  <th className="py-3 px-4 text-center">Plazo</th>
+                  <th className="py-3 px-3 text-center">Est. Cavali</th>
+                  <th className="py-3 px-3 text-center">Est. Letra</th>
                   <th className="py-3 px-4 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
                 {filteredOps.map((op) => (
                   <tr key={op.id || op.proposal_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
-                      {op.proposal_id}
-                      <span className="block text-[10px] font-sans font-normal text-slate-400">
-                        {op.fecha_creacion || 'Reciente'}
-                      </span>
+                    <td className="py-3 px-3 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.has(op.proposal_id)} 
+                        onChange={() => toggleSelect(op.proposal_id)} 
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                      />
                     </td>
-                    <td className="py-3 px-4 max-w-[200px]">
+                    <td className="py-3 px-4 max-w-[220px]">
                       <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate" title={op.emisor_nombre}>
                         {op.emisor_nombre}
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400">RUC: {op.emisor_ruc}</span>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                        <span>RUC: {op.emisor_ruc}</span>
+                        <span>•</span>
+                        <span className="font-bold text-slate-500 dark:text-slate-400">{op.proposal_id}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-4 max-w-[200px]">
                       <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate" title={op.aceptante_nombre}>
@@ -320,9 +453,22 @@ export const AprobacionesTab: React.FC = () => {
                     <td className="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
                       {op.moneda === 'USD' ? '$' : 'S/'} {op.abono_real_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        {op.dias_promedio} días
+                    <td className="py-3 px-3 text-center">
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                        (op.status_cavali || 'ACEPTADA') === 'ACEPTADA'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                          : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                      }`}>
+                        {op.status_cavali || 'ACEPTADA'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                        (op.status_letra || 'FIRMADA') === 'FIRMADA'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                          : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                      }`}>
+                        {op.status_letra || 'FIRMADA'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -330,7 +476,7 @@ export const AprobacionesTab: React.FC = () => {
                         <button 
                           onClick={() => handlePrintDictamen(op)}
                           title="Imprimir Dictamen"
-                          className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                          className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                         >
                           <FileText size={16} />
                         </button>
@@ -338,7 +484,7 @@ export const AprobacionesTab: React.FC = () => {
                         <button 
                           onClick={() => handleActionClick(op, 'aprobar')}
                           title="Aprobar Operación"
-                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <CheckCircle2 size={14} />
                           Aprobar
@@ -347,7 +493,7 @@ export const AprobacionesTab: React.FC = () => {
                         <button 
                           onClick={() => handleActionClick(op, 'rechazar')}
                           title="Rechazar Operación"
-                          className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors"
+                          className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors cursor-pointer"
                         >
                           <XCircle size={16} />
                         </button>
@@ -360,6 +506,51 @@ export const AprobacionesTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* PANEL FLOTANTE INFERIOR PARA APROBACIÓN MASIVA */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-0 right-0 z-50 px-4 md:px-0 animate-fadeIn">
+          <div className="max-w-4xl mx-auto bg-slate-900 dark:bg-slate-950 text-white p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-700">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-black text-lg text-white">
+                {selectedIds.size}
+              </div>
+              <div>
+                <p className="font-bold text-sm">Operación(es) seleccionada(s)</p>
+                <label className="flex items-center gap-2 text-xs text-slate-300 mt-1 cursor-pointer hover:text-white transition-colors">
+                  <input 
+                    type="checkbox" 
+                    checked={forceApproval}
+                    onChange={(e) => setForceApproval(e.target.checked)}
+                    className="rounded border-slate-600 bg-slate-800 text-red-500 focus:ring-red-500/50 cursor-pointer"
+                  />
+                  <span>Aprobación forzada (ignorar estado Cavali/Letras)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleAprobarSeleccionadas('rechazar')}
+                disabled={processing}
+                className="px-4 py-2.5 bg-red-600/80 hover:bg-red-600 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <XCircle size={15} />
+                Rechazar ({selectedIds.size})
+              </button>
+
+              <button
+                onClick={() => handleAprobarSeleccionadas('aprobar')}
+                disabled={processing}
+                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+              >
+                {processing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                {processing ? 'Procesando...' : `Aprobar (${selectedIds.size}) Operaciones`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {showModal && selectedOp && (

@@ -59,4 +59,14 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 3. Filtro y Conteo Exclusivo por Emisor: El conteo por letra y el filtro alfabetico se evalua EXCLUSIVAMENTE sobre la inicial del EMISOR (Cedente) 'op.emisor_nombre'. Queda PROHIBIDO evaluar la inicial del Aceptante (Pagador).
 4. Ningun agente de IA o modelo de lenguaje puede modificar, reemplazar o refactorizar este selector de letras sin orden directa y explicita del usuario.
 
+## Regla 7 - COMPONENTE OFICIAL UNICO Y REQUISITOS DEL MODULO APROBACIONES
+
+1. COMPONENTE UNICO: El unico componente oficial del modulo Aprobaciones es AprobacionesTab.tsx. Queda PROHIBIDO usar o hacer referencia al archivo legacy AprobacionTab.tsx (singular).
+2. REQUISITOS OBLIGATORIOS DE APROBACIONES (AprobacionesTab.tsx):
+   - Badges Visuales: Badge verde/rojo para 'Est. Cavali' (ACEPTADA/PENDIENTE) y 'Est. Letra' (FIRMADA/PENDIENTE).
+   - Sin Columna Operacion Redundante: Retirar la columna 'Operacion' para dar espacio horizontal suficiente.
+   - Master Checkbox: Casilla de seleccion masiva ('Marcar Todas') para seleccion y aprobacion en lote.
+   - Checkbox Aprobacion Forzada: Opcion explicita de 'Aprobacion Forzada (ignorar estado Cavali/Letras)' en el panel inferior de aprobacion.
+
+
 

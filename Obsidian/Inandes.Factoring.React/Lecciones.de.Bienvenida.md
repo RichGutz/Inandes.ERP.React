@@ -52,16 +52,16 @@ https://inandes.react.geeksoft.tech
 
 ---
 
-## 📋 Estado de Módulos
+## 📋 Estado y Especificaciones Estrictas de Módulos (React vs FastAPI)
 
-| Módulo Streamlit | Tab React | Estado |
-|-----------------|-----------|--------|
-| `01_Registro.py` | Registro | ✅ Implementado |
-| `02_Originacion.py` | Originación | 🟠 QC en progreso |
-| `03_Aprobacion.py` | Aprobaciones | 🔴 Placeholder |
-| `04_Desembolso.py` | Desembolsos | 🔴 Placeholder |
-| `05_Liquidacion.py` | Liquidaciones | 🔴 Placeholder |
-| `07_Repositorio.py` | Repositorio | 🔴 Placeholder |
+| Sub-Módulo | Componente React Oficial | Endpoint FastAPI Backend | Especificaciones Intangibles & Reglas |
+|------------|-------------------------|--------------------------|---------------------------------------|
+| **01. Registro** | `RegistroTab.tsx` | Supabase `EMISORES.ACEPTANTES` | ✅ Rolodex A-Z por inicial de Razón Social, Ordenamiento A-Z/Z-A, Exportación Excel/PDF. |
+| **02. Originación** | `OriginacionTab.tsx` | `/api/originacion/parse-invoices`, `/calcular_desembolso_lote`, `/formalize` | ✅ Secciones 2.1 a 2.4 explícitas sin abreviaturas, Goal Seek con techo en tasa grabada y redondeo a múltiplos de S/ 10. |
+| **03. Aprobaciones** | `AprobacionesTab.tsx` | `/api/originacion/operaciones`, `/api/aprobacion/aprobar` | 🔴 **PROHIBIDO USAR `AprobacionTab.tsx`**. Usar únicamente `AprobacionesTab.tsx`. **Selector Alfabético A-Z exclusivo por Emisor**, **Badges de Est. Cavali** (ACEPTADA/PENDIENTE) y **Est. Letra** (FIRMADA/PENDIENTE), **Master Checkbox "Seleccionar Todo"**, y **Checkbox de "Aprobación Forzada"** (ignorar Cavali/Letra). Sin columna redundante 'Operación'. |
+| **04. Desembolsos** | `DesembolsosTab.tsx` | `/api/desembolsos/pendientes`, `/api/desembolsos/procesar` | ✅ Pickers de fecha individual por factura, Voucher PDF 1 página. |
+| **05. Liquidaciones** | `LiquidacionesTab.tsx` | `/api/liquidacion/...` | 🟠 En migración |
+| **07. Repositorio** | `RepositorioTab.tsx` | `/api/repositorio/...` | ✅ Integración Google Drive |
 
 ---
 

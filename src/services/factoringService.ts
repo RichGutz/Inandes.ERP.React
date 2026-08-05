@@ -26,6 +26,8 @@ export interface OperacionFactoring {
   estado: 'ORIGINADO' | 'APROBADO' | 'DESEMBOLSADO' | 'LIQUIDADO' | 'REPOSITORIO';
   fecha_desembolso_esperada: string;
   fecha_creacion?: string;
+  status_cavali?: string;
+  status_letra?: string;
 }
 
 export interface FacturaDetalle {
@@ -84,6 +86,13 @@ const generateProposalId = (): string => {
   return `FACT-${yy}${mm}${dd}-${rand}`;
 };
 
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '';
+  }
+  return import.meta.env.VITE_API_FACTORING_URL || 'http://localhost:8000';
+};
+
 export const factoringService = {
 
   // --- Propuestas (legacy) ---
@@ -140,91 +149,99 @@ export const factoringService = {
   // --- Operaciones por estado (Aprobaciones, Desembolsos, Liquidaciones) ---
   async getOperaciones(estadoFiltro?: string): Promise<OperacionFactoring[]> {
     try {
-      let query = supabase.from('factoring_operaciones').select('*').order('fecha_creacion', { ascending: false });
+      const API_BASE = getApiBaseUrl();
+      const url = estadoFiltro 
+        ? `${API_BASE}/api/originacion/operaciones?estado=${estadoFiltro}` 
+        : `${API_BASE}/api/originacion/operaciones`;
+      
+      const res = await fetch(url);
+      if (res.ok) {
+        const jsonRes = await res.json();
+        if (jsonRes.operaciones && Array.isArray(jsonRes.operaciones)) {
+          return jsonRes.operaciones;
+        }
+      }
+    } catch (err: any) {
+      console.warn('Backend API /operaciones no respondió, intentando fallback directo:', err.message);
+    }
+
+    // Fallback: consulta directa a Supabase
+    try {
+      let query = supabase.from('propuestas').select('*');
       if (estadoFiltro) {
-        query = query.eq('estado', estadoFiltro);
+        if (estadoFiltro === 'ORIGINADO' || estadoFiltro === 'PENDIENTE') {
+          query = query.in('estado', ['ACTIVO', 'ORIGINADO', 'PENDIENTE']);
+        } else {
+          query = query.eq('estado', estadoFiltro);
+        }
       }
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
-    } catch (err: any) {
-      console.warn('Error cargando operaciones de factoring:', err.message);
-      // Demo mock data si la tabla aún no existe o no tiene datos
-      const mockList: OperacionFactoring[] = [
-        {
-          id: 'op-001',
-          proposal_id: 'FACT-2607-8841',
-          emisor_ruc: '20554128911',
-          emisor_nombre: 'CONSTRUCTORA SAN JOSE S.A.C.',
-          aceptante_ruc: '20100047218',
-          aceptante_nombre: 'COMPAÑIA MINERA ANTAMINA S.A.',
-          moneda: 'PEN',
-          monto_bruto_total: 150000.00,
-          monto_neto_total: 122033.90,
-          interes_total: 3661.02,
-          abono_real_total: 118372.88,
-          comisiones_fijas: 150.00,
-          dias_promedio: 45,
-          estado: 'ORIGINADO',
-          fecha_desembolso_esperada: '2026-08-05',
-          fecha_creacion: '2026-08-01'
-        },
-        {
-          id: 'op-002',
-          proposal_id: 'FACT-2607-9923',
-          emisor_ruc: '20601122334',
-          emisor_nombre: 'LOGISTICA & SERVICIOS INTEGRALES EIRL',
-          aceptante_ruc: '20100130204',
-          aceptante_nombre: 'ALICORP S.A.A.',
-          moneda: 'USD',
-          monto_bruto_total: 45000.00,
-          monto_neto_total: 36610.17,
-          interes_total: 1098.31,
-          abono_real_total: 35511.86,
-          comisiones_fijas: 50.00,
-          dias_promedio: 60,
-          estado: 'APROBADO',
-          fecha_desembolso_esperada: '2026-08-03',
-          fecha_creacion: '2026-07-30'
-        },
-        {
-          id: 'op-003',
-          proposal_id: 'FACT-2607-1102',
-          emisor_ruc: '20491827364',
-          emisor_nombre: 'TECNOLOGIA Y REDES PERU S.A.C.',
-          aceptante_ruc: '20100013089',
-          aceptante_nombre: 'TELEFONICA DEL PERU S.A.A.',
-          moneda: 'PEN',
-          monto_bruto_total: 88000.00,
-          monto_neto_total: 71544.72,
-          interes_total: 1788.62,
-          abono_real_total: 69756.10,
-          comisiones_fijas: 100.00,
-          dias_promedio: 30,
-          estado: 'DESEMBOLSADO',
-          fecha_desembolso_esperada: '2026-07-25',
-          fecha_creacion: '2026-07-20'
-        }
-      ];
-      if (estadoFiltro) {
-        return mockList.filter(op => op.estado === estadoFiltro);
+
+      if (data && data.length > 0) {
+        return data.map((item: any) => {
+          let rJson: any = {};
+          if (item.recalculate_result_json) {
+            try {
+              rJson = typeof item.recalculate_result_json === 'string'
+                ? JSON.parse(item.recalculate_result_json)
+                : item.recalculate_result_json;
+            } catch (e) {
+              console.warn('Error parseando recalculate_result_json:', e);
+            }
+          }
+          
+          const calc = rJson.calculo_con_tasa_encontrada || {};
+          const desglose = rJson.desglose_final_detallado || {};
+
+          const montoBruto = Number(item.monto_total_factura || item.monto_neto_factura || 0);
+          const montoNeto = Number(item.monto_neto_factura || 0);
+          const interes = Number(desglose.interes?.monto || calc.interes || item.interes_calculado || 0);
+          const comisiones = Number(desglose.comision_estructuracion?.monto || calc.comision_estructuracion || 0);
+          const abonoReal = Number(desglose.abono?.monto || calc.abono || item.abono_real_calculado || (montoNeto - interes - comisiones));
+          const diasPromedio = Number(calc.plazo_operacion || item.plazo_operacion_calculado || 30);
+
+          return {
+            id: item.proposal_id,
+            proposal_id: item.proposal_id,
+            emisor_ruc: item.emisor_ruc || '',
+            emisor_nombre: item.emisor_nombre || 'S/N',
+            aceptante_ruc: item.aceptante_ruc || '',
+            aceptante_nombre: item.aceptante_nombre || 'S/N',
+            moneda: item.moneda_factura || 'PEN',
+            monto_bruto_total: montoBruto,
+            monto_neto_total: montoNeto,
+            interes_total: interes,
+            abono_real_total: abonoReal,
+            comisiones_fijas: comisiones,
+            dias_promedio: diasPromedio,
+            estado: item.estado === 'ACTIVO' ? 'ORIGINADO' : item.estado,
+            fecha_desembolso_esperada: item.fecha_desembolso_factoring || '',
+            fecha_creacion: item.fecha_registro || ''
+          };
+        });
       }
-      return mockList;
+      return [];
+    } catch (err: any) {
+      console.warn('Error cargando propuestas desde tabla propuestas:', err.message);
+      return [];
     }
   },
 
-  async cambiarEstadoOperacion(id: string, nuevoEstado: 'ORIGINADO' | 'APROBADO' | 'DESEMBOLSADO' | 'LIQUIDADO', metaData?: any): Promise<void> {
+  async cambiarEstadoOperacion(id: string, nuevoEstado: string, metaData?: any): Promise<void> {
     try {
       const { error } = await supabase
-        .from('factoring_operaciones')
+        .from('propuestas')
         .update({ 
           estado: nuevoEstado,
-          ...(metaData || {})
+          ...metaData
         })
-        .eq('id', id);
+        .eq('proposal_id', id);
+
       if (error) throw error;
     } catch (err: any) {
-      console.warn(`Simulando cambio de estado a ${nuevoEstado} para ${id}:`, err.message);
+      console.error('Error al actualizar estado en propuestas:', err.message);
+      throw err;
     }
   },
 
