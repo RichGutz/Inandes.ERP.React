@@ -1,0 +1,43 @@
+# 🏛️ Bienvenido — Principios del Proyecto InAndes CRM & Factoring
+
+> **DOCUMENTO DE REFERENCIA Y LECTURA OBLIGATORIA**
+
+---
+
+## 🎯 ¿Qué estamos haciendo?
+
+Estamos reemplazando la interfaz heredada de **Streamlit** por un **Frontend React 19 + Vite** (`https://inandes.react.geeksoft.tech`), manteniendo intactos los motores de cálculo financiero en Python y la base de datos PostgreSQL en Supabase.
+
+| Componente | Tecnología | Estado |
+|------------|------------|--------|
+| **Frontend** | React 19 + TypeScript + Tailwind CSS | ✅ Desplegado en VPS |
+| **Backend API** | FastAPI (Python) | ✅ Desplegado en VPS (Puerto 8010/8502) |
+| **Base de Datos** | Supabase (`egvcinsbyropumybatdf`) | ✅ Operativa |
+| **Motores Financieros** | Motores Python V32, V25 y V2 | ✅ Intactos en `mini_erp_v2_antigravity` |
+
+---
+
+## 🚫 Regla de Oro — NO Reinventar la Rueda
+
+> **Los motores financieros de Python YA FUNCIONAN. No se duplica su lógica en React.**
+
+- **Motor de Retornos V32/V40:** Calcula intereses devengados, impuestos de 2da categoría y saldos.
+- **Motor de Valor Cuota V25:** Gestiona el devengue diario del patrimonio y valor cuota de cada fondo.
+- **Motor de Comisiones V2:** Proyecta y liquida los incentivos de la fuerza de ventas.
+
+React consume los endpoints FastAPI o replica la interfaz de usuario con servicios TypeScript que consultan a Supabase.
+
+---
+
+## 🔒 Reglas Intangibles de UI
+
+### Selector de Letras A-Z (Módulo Aprobaciones):
+- **Archivo:** `AprobacionesTab.tsx`
+- **Regla Intangible:** Se debe mostrar **SIEMPRE TODO EL ABECEDARIO** (`TODOS`, `A` - `Z`, `#`). PROHIBIDO ocultar o filtrar botones de letras sin facturas.
+- **Formato Visual:** Burbujas cuadradas redondeadas (`w-10 h-10 rounded-xl font-black bg-indigo-600` para activas) con contadores redondeados en la esquina superior derecha (`-top-1.5 -right-1.5`).
+- **Filtro y Conteo Exclusivo:** El conteo y el filtrado por letra se realizan **ÚNICAMENTE sobre la inicial del EMISOR (Cedente)** (`op.emisor_nombre`). Queda prohibido evaluar al Aceptante/Pagador.
+- **Instrucción para la IA:** Ningún agente o subagente de IA tiene permitido alterar esta estructura o reimplementar este componente sin autorización explícita del usuario.
+
+---
+
+*Última actualización: 2026-08-05*

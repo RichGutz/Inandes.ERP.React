@@ -42,11 +42,12 @@ Deben consultar y apoyarse activamente en el usuario (quien conoce el negocio y 
 
 ## Regla 5 - LECTURA OBLIGATORIA al Iniciar Sesion
 
-AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer el siguiente archivo antes de tomar cualquier accion:
+AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer uno de los siguientes archivos antes de tomar cualquier accion:
 
   C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\Bienvenido.md
+  C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Inversionistas.React\Lecciones.de.Bienvenida.md
 
-Este archivo contiene los principios fundamentales, la arquitectura del proyecto, el estado de modulos y las URLs/credenciales clave.
+Estos archivos contienen los principios fundamentales, la arquitectura del proyecto, reglas intangibles de UI y las URLs/credenciales clave.
 No leerlo equivale a operar sin contexto y es causa de errores graves.
 
 ## Regla 6 - PROTECCION INTANGIBLE: Selector de Letras A-Z (Modulo Aprobaciones)
