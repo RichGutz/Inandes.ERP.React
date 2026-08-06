@@ -123,3 +123,5 @@
 [2026-08-06 14:45:00-05:00] ESTADO: Completado con éxito. Identificado proceso zombie colgado en el puerto 8010 via journalctl. Ejecutado fuser -k -9 8010/tcp y reiniciado inandes-api.service en VPS. Servicio en estado active (running).
 [2026-08-06 15:07:00-05:00] TAREA: Implementación del Panel Único Unificado de Filtros con Rolodex A-Z, Autocompletar Empresa, RUC, Estado con cálculo dinámico En Mora y Rango de Fechas en RepositorioTab.tsx (Bóveda Digital).
 [2026-08-06 15:07:00-05:00] ESTADO: Completado con éxito. Actualizado RepositorioTab.tsx e interfaz OperacionFactoring en factoringService.ts. Orden alfabético automático A-Z por Emisor aplicado. Verificado npm run build exitoso.
+[2026-08-06 18:00:00-05:00] TAREA: Despliegue de los archivos de producción compilados (dist/) al directorio web de Nginx (/var/www/inandes) en el VPS.
+[2026-08-06 18:00:00-05:00] ESTADO: Completado con éxito. Transferidos los assets de dist/ a /var/www/inandes en el VPS y reiniciado Nginx. El sitio https://inandes.react.geeksoft.tech/ sirve la versión con el Panel Unificado de Filtros.
