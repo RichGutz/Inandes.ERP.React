@@ -58,8 +58,8 @@ https://inandes.react.geeksoft.tech
 |------------|-------------------------|--------------------------|---------------------------------------|
 | **01. Registro** | `RegistroTab.tsx` | Supabase `EMISORES.ACEPTANTES` | ✅ Rolodex A-Z por inicial de Razón Social, Ordenamiento A-Z/Z-A, Exportación Excel/PDF. |
 | **02. Originación** | `OriginacionTab.tsx` | `/api/originacion/parse-invoices`, `/calcular_desembolso_lote`, `/formalize` | ✅ Secciones 2.1 a 2.4 explícitas sin abreviaturas, Goal Seek con techo en tasa grabada y redondeo a múltiplos de S/ 10. |
-| **03. Aprobaciones** | `AprobacionesTab.tsx` | `/api/originacion/operaciones`, `/api/aprobacion/aprobar` | 🔴 **PROHIBIDO USAR `AprobacionTab.tsx`**. Usar únicamente `AprobacionesTab.tsx`. **Selector Alfabético A-Z exclusivo por Emisor**, **Badges de Est. Cavali** (ACEPTADA/PENDIENTE) y **Est. Letra** (FIRMADA/PENDIENTE), **Master Checkbox "Seleccionar Todo"**, y **Checkbox de "Aprobación Forzada"** (ignorar Cavali/Letra). Sin columna redundante 'Operación'. |
-| **04. Desembolsos** | `DesembolsosTab.tsx` | `/api/desembolsos/pendientes`, `/api/desembolsos/procesar` | ✅ Pickers de fecha individual por factura, Voucher PDF 1 página. |
+| **03. Aprobaciones** | `AprobacionesTab.tsx` | `/api/originacion/operaciones`, `/api/aprobacion/aprobar` | 🔴 **PROHIBIDO USAR `AprobacionTab.tsx`**. Estructura Acordeón Estandarizada (`Rolodex A-Z` -> `🏢 Empresa Emisora` -> `📁 Lotes` -> `📊 Facturas`). **Colapsado 100% por defecto**. Acciones de lote en cabecera superior y Checkbox 'Aprobación Forzada'. |
+| **04. Desembolsos** | `DesembolsosTab.tsx` | `/api/desembolsos/pendientes`, `/api/desembolsos/procesar` | ✅ Pickers de fecha individual por factura, Voucher PDF 1 página, **Tarjetas de Métricas de Resumen Superiores** (Pendientes, PEN, USD), Acordeón Colapsado. |
 | **05. Liquidaciones** | `LiquidacionesTab.tsx` | `/api/liquidacion/...` | 🟠 En migración |
 | **07. Repositorio** | `RepositorioTab.tsx` | `/api/repositorio/...` | ✅ Integración Google Drive |
 
@@ -84,7 +84,7 @@ https://inandes.react.geeksoft.tech
 
 ### 1. Migración del Backend a Local / GitHub
 El backend original corría acoplado a Streamlit en el VPS. Se extrajo la carpeta `/opt/erp_inandes/backend` y se subió al repositorio oficial de GitHub (`Inandes.ERP.React`).
-- **Problema de variables de entorno**: El backend FastAPI requiere estrictamente un archivo `.env` en local (ignorado en git) con las variables `SUPABASE_URL` y `SUPABASE_KEY` (usando las credenciales de React: `egvcinsbyropumybatdf`). Si este archivo falta, cualquier consulta a base de datos tumba el servidor con un Error 500, causando un `Failed to fetch` genérico por CORS en React.
+- **Problema de variables de entorno**: El backend FastAPI requiere strictly un archivo `.env` en local (ignorado en git) con las variables `SUPABASE_URL` y `SUPABASE_KEY` (usando las credenciales de React: `egvcinsbyropumybatdf`). Si este archivo falta, cualquier consulta a base de datos tumba el servidor con un Error 500, causando un `Failed to fetch` genérico por CORS en React.
 
 ### 2. Optimización de Latencia en Originación (Parseo de PDFs)
 - **Problema Inicial**: El parseo demoraba demasiado en local al enviar 2 facturas.
@@ -103,4 +103,4 @@ El backend original corría acoplado a Streamlit en el VPS. Se extrajo la carpet
 
 ---
 
-*Ver también: [[00_Indice_y_Arquitectura]] | [[00.A.REGISTRO]] | [[00.B. ORIGINACION]] | [[07. QC Loops - Streamlit vs React - Originacion]]*
+*Ver también: [[00_Indice_y_Arquitectura]] | [[00.A.REGISTRO]] | [[00.B. ORIGINACION]] | [[03_Modulos_Aprobaciones_y_Desembolsos_Detalle]] | [[07. QC Loops - Streamlit vs React - Originacion]]*
