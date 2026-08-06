@@ -122,11 +122,16 @@ export const AprobacionesTab: React.FC = () => {
     return map;
   }, [filteredOps]);
 
-  // Auto-expansión inicial de acordeones (Empresas abiertas, Lotes colapsados por defecto)
+  // Auto-expansión inicial: Empresa y Lotes desplegados por defecto para visibilidad directa
   useEffect(() => {
     const allEmisores = new Set(Object.keys(companiesMap));
     setExpandedCompanies(allEmisores);
-    setExpandedLotes(new Set()); // Lotes colapsados por defecto
+
+    const allLotes = new Set<string>();
+    Object.entries(companiesMap).forEach(([emisor, lotes]) => {
+      Object.keys(lotes).forEach(loteId => allLotes.add(`${emisor}__${loteId}`));
+    });
+    setExpandedLotes(allLotes);
   }, [companiesMap]);
 
   const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
