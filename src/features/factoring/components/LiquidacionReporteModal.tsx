@@ -10,8 +10,6 @@ interface LiquidacionReporteModalProps {
   montoPago: number | null;
 }
 
-const API_BASE = getApiBaseUrl();
-
 export const LiquidacionReporteModal: React.FC<LiquidacionReporteModalProps> = ({
   isOpen,
   onClose,
@@ -33,10 +31,15 @@ export const LiquidacionReporteModal: React.FC<LiquidacionReporteModalProps> = (
       
       const fetchPdf = async () => {
         try {
-          const baseUrl = API_BASE || window.location.origin;
-          const url = new URL(`${baseUrl}/api/liquidaciones/${proposalId}/pdf`);
-          url.searchParams.append('fecha_pago', fechaPago);
-          url.searchParams.append('monto_pago', montoPago.toString());
+          const apiBase = getApiBaseUrl();
+          const baseOrigin = (apiBase && apiBase.startsWith('http')) 
+            ? apiBase 
+            : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000');
+
+          const endpointPath = `/api/liquidaciones/${encodeURIComponent(proposalId)}/pdf`;
+          const url = new URL(endpointPath, baseOrigin);
+          if (fechaPago) url.searchParams.append('fecha_pago', fechaPago);
+          if (montoPago !== null && montoPago !== undefined) url.searchParams.append('monto_pago', montoPago.toString());
 
           const res = await fetch(url.toString(), {
             method: 'GET'

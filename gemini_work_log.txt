@@ -70,10 +70,16 @@
 [2026-08-01T13:34:00-05:00] TAREA: Sincronización masiva de 68 empresas en el proyecto oficial de Supabase (egvcinsbyropumybatdf) usando Service Role Key.
 [2026-08-01T13:37:00-05:00] ESTADO: Completado con éxito. Se mantuvieron intactas las credenciales oficiales con Google OAuth activo (`egvcinsbyropumybatdf`). Se inyectaron exitosamente las 68 empresas (con ZEN HOLDINGS SAC 20563361761 y datos SUNAT limpios). Actualizado factoringService.ts y RegistroTab.tsx con soporte dual de columnas, compilado y redesplegado a producción (HTTPS).
 
-
-
-
-
 [2026-08-01 18:36:33-05:00] COMPLETADO PARIDAD 100% ORIGINACION: Integrado Navegador de Google Drive (GET /api/originacion/drive/list) con credenciales Service Account (Shared Drive ID 1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq), auto-extracción por RegEx de N° Contrato y N° Anexo, tabla Perfil de la Operación 1:1, generación de PDFs Perfil y Liquidación vía WeasyPrint (POST /api/originacion/generate-pdfs) y formalización completa en Supabase 'propuestas' y subida a Google Drive (POST /api/originacion/formalize). Corregidas plantillas Jinja2, eliminados procesos zombie en puerto 8010. Actualizado Obsidian 00.B. ORIGINACION.md y desplegado en https://inandes.react.geeksoft.tech.
 [2026-08-03 16:15:00-05:00] TAREA: Resolver bloqueo y fallo de descarga de PDFs en el módulo de Originación (React).
 [2026-08-03 16:15:00-05:00] ESTADO: Completado con éxito. Flexibilizadas condiciones de botones de generación en OriginacionTab.tsx, implementadas Blob URLs para vista/descarga directa y añadidos enlaces de Previsualizar y Descargar. Verificación de compilación TypeScript limpia.
+[2026-08-06 11:10:00-05:00] TAREA: Limpieza total de TAXI LADY y servicios innecesarios en VPS.
+[2026-08-06 11:10:00-05:00] ESTADO: Completado con éxito. Eliminado proceso PM2 'taxy-lady' (ID 0), directorio /opt/taxy_lady, configs de Nginx, certs SSL de certbot y eliminada la API 'market_research_api' (ID 14).
+[2026-08-06 11:24:00-05:00] TAREA: Corrección de error de construcción URL en modal PDF e inconstancia de parámetro cap_rem en backend FastAPI de Liquidaciones.
+[2026-08-06 11:24:00-05:00] ESTADO: Completado con éxito. Modificado LiquidacionReporteModal.tsx forzando el segundo argumento origin de window.location.origin en new URL(path, base). Corregido backend/routers/liquidaciones.py en VPS alineando parámetro cap_rem=cap_rem y reiniciado inandes-api.service. Actualizada nota 00.E.LIQUIDACIONES.md en Obsidian.
+[2026-08-06 11:34:00-05:00] TAREA: Eliminación de carpeta .obsidian y rediseño de paginación de 3 páginas del PDF de liquidaciones con logo Geeksoft +50%.
+[2026-08-06 11:34:00-05:00] ESTADO: Completado con éxito. Eliminado directorio local .obsidian. Modificado generar_pdfs_liquidacion.py en el VPS ampliando logo Geeksoft a 240px x 52px (+50%) e implementando saltos de página explícitos en HTML/CSS (Pág 1: Originación, Pág 2: Auditoría Diaria, Pág 3: Liquidación G&P). Reiniciado inandes-api.service.
+[2026-08-06 11:39:00-05:00] TAREA: Restablecimiento de logos oficiales PNG (Base64) y corrección a orientación Vertical A4 (Portrait) en 3 páginas.
+[2026-08-06 11:39:00-05:00] ESTADO: Completado con éxito. Incrustados logos reales PNG de Logo.Geeksoft.png (escalado a height:55px, +50%) y logo_inandes.png. Cambiada la orientación a A4 Portrait (Vertical) y distribuidas las 3 páginas secuenciales con cabeceras completas. Reiniciado inandes-api.service.
+[2026-08-06 11:50:00-05:00] TAREA: Corrección estricta de encabezado (título en 1 fila, logo InAndes -20%, eliminación de subtítulo) y cálculo de paridad de Monto Desembolsado / Saldo Real.
+[2026-08-06 11:50:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS: título 'REPORTE INTEGRAL DE LIQUIDACIÓN' en una sola fila (white-space: nowrap), logo InAndes reducido a height: 34px (-20%), subtítulo removido y calculada la cifra real de monto_desembolso (evitando 0.00). Reiniciado inandes-api.service.
