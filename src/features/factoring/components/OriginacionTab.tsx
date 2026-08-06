@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../../../config/apiConfig';
 import { 
   Trash2, 
   Calculator, 
@@ -33,6 +34,7 @@ export interface InvoiceEntry {
   monto_neto_factura: number;
   moneda_factura: 'PEN' | 'USD';
   detraccion_porcentaje: number;
+  detraccion_monto?: number;
   fecha_emision_factura: string;
   fecha_desembolso_factoring: string;
   fecha_pago_calculada: string;
@@ -183,7 +185,7 @@ export const OriginacionTab: React.FC = () => {
         });
       }
 
-      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+      const API_BASE = getApiBaseUrl();
       const res = await fetch(`${API_BASE}/api/originacion/parse-invoices`, {
         method: 'POST',
         body: formData,
@@ -218,6 +220,12 @@ export const OriginacionTab: React.FC = () => {
         const dPago = new Date(fechaPagoIso);
         const plazoDias = Math.max(0, differenceInDays(dPago, dDesembolso));
 
+        const isUsd = p.moneda === 'USD';
+        const getRate = (val: any) => (val !== undefined && val !== null ? Number(val) : 0);
+
+        const intMensual = isUsd ? getRate(dbRates.interes_mensual_usd) : getRate(dbRates.interes_mensual_pen);
+        const intMoratorio = isUsd ? getRate(dbRates.interes_moratorio_usd) : getRate(dbRates.interes_moratorio_pen);
+
         return {
           id: `inv_${idx}_${Date.now()}`,
           group_id: bId,
@@ -229,20 +237,33 @@ export const OriginacionTab: React.FC = () => {
           aceptante_nombre: aceptanteNombre || 'ACEPTANTE S.A.A.',
           monto_total_factura: montoTotal,
           monto_neto_factura: montoNeto,
-          moneda_factura: (p.moneda === 'USD' ? 'USD' : 'PEN') as 'PEN' | 'USD',
+          moneda_factura: (isUsd ? 'USD' : 'PEN') as 'PEN' | 'USD',
           detraccion_porcentaje: detraccionPct,
           fecha_emision_factura: fechaEmisionIso,
           fecha_desembolso_factoring: fechaDesembolsoIso,
           fecha_pago_calculada: fechaPagoIso,
           plazo_operacion_calculado: plazoDias,
-          dias_minimos_interes_individual: Number(dbRates.dias_minimos_interes || 15),
-          tasa_de_avance: Number(dbRates.tasa_avance || 90),
-          interes_mensual: Number(dbRates.interes_mensual_pen || 2.5),
-          interes_moratorio: Number(dbRates.interes_moratorio_pen || 2.5),
-          comision_afiliacion_pen: Number(dbRates.comision_afiliacion_pen || 0),
-          comision_afiliacion_usd: Number(dbRates.comision_afiliacion_usd || 0),
+          dias_minimos_interes_individual: getRate(dbRates.dias_minimos_interes),
+          tasa_de_avance: getRate(dbRates.tasa_avance),
+          interes_mensual: intMensual,
+          interes_moratorio: intMoratorio,
+          comision_afiliacion_pen: getRate(dbRates.comision_afiliacion_pen),
+          comision_afiliacion_usd: getRate(dbRates.comision_afiliacion_usd),
         };
       });
+
+      // Pre-poblar Configuración Global (Sección 2) con las tasas reales del Emisor en Supabase
+      const firstWithRates = (data.results || []).find((r: any) => r.db_rates && Object.keys(r.db_rates).length > 0);
+      if (firstWithRates && firstWithRates.db_rates) {
+        const dbr = firstWithRates.db_rates;
+        if (dbr.tasa_avance !== undefined && dbr.tasa_avance !== null) setTasaAvanceGlobal(Number(dbr.tasa_avance));
+        if (dbr.interes_mensual_pen !== undefined && dbr.interes_mensual_pen !== null) setInteresMensualGlobal(Number(dbr.interes_mensual_pen));
+        if (dbr.interes_moratorio_pen !== undefined && dbr.interes_moratorio_pen !== null) setInteresMoratorioGlobal(Number(dbr.interes_moratorio_pen));
+        if (dbr.dias_minimos_interes !== undefined && dbr.dias_minimos_interes !== null) setDiasInteresMinimoGlobal(Number(dbr.dias_minimos_interes));
+        if (dbr.comision_estructuracion_pct !== undefined && dbr.comision_estructuracion_pct !== null) setComisionEstructuracionPct(Number(dbr.comision_estructuracion_pct));
+        if (dbr.comision_estructuracion_pen !== undefined && dbr.comision_estructuracion_pen !== null) setComisionEstructuracionMinPen(Number(dbr.comision_estructuracion_pen));
+        if (dbr.comision_estructuracion_usd !== undefined && dbr.comision_estructuracion_usd !== null) setComisionEstructuracionMinUsd(Number(dbr.comision_estructuracion_usd));
+      }
 
       setInvoices(parsedInvoices);
     } catch (err: any) {
@@ -315,7 +336,7 @@ export const OriginacionTab: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+      const API_BASE = getApiBaseUrl();
 
       // 1. Primer Payload: Cálculo teórico directo
       const totalCapPen = invoices
@@ -584,7 +605,7 @@ export const OriginacionTab: React.FC = () => {
 
     setLoadingStep(true);
     try {
-      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+      const API_BASE = getApiBaseUrl();
 
       const payload = {
         invoices: invoicesData
@@ -643,7 +664,7 @@ export const OriginacionTab: React.FC = () => {
         a.click();
       }
 
-      const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
+      const API_BASE = getApiBaseUrl();
 
       // Preparar archivos generados para subida (Perfil y Liquidación)
       const filesToUpload: Array<{ filename: string; content_base64: string }> = [];
@@ -763,88 +784,77 @@ export const OriginacionTab: React.FC = () => {
           )}
         </div>
 
-        {/* Grid de Grupos / Buckets (Hasta 4 columnas por fila) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Grupos / Buckets en Filas Horizontales Únicas */}
+        <div className="space-y-2">
           {activeGroups.map((bId) => (
-            <div key={bId} className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-3 space-y-2.5 flex flex-col justify-between">
-              <div className="space-y-2">
-                {/* Header del Grupo */}
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
-                  <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-                    📁 GRUPO {bId}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">
-                    {(bucketsFiles[bId] || []).length} PDFs
-                  </span>
-                </div>
+            <div key={bId} className="bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              {/* 1. Header Grupo */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                  📁 GRUPO {bId}
+                </span>
+                <span className="text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">
+                  {(bucketsFiles[bId] || []).length} PDFs
+                </span>
+              </div>
 
-                {/* Fila Controles: Fecha de Pago + Botón Adjuntar PDFs */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 space-y-0.5">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase block">Fecha Pago:</label>
-                    <input
-                      type="date"
-                      value={bucketDates[bId] || defaultDueDate()}
-                      onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
-                      className="w-full p-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 font-bold"
-                    />
-                  </div>
+              {/* 2. Fecha de Pago */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <label className="text-[10px] font-bold text-slate-500 uppercase shrink-0">Fecha Pago:</label>
+                <input
+                  type="date"
+                  value={bucketDates[bId] || defaultDueDate()}
+                  onChange={(e) => setBucketDates(prev => ({ ...prev, [bId]: e.target.value }))}
+                  className="p-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-200 font-bold"
+                />
+              </div>
 
-                  <div className="shrink-0 self-end">
-                    <label className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg cursor-pointer transition-colors shadow-2xs">
-                      <UploadCloud size={12} />
-                      <span>+ Adjuntar</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept=".pdf"
-                        onChange={(e) => handleNativeFileSelect(bId, e)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
+              {/* 3. Botón Adjuntar */}
+              <div className="shrink-0">
+                <label className="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-lg cursor-pointer transition-colors shadow-2xs">
+                  <UploadCloud size={13} />
+                  <span>+ Adjuntar PDFs</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf"
+                    onChange={(e) => handleNativeFileSelect(bId, e)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
-                {/* Contenedor Grid 3-Columnas (Zona Activa de Drag and Drop) */}
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(bId, e)}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-600 rounded-lg p-2 bg-white dark:bg-slate-900 transition-colors min-h-[90px] space-y-1.5"
-                >
-                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800/60 pb-1">
-                    <span>📥 ARCHIVOS ADJUNTOS ({ (bucketsFiles[bId] || []).length })</span>
-                    <span className="text-[8px] font-normal italic">(Arrastra PDFs aquí)</span>
-                  </div>
-
-                  {(bucketsFiles[bId] || []).length > 0 ? (
-                    <div className="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-0.5">
-                      {bucketsFiles[bId].map((f, fIdx) => (
-                        <div
-                          key={fIdx}
-                          className="flex items-center justify-between p-1 bg-slate-50 dark:bg-slate-800/80 rounded border border-slate-200 dark:border-slate-700 text-[9px] group"
+              {/* 4. Dropzone & Chips de Archivos (Horizontal) */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(bId, e)}
+                className="flex-1 min-w-[280px] border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-red-400 dark:hover:border-red-600 rounded-lg p-1.5 bg-white dark:bg-slate-900 transition-colors flex items-center justify-between gap-2 overflow-x-auto min-h-[36px]"
+              >
+                {(bucketsFiles[bId] || []).length > 0 ? (
+                  <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                    {bucketsFiles[bId].map((f, fIdx) => (
+                      <div
+                        key={fIdx}
+                        className="flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[10px] shrink-0"
+                      >
+                        <span className="truncate font-mono font-medium text-slate-700 dark:text-slate-200 max-w-[140px]" title={f.name}>
+                          {f.name}
+                        </span>
+                        <button
+                          onClick={() => removeFile(bId, fIdx)}
+                          className="text-slate-400 hover:text-red-500 shrink-0 p-0.5"
+                          title="Eliminar"
                         >
-                          <span
-                            className="truncate font-mono font-medium text-slate-700 dark:text-slate-200 pr-0.5"
-                            title={f.name}
-                          >
-                            {f.name}
-                          </span>
-                          <button
-                            onClick={() => removeFile(bId, fIdx)}
-                            className="text-slate-400 hover:text-red-500 shrink-0 p-0.5"
-                            title="Eliminar"
-                          >
-                            <Trash2 size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-[10px] italic text-slate-400 text-center py-4">
-                      Arrastra tus facturas PDF aquí o usa el botón superior.
-                    </div>
-                  )}
-                </div>
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-[10px] italic text-slate-400 px-2">
+                    Arrastra tus facturas PDF aquí o usa el botón "+ Adjuntar PDFs"
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -870,194 +880,211 @@ export const OriginacionTab: React.FC = () => {
             2. Configuración Global
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-xs">
-            {/* Columna 1: Com. de Estructuración */}
-            <div className="space-y-3 bg-slate-50/70 dark:bg-slate-950/60 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <span className="font-bold text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-800 pb-2">
-                Com. de Estructuración
+          <div className="space-y-2 text-xs">
+            {/* Fila 1: 2.1 Comisión de Estructuración */}
+            <div className="bg-slate-50/70 dark:bg-slate-950/60 p-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs shrink-0">
+                2.1 Comisión de Estructuración
               </span>
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={aplicarComisionEstructuracion}
-                  onChange={(e) => setAplicarComisionEstructuracion(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Comisión de Estructuración
-              </label>
 
-              <div className="space-y-2 pt-1">
-                <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Comisión de Estructuración (%)</span>
+              <div className="flex items-center gap-4 text-xs shrink-0">
+                <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                  <input
+                    type="checkbox"
+                    checked={aplicarComisionEstructuracion}
+                    onChange={(e) => setAplicarComisionEstructuracion(e.target.checked)}
+                    className="rounded text-red-600 focus:ring-red-500"
+                  />
+                  Aplicar
+                </label>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[11px] font-semibold">Estructuración (%):</span>
                   <input
                     type="number"
                     step="0.1"
                     value={comisionEstructuracionPct}
                     onChange={(e) => setComisionEstructuracionPct(Number(e.target.value))}
                     disabled={!aplicarComisionEstructuracion}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold"
+                    className="w-16 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
                   />
                 </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Comisión Mínima (PEN)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[11px] font-semibold">Mínima (PEN):</span>
                   <input
                     type="number"
                     value={comisionEstructuracionMinPen}
                     onChange={(e) => setComisionEstructuracionMinPen(Number(e.target.value))}
                     disabled={!aplicarComisionEstructuracion}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+                    className="w-20 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
                   />
                 </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Comisión Mínima (USD)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[11px] font-semibold">Mínima (USD):</span>
                   <input
                     type="number"
                     value={comisionEstructuracionMinUsd}
                     onChange={(e) => setComisionEstructuracionMinUsd(Number(e.target.value))}
                     disabled={!aplicarComisionEstructuracion}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+                    className="w-20 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Columna 2: Com. de Afiliación */}
-            <div className="space-y-3 bg-slate-50/70 dark:bg-slate-950/60 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <span className="font-bold text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-800 pb-2">
-                Com. de Afiliación
+            {/* Fila 2: 2.2 Comisión de Afiliación */}
+            <div className="bg-slate-50/70 dark:bg-slate-950/60 p-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs shrink-0">
+                2.2 Comisión de Afiliación
               </span>
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={aplicarComisionAfiliacion}
-                  onChange={(e) => setAplicarComisionAfiliacion(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Comisión de Afiliación
-              </label>
 
-              <div className="space-y-2 pt-1">
-                <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Monto Comisión Afiliación (PEN)</span>
+              <div className="flex items-center gap-4 text-xs shrink-0">
+                <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                  <input
+                    type="checkbox"
+                    checked={aplicarComisionAfiliacion}
+                    onChange={(e) => setAplicarComisionAfiliacion(e.target.checked)}
+                    className="rounded text-red-600 focus:ring-red-500"
+                  />
+                  Aplicar
+                </label>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[11px] font-semibold">Afiliación (PEN):</span>
                   <input
                     type="number"
                     value={comisionAfiliacionPen}
                     onChange={(e) => setComisionAfiliacionPen(Number(e.target.value))}
                     disabled={!aplicarComisionAfiliacion}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+                    className="w-20 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
                   />
                 </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Monto Comisión Afiliación (USD)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 text-[11px] font-semibold">Afiliación (USD):</span>
                   <input
                     type="number"
                     value={comisionAfiliacionUsd}
                     onChange={(e) => setComisionAfiliacionUsd(Number(e.target.value))}
                     disabled={!aplicarComisionAfiliacion}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
+                    className="w-20 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Columna 3: Fechas y Días */}
-            <div className="space-y-3 bg-slate-50/70 dark:bg-slate-950/60 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <span className="font-bold text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-800 pb-2">
-                Fechas y Días
+            {/* Fila 3: 2.3 Fechas y Días Globales */}
+            <div className="bg-slate-50/70 dark:bg-slate-950/60 p-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs shrink-0">
+                2.3 Fechas y Días Globales
               </span>
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={aplicarFechaDesembolsoGlobal}
-                  onChange={(e) => setAplicarFechaDesembolsoGlobal(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Fecha Desembolso Global
-              </label>
-              <input
-                type="date"
-                value={fechaDesembolsoGlobal}
-                onChange={(e) => setFechaDesembolsoGlobal(e.target.value)}
-                disabled={!aplicarFechaDesembolsoGlobal}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
-              />
 
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300 pt-2">
-                <input
-                  type="checkbox"
-                  checked={aplicarDiasInteresMinimoGlobal}
-                  onChange={(e) => setAplicarDiasInteresMinimoGlobal(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Días Interés Mínimo
-              </label>
-              <input
-                type="number"
-                value={diasInteresMinimoGlobal}
-                onChange={(e) => setDiasInteresMinimoGlobal(Number(e.target.value))}
-                disabled={!aplicarDiasInteresMinimoGlobal}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
-              />
+              <div className="flex items-center gap-6 text-xs shrink-0">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={aplicarFechaDesembolsoGlobal}
+                      onChange={(e) => setAplicarFechaDesembolsoGlobal(e.target.checked)}
+                      className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    Fecha Desembolso Global:
+                  </label>
+                  <input
+                    type="date"
+                    value={fechaDesembolsoGlobal}
+                    onChange={(e) => setFechaDesembolsoGlobal(e.target.value)}
+                    disabled={!aplicarFechaDesembolsoGlobal}
+                    className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={aplicarDiasInteresMinimoGlobal}
+                      onChange={(e) => setAplicarDiasInteresMinimoGlobal(e.target.checked)}
+                      className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    Días Int. Mínimo:
+                  </label>
+                  <input
+                    type="number"
+                    value={diasInteresMinimoGlobal}
+                    onChange={(e) => setDiasInteresMinimoGlobal(Number(e.target.value))}
+                    disabled={!aplicarDiasInteresMinimoGlobal}
+                    className="w-16 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Columna 4: Tasas Globales */}
-            <div className="space-y-3 bg-slate-50/70 dark:bg-slate-950/60 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl">
-              <span className="font-bold text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-800 pb-2">
-                Tasas Globales
+            {/* Fila 4: 2.4 Tasas Globales */}
+            <div className="bg-slate-50/70 dark:bg-slate-950/60 p-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs shrink-0">
+                2.4 Tasas Globales
               </span>
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={aplicarTasaAvanceGlobal}
-                  onChange={(e) => setAplicarTasaAvanceGlobal(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Tasa de Avance Global
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                value={tasaAvanceGlobal}
-                onChange={(e) => setTasaAvanceGlobal(Number(e.target.value))}
-                disabled={!aplicarTasaAvanceGlobal}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
-              />
 
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300 pt-1">
-                <input
-                  type="checkbox"
-                  checked={aplicarInteresMensualGlobal}
-                  onChange={(e) => setAplicarInteresMensualGlobal(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Interés Mensual Global
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={interesMensualGlobal}
-                onChange={(e) => setInteresMensualGlobal(Number(e.target.value))}
-                disabled={!aplicarInteresMensualGlobal}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
-              />
+              <div className="flex items-center gap-6 text-xs shrink-0">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={aplicarTasaAvanceGlobal}
+                      onChange={(e) => setAplicarTasaAvanceGlobal(e.target.checked)}
+                      className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    Tasa Avance (%):
+                  </label>
+                  <input
+                    type="number"
+                    value={tasaAvanceGlobal}
+                    onChange={(e) => setTasaAvanceGlobal(Number(e.target.value))}
+                    disabled={!aplicarTasaAvanceGlobal}
+                    className="w-16 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
+                  />
+                </div>
 
-              <label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300 pt-1">
-                <input
-                  type="checkbox"
-                  checked={aplicarInteresMoratorioGlobal}
-                  onChange={(e) => setAplicarInteresMoratorioGlobal(e.target.checked)}
-                  className="rounded text-red-600 focus:ring-red-500"
-                />
-                Aplicar Interés Moratorio Global
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={interesMoratorioGlobal}
-                onChange={(e) => setInteresMoratorioGlobal(Number(e.target.value))}
-                disabled={!aplicarInteresMoratorioGlobal}
-                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs"
-              />
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={aplicarInteresMensualGlobal}
+                      onChange={(e) => setAplicarInteresMensualGlobal(e.target.checked)}
+                      className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    Int. Mensual (%):
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={interesMensualGlobal}
+                    onChange={(e) => setInteresMensualGlobal(Number(e.target.value))}
+                    disabled={!aplicarInteresMensualGlobal}
+                    className="w-16 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <input
+                      type="checkbox"
+                      checked={aplicarInteresMoratorioGlobal}
+                      onChange={(e) => setAplicarInteresMoratorioGlobal(e.target.checked)}
+                      className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    Int. Moratorio (%):
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={interesMoratorioGlobal}
+                    onChange={(e) => setInteresMoratorioGlobal(Number(e.target.value))}
+                    disabled={!aplicarInteresMoratorioGlobal}
+                    className="w-16 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-right text-xs font-bold"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1278,12 +1305,24 @@ export const OriginacionTab: React.FC = () => {
                       {/* --- Perfil de la Operación (Desglose Financiero por Factura - Paridad 100% Streamlit) --- */}
                       {(inv as any).recalculate_result && (() => {
                         const r = (inv as any).recalculate_result;
+                        const getVal = (key: string): number => {
+                          if (!r) return 0;
+                          if (typeof r[key] === 'number') return r[key];
+                          if (r.desglose_final_detallado?.[key]) {
+                            const item = r.desglose_final_detallado[key];
+                            if (typeof item?.monto === 'number') return item.monto;
+                            if (typeof item === 'number') return item;
+                          }
+                          if (typeof r.calculo_con_tasa_encontrada?.[key] === 'number') return r.calculo_con_tasa_encontrada[key];
+                          if (key === 'abono' && typeof r.abono_real_teorico === 'number') return r.abono_real_teorico;
+                          return 0;
+                        };
                         const mon = inv.moneda_factura;
-                        const cap = r.capital || (inv.monto_neto_factura * (inv.tasa_de_avance / 100));
-                        const interes = r.interes || 0;
-                        const comision = r.comision_estructuracion || 0;
-                        const igvTotal = (r.igv_interes || 0) + (r.igv_comision || 0) + (r.igv_afiliacion || 0);
-                        const abonoLíquido = r.abono_real_teorico || 0;
+                        const cap = getVal('capital') || (inv.monto_neto_factura * (inv.tasa_de_avance / 100));
+                        const interes = getVal('interes');
+                        const comision = getVal('comision_estructuracion');
+                        const igvTotal = (getVal('igv_interes') || (interes * 0.18)) + (getVal('igv_comision') || getVal('igv_comision_estructuracion') || (comision * 0.18)) + getVal('igv_afiliacion');
+                        const abonoLíquido = getVal('abono') || getVal('abono_real_teorico') || (cap - interes - comision - igvTotal);
                         const tasaAvance = inv.monto_neto_factura > 0 ? (cap / inv.monto_neto_factura) * 100 : inv.tasa_de_avance;
 
                         return (

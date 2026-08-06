@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, FileCheck2, Filter, Loader2, Mail, Send } from 'lucide-react';
+import { getApiBaseUrl } from '../../../config/apiConfig';
+import { AlertCircle, CheckCircle2, FileCheck2, Filter, Loader2, Mail, Send } from 'lucide-react';
 
 // Interfaces
 interface FacturaAprobacion {
@@ -39,9 +40,8 @@ export const AprobacionTab: React.FC = () => {
     invoices?: { num: string; amount: number }[];
   } | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech';
-
   // --- Carga Inicial de Datos ---
+  const API_BASE = getApiBaseUrl();
   const fetchFacturas = async () => {
     setLoading(true);
     setError(null);

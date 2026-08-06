@@ -1,232 +1,465 @@
 import sys
 import os
 import json
-from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException
+from datetime import datetime, date
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Response
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-# --- Configuración de Path para Módulos ---
+# --- Configuración de Path para Módulos Legacy ---
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, project_root)
 
-from core.liquidation_calculator import calcular_liquidacion, proyectar_saldo_diario
-from data.supabase_repository import (
+legacy_path = r"C:\Users\rguti\mini_erp_v2_antigravity"
+if legacy_path not in sys.path:
+    sys.path.insert(0, legacy_path)
+
+from backend.data.supabase_repository import (
     get_proposal_details_by_id,
+    get_all_disbursed_proposals,
     get_or_create_liquidacion_resumen,
     add_liquidacion_evento,
-    update_liquidacion_resumen_saldo,
-    get_liquidacion_resumen,
-    get_liquidacion_eventos,
     update_proposal_status,
-    add_audit_event
+    get_liquidacion_eventos
 )
+from backend.data.invoice_tracking_helpers import create_or_update_invoice_status, add_timeline_event
+
+from testing_audit_liquidation.tabla_maestra_auditoria import generar_tabla_maestra_auditoria
+from testing_audit_liquidation.generar_pdfs_liquidacion import generate_preview_html, calcular_costos_totales_a_fecha
+from weasyprint import HTML
+
+from src.utils.google_integration import upload_file_with_sa, get_sa_credentials_dict
 
 router = APIRouter()
 
-# --- Modelos de Datos (Pydantic) ---
+try:
+    SA_CREDENTIALS = get_sa_credentials_dict()
+except Exception as e:
+    print(f"Error loading SA credentials: {e}")
+    SA_CREDENTIALS = None
 
-class LiquidacionInfo(BaseModel):
-    proposal_id: str
-    monto_recibido: float
-    fecha_pago_real: str # Format: DD-MM-YYYY
-    tasa_interes_compensatoria_pct: float
-    tasa_interes_moratoria_pct: float
-    is_first_payment: bool
-
-class ProcesarLiquidacionRequest(BaseModel):
-    usuario_id: str
-    liquidaciones: List[LiquidacionInfo]
-
-class GetProjectedBalanceRequest(BaseModel):
-    proposal_id: str
-    fecha_inicio_proyeccion: str # Format 'YYYY-MM-DD' from ISO format
-    initial_capital: Optional[float] = None
-
-# --- Endpoints de Gestión de Estado ---
-
-@router.post("/procesar_liquidacion_lote")
-async def procesar_liquidacion_lote_endpoint(request: ProcesarLiquidacionRequest):
-    resultados = []
-    for liquidacion in request.liquidaciones:
-        proposal_id = liquidacion.proposal_id
-        try:
-            # 1. Obtener datos y estado actual
-            datos_operacion = get_proposal_details_by_id(proposal_id)
-            if not datos_operacion:
-                raise HTTPException(status_code=404, detail=f"Propuesta {proposal_id} no encontrada.")
-            
-            estado_anterior = datos_operacion.get('estado', 'DESCONOCIDO')
-            if estado_anterior not in ['DESEMBOLSADA', 'EN PROCESO DE LIQUIDACION']:
-                raise HTTPException(status_code=400, detail=f"Factura {proposal_id} no está en un estado válido para liquidar.")
-
-            # 2. Preparar y ejecutar el cálculo de liquidación (reutilizando lógica anterior)
-            # (Esta sección es una adaptación de la lógica del endpoint /liquidar_factura)
-            fecha_str_original = datos_operacion.get('fecha_pago_calculada')
-            if fecha_str_original:
-                try:
-                    fecha_obj = datetime.fromisoformat(fecha_str_original.split('T')[0])
-                    datos_operacion['fecha_pago_calculada'] = fecha_obj.strftime('%d-%m-%Y')
-                except (ValueError, TypeError): pass
-            
-            recalc_json_str = datos_operacion.get('recalculate_result_json')
-            if recalc_json_str:
-                try:
-                    recalc_data = json.loads(recalc_json_str)
-                    calculos = recalc_data.get('calculo_con_tasa_encontrada', {})
-                    desglose = recalc_data.get('desglose_final_detallado', {})
-                    datos_operacion['capital_calculado'] = calculos.get('capital')
-                    datos_operacion['interes_calculado'] = desglose.get('interes', {}).get('monto')
-                except (json.JSONDecodeError, AttributeError): pass
-
-            liquidacion_previa = get_liquidacion_resumen(proposal_id)
-            eventos_liquidacion = get_liquidacion_eventos(proposal_id)
-            fecha_ultimo_evento_str = None
-            if eventos_liquidacion:
-                fecha_ultimo_evento_str = eventos_liquidacion[-1]['fecha_evento']
-
-            if not liquidacion.is_first_payment and liquidacion_previa and liquidacion_previa.get('saldo_actual') is not None:
-                datos_operacion['capital_calculado'] = liquidacion_previa['saldo_actual']
-                if fecha_ultimo_evento_str:
-                    datos_operacion['fecha_pago_calculada'] = datetime.fromisoformat(fecha_ultimo_evento_str.split('+')[0]).strftime('%d-%m-%Y')
-
-            params_calculo = {
-                "datos_operacion": datos_operacion,
-                "monto_recibido": liquidacion.monto_recibido,
-                "fecha_pago_real_str": liquidacion.fecha_pago_real,
-                "tasa_interes_compensatoria_pct": liquidacion.tasa_interes_compensatoria_pct,
-                "tasa_interes_moratoria_pct": liquidacion.tasa_interes_moratoria_pct
-            }
-            resultado_calculo = calcular_liquidacion(**params_calculo)
-
-            # 3. Determinar nuevo estado y guardar todo en una transacción
-            saldo_final = resultado_calculo.get('liquidacion_final', {}).get('saldo_final_a_liquidar', 0)
-            nuevo_estado = 'LIQUIDADA' if saldo_final <= 0 else 'EN PROCESO DE LIQUIDACION'
-
-            # Guardar evento de liquidación
-            liquidacion_resumen_id = get_or_create_liquidacion_resumen(proposal_id, datos_operacion)
-            add_liquidacion_evento(
-                liquidacion_resumen_id=liquidacion_resumen_id,
-                tipo_evento=resultado_calculo.get('tipo_pago', 'Desconocido'),
-                fecha_evento=datetime.strptime(liquidacion.fecha_pago_real, '%d-%m-%Y'),
-                monto_recibido=liquidacion.monto_recibido,
-                dias_diferencia=resultado_calculo.get('dias_diferencia', 0),
-                resultado_json=resultado_calculo
-            )
-            update_liquidacion_resumen_saldo(liquidacion_resumen_id, saldo_final)
-            
-            # Actualizar estado de la propuesta
-            update_proposal_status(proposal_id, nuevo_estado)
-
-            # 4. Registrar evento de auditoría
-            add_audit_event(
-                usuario_id=request.usuario_id,
-                entidad_id=proposal_id,
-                accion="LIQUIDACION",
-                estado_anterior=estado_anterior,
-                estado_nuevo=nuevo_estado,
-                detalles_adicionales=liquidacion.dict()
-            )
-
-            resultados.append({"proposal_id": proposal_id, "status": "SUCCESS", "message": f"Liquidación registrada. Nuevo estado: {nuevo_estado}", "resultado_calculo": resultado_calculo})
-
-        except Exception as e:
-            resultados.append({"proposal_id": proposal_id, "status": "ERROR", "message": str(e)})
-    
-    return {"resultados_del_lote": resultados}
-
-@router.post("/simular_liquidacion_lote")
-async def simular_liquidacion_lote_endpoint(request: ProcesarLiquidacionRequest):
-    resultados = []
-    for liquidacion in request.liquidaciones:
-        proposal_id = liquidacion.proposal_id
-        try:
-            # 1. Obtener datos y estado actual
-            datos_operacion = get_proposal_details_by_id(proposal_id)
-            if not datos_operacion:
-                raise HTTPException(status_code=404, detail=f"Propuesta {proposal_id} no encontrada.")
-            
-            estado_anterior = datos_operacion.get('estado', 'DESCONOCIDO')
-            if estado_anterior not in ['DESEMBOLSADA', 'EN PROCESO DE LIQUIDACION']:
-                raise HTTPException(status_code=400, detail=f"Factura {proposal_id} no está en un estado válido para liquidar.")
-
-            # 2. Preparar y ejecutar el cálculo de liquidación (reutilizando lógica anterior)
-            # (Esta sección es una adaptación de la lógica del endpoint /liquidar_factura)
-            fecha_str_original = datos_operacion.get('fecha_pago_calculada')
-            if fecha_str_original:
-                try:
-                    fecha_obj = datetime.fromisoformat(fecha_str_original.split('T')[0])
-                    datos_operacion['fecha_pago_calculada'] = fecha_obj.strftime('%d-%m-%Y')
-                except (ValueError, TypeError): pass
-            
-            recalc_json_str = datos_operacion.get('recalculate_result_json')
-            if recalc_json_str:
-                try:
-                    recalc_data = json.loads(recalc_json_str)
-                    calculos = recalc_data.get('calculo_con_tasa_encontrada', {})
-                    desglose = recalc_data.get('desglose_final_detallado', {})
-                    datos_operacion['capital_calculado'] = calculos.get('capital')
-                    datos_operacion['interes_calculado'] = desglose.get('interes', {}).get('monto')
-                except (json.JSONDecodeError, AttributeError): pass
-
-            liquidacion_previa = get_liquidacion_resumen(proposal_id)
-            eventos_liquidacion = get_liquidacion_eventos(proposal_id)
-            fecha_ultimo_evento_str = None
-            if eventos_liquidacion:
-                fecha_ultimo_evento_str = eventos_liquidacion[-1]['fecha_evento']
-
-            if not liquidacion.is_first_payment and liquidacion_previa and liquidacion_previa.get('saldo_actual') is not None:
-                datos_operacion['capital_calculado'] = liquidacion_previa['saldo_actual']
-                if fecha_ultimo_evento_str:
-                    datos_operacion['fecha_pago_calculada'] = datetime.fromisoformat(fecha_ultimo_evento_str.split('+')[0]).strftime('%d-%m-%Y')
-
-            params_calculo = {
-                "datos_operacion": datos_operacion,
-                "monto_recibido": liquidacion.monto_recibido,
-                "fecha_pago_real_str": liquidacion.fecha_pago_real,
-                "tasa_interes_compensatoria_pct": liquidacion.tasa_interes_compensatoria_pct,
-                "tasa_interes_moratoria_pct": liquidacion.tasa_interes_moratoria_pct
-            }
-            resultado_calculo = calcular_liquidacion(**params_calculo)
-
-            resultados.append({"proposal_id": proposal_id, "status": "SUCCESS", "message": "Simulación de liquidación exitosa.", "resultado_calculo": resultado_calculo})
-
-        except Exception as e:
-            resultados.append({"proposal_id": proposal_id, "status": "ERROR", "message": str(e)})
-    
-    return {"resultados_del_lote": resultados}
-
-@router.post("/get_projected_balance")
-async def get_projected_balance_endpoint(request: GetProjectedBalanceRequest):
+# --- Helper ---
+def parse_invoice_number(proposal_id: str) -> str:
     try:
-        # 1. Obtener detalles de la propuesta
-        proposal_details = get_proposal_details_by_id(request.proposal_id)
-        if not proposal_details:
-            raise HTTPException(status_code=404, detail="Proposal not found")
+        parts = proposal_id.split('-')
+        return f"{parts[1]}-{parts[2]}" if len(parts) > 2 else proposal_id
+    except (IndexError, AttributeError):
+        return proposal_id
 
-        # 2. Extraer tasas de interés
-        interes_compensatorio = proposal_details.get('interes_mensual')
-        interes_moratorio = proposal_details.get('interes_moratorio')
-        if interes_compensatorio is None or interes_moratorio is None:
-            raise HTTPException(status_code=400, detail="Tasas de interés no encontradas en la propuesta.")
-
-        # 3. Validar y convertir fecha
-        try:
-            fecha_inicio = datetime.fromisoformat(request.fecha_inicio_proyeccion.split('+')[0]).date()
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Formato de fecha inválido. Use ISO format.")
-
-        # 4. Llamar a la función de proyección
-        proyeccion = proyectar_saldo_diario(
-            capital_inicial=request.initial_capital,
-            fecha_inicio=fecha_inicio,
-            tasa_compensatoria_mensual=interes_compensatorio,
-            tasa_moratoria_mensual=interes_moratorio,
-            dias_proyeccion=30  # Proyectar por 30 días por defecto
-        )
-
-        return {"proyeccion_futura": proyeccion}
-
+def upload_helper_liquidacion(file_bytes, file_name, folder_id, sa_creds):
+    try:
+        if not file_bytes:
+            return False, f"Sin contenido: {file_name}"
+        success, res_id = upload_file_with_sa(file_bytes, file_name, folder_id, sa_creds)
+        if success:
+            return True, f"Subido: {file_name}"
+        else:
+            return False, f"Error {file_name}: {res_id}"
     except Exception as e:
-        # Log the exception details here if you have a logger
+        return False, f"Error {file_name}: {str(e)}"
+
+# --- Endpoints ---
+
+@router.get("/pendientes")
+async def get_liquidaciones_pendientes():
+    """
+    Retorna las facturas en estado DESEMBOLSADA (Nuevas) y EN PROCESO DE LIQUIDACION (En Proceso).
+    Incluye estructura para armar la jerarquía visual.
+    """
+    try:
+        todas = get_all_disbursed_proposals()
+        nuevas = []
+        en_proceso = []
+
+        for p in todas:
+            estado = p.get('estado', '')
+            
+            # Helper to get group_id safely
+            group_id = 'General'
+            try:
+                rj = json.loads(p.get('recalculate_result_json', '{}'))
+                if isinstance(rj, dict):
+                    group_id = str(rj.get('group_id', 'General'))
+            except: pass
+            
+            p['group_id'] = group_id
+            
+            if estado in ['DESEMBOLSADA', 'DESEMBOLSADO']:
+                nuevas.append(p)
+            elif estado in ['EN PROCESO', 'EN PROCESO DE LIQUIDACION']:
+                en_proceso.append(p)
+                
+        return {
+            "status": "success",
+            "nuevas": nuevas,
+            "en_proceso": en_proceso
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SimularLiquidacionRequest(BaseModel):
+    proposal_id: str
+    fecha_pago: str # YYYY-MM-DD
+    monto_pago: float
+
+@router.post("/simular")
+async def simular_liquidacion(req: SimularLiquidacionRequest):
+    """
+    Corre el oráculo y retorna si el candado pasa, y la data para el preview.
+    """
+    try:
+        detalles = get_proposal_details_by_id(req.proposal_id)
+        if not detalles:
+            raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+
+        rj = json.loads(detalles.get('recalculate_result_json', '{}'))
+        monto_desembolsado_val = float(rj.get('desglose_final_detallado', {}).get('abono', {}).get('monto', 0))
+        if monto_desembolsado_val == 0: 
+            monto_desembolsado_val = float(detalles.get('monto_neto_factura', 0))
+        
+        capital = float(detalles.get('monto_neto_factura', 0))
+        try: capital = float(rj.get('calculo_con_tasa_encontrada', {}).get('capital', capital))
+        except: pass
+
+        tasa_comp = float(detalles.get('interes_mensual', 2.0)) / 100
+        tasa_mora = float(detalles.get('interes_moratorio', 3.0)) / 100
+        
+        f_desemb = date.today()
+        if detalles.get('fecha_desembolso_factoring'):
+            f_desemb = datetime.fromisoformat(detalles.get('fecha_desembolso_factoring').split('T')[0]).date()
+            
+        f_venc = date.today()
+        if detalles.get('fecha_pago_calculada'):
+            f_venc = datetime.fromisoformat(detalles.get('fecha_pago_calculada').split('T')[0]).date()
+            
+        gastos = rj.get('gastos_operativos', {})
+        com_est = float(gastos.get('comision_estructuracion', 0.0))
+        com_afi = float(gastos.get('comision_afiliacion', 0.0))
+        
+        pagos_previos = []
+        eventos = get_liquidacion_eventos(req.proposal_id)
+        for ev in eventos:
+            try:
+                pagos_previos.append({
+                    'fecha': datetime.fromisoformat(ev['fecha_evento'].split('T')[0]).date(), 
+                    'monto': float(ev['monto_recibido'])
+                })
+            except: pass
+        
+        f_pago = datetime.strptime(req.fecha_pago, '%Y-%m-%d').date()
+        pagos_act = pagos_previos + [{'fecha': f_pago, 'monto': req.monto_pago}]
+        
+        df_oracle, historial = generar_tabla_maestra_auditoria(
+            capital_original=monto_desembolsado_val,
+            tasa_mensual=tasa_comp,
+            tasa_moratoria=tasa_mora,
+            fecha_desembolso=f_desemb,
+            fecha_vencimiento=f_venc,
+            pagos=pagos_act,
+            dias_proyeccion=5,
+            com_est=com_est, igv_com_est=com_est*0.18,
+            com_afi=com_afi, igv_com_afi=com_afi*0.18,
+            monto_desembolsado=monto_desembolsado_val,
+            int_min_originacion=0,
+            capital_financiado=capital
+        )
+        
+        fecha_str = f_pago.strftime('%d/%m/%Y')
+        r_val = df_oracle[df_oracle['Fecha'] == fecha_str]
+        if r_val.empty: r_val = df_oracle.iloc[[-1]]
+        r = r_val.iloc[0]
+        
+        total_oracle = float(r.get('TotalDeudaREAL', 0))
+        cap_rem = float(r.get('CapitalRemanente', 0))
+        
+        if total_oracle > 0:
+            costos_acum = total_oracle - cap_rem
+        else:
+            costos_acum = (float(r.get('IntDev',0)) + float(r.get('IntMin',0)) + 
+                          float(r.get('IntMora',0)) + float(r.get('IGV_Int',0)) + float(r.get('IGV_Mora',0)) +
+                          float(r.get('ComEst',0)) + float(r.get('IGV_ComEst',0)) + float(r.get('ComAfi',0)) + float(r.get('IGV_ComAfi',0)))
+            
+        cobertura = req.monto_pago - costos_acum
+        passed = cobertura >= -0.01
+
+        return {
+            "status": "success",
+            "passed": bool(passed),
+            "cobertura": cobertura,
+            "costos_acumulados": costos_acum,
+            "capital_remanente": cap_rem
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{proposal_id}/pdf")
+async def generar_pdf(proposal_id: str, fecha_pago: str, monto_pago: float):
+    """
+    Genera el Reporte Integral de Liquidación (PDF nativo con WeasyPrint).
+    """
+    try:
+        detalles = get_proposal_details_by_id(proposal_id)
+        if not detalles:
+            raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+            
+        rj = json.loads(detalles.get('recalculate_result_json', '{}'))
+        monto_desembolsado_val = float(rj.get('desglose_final_detallado', {}).get('abono', {}).get('monto', 0))
+        if monto_desembolsado_val == 0: 
+            monto_desembolsado_val = float(detalles.get('monto_neto_factura', 0))
+        
+        capital = float(detalles.get('monto_neto_factura', 0))
+        try: capital = float(rj.get('calculo_con_tasa_encontrada', {}).get('capital', capital))
+        except: pass
+
+        tasa_comp = float(detalles.get('interes_mensual', 2.0)) / 100
+        tasa_mora = float(detalles.get('interes_moratorio', 3.0)) / 100
+        
+        f_desemb = date.today()
+        if detalles.get('fecha_desembolso_factoring'):
+            f_desemb = datetime.fromisoformat(detalles.get('fecha_desembolso_factoring').split('T')[0]).date()
+            
+        f_venc = date.today()
+        if detalles.get('fecha_pago_calculada'):
+            f_venc = datetime.fromisoformat(detalles.get('fecha_pago_calculada').split('T')[0]).date()
+            
+        gastos = rj.get('gastos_operativos', {})
+        com_est = float(gastos.get('comision_estructuracion', 0.0))
+        com_afi = float(gastos.get('comision_afiliacion', 0.0))
+        
+        pagos_previos = []
+        eventos = get_liquidacion_eventos(proposal_id)
+        for ev in eventos:
+            try:
+                pagos_previos.append({
+                    'fecha': datetime.fromisoformat(ev['fecha_evento'].split('T')[0]).date(), 
+                    'monto': float(ev['monto_recibido'])
+                })
+            except: pass
+        
+        f_pago = datetime.strptime(fecha_pago, '%Y-%m-%d').date()
+        pagos_act = pagos_previos + [{'fecha': f_pago, 'monto': monto_pago}]
+        
+        df_oracle, _ = generar_tabla_maestra_auditoria(
+            capital_original=monto_desembolsado_val,
+            tasa_mensual=tasa_comp,
+            tasa_moratoria=tasa_mora,
+            fecha_desembolso=f_desemb,
+            fecha_vencimiento=f_venc,
+            pagos=pagos_act,
+            dias_proyeccion=5,
+            com_est=com_est, igv_com_est=com_est*0.18,
+            com_afi=com_afi, igv_com_afi=com_afi*0.18,
+            monto_desembolsado=monto_desembolsado_val,
+            int_min_originacion=0,
+            capital_financiado=capital
+        )
+        
+        fecha_str = f_pago.strftime('%d/%m/%Y')
+        r_val = df_oracle[df_oracle['Fecha'] == fecha_str]
+        if r_val.empty: r_val = df_oracle.iloc[[-1]]
+        r = r_val.iloc[0]
+        
+        cap_rem = float(r.get('CapitalRemanente', 0))
+        total_oracle = float(r.get('TotalDeudaREAL', 0))
+        if total_oracle > 0:
+            total_req = total_oracle - cap_rem
+        else:
+            total_req = (float(r.get('IntDev', 0)) + float(r.get('IntMin', 0)) + 
+                         float(r.get('IntMora', 0)) + float(r.get('IGV_Int', 0)) + float(r.get('IGV_Mora', 0)) + 
+                         float(r.get('ComEst', 0)) + float(r.get('IGV_ComEst', 0)) + 
+                         float(r.get('ComAfi', 0)) + float(r.get('IGV_ComAfi', 0)))
+                         
+        costos_obj = {
+            'interes_devengado': max(float(r.get('IntMin', 0)), float(r.get('IntDev', 0))),
+            'interes_moratorio': float(r.get('IntMora', 0)),
+            'comisiones': float(r.get('ComEst', 0)) + float(r.get('ComAfi', 0)),
+            'igv_total': float(r.get('IGV_Int', 0)) + float(r.get('IGV_Mora', 0)) + float(r.get('IGV_ComEst', 0)) + float(r.get('IGV_ComAfi', 0)),
+            'total_costo_financiero': total_req
+        }
+        
+        html = generate_preview_html(
+            df=df_oracle,
+            costos=costos_obj,
+            capital_remanente=cap_rem,
+            monto_pago=monto_pago,
+            fecha_pago=f_pago,
+            f_desemb=f_desemb,
+            detalles=detalles
+        )
+        
+        pdf_bytes = HTML(string=html).write_pdf()
+        
+        return Response(content=pdf_bytes, media_type="application/pdf")
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/procesar")
+async def procesar_liquidacion(
+    proposal_ids: str = Form(...), # JSON string list
+    fechas_pago: str = Form(...), # JSON string dict
+    montos_pago: str = Form(...), # JSON string dict
+    folder_id: str = Form(None),
+    sustentos: List[UploadFile] = File(None)
+):
+    """
+    Procesa liquidaciones masivas o individuales y sube el PDF a Drive.
+    """
+    try:
+        pids = json.loads(proposal_ids)
+        f_pagos = json.loads(fechas_pago)
+        m_pagos = json.loads(montos_pago)
+        
+        cont_exito = 0
+        errores = []
+        
+        # Mapear archivos por filename (Sustento_Cobranza_ID.pdf o similar)
+        files_dict = {}
+        if sustentos:
+            for s in sustentos:
+                if s.filename:
+                    files_dict[s.filename] = s
+        
+        for pid in pids:
+            try:
+                f_pago_str = f_pagos.get(pid)
+                m_pago = m_pagos.get(pid)
+                if not f_pago_str or m_pago is None:
+                    errores.append(f"Faltan datos para factura {parse_invoice_number(pid)}")
+                    continue
+                    
+                m_pago = float(m_pago)
+                f_pago = datetime.strptime(f_pago_str, '%Y-%m-%d').date()
+                
+                detalles = get_proposal_details_by_id(pid)
+                
+                rj = json.loads(detalles.get('recalculate_result_json', '{}'))
+                monto_desembolsado_val = float(rj.get('desglose_final_detallado', {}).get('abono', {}).get('monto', 0))
+                if monto_desembolsado_val == 0: 
+                    monto_desembolsado_val = float(detalles.get('monto_neto_factura', 0))
+                
+                capital = float(detalles.get('monto_neto_factura', 0))
+                try: capital = float(rj.get('calculo_con_tasa_encontrada', {}).get('capital', capital))
+                except: pass
+
+                tasa_comp = float(detalles.get('interes_mensual', 2.0)) / 100
+                tasa_mora = float(detalles.get('interes_moratorio', 3.0)) / 100
+                f_desemb = date.today()
+                if detalles.get('fecha_desembolso_factoring'):
+                    f_desemb = datetime.fromisoformat(detalles.get('fecha_desembolso_factoring').split('T')[0]).date()
+                f_venc = date.today()
+                if detalles.get('fecha_pago_calculada'):
+                    f_venc = datetime.fromisoformat(detalles.get('fecha_pago_calculada').split('T')[0]).date()
+                    
+                gastos = rj.get('gastos_operativos', {})
+                com_est = float(gastos.get('comision_estructuracion', 0.0))
+                com_afi = float(gastos.get('comision_afiliacion', 0.0))
+                
+                pagos_previos = []
+                eventos = get_liquidacion_eventos(pid)
+                for ev in eventos:
+                    try:
+                        pagos_previos.append({
+                            'fecha': datetime.fromisoformat(ev['fecha_evento'].split('T')[0]).date(), 
+                            'monto': float(ev['monto_recibido'])
+                        })
+                    except: pass
+                
+                pagos_act = pagos_previos + [{'fecha': f_pago, 'monto': m_pago}]
+                
+                df_oracle, _ = generar_tabla_maestra_auditoria(
+                    capital_original=monto_desembolsado_val,
+                    tasa_mensual=tasa_comp,
+                    tasa_moratoria=tasa_mora,
+                    fecha_desembolso=f_desemb,
+                    fecha_vencimiento=f_venc,
+                    pagos=pagos_act,
+                    dias_proyeccion=5,
+                    com_est=com_est, igv_com_est=com_est*0.18,
+                    com_afi=com_afi, igv_com_afi=com_afi*0.18,
+                    monto_desembolsado=monto_desembolsado_val,
+                    int_min_originacion=0,
+                    capital_financiado=capital
+                )
+                
+                fecha_str = f_pago.strftime('%d/%m/%Y')
+                r_val = df_oracle[df_oracle['Fecha'] == fecha_str]
+                if r_val.empty: r_val = df_oracle.iloc[[-1]]
+                r = r_val.iloc[0]
+                
+                total_oracle = float(r.get('TotalDeudaREAL', 0))
+                cap_rem = float(r.get('CapitalRemanente', 0))
+                
+                if total_oracle > 0:
+                    costos_acum = total_oracle - cap_rem
+                else:
+                    costos_acum = (float(r.get('IntDev',0)) + float(r.get('IntMin',0)) + 
+                                float(r.get('IntMora',0)) + float(r.get('IGV_Int',0)) + float(r.get('IGV_Mora',0)) +
+                                float(r.get('ComEst',0)) + float(r.get('IGV_ComEst',0)) + float(r.get('ComAfi',0)) + float(r.get('IGV_ComAfi',0)))
+                    
+                cobertura = m_pago - costos_acum
+                if cobertura < -0.01:
+                    errores.append(f"Factura {parse_invoice_number(pid)}: Pago insuficiente (Faltan S/ {abs(cobertura):.2f})")
+                    continue
+                    
+                nuevo_estado = "LIQUIDADA" if cap_rem <= 0.50 else "EN PROCESO DE LIQUIDACION"
+                update_proposal_status(pid, nuevo_estado)
+                
+                liq_resumen_id = get_or_create_liquidacion_resumen(pid, detalles)
+                add_liquidacion_evento(
+                    liquidacion_resumen_id=liq_resumen_id,
+                    tipo_evento="PAGO_REGISTRADO",
+                    monto_recibido=float(m_pago),
+                    fecha_evento=f_pago,
+                    dias_diferencia=0,
+                    resultado_json={"origen": "react_app", "saldo_restante": cap_rem}
+                )
+                
+                # Tracking Legacy (igual a Tab 2)
+                try:
+                    dtl_tracking = get_proposal_details_by_id(pid)
+                    if dtl_tracking:
+                        create_or_update_invoice_status(pid, dtl_tracking, stage='LIQUIDACION')
+                        add_timeline_event(
+                            pid,
+                            'LIQUIDACION' if nuevo_estado == 'LIQUIDADA' else 'PAGO_PARCIAL',
+                            f"Pago registrado: S/ {m_pago:,.2f}. Estado: {nuevo_estado}",
+                            'SUSTENTO',
+                            f"Sustento_{f_pago.strftime('%Y%m%d')}.pdf",
+                            None
+                        )
+                except Exception as track_err:
+                    print(f"[WARNING] Error en tracking: {track_err}")
+                
+                # Upload a Drive
+                file_name_expected_individual = f"Sustento_Cobranza_{pid}.pdf"
+                file_name_expected_global = f"Sustento_Cobranza_GLOBAL_{pid}.pdf"
+                file_obj = None
+                
+                # Search if we have a file matching this pid
+                if file_name_expected_individual in files_dict:
+                    file_obj = files_dict[file_name_expected_individual]
+                elif file_name_expected_global in files_dict:
+                    file_obj = files_dict[file_name_expected_global]
+                    
+                if file_obj and folder_id and SA_CREDENTIALS:
+                    content = await file_obj.read()
+                    drive_name = f"Sustento_Cobranza_{parse_invoice_number(pid)}.pdf"
+                    upload_helper_liquidacion(content, drive_name, folder_id, SA_CREDENTIALS)
+                    
+                cont_exito += 1
+                
+            except Exception as e:
+                errores.append(f"Error interno {parse_invoice_number(pid)}: {str(e)}")
+
+        return {
+            "status": "success",
+            "procesadas": cont_exito,
+            "errores": errores
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

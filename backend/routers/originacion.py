@@ -1,6 +1,7 @@
 import os
 import tempfile
 import base64
+import json
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, UploadFile, File, Body
 from pydantic import BaseModel
@@ -118,12 +119,17 @@ async def parse_invoices(files: List[UploadFile] = File(...)):
         emisor_entry = db_cache.get(emisor_ruc, {})
         aceptante_entry = db_cache.get(aceptante_ruc, {})
 
+        emisor_rates = emisor_entry.get("rates", {}) if emisor_ruc else {}
+        clean_rates = {}
+        for k, v in emisor_rates.items():
+            clean_rates[k] = v if v is not None else 0
+
         results.append({
             "filename": r["filename"],
             "parsed_data": p,
             "emisor_nombre": emisor_entry.get("razon_social", ""),
             "aceptante_nombre": aceptante_entry.get("razon_social", ""),
-            "db_rates": emisor_entry.get("rates", {}) if emisor_ruc else {},
+            "db_rates": clean_rates,
         })
 
     return {"results": results}
@@ -158,6 +164,87 @@ def list_drive_folders(folder_id: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _normalize_inv(inv: Dict[str, Any]) -> Dict[str, Any]:
+    recalc = inv.get("recalculate_result") or {}
+    if not isinstance(recalc, dict):
+        return inv
+        
+    monto_neto = float(inv.get("monto_neto_factura") or 0.0)
+    tasa_avance = float(inv.get("tasa_de_avance") or 90.0) / 100.0
+    
+    def _extract(key: str, default: float = 0.0) -> float:
+        if key in recalc and isinstance(recalc[key], (int, float)):
+            return float(recalc[key])
+        d = recalc.get("desglose_final_detallado") or {}
+        if isinstance(d, dict) and key in d:
+            item = d[key]
+            if isinstance(item, dict) and "monto" in item and isinstance(item["monto"], (int, float)):
+                return float(item["monto"])
+            elif isinstance(item, (int, float)):
+                return float(item)
+        c = recalc.get("calculo_con_tasa_encontrada") or {}
+        if isinstance(c, dict) and key in c and isinstance(c[key], (int, float)):
+            return float(c[key])
+        return default
+
+    capital = _extract("capital", monto_neto * tasa_avance)
+    interes = _extract("interes", 0.0)
+    igv_interes = _extract("igv_interes", interes * 0.18)
+    com_est = _extract("comision_estructuracion", 0.0)
+    igv_com_est = _extract("igv_comision_estructuracion", _extract("igv_comision", com_est * 0.18))
+    com_afi = _extract("comision_afiliacion", 0.0)
+    igv_com_afi = _extract("igv_afiliacion", 0.0)
+    
+    abono = _extract("abono", _extract("abono_real_teorico", capital - interes - igv_interes - com_est - igv_com_est))
+    margen_seguridad = _extract("margen_seguridad", monto_neto - capital)
+    plazo_operacion = int(_extract("plazo_operacion", inv.get("plazo_operacion_calculado", 0)))
+    tasa_encontrada = _extract("tasa_avance_encontrada", tasa_avance)
+
+    pct_interes = (interes / monto_neto * 100) if monto_neto > 0 else 0.0
+    pct_com_est = (com_est / monto_neto * 100) if monto_neto > 0 else 0.0
+    pct_com_afi = (com_afi / monto_neto * 100) if monto_neto > 0 else 0.0
+    pct_margen = (margen_seguridad / monto_neto * 100) if monto_neto > 0 else 0.0
+    pct_abono = (abono / monto_neto * 100) if monto_neto > 0 else 0.0
+    igv_total = igv_interes + igv_com_est + igv_com_afi
+
+    normalized = {
+        "capital": round(capital, 2),
+        "interes": round(interes, 2),
+        "igv_interes": round(igv_interes, 2),
+        "comision_estructuracion": round(com_est, 2),
+        "igv_comision_estructuracion": round(igv_com_est, 2),
+        "igv_comision": round(igv_com_est, 2),
+        "comision_afiliacion": round(com_afi, 2),
+        "igv_afiliacion": round(igv_com_afi, 2),
+        "abono_real_teorico": round(abono, 2),
+        "margen_seguridad": round(margen_seguridad, 2),
+        "plazo_operacion": plazo_operacion,
+        
+        "calculo_con_tasa_encontrada": {
+            "capital": round(capital, 2),
+            "igv_interes": round(igv_interes, 2),
+            "igv_comision_estructuracion": round(igv_com_est, 2),
+            "igv_afiliacion": round(igv_com_afi, 2),
+            "plazo_operacion": plazo_operacion
+        },
+        "resultado_busqueda": {
+            "tasa_avance_encontrada": tasa_encontrada
+        },
+        "desglose_final_detallado": {
+            "interes": {"monto": round(interes, 2), "porcentaje": round(pct_interes, 2)},
+            "comision_estructuracion": {"monto": round(com_est, 2), "porcentaje": round(pct_com_est, 2)},
+            "comision_afiliacion": {"monto": round(com_afi, 2), "porcentaje": round(pct_com_afi, 2)},
+            "abono": {"monto": round(abono, 2), "porcentaje": round(pct_abono, 2)},
+            "margen_seguridad": {"monto": round(margen_seguridad, 2), "porcentaje": round(pct_margen, 2)},
+            "igv_total": {"monto": round(igv_total, 2)}
+        }
+    }
+    
+    inv_copy = dict(inv)
+    inv_copy["recalculate_result"] = normalized
+    return inv_copy
+
+
 @router.post("/generate-pdfs")
 def generate_pdfs(request: GeneratePDFRequest):
     """
@@ -165,11 +252,12 @@ def generate_pdfs(request: GeneratePDFRequest):
     a partir del lote de facturas precalculadas.
     Devuelve los PDFs en formato base64.
     """
-    invoices = request.invoices
-    if not invoices:
+    if not request.invoices:
         raise HTTPException(status_code=400, detail="No invoices provided")
         
     try:
+        invoices = [_normalize_inv(dict(inv)) for inv in request.invoices]
+
         # Generar Perfil de Operación
         pdf_perfil_bytes = pdf_generators.generate_perfil_operacion_pdf(invoices)
         perfil_b64 = base64.b64encode(pdf_perfil_bytes).decode('utf-8')
@@ -277,3 +365,59 @@ def formalize_batch(request: FormalizeBatchRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/operaciones")
+def get_operaciones_endpoint(estado: Optional[str] = None):
+    """
+    Obtiene operaciones/propuestas registradas en Supabase a traves del servicio backend.
+    """
+    try:
+        raw = db.get_all_proposals(estado_filter=estado)
+        parsed_ops = []
+        for item in raw:
+            rJson = {}
+            if item.get('recalculate_result_json'):
+                try:
+                    raw_j = item['recalculate_result_json']
+                    rJson = json.loads(raw_j) if isinstance(raw_j, str) else raw_j
+                except Exception:
+                    pass
+            
+            calc = rJson.get('calculo_con_tasa_encontrada') or {}
+            desglose = rJson.get('desglose_final_detallado') or {}
+
+            montoBruto = float(item.get('monto_total_factura') or item.get('monto_neto_factura') or 0.0)
+            montoNeto = float(item.get('monto_neto_factura') or 0.0)
+            interes = float(desglose.get('interes', {}).get('monto') or calc.get('interes') or item.get('interes_calculado') or 0.0)
+            comisiones = float(desglose.get('comision_estructuracion', {}).get('monto') or calc.get('comision_estructuracion') or 0.0)
+            abonoReal = float(desglose.get('abono', {}).get('monto') or calc.get('abono') or item.get('abono_real_calculado') or (montoNeto - interes - comisiones))
+            diasPromedio = int(calc.get('plazo_operacion') or item.get('plazo_operacion_calculado') or 30)
+
+            st = item.get('estado', 'ORIGINADO')
+            if st in ['ACTIVO', 'PENDIENTE']:
+                st = 'ORIGINADO'
+
+            parsed_ops.append({
+                "id": item.get('proposal_id'),
+                "proposal_id": item.get('proposal_id'),
+                "emisor_ruc": item.get('emisor_ruc', ''),
+                "emisor_nombre": item.get('emisor_nombre', 'S/N'),
+                "aceptante_ruc": item.get('aceptante_ruc', ''),
+                "aceptante_nombre": item.get('aceptante_nombre', 'S/N'),
+                "moneda": item.get('moneda_factura', 'PEN'),
+                "monto_bruto_total": montoBruto,
+                "monto_neto_total": montoNeto,
+                "interes_total": interes,
+                "abono_real_total": abonoReal,
+                "comisiones_fijas": comisiones,
+                "dias_promedio": diasPromedio,
+                "estado": st,
+                "fecha_desembolso_esperada": str(item.get('fecha_desembolso_factoring') or ''),
+                "fecha_creacion": str(item.get('fecha_registro') or '')
+            })
+
+        return {"operaciones": parsed_ops}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

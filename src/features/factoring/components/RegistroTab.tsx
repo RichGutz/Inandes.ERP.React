@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search, PlusCircle, Save, ArrowLeft,
-  RefreshCw, CheckCircle2, AlertCircle, X, Users
+  RefreshCw, CheckCircle2, AlertCircle, X, Users,
+  ArrowUp, ArrowDown
 } from 'lucide-react';
 import { supabase } from '../../../services/supabaseClient';
 import { ExportButtons } from '../../../components/common/ExportButtons';
@@ -443,6 +444,22 @@ export const RegistroTab: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const getLetterCount = (letter: string): number => {
+    if (letter === 'TODOS') return lista.length;
+    return lista.filter(e => {
+      const name = String(e.RAZON_SOCIAL || e['Razon Social'] || '').trim();
+      const initial = name.charAt(0).toUpperCase();
+      if (letter === '#') {
+        return initial && !/[A-Z]/.test(initial);
+      }
+      return initial === letter;
+    }).length;
+  };
+
   const fetchLista = useCallback(async () => {
     setLoadingLista(true);
     const { data, error } = await supabase
@@ -505,11 +522,30 @@ export const RegistroTab: React.FC = () => {
   }
 
   // ── Vista busqueda ──────────────────────────────────────────────────────────
-  const opciones = lista.filter(e => {
-    const name = e.RAZON_SOCIAL || e['Razon Social'] || '';
-    const rucStr = String(e.RUC || '');
-    return !search || name.toLowerCase().includes(search.toLowerCase()) || rucStr.includes(search);
-  });
+  const opciones = lista
+    .filter(e => {
+      const name = String(e.RAZON_SOCIAL || e['Razon Social'] || '');
+      const rucStr = String(e.RUC || '');
+      const matchesSearch = !search || name.toLowerCase().includes(search.toLowerCase()) || rucStr.includes(search);
+      if (!matchesSearch) return false;
+
+      if (selectedLetter === 'TODOS') return true;
+
+      const initial = name.trim().charAt(0).toUpperCase();
+      if (selectedLetter === '#') {
+        return initial && !/[A-Z]/.test(initial);
+      }
+      return initial === selectedLetter;
+    })
+    .sort((a, b) => {
+      const nameA = String(a.RAZON_SOCIAL || a['Razon Social'] || '').trim().toLowerCase();
+      const nameB = String(b.RAZON_SOCIAL || b['Razon Social'] || '').trim().toLowerCase();
+      if (sortOrder === 'asc') {
+        return nameA.localeCompare(nameB, 'es');
+      } else {
+        return nameB.localeCompare(nameA, 'es');
+      }
+    });
 
   const exportColumns: ExportColumn[] = [
     { header: 'RUC', key: 'RUC', type: 'string' },
@@ -539,6 +575,14 @@ export const RegistroTab: React.FC = () => {
             </button>
           )}
         </div>
+        <button
+          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer border border-slate-200 dark:border-slate-600"
+          title={`Cambiar ordenamiento (${sortOrder === 'asc' ? 'A a la Z' : 'Z a la A'})`}
+        >
+          {sortOrder === 'asc' ? <ArrowUp size={14} className="text-indigo-600" /> : <ArrowDown size={14} className="text-indigo-600" />}
+          <span>{sortOrder === 'asc' ? 'Orden: A-Z' : 'Orden: Z-A'}</span>
+        </button>
         <button onClick={() => { setSelected(null); setVista('crear'); setErrorMsg(null); }}
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-sm">
           <PlusCircle size={14} /> Nuevo Registro
@@ -551,6 +595,42 @@ export const RegistroTab: React.FC = () => {
         <button onClick={fetchLista} className="p-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors cursor-pointer" title="Refrescar">
           <RefreshCw size={14} className={`text-slate-500 ${loadingLista ? 'animate-spin' : ''}`} />
         </button>
+      </div>
+
+      {/* Rolodex Alfabético A-Z */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+        <div className="flex flex-wrap gap-2.5 items-center">
+          {ALPHABET.map((char) => {
+            const count = getLetterCount(char);
+            const isSelected = selectedLetter === char;
+            const hasData = count > 0;
+
+            return (
+              <button
+                key={char}
+                onClick={() => setSelectedLetter(char)}
+                className={`relative ${char === 'TODOS' ? 'px-4' : 'w-10'} h-10 rounded-xl font-black text-sm transition-all flex items-center justify-center cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 scale-105 ring-2 ring-indigo-400'
+                    : hasData
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 font-bold hover:bg-indigo-100'
+                      : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <span>{char}</span>
+                {hasData && (
+                  <span
+                    className={`absolute -top-1.5 -right-1.5 text-[9px] min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full font-black border-2 border-white dark:border-slate-900 shadow-xs ${
+                      isSelected ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
@@ -568,7 +648,16 @@ export const RegistroTab: React.FC = () => {
             <thead className="bg-slate-50 dark:bg-slate-700/50 text-[10px] font-black uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3 text-left">RUC</th>
-                <th className="px-4 py-3 text-left">Razon Social</th>
+                <th 
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className="px-4 py-3 text-left cursor-pointer hover:text-indigo-600 transition-colors select-none"
+                  title="Hacer clic para cambiar orden alfabético"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Razón Social</span>
+                    {sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-600" /> : <ArrowDown size={12} className="text-indigo-600" />}
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-right"></th>
               </tr>

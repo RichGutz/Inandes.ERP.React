@@ -187,6 +187,22 @@ def get_active_proposals_for_approval() -> List[Proposal]:
         print(f"[ERROR en get_active_proposals_for_approval]: {e}")
         return []
 
+def get_all_proposals(estado_filter: Optional[str] = None) -> List[Proposal]:
+    """Obtiene propuestas filtrando por estado o todas si no se especifica estado."""
+    supabase = get_supabase_client()
+    try:
+        query = supabase.table('propuestas').select('*')
+        if estado_filter:
+            if estado_filter in ['ORIGINADO', 'ACTIVO', 'PENDIENTE']:
+                query = query.in_('estado', ['ACTIVO', 'ORIGINADO', 'PENDIENTE'])
+            else:
+                query = query.eq('estado', estado_filter)
+        response = query.execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"[ERROR en get_all_proposals]: {e}")
+        return []
+
 def get_approved_proposals_for_disbursement() -> List[Proposal]:
     """Fetches all proposals in APROBADO status for disbursement module.
     

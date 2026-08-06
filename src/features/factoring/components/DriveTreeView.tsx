@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiBaseUrl } from '../../../config/apiConfig';
 import { ChevronRight, ChevronDown, Folder, FolderOpen, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export interface DriveFolderNode {
@@ -173,7 +174,7 @@ export const DriveTreeView: React.FC<DriveTreeViewProps> = ({
   rootFolderName = 'Repositorio InAndes',
   selectedFolderId,
   onSelectFolder,
-  apiBaseUrl = import.meta.env.VITE_API_FACTORING_URL || 'https://inandes.react.geeksoft.tech',
+  apiBaseUrl = getApiBaseUrl(),
 }) => {
   return (
     <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-80 overflow-y-auto space-y-1 shadow-inner">

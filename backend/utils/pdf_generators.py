@@ -43,6 +43,26 @@ def _generate_pdf_in_memory(
     base_url = backend_root
     return HTML(string=html_out, base_url=base_url).write_pdf()
 
+def _get_val(inv: dict, key: str) -> float:
+    r = inv.get('recalculate_result') or {}
+    if not isinstance(r, dict):
+        return 0.0
+    if key in r and isinstance(r[key], (int, float)):
+        return float(r[key])
+    d = r.get('desglose_final_detallado') or {}
+    if isinstance(d, dict) and key in d:
+        item = d[key]
+        if isinstance(item, dict) and 'monto' in item:
+            return float(item['monto'])
+        elif isinstance(item, (int, float)):
+            return float(item)
+    c = r.get('calculo_con_tasa_encontrada') or {}
+    if isinstance(c, dict) and key in c:
+        return float(c[key])
+    if key == 'abono':
+        return float(r.get('abono_real_teorico', 0.0))
+    return 0.0
+
 # --- Public Functions for Specific Reports ---
 
 @measure_latency(source="MiniERP", destination="PDF Engine", operation_name="Gen. Perfil Op. PDF")
@@ -54,15 +74,15 @@ def generate_perfil_operacion_pdf(invoices_data: List[Dict[str, Any]]) -> Option
     total_monto_total_factura = sum(inv.get('monto_total_factura', 0) for inv in invoices_data)
     total_detraccion_monto = sum(inv.get('detraccion_monto', 0) for inv in invoices_data)
     total_monto_neto_factura = sum(inv.get('monto_neto_factura', 0) for inv in invoices_data)
-    total_margen_seguridad = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('margen_seguridad', {}).get('monto', 0) for inv in invoices_data)
-    total_capital = sum(inv.get('recalculate_result', {}).get('calculo_con_tasa_encontrada', {}).get('capital', 0) for inv in invoices_data)
-    total_intereses = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('interes', {}).get('monto', 0) for inv in invoices_data)
-    total_igv_interes = sum(inv.get('recalculate_result', {}).get('calculo_con_tasa_encontrada', {}).get('igv_interes', 0) for inv in invoices_data)
-    total_comision_estructuracion = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('comision_estructuracion', {}).get('monto', 0) for inv in invoices_data)
-    total_igv_com_est = sum(inv.get('recalculate_result', {}).get('calculo_con_tasa_encontrada', {}).get('igv_comision_estructuracion', 0) for inv in invoices_data)
-    total_comision_afiliacion = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('comision_afiliacion', {}).get('monto', 0) for inv in invoices_data)
-    total_igv_com_afi = sum(inv.get('recalculate_result', {}).get('calculo_con_tasa_encontrada', {}).get('igv_afiliacion', 0) for inv in invoices_data)
-    total_monto_desembolsar = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('abono', {}).get('monto', 0) for inv in invoices_data)
+    total_margen_seguridad = sum(_get_val(inv, 'margen_seguridad') for inv in invoices_data)
+    total_capital = sum(_get_val(inv, 'capital') for inv in invoices_data)
+    total_intereses = sum(_get_val(inv, 'interes') for inv in invoices_data)
+    total_igv_interes = sum(_get_val(inv, 'igv_interes') for inv in invoices_data)
+    total_comision_estructuracion = sum(_get_val(inv, 'comision_estructuracion') for inv in invoices_data)
+    total_igv_com_est = sum(_get_val(inv, 'igv_comision_estructuracion') or _get_val(inv, 'igv_comision') for inv in invoices_data)
+    total_comision_afiliacion = sum(_get_val(inv, 'comision_afiliacion') for inv in invoices_data)
+    total_igv_com_afi = sum(_get_val(inv, 'igv_afiliacion') for inv in invoices_data)
+    total_monto_desembolsar = sum(_get_val(inv, 'abono') for inv in invoices_data)
 
     template_data = {
         'invoices': invoices_data,
@@ -156,17 +176,20 @@ def generar_anexo_liquidacion_pdf(invoices_data: List[Dict[str, Any]], bank_info
     
     # --- Calculate Totals ---
     total_monto_neto = sum(inv.get('monto_neto_factura', 0) for inv in invoices_data)
-    total_capital = sum(inv.get('recalculate_result', {}).get('calculo_con_tasa_encontrada', {}).get('capital', 0) for inv in invoices_data)
-    total_intereses = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('interes', {}).get('monto', 0) for inv in invoices_data)
-    total_monto_desembolsar = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('abono', {}).get('monto', 0) for inv in invoices_data)
+    total_capital = sum(_get_val(inv, 'capital') for inv in invoices_data)
+    total_intereses = sum(_get_val(inv, 'interes') for inv in invoices_data)
+    total_monto_desembolsar = sum(_get_val(inv, 'abono') for inv in invoices_data)
     
-    total_comision_est = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('comision_estructuracion', {}).get('monto', 0) for inv in invoices_data)
-    total_comision_afi = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('comision_afiliacion', {}).get('monto', 0) for inv in invoices_data)
+    total_comision_est = sum(_get_val(inv, 'comision_estructuracion') for inv in invoices_data)
+    total_comision_afi = sum(_get_val(inv, 'comision_afiliacion') for inv in invoices_data)
     total_comisiones = total_comision_est + total_comision_afi
     
-    total_margen_seguridad = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('margen_seguridad', {}).get('monto', 0) for inv in invoices_data)
+    total_margen_seguridad = sum(_get_val(inv, 'margen_seguridad') for inv in invoices_data)
     
-    total_igv = sum(inv.get('recalculate_result', {}).get('desglose_final_detallado', {}).get('igv_total', {}).get('monto', 0) for inv in invoices_data)
+    total_igv = sum(
+        (_get_val(inv, 'igv_interes') + _get_val(inv, 'igv_comision_estructuracion') + _get_val(inv, 'igv_comision') + _get_val(inv, 'igv_afiliacion'))
+        for inv in invoices_data
+    )
     
     # Metadata for Title
     c_num = first_inv.get('contract_number', '')
