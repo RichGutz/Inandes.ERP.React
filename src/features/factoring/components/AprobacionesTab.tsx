@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { factoringService } from '../../../services/factoringService';
 import type { OperacionFactoring } from '../../../services/factoringService';
 import { 
+  Building2,
+  FolderOpen,
+  ChevronDown,
+  ChevronUp,
   CheckCircle2, 
   XCircle, 
   Search, 
@@ -24,6 +28,10 @@ export const AprobacionesTab: React.FC = () => {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [forceApproval, setForceApproval] = useState<boolean>(false);
+
+  // Estados del Acordeón (Empresa -> Lote)
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [expandedLotes, setExpandedLotes] = useState<Set<string>>(new Set());
 
   const fetchOperaciones = async () => {
     try {
@@ -90,19 +98,54 @@ export const AprobacionesTab: React.FC = () => {
     .filter(op => op.moneda === 'USD')
     .reduce((sum, op) => sum + op.abono_real_total, 0);
 
+  // Mapeo Jerárquico: Emisor -> Lote -> Facturas
+  const companiesMap = useMemo(() => {
+    const map: Record<string, Record<string, OperacionFactoring[]>> = {};
+    
+    filteredOps.forEach(op => {
+      let emisor = (op.emisor_nombre || "Desconocido").trim();
+      
+      let lote = 'LOTE-GENERAL';
+      if (op.proposal_id) {
+        const parts = op.proposal_id.split('-');
+        if (parts.length >= 3) {
+          lote = `Lote ${parts[parts.length - 1]}`;
+        }
+      }
+
+      if (!map[emisor]) map[emisor] = {};
+      if (!map[emisor][lote]) map[emisor][lote] = [];
+
+      map[emisor][lote].push(op);
+    });
+
+    return map;
+  }, [filteredOps]);
+
+  // Auto-expansión inicial de acordeones
+  useEffect(() => {
+    const allEmisores = new Set(Object.keys(companiesMap));
+    setExpandedCompanies(allEmisores);
+
+    const allLotes = new Set<string>();
+    Object.entries(companiesMap).forEach(([emisor, lotes]) => {
+      Object.keys(lotes).forEach(loteId => allLotes.add(`${emisor}__${loteId}`));
+    });
+    setExpandedLotes(allLotes);
+  }, [companiesMap]);
+
+  const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+    const newSet = new Set(set);
+    if (newSet.has(key)) newSet.delete(key);
+    else newSet.add(key);
+    setter(newSet);
+  };
+
   const toggleSelect = (proposalId: string) => {
     const next = new Set(selectedIds);
     if (next.has(proposalId)) next.delete(proposalId);
     else next.add(proposalId);
     setSelectedIds(next);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredOps.length && filteredOps.length > 0) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredOps.map(op => op.proposal_id)));
-    }
   };
 
   const handleAprobarSeleccionadas = async (action: 'aprobar' | 'rechazar') => {
@@ -179,9 +222,11 @@ export const AprobacionesTab: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Pendientes de Evaluación</span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">{filteredOps.length}</span>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 block mt-1 font-medium">Bandeja de Comité de Riesgos</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Operaciones Pendientes</span>
+            <span className="text-2xl font-black text-slate-800 dark:text-slate-100">
+              {filteredOps.length}
+            </span>
+            <span className="text-[11px] text-slate-400 block mt-1">Esperando Aprobación de Comité</span>
           </div>
           <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-center text-amber-600">
             <Clock size={24} />
@@ -211,7 +256,7 @@ export const AprobacionesTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Alphabetical Filter Bar (Burbujas Azules con Contador en Esquina Superior Derecha) */}
+      {/* Alphabetical Filter Bar (Rolodex Oficial A-Z) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
         <div className="flex flex-wrap gap-2.5 items-center">
           {ALPHABET.map((char) => {
@@ -223,21 +268,19 @@ export const AprobacionesTab: React.FC = () => {
               <button
                 key={char}
                 onClick={() => setSelectedLetter(char)}
-                className={`relative ${char === 'TODOS' ? 'px-4' : 'w-10'} h-10 rounded-xl font-black text-sm transition-all flex items-center justify-center ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 scale-105 ring-2 ring-indigo-400'
+                className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                  isSelected 
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105' 
                     : hasData
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 font-bold hover:bg-indigo-100'
-                      : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
+                      : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
                 }`}
               >
                 <span>{char}</span>
-                {hasData && (
-                  <span
-                    className={`absolute -top-1.5 -right-1.5 text-[9px] min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full font-black border-2 border-white dark:border-slate-900 shadow-xs ${
-                      isSelected ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
-                    }`}
-                  >
+                {count > 0 && (
+                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                    isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                  }`}>
                     {count}
                   </span>
                 )}
@@ -247,8 +290,8 @@ export const AprobacionesTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Table Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs overflow-hidden">
+      {/* Table & Accordion Container */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
         {/* Table Header Controls */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex flex-wrap items-center gap-3">
@@ -309,114 +352,181 @@ export const AprobacionesTab: React.FC = () => {
             <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
             <span className="text-xs font-medium">Cargando operaciones en originación...</span>
           </div>
-        ) : filteredOps.length === 0 ? (
+        ) : Object.keys(companiesMap).length === 0 ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
             <AlertCircle className="h-8 w-8 text-slate-300" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No hay operaciones pendientes de aprobación en este momento.</p>
             <span className="text-xs text-slate-400">Las propuestas originadas aparecerán automáticamente en esta lista.</span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-3 w-10 text-center">
-                    <input 
-                      type="checkbox" 
-                      checked={filteredOps.length > 0 && selectedIds.size === filteredOps.length} 
-                      onChange={toggleSelectAll} 
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
-                      title="Marcar / Desmarcar Todas"
-                    />
-                  </th>
-                  <th className="py-3 px-4">Cedente (Emisor)</th>
-                  <th className="py-3 px-4">Pagador (Aceptante)</th>
-                  <th className="py-3 px-4 text-right">Monto Neto</th>
-                  <th className="py-3 px-4 text-right">Interés Ganado</th>
-                  <th className="py-3 px-4 text-right">Abono Neto Cedente</th>
-                  <th className="py-3 px-3 text-center">Est. Cavali</th>
-                  <th className="py-3 px-3 text-center">Est. Letra</th>
-                  <th className="py-3 px-4 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-xs">
-                {filteredOps.map((op) => (
-                  <tr key={op.id || op.proposal_id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-3 text-center">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedIds.has(op.proposal_id)} 
-                        onChange={() => toggleSelect(op.proposal_id)} 
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
-                      />
-                    </td>
-                    <td className="py-3 px-4 max-w-[220px]">
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate" title={op.emisor_nombre}>
-                        {op.emisor_nombre}
-                      </span>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                        <span>RUC: {op.emisor_ruc}</span>
-                        <span>•</span>
-                        <span className="font-bold text-slate-500 dark:text-slate-400">{op.proposal_id}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 max-w-[200px]">
-                      <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate" title={op.aceptante_nombre}>
-                        {op.aceptante_nombre}
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400">RUC: {op.aceptante_ruc}</span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-medium text-slate-700 dark:text-slate-300">
-                      {op.moneda === 'USD' ? '$' : 'S/'} {op.monto_neto_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-amber-600 dark:text-amber-400">
-                      {op.moneda === 'USD' ? '$' : 'S/'} {op.interes_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                      {op.moneda === 'USD' ? '$' : 'S/'} {op.abono_real_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                        (op.status_cavali || 'ACEPTADA') === 'ACEPTADA'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                          : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
-                      }`}>
-                        {op.status_cavali || 'ACEPTADA'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                        (op.status_letra || 'FIRMADA') === 'FIRMADA'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
-                          : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
-                      }`}>
-                        {op.status_letra || 'FIRMADA'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button 
-                          onClick={() => handleActionClick(op, 'aprobar')}
-                          title="Aprobar Operación"
-                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <CheckCircle2 size={14} />
-                          Aprobar
-                        </button>
+          /* Estructura Acordeón Estandarizada: Empresa -> Lote -> Facturas */
+          <div className="p-4 space-y-4">
+            {Object.entries(companiesMap).map(([emisor, lotes]) => {
+              const isCompExpanded = expandedCompanies.has(emisor);
+              const totalOpsComp = Object.values(lotes).flat().length;
 
-                        <button 
-                          onClick={() => handleActionClick(op, 'rechazar')}
-                          title="Rechazar Operación"
-                          className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors cursor-pointer"
-                        >
-                          <XCircle size={16} />
-                        </button>
+              return (
+                <div key={emisor} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  {/* Empresa Header Button */}
+                  <button 
+                    onClick={() => toggleExpanded(expandedCompanies, emisor, setExpandedCompanies)}
+                    className="w-full bg-slate-50/80 dark:bg-slate-800/60 px-5 py-4 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 rounded-xl">
+                        <Building2 size={20} />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="text-left">
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base tracking-tight">{emisor}</h3>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          {totalOpsComp} {totalOpsComp === 1 ? 'factura pendiente de aprobación' : 'facturas pendientes de aprobación'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {isCompExpanded ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                    </div>
+                  </button>
+
+                  {/* Sub-bloques de Lotes */}
+                  {isCompExpanded && (
+                    <div className="p-4 space-y-4 bg-white dark:bg-slate-900">
+                      {Object.entries(lotes).map(([loteId, groupOps]) => {
+                        const loteKey = `${emisor}__${loteId}`;
+                        const isLoteExpanded = expandedLotes.has(loteKey);
+                        const allGroupSelected = groupOps.every(op => selectedIds.has(op.proposal_id));
+
+                        return (
+                          <div key={loteId} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                            {/* Lote Header Button */}
+                            <div className="bg-slate-100/70 dark:bg-slate-800/40 px-4 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
+                              <button
+                                onClick={() => toggleExpanded(expandedLotes, loteKey, setExpandedLotes)}
+                                className="flex items-center gap-2 flex-1 text-left cursor-pointer"
+                              >
+                                <FolderOpen className="text-emerald-600 dark:text-emerald-400" size={18} />
+                                <span className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider">{loteId}</span>
+                                <span className="text-xs text-slate-400 font-normal">({groupOps.length} operaciones)</span>
+                                {isLoteExpanded ? <ChevronUp size={16} className="text-slate-400 ml-1" /> : <ChevronDown size={16} className="text-slate-400 ml-1" />}
+                              </button>
+
+                              <label className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer hover:underline select-none">
+                                <input 
+                                  type="checkbox"
+                                  checked={allGroupSelected}
+                                  onChange={() => {
+                                    const groupIds = groupOps.map(op => op.proposal_id);
+                                    const newSel = new Set(selectedIds);
+                                    groupIds.forEach(id => {
+                                      if (allGroupSelected) newSel.delete(id);
+                                      else newSel.add(id);
+                                    });
+                                    setSelectedIds(newSel);
+                                  }}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                />
+                                <span>Seleccionar Lote</span>
+                              </label>
+                            </div>
+
+                            {/* Tabla de Facturas dentro del Lote */}
+                            {isLoteExpanded && (
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-xs">
+                                  <thead>
+                                    <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                      <th className="py-2.5 px-3 w-10 text-center">Sel</th>
+                                      <th className="py-2.5 px-4">Factura / Propuesta</th>
+                                      <th className="py-2.5 px-4">Pagador (Aceptante)</th>
+                                      <th className="py-2.5 px-4 text-right">Monto Neto</th>
+                                      <th className="py-2.5 px-4 text-right">Interés Ganado</th>
+                                      <th className="py-2.5 px-4 text-right">Abono Neto Cedente</th>
+                                      <th className="py-2.5 px-3 text-center">Est. Cavali</th>
+                                      <th className="py-2.5 px-3 text-center">Est. Letra</th>
+                                      <th className="py-2.5 px-4 text-center">Acciones</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {groupOps.map((op) => (
+                                      <tr key={op.id || op.proposal_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td className="py-3 px-3 text-center">
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedIds.has(op.proposal_id)} 
+                                            onChange={() => toggleSelect(op.proposal_id)} 
+                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                                          />
+                                        </td>
+                                        <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
+                                          {op.proposal_id}
+                                        </td>
+                                        <td className="py-3 px-4 max-w-[200px]">
+                                          <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate" title={op.aceptante_nombre}>
+                                            {op.aceptante_nombre}
+                                          </span>
+                                          <span className="text-[10px] font-mono text-slate-400">RUC: {op.aceptante_ruc}</span>
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-medium text-slate-700 dark:text-slate-300">
+                                          {op.moneda === 'USD' ? '$' : 'S/'} {op.monto_neto_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-bold text-amber-600 dark:text-amber-400">
+                                          {op.moneda === 'USD' ? '$' : 'S/'} {op.interes_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                                          {op.moneda === 'USD' ? '$' : 'S/'} {op.abono_real_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="py-3 px-3 text-center">
+                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                                            (op.status_cavali || 'ACEPTADA') === 'ACEPTADA'
+                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                              : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                                          }`}>
+                                            {op.status_cavali || 'ACEPTADA'}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-3 text-center">
+                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                                            (op.status_letra || 'FIRMADA') === 'FIRMADA'
+                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                              : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
+                                          }`}>
+                                            {op.status_letra || 'FIRMADA'}
+                                          </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                          <div className="flex items-center justify-center gap-1.5">
+                                            <button 
+                                              onClick={() => handleActionClick(op, 'aprobar')}
+                                              title="Aprobar Operación"
+                                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
+                                            >
+                                              <CheckCircle2 size={14} />
+                                              Aprobar
+                                            </button>
+
+                                            <button 
+                                              onClick={() => handleActionClick(op, 'rechazar')}
+                                              title="Rechazar Operación"
+                                              className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors cursor-pointer"
+                                            >
+                                              <XCircle size={16} />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
