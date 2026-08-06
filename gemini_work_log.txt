@@ -113,3 +113,5 @@
 [2026-08-06 13:24:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS fijando ROWS_PER_PAGE = 40. Reiniciado inandes-api.service.
 [2026-08-06 13:30:00-05:00] TAREA: Implementación de etiquetas e ítems inteligentes indivisibles (white-space: nowrap y &nbsp;) en los metadatos del resumen.
 [2026-08-06 13:30:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS aislando cada campo (F. Desembolso, ID Propuesta, etc.) con nowrap y espacios no separables para evitar divisiones de línea. Reiniciado inandes-api.service.
+[2026-08-06 13:34:00-05:00] TAREA: Incremento del 50% en las dimensiones visuales del logo de Geeksoft (height: 60px; max-width: 270px;).
+[2026-08-06 13:34:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS ampliando el logo de Geeksoft al 150%. Reiniciado inandes-api.service.
