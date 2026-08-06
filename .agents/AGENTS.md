@@ -77,3 +77,9 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 1. Uso Exclusivo de MAIN: Queda estrictamente PROHIBIDO crear nuevas ramas (branches) en Git. Todo el desarrollo, commits y pushes se realizan UNICAMENTE en la rama `main`.
 2. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o tags asignados directamente por el usuario.
 
+## Regla 10 - Obligacion de Inspeccionar Ejemplos Existentes (UI o PDF)
+
+1. Analisis Previo Obligatorio: Cuando el usuario solicite replicar o basarse en el formato de un ejemplo existente (sea de UI o plantillas PDF/HTML), el agente DEBE abrir e inspeccionar directamente el archivo fuente original del ejemplo antes de escribir cualquier codigo.
+2. Replica Fiel: Analizar la estructura, CSS, clases y marcas de la plantilla de referencia para replicarla exactamente sin inventar estilos ni asumir disenos creativos propios.
+
+
