@@ -381,8 +381,8 @@ export const DesembolsosTab: React.FC = () => {
             </span>
             <span className="text-[11px] text-slate-400 block mt-1">Monto Líquido a Desembolsar</span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-center text-emerald-600">
-            <DollarSign size={24} />
+          <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-center text-emerald-600 font-black text-base">
+            S/
           </div>
         </div>
 
@@ -392,6 +392,10 @@ export const DesembolsosTab: React.FC = () => {
             <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
               $ {totalUsd.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
+            <span className="text-[11px] text-slate-400 block mt-1">Monto Líquido a Desembolsar</span>
+          </div>
+          <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-center justify-center text-blue-600">
+            <DollarSign size={24} />
           </div>
         </div>
       </div>
