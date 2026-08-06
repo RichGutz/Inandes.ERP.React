@@ -9,7 +9,6 @@ import {
   CheckCircle2, 
   XCircle, 
   Search, 
-  DollarSign, 
   Clock, 
   AlertCircle,
   Loader2,

@@ -13,8 +13,7 @@ import {
   Download,
   Send,
   Loader2,
-  Clock,
-  DollarSign
+  Clock
 } from 'lucide-react';
 
 interface FacturaDesembolso {
