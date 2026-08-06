@@ -121,3 +121,5 @@
 [2026-08-06 14:40:00-05:00] ESTADO: Completado con éxito. Actualizado LiquidacionesTab.tsx incorporando el panel unificado, sugerencias de autocompletado y ordenamiento alfabético automático A-Z por Emisor. Verificado npm run build exitoso.
 [2026-08-06 14:45:00-05:00] TAREA: Diagnóstico y resolución de conflicto de puerto 8010 en el VPS (inandes-api.service).
 [2026-08-06 14:45:00-05:00] ESTADO: Completado con éxito. Identificado proceso zombie colgado en el puerto 8010 via journalctl. Ejecutado fuser -k -9 8010/tcp y reiniciado inandes-api.service en VPS. Servicio en estado active (running).
+[2026-08-06 15:07:00-05:00] TAREA: Implementación del Panel Único Unificado de Filtros con Rolodex A-Z, Autocompletar Empresa, RUC, Estado con cálculo dinámico En Mora y Rango de Fechas en RepositorioTab.tsx (Bóveda Digital).
+[2026-08-06 15:07:00-05:00] ESTADO: Completado con éxito. Actualizado RepositorioTab.tsx e interfaz OperacionFactoring en factoringService.ts. Orden alfabético automático A-Z por Emisor aplicado. Verificado npm run build exitoso.

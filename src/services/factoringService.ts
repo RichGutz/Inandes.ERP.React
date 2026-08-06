@@ -24,7 +24,9 @@ export interface OperacionFactoring {
   comisiones_fijas: number;
   dias_promedio: number;
   estado: 'ORIGINADO' | 'APROBADO' | 'DESEMBOLSADO' | 'LIQUIDADO' | 'REPOSITORIO';
-  fecha_desembolso_esperada: string;
+  fecha_desembolso_esperada?: string;
+  fecha_desembolso?: string;
+  fecha_vencimiento?: string;
   fecha_creacion?: string;
   status_cavali?: string;
   status_letra?: string;
