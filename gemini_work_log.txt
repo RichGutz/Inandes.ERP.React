@@ -119,3 +119,5 @@
 [2026-08-06 13:35:00-05:00] ESTADO: Completado con éxito. Realizado commit y push a main con el mensaje 'LIQUIDACIONES.90.PERCENT' (d3b96d6).
 [2026-08-06 14:40:00-05:00] TAREA: Implementación del Panel Único Unificado de Filtros con Rolodex, Autocompletar por Nombre, RUC, Estado con cálculo dinámico En Mora y Rango de Fechas en LiquidacionesTab.tsx.
 [2026-08-06 14:40:00-05:00] ESTADO: Completado con éxito. Actualizado LiquidacionesTab.tsx incorporando el panel unificado, sugerencias de autocompletado y ordenamiento alfabético automático A-Z por Emisor. Verificado npm run build exitoso.
+[2026-08-06 14:45:00-05:00] TAREA: Diagnóstico y resolución de conflicto de puerto 8010 en el VPS (inandes-api.service).
+[2026-08-06 14:45:00-05:00] ESTADO: Completado con éxito. Identificado proceso zombie colgado en el puerto 8010 via journalctl. Ejecutado fuser -k -9 8010/tcp y reiniciado inandes-api.service en VPS. Servicio en estado active (running).
