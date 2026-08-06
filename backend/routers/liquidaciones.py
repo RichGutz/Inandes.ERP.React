@@ -279,10 +279,14 @@ async def generar_pdf(proposal_id: str, fecha_pago: str, monto_pago: float):
             'total_costo_financiero': total_req
         }
         
-        html = generate_preview_html(
+        import importlib
+        import testing_audit_liquidation.generar_pdfs_liquidacion as gpdf
+        importlib.reload(gpdf)
+
+        html = gpdf.generate_preview_html(
             df=df_oracle,
             costos=costos_obj,
-            capital_remanente=cap_rem,
+            cap_rem=cap_rem,
             monto_pago=monto_pago,
             fecha_pago=f_pago,
             f_desemb=f_desemb,

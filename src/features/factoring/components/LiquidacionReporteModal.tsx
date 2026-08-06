@@ -33,7 +33,8 @@ export const LiquidacionReporteModal: React.FC<LiquidacionReporteModalProps> = (
       
       const fetchPdf = async () => {
         try {
-          const url = new URL(`${API_BASE}/api/liquidaciones/${proposalId}/pdf`);
+          const baseUrl = API_BASE || window.location.origin;
+          const url = new URL(`${baseUrl}/api/liquidaciones/${proposalId}/pdf`);
           url.searchParams.append('fecha_pago', fechaPago);
           url.searchParams.append('monto_pago', montoPago.toString());
 
