@@ -67,6 +67,7 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
    - Badges Visuales: Badge verde/rojo para 'Est. Cavali' (ACEPTADA/PENDIENTE) y 'Est. Letra' (FIRMADA/PENDIENTE).
    - Acciones de Lote en Cabecera: Botones 'Aprobar Selección' y 'Rechazar' en la barra superior junto al título.
    - Checkbox Aprobacion Forzada: Opcion explicita de 'Aprobacion Forzada (ignorar estado Cavali/Letras)' en la cabecera.
+## Regla 8 - PROHIBIDO Modificaciones Creativas o No Solicitadas
 
-
-
+1. Cero modificaciones "creativas" o no solicitadas: Queda estrictamente PROHIBIDO reemplazar, rediseñar, recrear en SVG o alterar componentes visuales, logos, archivos de marca o logica preexistente.
+2. Ajustes literales y puntuales: Ante peticiones de cambio de tamaño, posicionamiento o diseño, las modificaciones deben limitarse UNICAMENTE a cambiar las propiedades de estilo CSS (ancho, alto, margenes, saltos de pagina) sobre los elementos de imagen o plantilla exactos ya establecidos, sin alterar sus fuentes ni crear sustitutos.

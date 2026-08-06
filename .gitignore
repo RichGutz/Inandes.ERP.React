@@ -28,3 +28,6 @@ dist-ssr
 !deploy_vps.py
 backups.supabase/
 facturas_inandes/
+backend/sa_credentials.json
+sa_credentials.json
+
