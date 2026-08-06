@@ -111,3 +111,5 @@
 [2026-08-06 13:19:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS estableciendo ROWS_PER_PAGE = 30, reduciendo el documento total a 4 páginas. Reiniciado inandes-api.service.
 [2026-08-06 13:24:00-05:00] TAREA: Ajuste directo de capacidad a 40 filas por página (ROWS_PER_PAGE = 40) en la tabla de auditoría diaria.
 [2026-08-06 13:24:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS fijando ROWS_PER_PAGE = 40. Reiniciado inandes-api.service.
+[2026-08-06 13:30:00-05:00] TAREA: Implementación de etiquetas e ítems inteligentes indivisibles (white-space: nowrap y &nbsp;) en los metadatos del resumen.
+[2026-08-06 13:30:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS aislando cada campo (F. Desembolso, ID Propuesta, etc.) con nowrap y espacios no separables para evitar divisiones de línea. Reiniciado inandes-api.service.
