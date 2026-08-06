@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   XCircle, 
   Search, 
-  FileText, 
   DollarSign, 
   Clock, 
   AlertCircle,
@@ -18,7 +17,6 @@ export const AprobacionesTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedOp, setSelectedOp] = useState<OperacionFactoring | null>(null);
-  const [mockOpDetail, setMockOpDetail] = useState<OperacionFactoring | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [modalAction, setModalAction] = useState<'aprobar' | 'rechazar'>('aprobar');
   const [observaciones, setObservaciones] = useState<string>('');
@@ -396,27 +394,20 @@ export const AprobacionesTab: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center justify-center gap-1">
-                        <button 
-                          onClick={() => setMockOpDetail(op)}
-                          title="Ver Resumen de Operación (Mock)"
-                          className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <FileText size={16} />
-                        </button>
-
+                      <div className="flex items-center justify-center gap-1.5">
                         <button 
                           onClick={() => handleActionClick(op, 'aprobar')}
-                          title="Aprobar Operación Individual"
-                          className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg transition-colors cursor-pointer"
+                          title="Aprobar Operación"
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <CheckCircle2 size={16} />
+                          <CheckCircle2 size={14} />
+                          Aprobar
                         </button>
 
                         <button 
                           onClick={() => handleActionClick(op, 'rechazar')}
-                          title="Rechazar Operación Individual"
-                          className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                          title="Rechazar Operación"
+                          className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors cursor-pointer"
                         >
                           <XCircle size={16} />
                         </button>
@@ -429,62 +420,6 @@ export const AprobacionesTab: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Modal de Texto Mock para Detalle de Operación */}
-      {mockOpDetail && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-xl animate-fadeIn">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="text-indigo-600 h-5 w-5" />
-                Resumen de Operación (Mock)
-              </h3>
-              <button 
-                onClick={() => setMockOpDetail(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 text-xs font-mono">
-              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                <span className="text-slate-500 font-sans font-semibold">N° Propuesta / Factura:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-100">{mockOpDetail.proposal_id}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                <span className="text-slate-500 font-sans font-semibold">Cedente (Emisor):</span>
-                <span className="font-bold text-slate-800 dark:text-slate-100">{mockOpDetail.emisor_nombre} ({mockOpDetail.emisor_ruc})</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                <span className="text-slate-500 font-sans font-semibold">Pagador (Aceptante):</span>
-                <span className="font-bold text-slate-800 dark:text-slate-100">{mockOpDetail.aceptante_nombre} ({mockOpDetail.aceptante_ruc})</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                <span className="text-slate-500 font-sans font-semibold">Monto Neto:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-100">{mockOpDetail.moneda === 'USD' ? '$' : 'S/'} {mockOpDetail.monto_neto_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between border-b border-slate-200/60 dark:border-slate-800 pb-2">
-                <span className="text-slate-500 font-sans font-semibold">Abono Neto Cedente:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">{mockOpDetail.moneda === 'USD' ? '$' : 'S/'} {mockOpDetail.abono_real_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 font-sans font-semibold">Estado Cavali / Letra:</span>
-                <span className="font-bold text-indigo-600">Cavali: {mockOpDetail.status_cavali || 'ACEPTADA'} | Letra: {mockOpDetail.status_letra || 'FIRMADA'}</span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setMockOpDetail(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-              >
-                Cerrar Resumen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirmation Modal */}
       {showModal && selectedOp && (
