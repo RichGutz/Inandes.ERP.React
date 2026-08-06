@@ -105,3 +105,5 @@
 [2026-08-06 13:06:00-05:00] ESTADO: Completado con éxito. Restaurada la tabla de cabecera estática (<table class="header-table">) en el inicio de cada contenedor de página y fragmentada la tabla de auditoría en bloques de 22 filas en generar_pdfs_liquidacion.py en el VPS. Logos presentes de forma 100% infalible en cada página. Reiniciado inandes-api.service.
 [2026-08-06 13:10:00-05:00] TAREA: Aplicación de alineación justificada (text-align: justify) al bloque de metadatos del resumen y simplificación del texto del saldo.
 [2026-08-06 13:10:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS aplicando text-align: justify a .summary y simplificando Fila 1 a "SALDO DE LA OPERACIÓN: A FAVOR DEL CLIENTE S/ XXX". Reiniciado inandes-api.service.
+[2026-08-06 13:14:00-05:00] TAREA: Ajuste fino de espaciado sutil (margin-bottom: 16px) debajo de la línea divisoria del encabezado.
+[2026-08-06 13:14:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS estableciendo margin-bottom: 16px en .header-table. Reiniciado inandes-api.service.
