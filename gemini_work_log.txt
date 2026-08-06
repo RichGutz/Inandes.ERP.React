@@ -89,3 +89,5 @@
 [2026-08-06 12:24:00-05:00] ESTADO: Completado con éxito. Aplicada la estructura exacta de perfil_operacion.html: fuentes Helvetica/Arial, bordes 1px solid black, headers #f2f2f2, resumen en texto simple en línea y cero cajas/burbujas/colores extravagantes. Reiniciado inandes-api.service.
 [2026-08-06 12:34:00-05:00] TAREA: Remoción de bordes en cabecera de logos, cálculo de Detracción real y adición de Tasa de Avance y Comisiones al resumen.
 [2026-08-06 12:34:00-05:00] ESTADO: Completado con éxito. Configurado border:none en cabecera de logos/título, agregada detracción calculada (Monto Total - Monto Neto) e incluidas Tasa de Avance, Comisión de Estructuración y Afiliación en el bloque .summary. Reiniciado inandes-api.service.
+[2026-08-06 12:39:00-05:00] TAREA: Reemplazo de Tasa de Avance Goal Seek por Tasa de Avance Nominal del Cliente en el bloque .summary.
+[2026-08-06 12:39:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS leyendo tasa_de_avance nominal del cliente (ej. 90.00%) y formateándola en la cabecera de metadatos del PDF. Reiniciado inandes-api.service.
