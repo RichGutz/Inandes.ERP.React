@@ -109,3 +109,5 @@
 [2026-08-06 13:14:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS estableciendo margin-bottom: 16px en .header-table. Reiniciado inandes-api.service.
 [2026-08-06 13:19:00-05:00] TAREA: Optimización de densidad de filas por página (de 22 a 30 filas) para reducir la tabla de auditoría a 2 partes en lugar de 3.
 [2026-08-06 13:19:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS estableciendo ROWS_PER_PAGE = 30, reduciendo el documento total a 4 páginas. Reiniciado inandes-api.service.
+[2026-08-06 13:24:00-05:00] TAREA: Ajuste directo de capacidad a 40 filas por página (ROWS_PER_PAGE = 40) en la tabla de auditoría diaria.
+[2026-08-06 13:24:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS fijando ROWS_PER_PAGE = 40. Reiniciado inandes-api.service.
