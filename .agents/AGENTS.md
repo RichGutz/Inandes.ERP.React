@@ -71,3 +71,9 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 
 1. Cero modificaciones "creativas" o no solicitadas: Queda estrictamente PROHIBIDO reemplazar, rediseñar, recrear en SVG o alterar componentes visuales, logos, archivos de marca o logica preexistente.
 2. Ajustes literales y puntuales: Ante peticiones de cambio de tamaño, posicionamiento o diseño, las modificaciones deben limitarse UNICAMENTE a cambiar las propiedades de estilo CSS (ancho, alto, margenes, saltos de pagina) sobre los elementos de imagen o plantilla exactos ya establecidos, sin alterar sus fuentes ni crear sustitutos.
+
+## Regla 9 - PROHIBIDO Crear Branches en Git (Trabajo Exclusivo en MAIN)
+
+1. Uso Exclusivo de MAIN: Queda estrictamente PROHIBIDO crear nuevas ramas (branches) en Git. Todo el desarrollo, commits y pushes se realizan UNICAMENTE en la rama `main`.
+2. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o tags asignados directamente por el usuario.
+
