@@ -122,16 +122,10 @@ export const AprobacionesTab: React.FC = () => {
     return map;
   }, [filteredOps]);
 
-  // Auto-expansión inicial: Empresa y Lotes desplegados por defecto para visibilidad directa
+  // Estado inicial colapsado: Tanto Empresas como Lotes inician 100% CERRADOS por defecto
   useEffect(() => {
-    const allEmisores = new Set(Object.keys(companiesMap));
-    setExpandedCompanies(allEmisores);
-
-    const allLotes = new Set<string>();
-    Object.entries(companiesMap).forEach(([emisor, lotes]) => {
-      Object.keys(lotes).forEach(loteId => allLotes.add(`${emisor}__${loteId}`));
-    });
-    setExpandedLotes(allLotes);
+    setExpandedCompanies(new Set());
+    setExpandedLotes(new Set());
   }, [companiesMap]);
 
   const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
