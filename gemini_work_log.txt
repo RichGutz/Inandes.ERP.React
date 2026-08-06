@@ -95,3 +95,5 @@
 [2026-08-06 12:45:00-05:00] ESTADO: Completado con éxito. Modificado generar_pdfs_liquidacion.py en el VPS: F. Vencimiento extraída dinámicamente de la tabla si es N/A, fila EsVencimiento con background #ecfdf5, celdas IntMora/IGV_Mora en texto rojo cuando IntMora > 0 y fondo unificado en resto de filas. Reiniciado inandes-api.service.
 [2026-08-06 12:48:00-05:00] TAREA: Corrección de atributo CSS duplicado para forzar renderizado de fuente roja en Int.Mora e IGV Mora en WeasyPrint.
 [2026-08-06 12:48:00-05:00] ESTADO: Completado con éxito. Unificado atributo style="...; color: #dc2626; font-weight: bold;" en celdas Int.Mora e IGV Mora cuando IntMora > 0 en generar_pdfs_liquidacion.py en el VPS. Reiniciado inandes-api.service.
+[2026-08-06 12:54:00-05:00] TAREA: Aplicación de Burbuja Resumen Combinada con Fórmula Conceptual y Cifras Reales en el PDF de Liquidaciones.
+[2026-08-06 12:54:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS incorporando la fórmula conceptual inline y la línea de cifras reales en la caja de resumen de saldo. Reiniciado inandes-api.service.
