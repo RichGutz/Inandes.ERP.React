@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { getApiBaseUrl } from '../../../config/apiConfig';
 import { DriveTreeView } from './DriveTreeView';
 import { 
   Building2, 
@@ -11,7 +12,9 @@ import {
   Upload,
   Download,
   Send,
-  Loader2
+  Loader2,
+  Clock,
+  DollarSign
 } from 'lucide-react';
 
 interface FacturaDesembolso {
@@ -26,7 +29,7 @@ interface FacturaDesembolso {
   recalculate_result_json?: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_FACTORING_URL || 'http://localhost:8000';
+const API_BASE = getApiBaseUrl();
 
 export const DesembolsosTab: React.FC = () => {
   const [invoices, setInvoices] = useState<FacturaDesembolso[]>([]);
@@ -192,6 +195,18 @@ export const DesembolsosTab: React.FC = () => {
     return selectedInvoices.reduce((acc, inv) => acc + getMontoDesembolso(inv), 0);
   }, [selectedInvoices]);
 
+  const totalPen = useMemo(() => {
+    return invoices
+      .filter(inv => (inv.moneda_factura || 'PEN') === 'PEN')
+      .reduce((sum, inv) => sum + getMontoDesembolso(inv), 0);
+  }, [invoices]);
+
+  const totalUsd = useMemo(() => {
+    return invoices
+      .filter(inv => inv.moneda_factura === 'USD')
+      .reduce((sum, inv) => sum + getMontoDesembolso(inv), 0);
+  }, [invoices]);
+
   const monedaUnica = selectedInvoices.length > 0 ? selectedInvoices[0].moneda_factura : 'PEN';
 
   // Fetch Banco
@@ -342,7 +357,45 @@ export const DesembolsosTab: React.FC = () => {
   if (error) return <div className="text-red-500 bg-red-50 p-4 rounded-md">{error}</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
+      {/* Top Header & Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Facturas Pendientes</span>
+            <span className="text-2xl font-black text-slate-800 dark:text-slate-100">
+              {invoices.length}
+            </span>
+            <span className="text-[11px] text-slate-400 block mt-1">Aprobadas listas para desembolso</span>
+          </div>
+          <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-center text-amber-600">
+            <Clock size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Total Abono Pendiente (PEN)</span>
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+              S/ {totalPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[11px] text-slate-400 block mt-1">Monto Líquido a Desembolsar</span>
+          </div>
+          <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center justify-center text-emerald-600">
+            <DollarSign size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Total Abono Pendiente (USD)</span>
+            <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
+              $ {totalUsd.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
         <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">1. Facturas Pendientes de Desembolso</h2>
         
@@ -356,25 +409,23 @@ export const DesembolsosTab: React.FC = () => {
                 const count = letterCounts[letter];
                 const isActive = activeLetter === letter;
                 const hasInvoices = count > 0;
-                
-                if (!hasInvoices && letter !== '#') return null;
 
                 return (
                   <button
                     key={letter}
                     onClick={() => hasInvoices && setActiveLetter(letter)}
                     disabled={!hasInvoices}
-                    className={`relative px-4 py-2 rounded-md font-bold text-sm transition-colors ${
+                    className={`relative px-3.5 py-1.5 rounded-lg font-black text-xs transition-all ${
                       isActive 
-                        ? 'bg-indigo-600 text-white shadow-sm' 
+                        ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105' 
                         : hasInvoices 
-                          ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700' 
-                          : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-800/30 dark:text-slate-600'
+                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 dark:hover:bg-blue-900 border border-blue-200 dark:border-blue-800' 
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800/40 dark:text-slate-600 opacity-50'
                     }`}
                   >
                     {letter}
                     {hasInvoices && (
-                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                      <span className="absolute -top-2 -right-2 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black shadow-xs border border-white dark:border-slate-900">
                         {count}
                       </span>
                     )}
@@ -501,32 +552,32 @@ export const DesembolsosTab: React.FC = () => {
       {selectedInvoices.length > 0 && (
         <>
           {/* SECCIÓN 2: VOUCHER */}
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">2. Generar Voucher</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 p-4">
+            <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide mb-3">2. Generar Voucher de Transferencia</h2>
             
             {!datosBancarios && !loadingBanco ? (
-              <div className="text-red-500 bg-red-50 p-3 rounded-md flex gap-2 items-center">
-                <AlertCircle size={18} /> El emisor no tiene datos bancarios registrados o seleccionaste facturas de distinto emisor.
+              <div className="text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-3 rounded-xl flex gap-2 items-center border border-red-200 dark:border-red-900 font-semibold">
+                <AlertCircle size={16} /> El emisor no tiene datos bancarios registrados o seleccionaste facturas de distinto emisor.
               </div>
             ) : loadingBanco ? (
-              <div className="flex gap-2 items-center text-slate-500"><Loader2 className="animate-spin" size={16} /> Cargando datos bancarios...</div>
+              <div className="flex gap-2 items-center text-xs text-slate-500 py-3"><Loader2 className="animate-spin" size={16} /> Cargando datos bancarios...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
                 
                 {/* Monto */}
-                <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center h-48">
-                  <div className="text-slate-500 uppercase font-bold text-xs mb-2">Total a Transferir</div>
-                  <div className="text-3xl font-bold text-slate-800 dark:text-white">{formatCurrency(montoTotal, monedaUnica)}</div>
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 flex flex-col justify-center items-center">
+                  <div className="text-slate-500 uppercase font-bold text-[10px] tracking-wider mb-0.5">Total a Transferir</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-white">{formatCurrency(montoTotal, monedaUnica)}</div>
                 </div>
 
                 {/* Acciones Voucher */}
-                <div className="flex flex-col justify-center h-48 gap-4 px-4">
+                <div className="flex flex-col justify-center gap-2">
                   <button
                     onClick={handleGenerateVoucher}
                     disabled={generatingVoucher}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md transition-colors flex justify-center items-center gap-2 disabled:bg-indigo-400"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-colors flex justify-center items-center gap-2 text-xs disabled:bg-blue-400 shadow-xs cursor-pointer"
                   >
-                    {generatingVoucher ? <Loader2 className="animate-spin" size={18}/> : <FileText size={18} />}
+                    {generatingVoucher ? <Loader2 className="animate-spin" size={16}/> : <FileText size={16} />}
                     Generar Voucher PDF
                   </button>
                   
@@ -534,20 +585,20 @@ export const DesembolsosTab: React.FC = () => {
                     <a
                       href={`data:application/pdf;base64,${voucherB64}`}
                       download="voucher_transferencia.pdf"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-md transition-colors flex justify-center items-center gap-2 text-center"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl transition-colors flex justify-center items-center gap-1.5 text-center text-xs shadow-xs font-bold"
                     >
-                      <Download size={18} />
+                      <Download size={15} />
                       Descargar Voucher
                     </a>
                   )}
                 </div>
 
                 {/* Datos Bancarios */}
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700 h-48 text-sm text-slate-600 dark:text-slate-300">
-                  <div className="mb-2"><strong className="text-slate-800 dark:text-white">Beneficiario:</strong> {datosBancarios['Razon Social']}</div>
-                  <div className="mb-2"><strong className="text-slate-800 dark:text-white">Banco:</strong> {datosBancarios['Institucion Financiera']}</div>
-                  <div className="mb-2"><strong className="text-slate-800 dark:text-white">Cuenta:</strong> {datosBancarios[`Numero de Cuenta ${monedaUnica}`] || 'N/A'}</div>
-                  <div><strong className="text-slate-800 dark:text-white">CCI:</strong> {datosBancarios[`Numero de CCI ${monedaUnica}`] || 'N/A'}</div>
+                <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                  <div><strong className="text-slate-800 dark:text-white">Beneficiario:</strong> <span className="font-semibold">{datosBancarios['Razon Social']}</span></div>
+                  <div><strong className="text-slate-800 dark:text-white">Banco:</strong> <span className="font-semibold">{datosBancarios['Institucion Financiera']}</span></div>
+                  <div><strong className="text-slate-800 dark:text-white">Cuenta:</strong> <span className="font-mono">{datosBancarios[`Numero de Cuenta ${monedaUnica}`] || 'N/A'}</span></div>
+                  <div><strong className="text-slate-800 dark:text-white">CCI:</strong> <span className="font-mono">{datosBancarios[`Numero de CCI ${monedaUnica}`] || 'N/A'}</span></div>
                 </div>
 
               </div>
@@ -637,43 +688,75 @@ export const DesembolsosTab: React.FC = () => {
           </div>
 
           {/* SECCIÓN 4: DRIVE Y REGISTRO */}
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">4. Selección de Carpeta Destino</h2>
-            
-            <div className="h-64 overflow-hidden border border-slate-200 dark:border-slate-700 rounded-lg">
-              <DriveTreeView 
-                rootFolderId="1h6w84vFmZpZ9u3-2Q8B9jX4m_4C1L_7s" // Raiz del drive (mismo de originación o configurable)
-                rootFolderName="InAndes Drive"
-                selectedFolderId={selectedFolder?.id || ''}
-                onSelectFolder={f => setSelectedFolder(f)}
-                apiBaseUrl={API_BASE}
-              />
+          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4 shadow-sm">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+              <FolderOpen size={16} className="text-blue-600" />
+              📁 4. Selección de Carpeta Destino en Google Drive y Registro
+            </span>
+
+            {/* Árbol en Ancho Completo */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                Navegador del Repositorio InAndes
+              </label>
+              <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl h-72 overflow-y-auto shadow-inner w-full">
+                <DriveTreeView 
+                  rootFolderId="1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq"
+                  rootFolderName="Repositorio InAndes"
+                  selectedFolderId={selectedFolder?.id || ''}
+                  onSelectFolder={f => setSelectedFolder(f)}
+                  apiBaseUrl={API_BASE}
+                />
+              </div>
             </div>
 
-            {selectedFolder && (
-              <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-md font-medium border border-emerald-200 dark:border-emerald-800">
-                Destino Seleccionado: <span className="font-bold">{selectedFolder.name}</span>
+            {/* Ficha de Carpeta Seleccionada */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
+                  ID / Carpeta Seleccionada (Auto-detectado)
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  placeholder="Selecciona una carpeta arriba..."
+                  value={selectedFolder ? `${selectedFolder.name} (${selectedFolder.id})` : ''}
+                  className="w-full p-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono text-xs text-slate-700 dark:text-slate-200 font-bold"
+                />
               </div>
-            )}
+              <div className="flex items-end">
+                {selectedFolder ? (
+                  <div className="w-full p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <span>Destino configurado: <strong>{selectedFolder.name}</strong></span>
+                  </div>
+                ) : (
+                  <div className="w-full p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                    <AlertCircle size={16} className="shrink-0" />
+                    <span>Sin carpeta seleccionada</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-            <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+            {/* Botón de Acción Principal a Ancho Completo en la Parte Inferior */}
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 mt-2">
               {successMsg ? (
-                <div className="bg-emerald-100 text-emerald-800 p-4 rounded-lg flex items-center justify-center gap-2 font-bold">
-                  <CheckCircle2 size={20} />
+                <div className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 p-4 rounded-xl flex items-center justify-center gap-2 font-bold text-xs">
+                  <CheckCircle2 size={18} />
                   {successMsg}
                 </div>
               ) : (
                 <button
                   onClick={handleRegisterDesembolso}
-                  disabled={registering}
-                  className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white font-bold py-4 rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-70"
+                  disabled={registering || !selectedFolder}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  {registering ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                  {registering ? <Loader2 className="animate-spin h-4 w-4" /> : <Send size={16} />}
                   REGISTRAR DESEMBOLSO Y SUBIR ARCHIVOS
                 </button>
               )}
             </div>
-
           </div>
         </>
       )}
