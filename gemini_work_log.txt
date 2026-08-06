@@ -117,3 +117,5 @@
 [2026-08-06 13:34:00-05:00] ESTADO: Completado con éxito. Actualizado generar_pdfs_liquidacion.py en el VPS ampliando el logo de Geeksoft al 150%. Reiniciado inandes-api.service.
 [2026-08-06 13:35:00-05:00] TAREA: Creación de Safe Point de Control LIQUIDACIONES.90.PERCENT en la rama main de Git.
 [2026-08-06 13:35:00-05:00] ESTADO: Completado con éxito. Realizado commit y push a main con el mensaje 'LIQUIDACIONES.90.PERCENT' (d3b96d6).
+[2026-08-06 14:40:00-05:00] TAREA: Implementación del Panel Único Unificado de Filtros con Rolodex, Autocompletar por Nombre, RUC, Estado con cálculo dinámico En Mora y Rango de Fechas en LiquidacionesTab.tsx.
+[2026-08-06 14:40:00-05:00] ESTADO: Completado con éxito. Actualizado LiquidacionesTab.tsx incorporando el panel unificado, sugerencias de autocompletado y ordenamiento alfabético automático A-Z por Emisor. Verificado npm run build exitoso.

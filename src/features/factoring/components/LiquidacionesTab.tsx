@@ -13,7 +13,12 @@ import {
   Loader2,
   FileSearch,
   Clock,
-  Upload
+  Upload,
+  Search,
+  Filter,
+  Calendar,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 
 interface FacturaLiquidacion {
@@ -26,6 +31,8 @@ interface FacturaLiquidacion {
   identificador_lote: string;
   group_id: string;
   estado: string;
+  fecha_desembolso?: string;
+  fecha_vencimiento_factura?: string;
 }
 
 const API_BASE = getApiBaseUrl();
@@ -37,7 +44,15 @@ export const LiquidacionesTab: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- ESTADOS DE FILTROS SIMULTÁNEOS ---
   const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchRuc, setSearchRuc] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('TODOS');
+  const [dateType, setDateType] = useState<'DESEMBOLSADO' | 'CIERRE'>('DESEMBOLSADO');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [showAutocomplete, setShowAutocomplete] = useState<boolean>(false);
 
   // Accordion collapsed state
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
@@ -115,7 +130,7 @@ export const LiquidacionesTab: React.FC = () => {
       .reduce((sum, inv) => sum + (inv.monto_neto_factura || 0), 0);
   }, [currentDataList]);
 
-  // Alphabet calculations
+  // Alphabet calculations for Rolodex
   const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
 
   const getLetterCount = (letter: string): number => {
@@ -129,14 +144,86 @@ export const LiquidacionesTab: React.FC = () => {
     }).length;
   };
 
-  const filteredOps = currentDataList.filter(inv => {
-    if (selectedLetter === 'TODOS') return true;
-    const eInitial = inv.emisor_nombre ? inv.emisor_nombre.trim().charAt(0).toUpperCase() : '';
-    if (selectedLetter === '#') {
-      return eInitial && !/[A-Z]/.test(eInitial);
-    }
-    return eInitial === selectedLetter;
-  });
+  // Lista Dinámica de Sugerencias para Autocompletar Nombres
+  const nameSuggestions = useMemo(() => {
+    if (!searchName.trim()) return [];
+    const q = searchName.trim().toLowerCase();
+    const set = new Set<string>();
+    currentDataList.forEach(inv => {
+      if (inv.emisor_nombre && inv.emisor_nombre.toLowerCase().includes(q)) {
+        set.add(inv.emisor_nombre);
+      }
+      if (inv.aceptante_nombre && inv.aceptante_nombre.toLowerCase().includes(q)) {
+        set.add(inv.aceptante_nombre);
+      }
+    });
+    return Array.from(set).slice(0, 8);
+  }, [currentDataList, searchName]);
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // --- LÓGICA DE FILTRADO MULTIDIMENSIONAL Y ORDEN ALFABÉTICO AUTOMÁTICO (A-Z POR EMISOR) ---
+  const filteredOps = useMemo(() => {
+    return currentDataList.filter(inv => {
+      // 1. Filtro Rolodex A-Z (Inicial del Emisor)
+      if (selectedLetter !== 'TODOS') {
+        const eInitial = inv.emisor_nombre ? inv.emisor_nombre.trim().charAt(0).toUpperCase() : '';
+        if (selectedLetter === '#') {
+          if (!eInitial || /[A-Z]/.test(eInitial)) return false;
+        } else if (eInitial !== selectedLetter) {
+          return false;
+        }
+      }
+
+      // 2. Filtro por Nombre con Autocompletar (Emisor o Aceptante)
+      if (searchName.trim()) {
+        const q = searchName.trim().toLowerCase();
+        const matchE = (inv.emisor_nombre || '').toLowerCase().includes(q);
+        const matchA = (inv.aceptante_nombre || '').toLowerCase().includes(q);
+        if (!matchE && !matchA) return false;
+      }
+
+      // 3. Filtro por RUC (Emisor RUC)
+      if (searchRuc.trim()) {
+        const qRuc = searchRuc.trim();
+        const matchRucE = (inv.emisor_ruc || '').includes(qRuc);
+        if (!matchRucE) return false;
+      }
+
+      // 4. Filtro por Estado (con cálculo dinámico de En Mora: Hoy > Fecha Vencimiento)
+      if (selectedStatus !== 'TODOS') {
+        const rawEst = (inv.estado || '').toUpperCase();
+        const fVenc = inv.fecha_vencimiento_factura ? inv.fecha_vencimiento_factura.split('T')[0] : '';
+        const isMora = Boolean(fVenc && todayStr > fVenc && !rawEst.includes('LIQUIDADA') && !rawEst.includes('LIQUIDADO'));
+
+        if (selectedStatus === 'ORIGINADA') {
+          if (!['ORIGINADO', 'ACTIVO', 'APROBADO'].includes(rawEst)) return false;
+        } else if (selectedStatus === 'DESEMBOLSADA') {
+          if (!['DESEMBOLSADA', 'DESEMBOLSADO'].includes(rawEst)) return false;
+        } else if (selectedStatus === 'EN_PROCESO') {
+          if (!rawEst.includes('PROCESO')) return false;
+        } else if (selectedStatus === 'LIQUIDADA') {
+          if (!rawEst.includes('LIQUIDADA') && !rawEst.includes('LIQUIDADO')) return false;
+        } else if (selectedStatus === 'EN_MORA') {
+          if (!isMora) return false;
+        }
+      }
+
+      // 5. Filtro por Rango de Fechas (Desembolso vs Cierre/Vencimiento)
+      if (startDate || endDate) {
+        const targetDate = dateType === 'DESEMBOLSADO' 
+          ? (inv.fecha_desembolso ? inv.fecha_desembolso.split('T')[0] : '')
+          : (inv.fecha_vencimiento_factura ? inv.fecha_vencimiento_factura.split('T')[0] : '');
+        
+        if (targetDate) {
+          if (startDate && targetDate < startDate) return false;
+          if (endDate && targetDate > endDate) return false;
+        }
+      }
+
+      return true;
+    }).sort((a, b) => (a.emisor_nombre || '').localeCompare(b.emisor_nombre || '')); // REGLA OBLIGATORIA: ORDEN ALFABETICO AUTOMATICO (A-Z)
+  }, [currentDataList, selectedLetter, searchName, searchRuc, selectedStatus, dateType, startDate, endDate, todayStr]);
 
   // Grouping: Emisor -> Lote -> Facturas
   const companiesMap = useMemo(() => {
@@ -155,11 +242,22 @@ export const LiquidacionesTab: React.FC = () => {
     return map;
   }, [filteredOps]);
 
-  // Reset accordion state to collapsed when dataset or letter changes
+  // Reset accordion state to collapsed when dataset or filter changes
   useEffect(() => {
     setExpandedCompanies(new Set());
     setExpandedLotes(new Set());
-  }, [currentDataList, selectedLetter]);
+  }, [currentDataList, selectedLetter, searchName, searchRuc, selectedStatus, dateType, startDate, endDate]);
+
+  const resetFilters = () => {
+    setSelectedLetter('TODOS');
+    setSearchName('');
+    setSearchRuc('');
+    setSelectedStatus('TODOS');
+    setDateType('DESEMBOLSADO');
+    setStartDate('');
+    setEndDate('');
+    setShowAutocomplete(false);
+  };
 
   const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
     const newSet = new Set(set);
@@ -208,7 +306,6 @@ export const LiquidacionesTab: React.FC = () => {
       formData.append('montos_pago', JSON.stringify(montosPago));
       formData.append('folder_id', selectedFolder.id);
 
-      // Append files
       pidsSeleccionados.forEach(pid => {
         if (sustentoUnico && consolidatedFile) {
           formData.append('sustentos', consolidatedFile, `Sustento_Cobranza_GLOBAL_${pid}.pdf`);
@@ -313,37 +410,197 @@ export const LiquidacionesTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Alphabetical Filter Bar (Rolodex Oficial A-Z) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
-        <div className="flex flex-wrap gap-2.5 items-center">
-          {ALPHABET.map((char) => {
-            const count = getLetterCount(char);
-            const isSelected = selectedLetter === char;
-            const hasData = count > 0;
+      {/* --- PANEL ÚNICO UNIFICADO DE FILTROS SIMULTÁNEOS (LOOK CORPORATIVO MINIMALISTA) --- */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-indigo-600 dark:text-indigo-400" />
+            <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+              Panel de Filtros Combinados
+            </h3>
+          </div>
+          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900">
+            🔤 Orden Alfabético Automático (A-Z)
+          </span>
+        </div>
 
-            return (
-              <button
-                key={char}
-                onClick={() => setSelectedLetter(char)}
-                className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
-                  isSelected 
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105' 
-                    : hasData
-                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
-                      : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
-                }`}
-              >
-                <span>{char}</span>
-                {count > 0 && (
-                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                    isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        {/* 1. SECCIÓN ROLODEX DE INICIALES A-Z */}
+        <div className="space-y-2">
+          <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            Inicial Empresa Emisora (Rolodex)
+          </span>
+          <div className="flex flex-wrap gap-2 items-center">
+            {ALPHABET.map((char) => {
+              const count = getLetterCount(char);
+              const isSelected = selectedLetter === char;
+              const hasData = count > 0;
+
+              return (
+                <button
+                  key={char}
+                  onClick={() => setSelectedLetter(char)}
+                  className={`relative px-3 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                    isSelected 
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105' 
+                      : hasData
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
+                        : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
+                  }`}
+                >
+                  <span>{char}</span>
+                  {count > 0 && (
+                    <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                      isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. FILTROS COMBINADOS: AUTOCOMPLETAR NOMBRE + RUC + ESTADO + FECHAS */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs pt-1">
+          {/* Autocompletar por Nombre de Empresa */}
+          <div className="relative">
+            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+              Empresa (Emisor / Pagador)
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchName}
+                onChange={e => {
+                  setSearchName(e.target.value);
+                  setShowAutocomplete(true);
+                }}
+                onFocus={() => setShowAutocomplete(true)}
+                placeholder="Escribe para autocompletar..."
+                className="w-full pl-8 pr-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
+              <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+            </div>
+
+            {/* Dropdown de Sugerencias de Autocompletado */}
+            {showAutocomplete && nameSuggestions.length > 0 && (
+              <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden text-xs">
+                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+                  <span>Sugerencias Coincidentes</span>
+                  <Sparkles size={12} className="text-amber-500" />
+                </div>
+                {nameSuggestions.map((name, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSearchName(name);
+                      setShowAutocomplete(false);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold transition-colors cursor-pointer border-b border-slate-50 dark:border-slate-800/40 last:border-none"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Filtro por RUC */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+              RUC Emisor
+            </label>
+            <input
+              type="text"
+              value={searchRuc}
+              onChange={e => setSearchRuc(e.target.value)}
+              placeholder="Ej. 20609885026"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Filtro por Estado (con En Mora dinámico) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+              Estado Financiero
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={e => setSelectedStatus(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="TODOS">Todos los Estados</option>
+              <option value="ORIGINADA">Originada</option>
+              <option value="DESEMBOLSADA">Desembolsada</option>
+              <option value="EN_PROCESO">En Proceso de Liquidación</option>
+              <option value="LIQUIDADA">Liquidada</option>
+              <option value="EN_MORA">🔴 En Mora (Hoy &gt; Vencimiento)</option>
+            </select>
+          </div>
+
+          {/* Rango de Fechas Combinado */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                <Calendar size={12} className="text-indigo-500" />
+                <span>Rango de Fechas</span>
+              </label>
+              <div className="flex items-center gap-2 text-[10px] font-bold">
+                <label className="cursor-pointer flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="dateType"
+                    checked={dateType === 'DESEMBOLSADO'}
+                    onChange={() => setDateType('DESEMBOLSADO')}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Desembolso</span>
+                </label>
+                <label className="cursor-pointer flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="dateType"
+                    checked={dateType === 'CIERRE'}
+                    onChange={() => setDateType('CIERRE')}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Vencimiento</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-medium text-slate-800 dark:text-white"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[11px] font-medium text-slate-800 dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer del Panel: Resumen de Resultados & Botón Limpiar */}
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
+          <span className="font-semibold text-slate-500 dark:text-slate-400">
+            Mostrando <strong>{filteredOps.length}</strong> de <strong>{currentDataList.length}</strong> operaciones ordenadas de A a la Z
+          </span>
+
+          <button
+            onClick={resetFilters}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <RotateCcw size={14} />
+            <span>Limpiar Filtros</span>
+          </button>
         </div>
       </div>
 
@@ -363,7 +620,7 @@ export const LiquidacionesTab: React.FC = () => {
         ) : Object.keys(companiesMap).length === 0 ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
             <AlertCircle className="h-8 w-8 text-slate-300" />
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No hay facturas pendientes de liquidación para el filtro seleccionado.</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No hay facturas pendientes de liquidación para los filtros seleccionados.</p>
           </div>
         ) : (
           /* Estructura Acordeón Jerárquico: Empresa -> Lote -> Facturas */
