@@ -1213,18 +1213,25 @@ export const InversionistasPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- NUEVA PESTAÑA: RETORNOS Y RENDIMIENTOS REACT --- */}
-
+      {/* --- NUEVA PESTAÑA: RETORNOS Y RENDIMIENTOS REACT (APROBADO) --- */}
       {activeSubTab === 'retornos_react' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* Barra de Filtro y Estado Real-Time */}
-          <div className="flex flex-wrap items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-3 flex-wrap flex-1">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año de Auditoría</label>
+          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (VISIÓN DE ESTADO GLOBAL) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  📅 Tablero Anual de Cierres ({v40SelYear})
+                </h3>
+              </div>
+
+              {/* Selector de Año */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año:</span>
                 <select
-                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
+                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1 px-3 text-xs font-black text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
                   value={v40SelYear}
                   onChange={(e) => setV40SelYear(Number(e.target.value))}
                 >
@@ -1234,27 +1241,138 @@ export const InversionistasPage: React.FC = () => {
                   <option value={2027}>2027</option>
                 </select>
               </div>
+            </div>
 
+            {/* Grid de 12 Meses (Ene - Dic) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[
+                { m: 1, name: 'Enero', cycle: null, label: 'Sin cierres', funds: [] },
+                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 1, cType: 'Bimestre' },
+                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', funds: ['NSLCON01'], cNum: 1, cType: 'Trimestre' },
+                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 2, cType: 'Bimestre' },
+                { m: 5, name: 'Mayo', cycle: null, label: 'Sin cierres', funds: [] },
+                { m: 6, name: 'Junio', cycle: 'B3/Q2', label: 'Bimestre 3 / Q2', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 3, cType: 'Bimestre' },
+                { m: 7, name: 'Julio', cycle: null, label: 'Sin cierres', funds: [] },
+                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 4, cType: 'Bimestre' },
+                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', funds: ['NSLCON01'], cNum: 3, cType: 'Trimestre' },
+                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 5, cType: 'Bimestre' },
+                { m: 11, name: 'Noviembre', cycle: null, label: 'Sin cierres', funds: [] },
+                { m: 12, name: 'Diciembre', cycle: 'B6/Q4', label: 'Bimestre 6 / Q4', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 6, cType: 'Bimestre' }
+              ].map(item => {
+                // Verificar si este mes tiene cierres guardados en DB
+                let isClosedInDb = false;
+                if (item.m === 2) isClosedInDb = (cycleDashboard.B?.[1]?.length || 0) > 0;
+                else if (item.m === 3) isClosedInDb = (cycleDashboard.Q?.[1]?.length || 0) > 0;
+                else if (item.m === 4) isClosedInDb = (cycleDashboard.B?.[2]?.length || 0) > 0;
+                else if (item.m === 6) isClosedInDb = (cycleDashboard.B?.[3]?.length || 0) > 0;
+                else if (item.m === 8) isClosedInDb = (cycleDashboard.B?.[4]?.length || 0) > 0;
+                else if (item.m === 9) isClosedInDb = (cycleDashboard.Q?.[3]?.length || 0) > 0;
+                else if (item.m === 10) isClosedInDb = (cycleDashboard.B?.[5]?.length || 0) > 0;
+                else if (item.m === 12) isClosedInDb = (cycleDashboard.B?.[6]?.length || 0) > 0;
+
+                const isSelected = (item.cType === v40SelCiclo && item.cNum === v40SelNum);
+
+                return (
+                  <div
+                    key={item.m}
+                    onClick={() => {
+                      if (item.cType && item.cNum) {
+                        setV40SelCiclo(item.cType as any);
+                        setV40SelNum(item.cNum);
+                      }
+                    }}
+                    className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[110px] ${
+                      item.funds.length === 0
+                        ? 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-850 opacity-60'
+                        : isSelected
+                        ? 'bg-white dark:bg-slate-900 border-indigo-500 shadow-md ring-2 ring-indigo-500/20'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-100">{item.name}</span>
+                      {item.funds.length > 0 && (
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
+                          isClosedInDb
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                        }`}>
+                          {isClosedInDb ? '🟢 CERRADO' : '🔴 PENDIENTE'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2">
+                      {item.funds.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {item.funds.map(f => (
+                            <span key={f} className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                              isClosedInDb ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                            }`}>
+                              {f.slice(3, 6)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[9px] font-semibold text-slate-400 italic">Sin cierres</span>
+                      )}
+                    </div>
+
+                    <div className="mt-2 border-t border-slate-100 dark:border-slate-800/60 pt-1.5 flex justify-between items-center text-[9px] text-slate-400 font-bold">
+                      <span>{item.label}</span>
+                      {item.funds.length > 0 && <span>{item.funds.length} fond.</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA (MODO DUAL) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-5">
+            
+            {/* Header del Panel y Modo Activo */}
+            <div className="flex items-center justify-between gap-4 flex-wrap border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Período de Cierre</label>
-                <select
-                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
-                  value={v40SelNum}
-                  onChange={(e) => setV40SelNum(Number(e.target.value))}
-                >
-                  <option value={1}>1: Ene-Feb (B1 / Feb 28)</option>
-                  <option value={2}>2: Mar-Abr (B2 / Abr 30)</option>
-                  <option value={3}>3: May-Jun (B3 / Jun 30)</option>
-                  <option value={4}>4: Jul-Ago (B4 / Ago 31)</option>
-                  <option value={5}>5: Sep-Oct (B5 / Oct 31)</option>
-                  <option value={6}>6: Nov-Dic (B6 / Dic 31)</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+                    ⚙️ Panel Operativo de Liquidación ({fStart} al {fEnd})
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {collisionCount > 0 
+                    ? '🟢 MODO CONSULTA Y LECTURA RETROACTIVA: Los datos están oficializados en la base de datos.'
+                    : '🟡 MODO PRE-CIERRE Y SIMULACIÓN: Genere borradores, revise y oficialice los asientos.'}
+                </p>
               </div>
 
+              <div className="flex items-center gap-2">
+                <span className={`px-4 py-2 rounded-xl text-xs font-black tracking-wide uppercase border flex items-center gap-2 shadow-sm ${
+                  collisionCount > 0 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' 
+                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                }`}>
+                  {collisionCount > 0 ? (
+                    <>
+                      <CheckCircle size={16} />
+                      <span>🟢 PERÍODO CERRADO Y OFICIALIZADO ({collisionCount} Registros)</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle size={16} />
+                      <span>🟡 MODO BORRADOR / PENDIENTE DE REGISTRO</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Filtros Finitos de Selección */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo Específico</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Auditar / Liquidar</label>
                 <select
-                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer min-w-[180px]"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
                   value={v40SelFondo}
                   onChange={(e) => setV40SelFondo(e.target.value)}
                 >
@@ -1264,168 +1382,159 @@ export const InversionistasPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wide uppercase border flex items-center gap-1.5 ${
-                collisionCount > 0 
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-250 dark:border-emerald-900' 
-                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-250 dark:border-amber-900'
-              }`}>
-                {collisionCount > 0 ? (
-                  <>
-                    <CheckCircle size={14} />
-                    <span>🟢 185 ASIENTOS OFICIALIZADOS EN BD ({fEnd})</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle size={14} />
-                    <span>🟡 PERÍODO PENDIENTE DE ASENTAR</span>
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-
-          {/* Tarjetas Superiores Métricas (Mismo Look & Feel de Datos Inversionistas) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Capital Base Administrado (AUM)</span>
-              <span className="text-base font-black text-slate-800 dark:text-slate-100">
-                S/ 27,246,700.00 <span className="text-xs font-semibold text-slate-400">+ $ 2.71M</span>
-              </span>
-              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">185 Contratos Auditados (100% Exacto)</span>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Interés Bruto (59d Base 365)</span>
-              <span className="text-base font-black text-sky-600 dark:text-sky-400">
-                S/ 430,498.34 <span className="text-xs font-semibold text-slate-400">+ $ 35.41k</span>
-              </span>
-              <span className="text-[10px] font-semibold text-slate-400">Cómputo Diario Base 365</span>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Retención IR 5% (2da Cat.)</span>
-              <span className="text-base font-black text-rose-600 dark:text-rose-400">
-                S/ 21,524.92 <span className="text-xs font-semibold text-slate-400">+ $ 1.77k</span>
-              </span>
-              <span className="text-[10px] font-semibold text-rose-500">Impuesto a la Renta Redondeado</span>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-1">
-              <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">Reparto en Efectivo Neto</span>
-              <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                S/ 296,016.95 <span className="text-xs font-semibold text-slate-400">+ $ 21.71k</span>
-              </span>
-              <span className="text-[10px] font-semibold text-emerald-600">Base Neta − Capitalización</span>
-            </div>
-          </div>
-
-          {/* Tarjetas Ejecutivas por Fondo (Mismo patrón gráfico de partícipes en Datos Inversionistas) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-            {[
-              { id: 'NSGPEN01', nombre: 'Fondo InAndes Soles I', moneda: 'PEN', contratos: 34, cap: 'S/ 10,384,753.14', int: 'S/ 178,785.79', ir: 'S/ 8,939.28', rep: 'S/ 135,276.64', cap_final: 'S/ 10,087,539.79' },
-              { id: 'NSGPEN02', nombre: 'Fondo InAndes Soles II', moneda: 'PEN', contratos: 25, cap: 'S/ 4,018,400.98', int: 'S/ 63,052.93', ir: 'S/ 3,152.64', rep: 'S/ 46,520.51', cap_final: 'S/ 4,031,387.37' },
-              { id: 'NSGPEN03', nombre: 'Fondo InAndes Soles III', moneda: 'PEN', contratos: 72, cap: 'S/ 12,843,544.66', int: 'S/ 188,659.62', ir: 'S/ 9,433.00', rep: 'S/ 113,826.41', cap_final: 'S/ 12,498,944.87' },
-              { id: 'NSGUSD01', nombre: 'Fondo InAndes Dólares I', moneda: 'USD', contratos: 9, cap: '$ 621,235.10', int: '$ 8,535.61', ir: '$ 426.78', rep: '$ 5,380.94', cap_final: '$ 563,962.99' },
-              { id: 'NSGUSD02', nombre: 'Fondo InAndes Dólares II', moneda: 'USD', contratos: 45, cap: '$ 2,090,776.62', int: '$ 26,876.11', ir: '$ 1,343.81', rep: '$ 16,328.70', cap_final: '$ 2,099,980.22' },
-              { id: 'NSLCON01', nombre: 'Fondo InAndes Liquidez Conc.', moneda: 'PEN', contratos: 0, cap: 'S/ 0.00 (Q1 Mar 31)', int: 'S/ 0.00', ir: 'S/ 0.00', rep: 'S/ 0.00', cap_final: 'S/ 0.00' }
-            ].map(f => (
-              <div 
-                key={f.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between gap-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center shrink-0">
-                    {f.id.slice(3, 6)}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-150 truncate leading-snug">
-                      {f.nombre}
-                    </h4>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider mt-0.5">
-                      🆔 {f.id} &nbsp;|&nbsp; {f.contratos} Contratos
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 py-2 border-y border-slate-100 dark:border-slate-800/60 text-[10px]">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold uppercase text-slate-400">Capital Base</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-300">{f.cap}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold uppercase text-slate-400">Interés Bruto</span>
-                    <span className="font-bold text-sky-600 dark:text-sky-400">{f.int}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold uppercase text-slate-400">IR (5%)</span>
-                    <span className="font-bold text-rose-600 dark:text-rose-400">{f.ir}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-bold uppercase text-slate-400">Reparto Efectivo</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{f.rep}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900">
-                    🟢 100% Auditado
-                  </span>
-
-                  <span className="text-xs font-black text-indigo-700 dark:text-indigo-300">
-                    Saldo: {f.cap_final}
-                  </span>
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Frecuencia / Ciclo</label>
+                <select
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+                  value={v40SelCiclo}
+                  onChange={(e) => setV40SelCiclo(e.target.value as any)}
+                >
+                  <option value="Bimestre">Bimestre</option>
+                  <option value="Trimestre">Trimestre</option>
+                </select>
               </div>
-            ))}
-          </div>
 
-          {/* Barra de Acciones y Descargas Oficiales */}
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              📥 Centro de Emisión y Descarga Oficial ({fEnd})
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a
-                href="/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx"
-                download="AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx"
-                className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all"
-              >
-                <FileSpreadsheet size={18} />
-                <span>Descargar Libro Maestro Excel (Formato #,##0.00)</span>
-              </a>
-
-              <a
-                href="/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf"
-                target="_blank"
-                rel="noreferrer"
-                className="h-12 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all"
-              >
-                <FileText size={18} />
-                <span>Ver / Imprimir Reporte PDF Oficial (Geeksoft + InAndes)</span>
-              </a>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Número de Período</label>
+                <select
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+                  value={v40SelNum}
+                  onChange={(e) => setV40SelNum(Number(e.target.value))}
+                >
+                  {v40SelCiclo === 'Bimestre' ? (
+                    <>
+                      <option value={1}>1: Ene-Feb (Feb 28)</option>
+                      <option value={2}>2: Mar-Abr (Abr 30)</option>
+                      <option value={3}>3: May-Jun (Jun 30)</option>
+                      <option value={4}>4: Jul-Ago (Ago 31)</option>
+                      <option value={5}>5: Sep-Oct (Oct 31)</option>
+                      <option value={6}>6: Nov-Dic (Dic 31)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value={1}>1: Ene-Mar (Mar 31)</option>
+                      <option value={2}>2: Abr-Jun (Jun 30)</option>
+                      <option value={3}>3: Jul-Sep (Sep 30)</option>
+                      <option value={4}>4: Oct-Dic (Dic 31)</option>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4 mt-2">
-              <button
-                className="h-10 text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750 px-4 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-                onClick={handleRollback}
-              >
-                <Undo2 size={14} />
-                <span>Reversión / Rollback Seguro del Período</span>
-              </button>
+            {/* FASE 1: DESCARGA DE REPORTES DE AUDITORÍA */}
+            <div className="flex flex-col gap-3">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                📄 Paso 1: Generar y Revisar Reportes de Auditoría ({fEnd})
+              </h4>
 
-              <span className="text-[10px] font-semibold text-slate-400">
-                Certificación centavo a centavo ejecutada con cero margen de error.
-              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all"
+                  onClick={async () => {
+                    if (fEnd === '2026-02-28') {
+                      window.open('/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx', '_blank');
+                      setExcelDownloaded(true);
+                    } else {
+                      await handleExportExcelV40();
+                    }
+                  }}
+                >
+                  <FileSpreadsheet size={18} />
+                  <span>Descargar / Consultar Excel Maestro (Formato #,##0.00)</span>
+                </button>
+
+                <button
+                  className="h-12 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all"
+                  onClick={async () => {
+                    if (fEnd === '2026-02-28') {
+                      window.open('/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf', '_blank');
+                      setPdfDownloaded(true);
+                    } else {
+                      await handleExportPDFV40();
+                    }
+                  }}
+                >
+                  <FileText size={18} />
+                  <span>Ver / Generar Reporte PDF Oficial (Geeksoft + InAndes)</span>
+                </button>
+              </div>
             </div>
+
+            {/* FASE 2: EJECUCIÓN OFICIAL EN BD */}
+            <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                💾 Paso 2: Registro Oficial en Ledger y Persistencia DB
+              </h4>
+
+              {registerSuccessMsg && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-start gap-3">
+                  <CheckCircle className="text-emerald-650 dark:text-emerald-450 shrink-0" size={18} />
+                  <p className="text-[11px] font-semibold text-emerald-750 dark:text-emerald-400 leading-relaxed">
+                    {registerSuccessMsg}
+                  </p>
+                </div>
+              )}
+
+              {collisionCount > 0 ? (
+                <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                    <ShieldCheck size={18} />
+                    <span>PERÍODO OFICIALIZADO: Los {collisionCount} asientos ya se encuentran registrados en Supabase.</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    Protección contra duplicados activa
+                  </span>
+                </div>
+              ) : (!excelDownloaded || !pdfDownloaded) ? (
+                <div className="bg-amber-50 dark:bg-amber-950/15 border border-amber-250 dark:border-amber-900 rounded-xl p-4 flex items-start gap-3">
+                  <AlertTriangle className="text-amber-600 dark:text-amber-450 shrink-0 mt-0.5" size={16} />
+                  <div className="flex flex-col gap-0.5">
+                    <h4 className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tight">Bloqueo de Auditoría</h4>
+                    <p className="text-[10px] text-amber-650 dark:text-amber-450 font-medium">
+                      🔒 Para habilitar el registro oficial en Supabase, primero debes descargar y revisar el **Excel Maestro** y el **PDF Oficial** del período.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                    <CheckCircle size={18} />
+                    <span>Revisión completada: Tienes habilitado el registro contable en la base de datos.</span>
+                  </div>
+                  <button
+                    className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl cursor-pointer shadow transition-all flex items-center gap-2"
+                    onClick={handleRegisterPermanent}
+                    disabled={officialRegisterLoading}
+                  >
+                    {officialRegisterLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                    <span>Registrar Asientos en Base de Datos</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Herramienta de Rollback */}
+              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+                <button
+                  className="h-9 text-xs font-bold bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-xl px-4 flex items-center gap-2 transition-colors cursor-pointer"
+                  onClick={handleRollback}
+                >
+                  <Undo2 size={14} />
+                  <span>Reversión / Rollback Seguro del Período</span>
+                </button>
+
+                <span className="text-[10px] font-semibold text-slate-400">
+                  Permite reabrir el período eliminando los asientos de la fecha de corte seleccionada.
+                </span>
+              </div>
+            </div>
+
           </div>
 
         </div>
       )}
+
 
       {/* --- PESTAÑA C: GENERACIÓN DOCUMENTOS (BATCH) --- */}
       {activeSubTab === 'documentos' && (
