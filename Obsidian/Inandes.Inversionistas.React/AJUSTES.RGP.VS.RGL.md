@@ -14,16 +14,16 @@ Alinear y certificar centavo a centavo las cifras del ERP InAndes frente al mode
 
 ## 📌 Fase 1: Cuadre de Montos Iniciales (Capital Base al 31/12/2025)
 
-### 1.1 Estado Consolidado de los 5 Fondos
+### 1.1 Estado Consolidado de los 5 Fondos (CUADRE 100% AL CENTAVO)
 
-| Fondo | Moneda | Contratos RGL (Excel) | Contratos RGP (BD) | Capital Base RGL (Excel) | Capital Base RGP (BD) | Estado Inicial | Ajuste Requerido |
+| Fondo | Moneda | Contratos RGL (Excel) | Contratos RGP (BD) | Capital Base RGL (Suma Filas) | Capital Base RGP (BD) | Diferencia | Estado de Auditoría |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`NSGPEN01`** | **PEN** | 34 | 36 | **S/ 10,334,753.14** | **S/ 10,434,753.14** | ⚠️ Diff S/ 100k | Desactivar 2 contratos de Edwin Maldonado (S/ 50k cada uno / total S/ 100k) |
-| **`NSGPEN02`** | **PEN** | 25 | 25 | **S/ 4,018,400.98** | **S/ 4,018,400.98** | ✅ **CUADRADO 100%** | S/ 0.00 de diferencia |
-| **`NSGPEN03`** | **PEN** | 72 | 72 | **S/ 12,843,544.66** | **S/ 12,843,544.66** | ✅ **CUADRADO 100%** | S/ 0.00 de diferencia |
-| **`NSGUSD01`** | **USD** | 9 | 9 | **$ 621,235.10** | **$ 621,235.10** | ✅ **CUADRADO 100%** | $ 0.00 de diferencia |
-| **`NSGUSD02`** | **USD** | 45 | 45 | **$ 2,090,776.62** | **$ 2,090,776.62** | ✅ **CUADRADO 100%** | $ 0.00 de diferencia |
-| **TOTAL** | — | **185** | **187** | **S/ 27.19M + $ 2.71M** | **S/ 27.29M + $ 2.71M** | — | **Alineación inmediata en NSGPEN01** |
+| **`NSGPEN01`** | **PEN** | 34 | 34 | **S/ 10,384,753.14** | **S/ 10,384,753.14** | **S/ 0.00** | ✅ **CUADRADO 100%** |
+| **`NSGPEN02`** | **PEN** | 25 | 25 | **S/ 4,018,400.98** | **S/ 4,018,400.98** | **S/ 0.00** | ✅ **CUADRADO 100%** |
+| **`NSGPEN03`** | **PEN** | 72 | 72 | **S/ 12,843,544.66** | **S/ 12,843,544.66** | **S/ 0.00** | ✅ **CUADRADO 100%** |
+| **`NSGUSD01`** | **USD** | 9 | 9 | **$ 621,235.10** | **$ 621,235.10** | **$ 0.00** | ✅ **CUADRADO 100%** |
+| **`NSGUSD02`** | **USD** | 45 | 45 | **$ 2,090,776.62** | **$ 2,090,776.62** | **$ 0.00** | ✅ **CUADRADO 100%** |
+| **TOTAL** | — | **185** | **185** | **S/ 27.24M + $ 2.71M** | **S/ 27.24M + $ 2.71M** | **0.00** | ✅ **100% CONCILIADO** |
 
 ---
 
