@@ -121,24 +121,43 @@ export const AprobacionesTab: React.FC = () => {
     return map;
   }, [filteredOps]);
 
-  // Estado inicial colapsado: Tanto Empresas como Lotes inician 100% CERRADOS por defecto
-  useEffect(() => {
-    setExpandedCompanies(new Set());
-    setExpandedLotes(new Set());
-  }, [companiesMap]);
+  const toggleCompany = (emisor: string) => {
+    setExpandedCompanies(prev => {
+      const next = new Set(prev);
+      if (next.has(emisor)) {
+        next.delete(emisor);
+      } else {
+        next.add(emisor);
+        // Al abrir la empresa, auto-abrir sus lotes para mostrar las facturas y acciones
+        const lotes = companiesMap[emisor] || {};
+        setExpandedLotes(prevLotes => {
+          const nextLotes = new Set(prevLotes);
+          Object.keys(lotes).forEach(loteId => {
+            nextLotes.add(`${emisor}__${loteId}`);
+          });
+          return nextLotes;
+        });
+      }
+      return next;
+    });
+  };
 
-  const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
-    const newSet = new Set(set);
-    if (newSet.has(key)) newSet.delete(key);
-    else newSet.add(key);
-    setter(newSet);
+  const toggleLote = (loteKey: string) => {
+    setExpandedLotes(prev => {
+      const next = new Set(prev);
+      if (next.has(loteKey)) next.delete(loteKey);
+      else next.add(loteKey);
+      return next;
+    });
   };
 
   const toggleSelect = (proposalId: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(proposalId)) next.delete(proposalId);
-    else next.add(proposalId);
-    setSelectedIds(next);
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(proposalId)) next.delete(proposalId);
+      else next.add(proposalId);
+      return next;
+    });
   };
 
   const handleAprobarSeleccionadas = async (action: 'aprobar' | 'rechazar') => {
@@ -156,13 +175,14 @@ export const AprobacionesTab: React.FC = () => {
     setProcessing(true);
     try {
       for (const op of selectedOps) {
+        const targetId = op.proposal_id || op.id || '';
         if (action === 'aprobar') {
-          await factoringService.cambiarEstadoOperacion(op.id || '', 'APROBADO', {
+          await factoringService.cambiarEstadoOperacion(targetId, 'APROBADO', {
             observaciones_aprobacion: 'Aprobación masiva desde panel',
             fecha_aprobacion: new Date().toISOString()
           });
         } else {
-          await factoringService.cambiarEstadoOperacion(op.id || '', 'ORIGINADO', {
+          await factoringService.cambiarEstadoOperacion(targetId, 'ORIGINADO', {
             observaciones_rechazo: 'Rechazo masivo desde panel',
             estado_detalle: 'RECHAZADO_COMITE'
           });
@@ -188,13 +208,14 @@ export const AprobacionesTab: React.FC = () => {
     if (!selectedOp) return;
     try {
       setProcessing(true);
+      const targetId = selectedOp.proposal_id || selectedOp.id || '';
       if (modalAction === 'aprobar') {
-        await factoringService.cambiarEstadoOperacion(selectedOp.id || '', 'APROBADO', {
+        await factoringService.cambiarEstadoOperacion(targetId, 'APROBADO', {
           observaciones_aprobacion: observaciones,
           fecha_aprobacion: new Date().toISOString()
         });
       } else {
-        await factoringService.cambiarEstadoOperacion(selectedOp.id || '', 'ORIGINADO', {
+        await factoringService.cambiarEstadoOperacion(targetId, 'ORIGINADO', {
           observaciones_rechazo: observaciones,
           estado_detalle: 'RECHAZADO_COMITE'
         });
@@ -360,7 +381,7 @@ export const AprobacionesTab: React.FC = () => {
                 <div key={emisor} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
                   {/* Empresa Header Button */}
                   <button 
-                    onClick={() => toggleExpanded(expandedCompanies, emisor, setExpandedCompanies)}
+                    onClick={() => toggleCompany(emisor)}
                     className="w-full bg-slate-50/80 dark:bg-slate-800/60 px-5 py-4 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
@@ -392,7 +413,7 @@ export const AprobacionesTab: React.FC = () => {
                             {/* Lote Header Button */}
                             <div className="bg-slate-100/70 dark:bg-slate-800/40 px-4 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
                               <button
-                                onClick={() => toggleExpanded(expandedLotes, loteKey, setExpandedLotes)}
+                                onClick={() => toggleLote(loteKey)}
                                 className="flex items-center gap-2 flex-1 text-left cursor-pointer"
                               >
                                 <FolderOpen className="text-emerald-600 dark:text-emerald-400" size={18} />
