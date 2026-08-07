@@ -11,6 +11,7 @@ import {
   ShieldCheck, Undo2, X, Calendar
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
+import { DocumentoBatchModal } from './components/DocumentoBatchModal';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo
@@ -20,6 +21,13 @@ export const InversionistasPage: React.FC = () => {
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);
   const [rollbackConfirmText, setRollbackConfirmText] = useState<string>('');
   const [rollbackLoading, setRollbackLoading] = useState<boolean>(false);
+
+  // Modal Visor PDF de Documentos Batch (Cero popups bloqueados, Cero sharing violations)
+  const [docModalOpen, setDocModalOpen] = useState<boolean>(false);
+  const [docModalTitle, setDocModalTitle] = useState<string>('');
+  const [docModalSubtitle, setDocModalSubtitle] = useState<string>('');
+  const [docModalHtml, setDocModalHtml] = useState<string>('');
+  const [docModalFilename, setDocModalFilename] = useState<string>('');
 
 
   // Estado común de partícipes
@@ -768,11 +776,7 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const printWin = window.open('', '_blank');
-    if (!printWin) {
-      alert("Por favor permite popups en tu navegador para ver el PDF de EECC.");
-      return;
-    }
+    // Configurar y abrir el Visor Modal Nativo (Sin popups ni bloqueos de Windows)
 
     const fmt = (v: any) => {
       try {
@@ -993,10 +997,11 @@ export const InversionistasPage: React.FC = () => {
       </html>
     `;
 
-    printWin.document.write(html);
-    printWin.document.close();
-    printWin.focus();
-    setTimeout(() => { printWin.print(); }, 500);
+    setDocModalTitle(`Lote de Estados de Cuenta (EECC)`);
+    setDocModalSubtitle(`FONDO ${batchData.fondo} | PERÍODO ${periodoTxt}`);
+    setDocModalHtml(html);
+    setDocModalFilename(`Lote_EECC_${batchData.fondo}_${fEnd}`);
+    setDocModalOpen(true);
   };
 
   // Descarga / Impresión Batch de Certificados de Retención (Plantilla Exacta generate_docs_pdf.py)
@@ -1006,11 +1011,7 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const printWin = window.open('', '_blank');
-    if (!printWin) {
-      alert("Por favor permite popups en tu navegador para ver los Certificados de Retención.");
-      return;
-    }
+    // Configurar y abrir el Visor Modal Nativo (Sin popups ni bloqueos de Windows)
 
     const fmt = (v: any) => {
       try {
@@ -1033,6 +1034,7 @@ export const InversionistasPage: React.FC = () => {
     const dFin = new Date(fEnd + 'T12:00:00');
     const pIniStr = `${String(dIni.getDate()).padStart(2, '0')}-${mesesShort[dIni.getMonth()]}-${String(dIni.getFullYear()).slice(-2)}`;
     const pFinStr = `${String(dFin.getDate()).padStart(2, '0')}-${mesesShort[dFin.getMonth()]}-${String(dFin.getFullYear()).slice(-2)}`;
+    const periodoTxt = `DEL ${pIniStr} AL ${pFinStr}`.toUpperCase();
 
     const html = `
       <!DOCTYPE html>
@@ -1136,10 +1138,11 @@ export const InversionistasPage: React.FC = () => {
       </html>
     `;
 
-    printWin.document.write(html);
-    printWin.document.close();
-    printWin.focus();
-    setTimeout(() => { printWin.print(); }, 500);
+    setDocModalTitle(`Certificados de Retención de 2da Categoría (5% IR)`);
+    setDocModalSubtitle(`FONDO ${batchData.fondo} | PERÍODO ${periodoTxt}`);
+    setDocModalHtml(html);
+    setDocModalFilename(`Certificados_Retencion_5pct_${batchData.fondo}_${fEnd}`);
+    setDocModalOpen(true);
   };
 
   // --- Lógica del Formulario Modal de Partícipes ---
@@ -2581,6 +2584,14 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
+      <DocumentoBatchModal
+        isOpen={docModalOpen}
+        onClose={() => setDocModalOpen(false)}
+        title={docModalTitle}
+        subtitle={docModalSubtitle}
+        htmlContent={docModalHtml}
+        filename={docModalFilename}
+      />
     </div>
   );
 };
