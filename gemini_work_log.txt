@@ -127,3 +127,5 @@
 [2026-08-06 18:00:00-05:00] ESTADO: Completado con éxito. Transferidos los assets de dist/ a /var/www/inandes en el VPS y reiniciado Nginx. El sitio https://inandes.react.geeksoft.tech/ sirve la versión con el Panel Unificado de Filtros.
 [2026-08-06 18:02:00-05:00] TAREA: Creación de Safe Point de Control LIQUIDACIONES.1RA.VERSION en la rama main de Git.
 [2026-08-06 18:02:00-05:00] ESTADO: Completado con éxito. Realizado commit y push a main con el mensaje 'LIQUIDACIONES.1RA.VERSION' (ba0514b).
+[2026-08-06 20:15:00-05:00] TAREA: Realización de commit previo PRE.DASHBOARD.GRAFICO y desarrollo del Módulo Aislado de Análisis Gráfico Interactivo (Modelo Geeksoft) en InteractiveFactoringChart.tsx y DashboardTab.tsx.
+[2026-08-06 20:18:00-05:00] ESTADO: Completado con éxito. Instalado echarts y echarts-for-react, creado componente desacoplado InteractiveFactoringChart.tsx con eje Y dual (Y1/Y2), agrupamientos dinámicos, tipos de gráficos intercambiables y filtros completos de estado incluyendo En Mora. Desplegado a /var/www/inandes en el VPS.
