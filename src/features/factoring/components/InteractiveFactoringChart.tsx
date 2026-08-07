@@ -1,45 +1,47 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { OperacionFactoring } from '../../../services/factoringService';
+import { Search } from 'lucide-react';
 
 interface InteractiveFactoringChartProps {
   operaciones: OperacionFactoring[];
 }
 
-type GroupBy = 'emisor' | 'aceptante' | 'moneda' | 'estado' | 'all';
+type GroupBy = 'estado' | 'emisor' | 'aceptante' | 'moneda' | 'all';
 type PlotMetric = 'monto_neto' | 'monto_bruto' | 'interes' | 'cantidad' | 'none' | 'tasa_promedio' | 'dias_credito' | 'porcentaje_mora';
 
 const getHexColor = (name: string, type: GroupBy) => {
-  if (type === 'all') return '#0089CF';
+  const upper = name.toUpperCase();
+  if (type === 'estado') {
+    if (upper.includes('ORIGINAD')) return '#F59E0B'; // Amber
+    if (upper.includes('APROBAD')) return '#10B981'; // Emerald
+    if (upper.includes('DESEMBOLSAD')) return '#3B82F6'; // Blue
+    if (upper.includes('PROCESO')) return '#8B5CF6'; // Purple
+    if (upper.includes('LIQUIDAD')) return '#6366F1'; // Indigo
+    if (upper.includes('MORA')) return '#EF4444'; // Red
+    return '#64748B';
+  }
   if (type === 'moneda') {
     if (name === 'USD') return '#3B82F6';
     return '#10B981';
   }
-  if (type === 'estado') {
-    if (name.includes('ORIGINAD')) return '#F59E0B';
-    if (name.includes('APROBAD')) return '#10B981';
-    if (name.includes('DESEMBOLSAD')) return '#3B82F6';
-    if (name.includes('PROCESO')) return '#8B5CF6';
-    if (name.includes('LIQUIDAD')) return '#6366F1';
-    if (name.includes('MORA')) return '#EF4444';
-    return '#64748B';
-  }
   if (type === 'emisor') {
-    if (name.includes('TRANS STAR')) return '#3B82F6';
-    if (name.includes('SAN IGNACIO')) return '#8B5CF6';
-    if (name.includes('TRUCK')) return '#F59E0B';
+    if (upper.includes('TRANS STAR')) return '#3B82F6';
+    if (upper.includes('SAN IGNACIO')) return '#8B5CF6';
+    if (upper.includes('TRUCK')) return '#F59E0B';
     return '#1E3A8A';
   }
   if (type === 'aceptante') {
-    if (name.includes('EXALMAR')) return '#10B981';
-    if (name.includes('LOGISTICA')) return '#06B6D4';
+    if (upper.includes('EXALMAR')) return '#10B981';
+    if (upper.includes('LOGISTICA')) return '#06B6D4';
     return '#D946EF';
   }
-  return '#94A3B8';
+  return '#0089CF';
 };
 
 export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps> = ({ operaciones }) => {
-  const [groupBy, setGroupBy] = useState<GroupBy>('emisor');
+  // POR DEFECTO: Agrupar por ESTADO para ver distribución clara por mes
+  const [groupBy, setGroupBy] = useState<GroupBy>('estado');
   const [filterEmisor, setFilterEmisor] = useState<string>('ALL');
   const [filterAceptante, setFilterAceptante] = useState<string>('ALL');
   const [filterMoneda, setFilterMoneda] = useState<string>('ALL');
@@ -69,6 +71,9 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
   const [isAceptanteFilterOpen, setIsAceptanteFilterOpen] = useState(false);
   const [isMonedaFilterOpen, setIsMonedaFilterOpen] = useState(false);
   const [isEstadoFilterOpen, setIsEstadoFilterOpen] = useState(false);
+
+  // Búsqueda dentro del popover flex
+  const [popoverSearchTerm, setPopoverSearchTerm] = useState('');
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -145,11 +150,11 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
       if (filterAceptante !== 'ALL' && op.aceptante_nombre !== filterAceptante) return false;
       if (filterMoneda !== 'ALL' && op.moneda !== filterMoneda) return false;
 
-      if (filterEstado !== 'ALL') {
-        const rawEst = (op.estado || '').toUpperCase();
-        const fVenc = (op as any).fecha_vencimiento || (op as any).fecha_vencimiento_factura || '';
-        const isMora = Boolean(fVenc && todayStr > fVenc && !rawEst.includes('LIQUIDADA') && !rawEst.includes('LIQUIDADO'));
+      const rawEst = (op.estado || '').toUpperCase();
+      const fVenc = (op as any).fecha_vencimiento || (op as any).fecha_pago_calculada || (op as any).fecha_vencimiento_factura || '';
+      const isMora = Boolean(fVenc && todayStr > fVenc && !rawEst.includes('LIQUIDADA') && !rawEst.includes('LIQUIDADO'));
 
+      if (filterEstado !== 'ALL') {
         if (filterEstado === 'ORIGINADO') {
           if (!['ORIGINADO', 'ACTIVO', 'APROBADO'].includes(rawEst)) return false;
         } else if (filterEstado === 'DESEMBOLSADO') {
@@ -171,28 +176,39 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
     const totalSecMap: Record<string, number> = {};
 
     const getVal = (op: OperacionFactoring, m: PlotMetric) => {
-      if (m === 'monto_neto') return op.abono_real_total || op.monto_neto_total || 0;
-      if (m === 'monto_bruto') return op.monto_bruto_total || 0;
-      if (m === 'interes') return op.interes_total || 0;
+      if (m === 'monto_neto') return op.abono_real_total || op.monto_neto_total || (op as any).monto_neto_factura || 0;
+      if (m === 'monto_bruto') return op.monto_bruto_total || (op as any).monto_total_factura || 0;
+      if (m === 'interes') return op.interes_total || (op as any).interes_calculado || 0;
       if (m === 'cantidad') return 1;
-      if (m === 'tasa_promedio') return 3.0; // Tasa promedio fija 3.0%
-      if (m === 'dias_credito') return op.dias_promedio || 30;
+      if (m === 'tasa_promedio') return (op as any).interes_mensual || (op as any).tasa_descuento_mensual || 2.8;
+      if (m === 'dias_credito') return op.dias_promedio || (op as any).plazo_operacion_calculado || 30;
       if (m === 'porcentaje_mora') {
-        const fVenc = (op as any).fecha_vencimiento || (op as any).fecha_vencimiento_factura || '';
+        const fVenc = (op as any).fecha_vencimiento || (op as any).fecha_pago_calculada || (op as any).fecha_vencimiento_factura || '';
         return (fVenc && todayStr > fVenc && !op.estado.includes('LIQUIDADA')) ? 100 : 0;
       }
       return 0;
     };
 
     filtered.forEach(op => {
-      const d = op.fecha_desembolso_esperada || op.fecha_creacion || todayStr;
+      const d = op.fecha_desembolso_esperada || (op as any).fecha_desembolso_factoring || op.fecha_creacion || todayStr;
       const month = d.substring(0, 7);
 
       let key = 'InAndes (Todo)';
+      const rawEst = (op.estado || '').toUpperCase();
+      const fVenc = (op as any).fecha_vencimiento || (op as any).fecha_pago_calculada || (op as any).fecha_vencimiento_factura || '';
+      const isMora = Boolean(fVenc && todayStr > fVenc && !rawEst.includes('LIQUIDADA') && !rawEst.includes('LIQUIDADO'));
+
       if (groupBy === 'emisor') key = op.emisor_nombre || 'Otros';
       else if (groupBy === 'aceptante') key = op.aceptante_nombre || 'Otros';
-      else if (groupBy === 'moneda') key = op.moneda || 'PEN';
-      else if (groupBy === 'estado') key = op.estado || 'Otros';
+      else if (groupBy === 'moneda') key = op.moneda || (op as any).moneda_factura || 'PEN';
+      else if (groupBy === 'estado') {
+        if (isMora) key = '🔴 EN MORA';
+        else if (rawEst.includes('LIQUIDADA') || rawEst.includes('LIQUIDADO')) key = 'LIQUIDADA';
+        else if (rawEst.includes('PROCESO')) key = 'EN PROCESO';
+        else if (rawEst.includes('DESEMBOLSAD')) key = 'DESEMBOLSADA';
+        else if (rawEst.includes('APROBAD')) key = 'APROBADA';
+        else key = 'ORIGINADA';
+      }
 
       if (!seriesMapPri[key]) seriesMapPri[key] = {};
       if (!seriesMapSec[key]) seriesMapSec[key] = {};
@@ -256,11 +272,11 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
           smooth: graphType === 'line',
           symbol: graphType.includes('line') ? 'circle' : undefined,
           symbolSize: graphType.includes('line') ? 8 : undefined,
-          barMaxWidth: isBar ? 40 : undefined,
+          barMaxWidth: isBar ? 42 : undefined,
           barGap: isStack ? undefined : '10%',
           data: dataArr,
           itemStyle: {
-            borderRadius: isBar ? [2, 2, 0, 0] : undefined,
+            borderRadius: isBar ? [3, 3, 0, 0] : undefined,
             color: cColor
           },
           lineStyle: graphType.includes('line') ? { width: 3, type: yAxisIndex === 1 ? 'dashed' : 'solid' } : undefined,
@@ -347,7 +363,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
         axisPointer: { type: 'cross' },
         formatter: (params: any[]) => {
           if (!params || params.length === 0) return '';
-          let tooltip = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
+          let tooltip = `<div style="font-weight:700;margin-bottom:4px">${params[0].axisValue}</div>`;
           params.forEach((p: any) => {
             const isSec = p.seriesName.includes('(Sec)');
             const m = isSec ? secondaryMetric : primaryMetric;
@@ -362,16 +378,15 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
           return tooltip;
         }
       },
+      // REGLA CRÍTICA: Desactivar leyendas dentro del área de ploteo para mantener limpio el gráfico
       legend: {
-        top: 0,
-        icon: 'circle',
-        textStyle: { color: '#475569' }
+        show: false
       },
       grid: {
         left: 70,
         right: 70,
-        bottom: 30,
-        top: 40,
+        bottom: 40,
+        top: 50,
         containLabel: true
       },
       xAxis: {
@@ -398,8 +413,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
           splitLine: { show: false }
         }
       ],
-      series,
-      color: ['#0EA5E9', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#10B981']
+      series
     };
   }, [operaciones, groupBy, months, xAxisData, filterEmisor, filterAceptante, filterMoneda, filterEstado, primaryMetric, primaryGraphType, secondaryMetric, secondaryGraphType, isSecondaryCumulativeSeries, isSecondaryCumulativeGlobal, isSecondaryPercentage, primaryLabelPos, primaryLabelColor, secondaryLabelPos, secondaryLabelColor, todayStr]);
 
@@ -475,7 +489,8 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
     );
   };
 
-  const renderFilterDropdown = (
+  // RENDER DROPDOWN CON GRAN VENTANA FLEX OVERLAY MODAL (PARA MOSTRAR MÚLTIPLES EMPRESAS DE FORMA CÓMODA)
+  const renderFlexFilterDropdown = (
     selectedVal: string,
     onSelect: (val: string) => void,
     optionsList: string[],
@@ -483,6 +498,8 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
     setIsOpen: (open: boolean) => void,
     title: string
   ) => {
+    const filteredList = optionsList.filter(opt => opt.toLowerCase().includes(popoverSearchTerm.toLowerCase()));
+
     return (
       <div className="relative flex-1" onClick={(e) => e.stopPropagation()}>
         <button
@@ -493,6 +510,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
             setIsEstadoFilterOpen(false);
             setIsPriOpen(false);
             setIsSecOpen(false);
+            setPopoverSearchTerm('');
             setIsOpen(!isOpen);
           }}
           className="w-full flex items-center justify-between gap-1 px-2 py-1.5 text-xs bg-white border border-slate-200 rounded hover:border-slate-350 focus:outline-none transition-all cursor-pointer text-slate-700 font-bold"
@@ -502,43 +520,71 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
         </button>
 
         {isOpen && (
-          <div className="absolute left-[130px] top-1/2 -translate-y-1/2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 w-[240px] max-h-[220px] overflow-y-auto p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-left-2 duration-150">
-            <div className="px-2 py-1 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
-              <span>Filtrar {title}</span>
-              <button onClick={() => setIsOpen(false)} className="text-[10px] text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer">✕</button>
+          <div className="absolute left-[130px] top-[-100px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 w-[550px] p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header del Popover Modal */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                Seleccionar {title} ({optionsList.length} disponibles)
+              </span>
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800"
+              >
+                ✕ Cerrar
+              </button>
             </div>
-            <button
-              onClick={() => {
-                onSelect('ALL');
-                setIsOpen(false);
-              }}
-              className={`text-left text-[11px] p-1.5 rounded transition-all cursor-pointer border ${
-                selectedVal === 'ALL'
-                  ? 'bg-blue-50 border-blue-200 font-bold text-blue-900'
-                  : 'border-transparent hover:bg-slate-50 font-medium text-slate-600'
-              }`}
-            >
-              Todos
-            </button>
-            {optionsList.map((opt) => {
-              const isSel = opt === selectedVal;
-              return (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    onSelect(opt);
-                    setIsOpen(false);
-                  }}
-                  className={`text-left text-[11px] p-1.5 rounded transition-all cursor-pointer border truncate ${
-                    isSel
-                      ? 'bg-blue-50 border-blue-200 font-bold text-blue-900'
-                      : 'border-transparent hover:bg-slate-50 font-medium text-slate-600'
-                  }`}
-                >
-                  {opt === 'EN_PROCESO' ? 'EN PROCESO' : (opt === 'EN_MORA' ? '🔴 EN MORA' : opt)}
-                </button>
-              );
-            })}
+
+            {/* Input de búsqueda dentro del popover flex */}
+            {optionsList.length > 5 && (
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={`Buscar ${title}...`}
+                  value={popoverSearchTerm}
+                  onChange={e => setPopoverSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-800 dark:text-white"
+                />
+                <Search size={14} className="absolute left-2.5 top-2 text-slate-400" />
+              </div>
+            )}
+
+            {/* Gran Contenedor FLEX WRAP con todas las opciones */}
+            <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto p-1">
+              <button
+                onClick={() => {
+                  onSelect('ALL');
+                  setIsOpen(false);
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer border ${
+                  selectedVal === 'ALL'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                TODOS (Mostrar Todo)
+              </button>
+
+              {filteredList.map((opt) => {
+                const isSel = opt === selectedVal;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      onSelect(opt);
+                      setIsOpen(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-semibold text-xs transition-all cursor-pointer border text-left truncate max-w-[240px] ${
+                      isSel
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm font-bold'
+                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-600 border-slate-200 dark:border-slate-700'
+                    }`}
+                    title={opt}
+                  >
+                    {opt === 'EN_PROCESO' ? 'EN PROCESO' : (opt === 'EN_MORA' ? '🔴 EN MORA' : opt)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -546,7 +592,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
   };
 
   return (
-    <div className="w-full bg-white pt-6 pb-6 px-6 shadow-sm rounded-2xl flex flex-row gap-6 items-stretch border border-slate-200 dark:border-slate-800 dark:bg-slate-900 min-h-[650px]">
+    <div className="w-full bg-white pt-6 pb-6 px-6 shadow-sm rounded-2xl flex flex-row gap-6 items-stretch border border-slate-200 dark:border-slate-800 dark:bg-slate-900 min-h-[680px]">
       {/* Sidebar de Controles (Left 240px) */}
       <div className="flex flex-col gap-3 shrink-0 w-[240px]">
         
@@ -572,7 +618,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
               >
                 Emisor
               </button>
-              {renderFilterDropdown(filterEmisor, setFilterEmisor, filterOptions.emisores, isEmisorFilterOpen, setIsEmisorFilterOpen, 'Emisor')}
+              {renderFlexFilterDropdown(filterEmisor, setFilterEmisor, filterOptions.emisores, isEmisorFilterOpen, setIsEmisorFilterOpen, 'Emisor')}
             </div>
 
             {/* Aceptante filter row */}
@@ -583,7 +629,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
               >
                 Pagador
               </button>
-              {renderFilterDropdown(filterAceptante, setFilterAceptante, filterOptions.aceptantes, isAceptanteFilterOpen, setIsAceptanteFilterOpen, 'Pagador')}
+              {renderFlexFilterDropdown(filterAceptante, setFilterAceptante, filterOptions.aceptantes, isAceptanteFilterOpen, setIsAceptanteFilterOpen, 'Pagador')}
             </div>
 
             {/* Moneda filter row */}
@@ -594,7 +640,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
               >
                 Moneda
               </button>
-              {renderFilterDropdown(filterMoneda, setFilterMoneda, filterOptions.monedas, isMonedaFilterOpen, setIsMonedaFilterOpen, 'Moneda')}
+              {renderFlexFilterDropdown(filterMoneda, setFilterMoneda, filterOptions.monedas, isMonedaFilterOpen, setIsMonedaFilterOpen, 'Moneda')}
             </div>
 
             {/* Estado filter row */}
@@ -606,7 +652,7 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
               >
                 Estado
               </button>
-              {renderFilterDropdown(filterEstado, setFilterEstado, filterOptions.estados, isEstadoFilterOpen, setIsEstadoFilterOpen, 'Estado')}
+              {renderFlexFilterDropdown(filterEstado, setFilterEstado, filterOptions.estados, isEstadoFilterOpen, setIsEstadoFilterOpen, 'Estado')}
             </div>
           </div>
         </div>
@@ -620,7 +666,6 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
             {renderCustomDropdown(primaryMetric, (val) => setPrimaryMetric(val as PlotMetric), isPriOpen, setIsPriOpen, 'blue', false)}
             
             <div className="flex flex-row gap-4 pt-2 border-t border-blue-200/40 dark:border-blue-800/40 mt-1">
-              {/* Iconos apilados tipo de gráfico */}
               <div className="flex flex-col gap-1 w-9 shrink-0">
                 <button 
                   onClick={() => setPrimaryGraphType('bar_stack')}
@@ -652,7 +697,6 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
                 </button>
               </div>
 
-              {/* Control de Etiquetas */}
               <div className="flex-1 flex flex-col gap-1">
                 <button
                   onClick={() => setPrimaryLabelColor(primaryLabelColor === '#ffffff' ? '#000000' : '#ffffff')}
@@ -751,11 +795,34 @@ export const InteractiveFactoringChart: React.FC<InteractiveFactoringChartProps>
 
       </div>
 
-      {/* Contenedor del Gráfico (Right Area) */}
+      {/* Contenedor del Gráfico (Right Area - Clean and Un-cluttered) */}
       <div className="flex-1 flex flex-col min-h-[650px]">
+        {/* Cabecera de Leyendas de Estado Prominente arriba del gráfico */}
+        <div className="flex flex-wrap items-center gap-3 mb-2 px-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+          <span className="text-[11px] font-black uppercase text-slate-400 tracking-wider mr-1">Leyenda de Estados:</span>
+          <span className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#6366F1]"></span> LIQUIDADA (Saldada)
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-lg border border-blue-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6]"></span> DESEMBOLSADA
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-lg border border-purple-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]"></span> EN PROCESO DE LIQUIDACIÓN
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span> APROBADA
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-lg border border-amber-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span> ORIGINADA
+          </span>
+          <span className="inline-flex items-center gap-1.5 bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-300 px-2 py-0.5 rounded-lg border border-red-200 font-extrabold animate-pulse">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span> 🔴 EN MORA
+          </span>
+        </div>
+
         <ReactECharts 
           option={options} 
-          style={{ flex: 1, height: '100%', minHeight: '650px', width: '100%' }} 
+          style={{ flex: 1, height: '100%', minHeight: '600px', width: '100%' }} 
           notMerge={true} 
         />
       </div>
