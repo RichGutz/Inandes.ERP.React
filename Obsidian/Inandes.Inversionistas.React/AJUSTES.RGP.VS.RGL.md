@@ -30,13 +30,13 @@ Alinear y certificar centavo a centavo las cifras del ERP InAndes frente al mode
 ### 1.2 Detalle de Ajustes Específicos en `NSGPEN01`
 
 1. **Inversionista Julia Bertila Castillo De Milla / Rubén Milla Roca:**
-   * **En RGL (Excel):** Fila 13 con Capital de **S/ 50,000.00** (celda de certificado venía en blanco).
+   * **En RGL (Excel):** Fila 13 con Capital de **S/ 50,000.00** (la celda de código de certificado venía en blanco, pero el inversionista y monto sí existen).
    * **En RGP (BD):** Contrato `NSGPEN01-046.20160101` por **S/ 50,000.00** a tasa 10.5%.
    * **Acción:** ✅ Mapeado y confirmado 100% válido.
 
-2. **Inversionista Edwin Maldonado Cortez:**
-   * **En RGP (BD):** Figuran 2 contratos `NSGPEN01-081.20160101` (S/ 25k) y `NSGPEN01-084.20160101` (S/ 25k) o total S/ 100k acumulado no registrado en el corte activo de RGL para NSGPEN01.
-   * **Acción de Ajuste:** Excluir / marcar como no vigentes para este fondo en el período 01/01/2026 a fin de dejar el total de contratos de `NSGPEN01` en exactamente **34 contratos** por **S/ 10,334,753.14**.
+2. **Inversionista Edwin Maldonado Cortez (ELIMINADO de NSGPEN01):**
+   * **En RGP (BD):** Figuraban 2 contratos `NSGPEN01-081.20160101` (S/ 25,000.00) y `NSGPEN01-084.20160101` (S/ 25,000.00) que totalizaban S/ 50,000.00 no reconocidos por Ricardo Gallo en este fondo.
+   * **Acción Realizada:** 🔴 **SE ELIMINÓ / EXCLUYÓ A EDWIN MALDONADO DE NSGPEN01**. Con esto, el fondo `NSGPEN01` queda con exactamente **34 contratos** por **S/ 10,334,753.14**, coincidiendo de forma idéntica con el Excel de Ricardo Gallo.
 
 ---
 
