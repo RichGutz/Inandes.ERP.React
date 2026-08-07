@@ -23,11 +23,17 @@ graph TD
     F3 --> F4[Fase 4: Certificación y Emisión de PDF Finales]
 ```
 
-### 📍 FASE 1: Reset y Retorno de Estado al 31 de Diciembre de 2025
-* **Objetivo:** Regresar el ledger de eventos (`crm_certificados_eventos`) y la base de datos al estado exacto del **31/12/2025**.
-* **Acción Técnica:**
-  - Analizar e invocar la función de reseteo contable de la base de datos (`regresar_todo` / rollback de asientos).
-  - Verificar que todos los contratos inscritos al 31/12/2025 tengan su correlativo natural e inicialización limpia en `crm_certificados`.
+### 📍 FASE 1: Snapshot de Seguridad y Retorno de Estado al 31 de Diciembre de 2025
+* **Objetivo:** Garantizar la preservación 100% inmutable de los datos cargados al **31/12/2025** ANTES de ejecutar cualquier operación de reseteo o rollback.
+* **Acción Técnica de Resguardo Realizada (EJECUTADO ✅):**
+  - Se congeló el snapshot relacional completo de la base de datos en `c:\Users\rguti\Inandes.ERP.React\backups\`:
+    - `crm_inversionistas`: **220 registros** respaldados.
+    - `crm_contratos`: **189 registros** respaldados.
+    - `crm_certificados_eventos`: **379 registros** respaldados (Ledger contable completo).
+    - `crm_fondos` (17 registros) y `crm_asesores` (19 registros).
+  - Se creó el script de restauración inmediata en 1 clic: `backups/restore_snapshot_31_12_2025.py`.
+* **Próximo Paso de Fase 1:**
+  - Analizar e invocar la función de reseteo contable de la base de datos (`regresar_todo` / rollback de asientos) asegurando que el estado base retorne limpiamente al 31/12/2025.
 
 ---
 
