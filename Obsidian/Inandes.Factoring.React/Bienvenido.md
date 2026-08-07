@@ -40,26 +40,42 @@ React consume los endpoints FastAPI o replica la interfaz de usuario con servici
 
 ---
 
-## 🔌 Estrategia de Conexión FastAPI & Resiliencia con Supabase
+## 🛡️ Soluciones Únicas y Reglas Intangibles del Sistema
 
-> **Solución a las Fallas de Conexión con el Backend FastAPI**
-
-Para garantizar disponibilidad al 100% y eliminar los errores de conexión con FastAPI (`https://api-factoring.geeksoft.tech` / `http://127.0.0.1:8010`):
-
-1. **Patrón de Servicio Centralizado (`factoringService.ts`):**
-   - Todos los componentes React consumen `factoringService.ts`. Queda estrictamente **prohibido escribir llamadas `fetch('/api/...')` aisladas** dentro de componentes UI.
-
-2. **Estrategia Dual de Tolerancia a Fallos (Fallback Automático):**
-   - `factoringService.ts` intenta primero consumir la API FastAPI en la nube/VPS (`/api/originacion/operaciones`).
-   - Si FastAPI no responde, arroja error 404/500 o sufre micro-cortes, el servicio **intercepta la falla de inmediato de forma transparente** y ejecuta una consulta nativa directa a las tablas de Supabase (`propuestas` / `EMISORES.ACEPTANTES`).
-
-3. **Incrustación de Variables de Entorno en Compilación (.env & .env.production):**
-   - Durante `npm run build`, Vite incrusta las variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_API_FACTORING_URL` desde `.env` y `.env.production` directamente en los paquetes JavaScript de producción del VPS (`/var/www/inandes`), evitando caídas de cliente por falta de configuración de entorno.
-
-4. **Monitoreo de Servicio VPS (`inandes-api.service`):**
-   - El servicio backend de Python en el VPS se gestiona con systemd en el puerto `8010` y proxy reverso en Nginx (`/api/`).
+### 1. Solución Única para Logos en PDFs (100% Inmune a Borrados)
+> **LECCIÓN APRENDIDA:** Queda **TERMINANTEMENTE PROHIBIDO** usar rutas relativas a disco (`static/...`), rutas de Linux (`file:///...`) o URLs externas (`https://...`).
+* **El Único Camino Oficial:** Los logotipos oficiales (**Geeksoft**, **InAndes**, **EFI**, **Firma**) están codificados en cadenas **Base64** dentro de `pdf_generators.py` (`LOGO_INANDES_B64`, `LOGO_GEEKSOFT_B64`, etc.).
+* En cada generación se inyectan en memoria a `template_data` y las plantillas Jinja2 los consumen vía `<img src="{{ logo_geeksoft }}">` y `<img src="{{ logo_inandes }}">`.
+* **Cero dependencias de disco o red:** El PDF compila en memoria con 100% de éxito en cualquier servidor o carpeta.
 
 ---
 
-*Última actualización: 2026-08-06 (Arquitectura Resiliente FastAPI + Supabase)*
+### 2. Arquitectura Única del VPS (Cero Ambigüedades de Directorio)
+* **Frontend Web (React):** `/var/www/inandes/` (servido por Nginx en `https://inandes.react.geeksoft.tech`).
+* **Backend API (FastAPI):** `/opt/erp_inandes/backend/` en puerto `8010` (`/opt/erp_inandes/venv/bin/uvicorn`).
+* **Carpetas Obsoletas:** `/var/www/inandesh/` fue eliminada permanentemente del VPS.
+
+---
+
+### 3. Solución Única a Errores de JSON y Pydantic en Backend
+* **Pydantic Model Dump:** En FastAPI con Python 3.10, siempre usar `inv.dict()` en lugar de `dict(inv)`.
+* **Protección `safe_parse_json`:** Cuando Supabase entrega campos nulos (`None`), nunca hacer `json.loads(d.get('campo', '{}'))` porque devuelve `None` y lanza `TypeError: the JSON object must be str, bytes or bytearray, not NoneType`. Siempre procesar con `safe_parse_json(val)`.
+* **Protección Jinja2:** En todas las plantillas HTML numéricas, proteger variables con `or 0` y `| default(0)` para evitar `UndefinedError`.
+
+---
+
+### 4. Router Oficial de Desembolsos (`/api/desembolsos`)
+* **`POST /api/desembolsos/generar-voucher`:** Genera el voucher bancario en PDF Base64.
+* **`POST /api/desembolsos/registrar`:** Actualiza el estado en Supabase a `DESEMBOLSADA` y sincroniza las evidencias en Google Drive.
+
+---
+
+### 5. Acordeones y Ciclo de Vida en React (Aprobaciones y Desembolsos)
+* **Cero Resets en Re-render:** Prohibido colocar `useEffect` que resetee `setExpandedCompanies(new Set())` en base a mapas computados (`companiesMap`).
+* **Colapso por Defecto:** Inician 100% colapsados y se controlan exclusivamente mediante `toggleCompany` y `toggleLote` con updates funcionales (`prev => ...`).
+
+---
+
+*Última actualización: 2026-08-07 (Soluciones Definitivas Backend & Logos Base64)*
+
 

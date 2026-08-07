@@ -101,6 +101,32 @@ El backend original corría acoplado a Streamlit en el VPS. Se extrajo la carpet
 - **Diagnóstico**: En el monolito de Streamlit, la autenticación de Google Drive asume un contexto global. En FastAPI, la función `list_folders_with_sa()` fue llamada sin inyectarle explícitamente el objeto `sa_creds` con las credenciales del Service Account, lo que causó que la librería fallara por argumentos faltantes.
 - **Solución**: Se actualizó el endpoint `/api/originacion/drive/list` en `routers/originacion.py` para primero obtener las credenciales (`google_integration.get_sa_credentials_dict()`) y pasárselas correctamente a la función list_folders. El endpoint `/formalize` ya lo hacía correctamente, por lo que el guardado no se vió afectado.
 
+### 5. Blindaje de Logos en PDFs (Solución Única Base64)
+- **Problema Histórico**: Los logotipos se borraban o mostraban texto alternativo `Logo Geeksoft` / `Logo Inandes` al mover carpetas o regenerar PDFs.
+- **Diagnóstico**: WeasyPrint dependía de rutas relativas a disco (`static/logo_inandes.png`) que se rompían al cambiar de directorio de trabajo o al reiniciar procesos.
+- **Solución Única y Definitiva**: Los logotipos oficiales están codificados directamente en cadenas **Base64** dentro de `pdf_generators.py` (`LOGO_INANDES_B64`, `LOGO_GEEKSOFT_B64`, `LOGO_EFI_B64`, `FIRMA_GALLO_B64`). Se inyectan en memoria a `template_data` y las plantillas Jinja2 los consumen vía `{{ logo_geeksoft }}` y `{{ logo_inandes }}`. Cero dependencia de archivos en disco.
+
+### 6. Arquitectura Unificada del VPS y Eliminación de Carpetas Obsoletas
+- **Diagnóstico**: Existía la carpeta inactiva `/var/www/inandesh/` que provocaba confusiones en los agentes al editar código.
+- **Solución Única**:
+  * **Frontend Web (React):** `/var/www/inandes/` (servido por Nginx en `https://inandes.react.geeksoft.tech`).
+  * **Backend API (FastAPI):** `/opt/erp_inandes/backend/` en puerto `8010` (`/opt/erp_inandes/venv/bin/uvicorn`).
+  * `/var/www/inandesh/` fue eliminada permanentemente del VPS.
+
+### 7. Solución Única a Errores de JSON y Pydantic en Backend
+- **Pydantic Model Dump**: En FastAPI con Python 3.10, `dict(inv)` lanza `TypeError: 'InvoiceData' object is not iterable`. Se debe usar siempre `inv.dict()`.
+- **Protección `safe_parse_json`**: En `routers/liquidaciones.py`, cuando Supabase entrega campos nulos (`None`), `json.loads(d.get('recalculate_result_json', '{}'))` devuelve `None` y lanza `TypeError: the JSON object must be str, bytes or bytearray, not NoneType`. Se implementó `safe_parse_json()` que valida tipos de forma segura.
+- **Protección Jinja2**: En todas las plantillas HTML numéricas (`perfil_operacion.html`, etc.), se protegieron todas las variables con `or 0` y `| default(0)`.
+
+### 8. Router Oficial de Desembolsos (`/api/desembolsos`)
+- Se implementó el router `backend/routers/desembolsos.py` montado en `/api/desembolsos`:
+  * `POST /api/desembolsos/generar-voucher`: Genera el voucher bancario en PDF Base64.
+  * `POST /api/desembolsos/registrar`: Actualiza el estado a `DESEMBOLSADA` en Supabase y sube las evidencias a Google Drive.
+
+### 9. Acordeones Colapsados y Ciclo de Vida en React (Aprobaciones y Desembolsos)
+- **Problema**: Los acordeones se reseteaban a cerrados o se auto-expandían sin control por efectos cíclicos.
+- **Solución Única**: Se eliminaron los `useEffect` reseteadores y se implementaron `toggleCompany` y `toggleLote` con actualizaciones funcionales (`prev => ...`), garantizando que inicien **100% colapsados por defecto** y respondan fluidamente al clic.
+
 ---
 
-*Ver también: [[00_Indice_y_Arquitectura]] | [[00.A.REGISTRO]] | [[00.B. ORIGINACION]] | [[03_Modulos_Aprobaciones_y_Desembolsos_Detalle]] | [[07. QC Loops - Streamlit vs React - Originacion]]*
+*Ver también: [[00_Indice_y_Arquitectura]] | [[00.A.REGISTRO]] | [[00.B.ORIGINACION]] | [[00.C.APROBACION]] | [[00.D.DESEMBOLSOS]] | [[00.E.LIQUIDACIONES]]*
