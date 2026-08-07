@@ -461,77 +461,16 @@ export const OriginacionTab: React.FC = () => {
     }
   };
 
-  const SESSION_KEY = 'factoring_originacion_session';
-
-  // --- Restaurar Sesión desde sessionStorage al Montar el Componente ---
+  // --- Limpieza de Sesión: Sin persistencia al cambiar de pestaña ---
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (data.invoices && Array.isArray(data.invoices)) setInvoices(data.invoices);
-        if (data.numGrupos) setNumGrupos(data.numGrupos);
-        if (data.bucketDates) setBucketDates(data.bucketDates);
-        if (data.simulacionResult) setSimulacionResult(data.simulacionResult);
-        if (data.folderId) setFolderId(data.folderId);
-        if (data.contractNumber) setContractNumber(data.contractNumber);
-        if (data.anexoNumber) setAnexoNumber(data.anexoNumber);
-        if (data.selectedDrivePath) setSelectedDrivePath(data.selectedDrivePath);
-        if (data.perfilPdfGenerated) setPerfilPdfGenerated(data.perfilPdfGenerated);
-        if (data.liquidacionPdfGenerated) setLiquidacionPdfGenerated(data.liquidacionPdfGenerated);
-        if (data.perfilPdfBase64) {
-          setPerfilPdfBase64(data.perfilPdfBase64);
-          setPerfilPdfUrl(base64ToBlobUrl(data.perfilPdfBase64));
-        }
-        if (data.liquidacionPdfBase64) {
-          setLiquidacionPdfBase64(data.liquidacionPdfBase64);
-          setLiquidacionPdfUrl(base64ToBlobUrl(data.liquidacionPdfBase64));
-        }
-      }
+      sessionStorage.removeItem('factoring_originacion_session');
     } catch (e) {
-      console.error("Error al restaurar sesión de Originación:", e);
+      // no-op
     }
   }, []);
 
-  // --- Guardar Sesión Automáticamente en sessionStorage ---
-  useEffect(() => {
-    if (invoices.length === 0 && !folderId && !contractNumber && !anexoNumber) return;
-    try {
-      const dataToSave = {
-        invoices,
-        numGrupos,
-        bucketDates,
-        simulacionResult,
-        folderId,
-        contractNumber,
-        anexoNumber,
-        selectedDrivePath,
-        perfilPdfGenerated,
-        liquidacionPdfGenerated,
-        perfilPdfBase64,
-        liquidacionPdfBase64,
-      };
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(dataToSave));
-    } catch (e) {
-      console.error("Error al guardar sesión de Originación:", e);
-    }
-  }, [
-    invoices,
-    numGrupos,
-    bucketDates,
-    simulacionResult,
-    folderId,
-    contractNumber,
-    anexoNumber,
-    selectedDrivePath,
-    perfilPdfGenerated,
-    liquidacionPdfGenerated,
-    perfilPdfBase64,
-    liquidacionPdfBase64
-  ]);
-
   const handleClearSession = () => {
-    sessionStorage.removeItem(SESSION_KEY);
     setInvoices([]);
     setBucketsFiles({ 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] });
     setSimulacionResult(null);

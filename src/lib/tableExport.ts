@@ -139,6 +139,7 @@ export function exportTableToPDF(title: string, columns: ExportColumn[], data: a
         <!DOCTYPE html>
         <html>
         <head>
+            <base href="${window.location.origin}/">
             <title>${title}</title>
             <meta charset="utf-8">
             <script src="https://cdn.tailwindcss.com"></script>
