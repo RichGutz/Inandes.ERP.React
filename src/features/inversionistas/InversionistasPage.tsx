@@ -908,127 +908,140 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const fmt = (n: number, m: string) => (m === 'USD' ? '$ ' : 'S/ ') + (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const hoy = new Date();
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    const diaHoy = String(hoy.getDate()).padStart(2, '0');
+    const mesHoy = meses[hoy.getMonth()];
+    const anioHoy = String(hoy.getFullYear());
 
     const html = `
       <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>Lote Retenciones 5% - ${batchData.fondo} (${fEnd})</title>
+      <html lang="es">
+      <head>
+          <meta charset="UTF-8">
+          <title>Certificado de Rentas - ${batchData.fondo} (${fEnd})</title>
           <style>
-            @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
-            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0f172a; margin: 0; font-size: 11px; }
-            .page { page-break-after: always; padding: 10px 0; }
-            .page:last-child { page-break-after: auto; }
-            .cert-box { border: 2px solid #0f172a; border-radius: 12px; padding: 24px; }
-            .header-cert { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 18px; }
-            .main-title { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.4; }
-            .sub-title { font-size: 9px; color: #64748b; font-weight: bold; margin-top: 4px; }
-            .section-title { font-size: 9px; font-weight: 900; color: #059669; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 14px; margin-bottom: 6px; }
-            .info-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-            .info-table td { padding: 4px 6px; font-size: 9.5px; border: 1px solid #cbd5e1; }
-            .info-label { width: 32%; background: #f8fafc; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 8.5px; }
-            .info-val { font-weight: 700; color: #0f172a; }
-            .amount-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin: 16px 0; text-align: center; }
-            .amount-num { font-size: 15px; font-weight: 900; color: #15803d; }
-            .amount-words { font-size: 9.5px; font-weight: 800; color: #166534; text-transform: uppercase; margin-top: 4px; }
-            .legal-text { font-size: 8px; color: #64748b; line-height: 1.5; text-align: justify; margin-top: 14px; }
-            .signature-box { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 36px; padding-top: 12px; }
-            .signature-block { text-align: center; width: 220px; }
-            .sign-line { border-top: 1px solid #0f172a; margin-top: 35px; padding-top: 4px; font-size: 9px; font-weight: 900; }
-            .sign-sub { font-size: 7.5px; color: #64748b; font-weight: bold; text-transform: uppercase; }
-            @media print { .no-print { display: none; } }
+              @page {
+                  size: A4 portrait;
+                  margin: 1.5cm 2cm 2.5cm 2cm;
+              }
+              body {
+                  font-family: 'Helvetica', 'Arial', sans-serif;
+                  font-size: 11pt;
+                  line-height: 1.5;
+                  color: #333;
+                  margin: 0;
+                  padding: 0;
+              }
+              .header {
+                  width: 100%;
+                  margin-bottom: 30px;
+              }
+              .header table {
+                  width: 100%;
+                  border: none;
+              }
+              .header td {
+                  vertical-align: top;
+                  border: none;
+              }
+              .logo-container {
+                  width: 100%;
+                  text-align: right;
+                  padding-top: 5px;
+              }
+              .title-box {
+                  text-align: center;
+                  margin-top: 40px;
+                  margin-bottom: 50px;
+              }
+              .title-box h1 {
+                  font-size: 14pt;
+                  font-weight: bold;
+                  margin: 0 0 5px 0;
+                  text-transform: uppercase;
+              }
+              .content {
+                  text-align: justify;
+                  margin-bottom: 40px;
+              }
+              .signature-area {
+                  text-align: center;
+                  margin-top: 80px;
+              }
+              .signature-line {
+                  width: 250px;
+                  margin: 0 auto 5px auto;
+                  border-top: 1px solid #333;
+              }
+              .footer {
+                  font-size: 8pt;
+                  margin-top: 60px;
+                  text-align: center;
+                  color: #0d47a1;
+              }
+              .footer p {
+                  margin: 2px 0;
+              }
+              .page-break {
+                  page-break-after: always;
+              }
+              @media print {
+                  .no-print { display: none; }
+              }
           </style>
-        </head>
-        <body>
-          ${batchData.retenciones.map((item: any, idx: number) => `
-            <div class="page">
-              <div class="cert-box">
-                <div class="header-cert">
-                  <div class="main-title">CERTIFICADO DE RETENCIÓN DE IMPUESTO A LA RENTA<br />DE SEGUNDA CATEGORÍA</div>
-                  <div class="sub-title">DE CONFORMIDAD CON EL TEXTO ÚNICO ORDENADO DE LA LEY DEL IMPUESTO A LA RENTA (D.S. N° 179-2004-EF)</div>
-                </div>
-
-                <div class="section-title">1. DATOS DEL AGENTE DE RETENCIÓN</div>
-                <table class="info-table">
-                  <tr>
-                    <td class="info-label">Razón Social:</td>
-                    <td class="info-val">INVERSIONES ANDES S.A.C.</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">R.U.C.:</td>
-                    <td class="info-val">20608518884</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Fondo de Inversión:</td>
-                    <td class="info-val">${batchData.fondo}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Domicilio Fiscal:</td>
-                    <td class="info-val">Av. Canaval y Moreyra 425, Of. 1001, San Isidro, Lima, Perú</td>
-                  </tr>
-                </table>
-
-                <div class="section-title">2. DATOS DEL SUJETO RETENIDO (INVERSIONISTA)</div>
-                <table class="info-table">
-                  <tr>
-                    <td class="info-label">Nombres y Apellidos / Razón Social:</td>
-                    <td class="info-val">${item.inversionista}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Documento de Identidad (DNI/RUC):</td>
-                    <td class="info-val">${item.dni}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Certificado de Participación:</td>
-                    <td class="info-val">${item.id_certificado}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Domicilio Fiscal Registrado:</td>
-                    <td class="info-val">${item.direccion}</td>
-                  </tr>
-                </table>
-
-                <div class="section-title">3. LIQUIDACIÓN DEL IMPUESTO RETENIDO (5%)</div>
-                <table class="info-table">
-                  <tr>
-                    <td class="info-label">Período Devengado:</td>
-                    <td class="info-val">${item.fecha_inicio} al ${item.fecha_fin}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Renta Bruta de 2da Categoría (Interés):</td>
-                    <td class="info-val">${fmt(item.interes_bruto, item.moneda)}</td>
-                  </tr>
-                  <tr>
-                    <td class="info-label">Tasa Efectiva de Retención:</td>
-                    <td class="info-val">5.00% (Inciso a, Art. 72° LIR)</td>
-                  </tr>
-                </table>
-
-                <div class="amount-box">
-                  <div class="amount-num">MONTO RETENIDO: ${fmt(item.monto_impuesto, item.moneda)}</div>
-                  <div class="amount-words">SON: ${item.monto_impuesto_letras}</div>
-                </div>
-
-                <div class="legal-text">
-                  Se expide el presente certificado a solicitud del interesado para los fines tributarios pertinentes ante la Superintendencia Nacional de Aduanas y de Administración Tributaria (SUNAT), acreditando la retención efectuada en la fuente y su correspondiente pago mediante la Planilla Mensual de Pagos (PDT 617 / PLAME).
-                </div>
-
-                <div class="signature-box">
-                  <div style="font-size: 8.5px; color: #64748b;">
-                    Lima, ${new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}<br />
-                    Certificado ${idx + 1} de ${batchData.retenciones.length}
-                  </div>
-                  <div class="signature-block">
-                    <div class="sign-line">RICARDO GALLO</div>
-                    <div class="sign-sub">Director Ejecutivo / Representante Legal<br />Inversiones Andes S.A.C.</div>
-                  </div>
-                </div>
+      </head>
+      <body>
+          ${batchData.retenciones.map((cert: any, idx: number) => `
+              <div class="header">
+                  <table>
+                      <tr>
+                          <td class="logo-container">
+                              <div style="font-weight: 900; font-size: 16pt; color: #0d47a1; letter-spacing: 1px;">INANDES</div>
+                              <div style="font-size: 7.5pt; color: #64748b; font-weight: bold;">ACTIVOS ALTERNATIVOS</div>
+                          </td>
+                      </tr>
+                  </table>
               </div>
-            </div>
+
+              <div class="title-box">
+                  <h1>CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS<br>DE SEGUNDA CATEGORÍA</h1>
+              </div>
+
+              <div class="content">
+                  <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147
+                      oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr.
+                      Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del
+                      FONDO <strong>${batchData.fondo}</strong> – FONDO DE INVERSION PRIVADO,</p>
+
+                  <p style="font-weight: bold;">CERTIFICA QUE:</p>
+
+                  <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>${
+                      cert.inversionista }</strong>, identificado(a) con DNI <strong>${ cert.dni }</strong> y con
+                      domicilio fiscal en <strong>${ cert.direccion }</strong>, la suma de <strong>${ cert.moneda } ${
+                      Number(cert.monto_impuesto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }</strong> (<strong>${ cert.monto_impuesto_letras }</strong>)
+                      por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las
+                      operaciones del FONDO <strong>${batchData.fondo}</strong> – FONDO DE INVERSION PRIVADO,
+                      correspondiente al período comprendido entre el <strong>${ cert.fecha_inicio.replace(/-/g, '.') }</strong> al <strong>${
+                      cert.fecha_fin.replace(/-/g, '.') }</strong>.
+                  </p>
+
+                  <p style="text-align: right; margin-top: 50px;">
+                      Santiago de Surco, <strong>${ diaHoy }</strong> de <strong>${ mesHoy }</strong> del <strong>${
+                      anioHoy }</strong>
+                  </p>
+              </div>
+
+              <div class="signature-area">
+                  <div class="signature-line"></div>
+                  Juan Ricardo Gallo Pizarro<br>
+                  <strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong><br>
+                  Gerente General
+              </div>
+
+              ${idx < batchData.retenciones.length - 1 ? '<div class="page-break"></div>' : ''}
           `).join('')}
-        </body>
+      </body>
       </html>
     `;
 
