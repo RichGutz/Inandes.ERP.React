@@ -1,8 +1,8 @@
 # 📋 Plan de Control de Calidad y Auditoría Integral — CRM Inversionistas
 
-> **Documento Oficial de Especificación y Protocolo de Auditoría Centavo a Centavo**
+> **Documento Oficial de Especificación, Resguardo y Protocolo de Auditoría Centavo a Centavo**
 > 
-> *Basado en la transcripción de requerimientos de dirección y control de calidad (Agosto 2026)*
+> *Actualizado al cierre de sesión (06 de Agosto de 2026)*
 
 ---
 
@@ -18,50 +18,44 @@ El objetivo es validar y auditar el cálculo de retornos, devengue de cuotas y s
 
 ```mermaid
 graph TD
-    F1[Fase 1: Reset y Rollback al 31/12/2025] --> F2[Fase 2: Cierre y Auditoría Ene-Feb 2026]
+    F1[Fase 1: Snapshot, Clones _backup y Reset 31/12/2025] --> F2[Fase 2: Cierre y Auditoría Ene-Feb 2026]
     F2 --> F3[Fase 3: Corridas Progresivas Mar-Ago 2026]
     F3 --> F4[Fase 4: Certificación y Emisión de PDF Finales]
 ```
 
-### 📍 FASE 1: Snapshot de Seguridad y Retorno de Estado al 31 de Diciembre de 2025
-* **Objetivo:** Garantizar la preservación 100% inmutable de los datos cargados al **31/12/2025** ANTES de ejecutar cualquier operación de reseteo o rollback.
-* **Acción Técnica de Resguardo Realizada (EJECUTADO ✅):**
-  - Se congeló el snapshot relacional completo de la base de datos en `c:\Users\rguti\Inandes.ERP.React\backups\`:
-    - `crm_inversionistas`: **220 registros** respaldados.
-    - `crm_contratos`: **189 registros** respaldados.
-    - `crm_certificados_eventos`: **379 registros** respaldados (Ledger contable completo).
-    - `crm_fondos` (17 registros) y `crm_asesores` (19 registros).
-  - Se creó el script de restauración inmediata en 1 clic: `backups/restore_snapshot_31_12_2025.py`.
-* **Próximo Paso de Fase 1:**
-  - Analizar e invocar la función de reseteo contable de la base de datos (`regresar_todo` / rollback de asientos) asegurando que el estado base retorne limpiamente al 31/12/2025.
+---
+
+## ✅ Hitos Ejecutados y Resguardo de Seguridad (Sesión 06/08/2026)
+
+### 1. 🎙️ Transcripción de Dirección Obtenida con Whisper (`transcribe_whisper.py`):
+- Transcrito con éxito el audio oficial en `audio_transcrip/LOOP.CALIDAD.CRM.INVERSIONISTAS.ogg_whisper.txt`.
+- Registrada la hoja de ruta de reiniciar la auditoría desde el **31/12/2025** y correr cierres progresivos hasta **Finales de Agosto de 2026**.
+
+### 2. 📊 Diagramación Visual de Arquitectura V4 React:
+- Creado el diagrama de flujo físico V4 en Graphviz con los componentes React (`FondosPage.tsx`, `InversionistasPage.tsx`, `CertificadosPage.tsx`, `InversionesPage.tsx`, `DeduccionesPage.tsx`, `financialCalculator.ts`, `inversionistasService.ts`).
+- Generados los archivos oficiales [relaciones_esquema_v4_react.md](file:///c:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/relaciones_esquema_v4_react.md) y [relaciones_esquema_v4_diagrama.pdf](file:///c:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/relaciones_esquema_v4_diagrama.pdf).
+
+### 3. 🛡️ Triple Capa de Seguridad y Duplicación de Tablas (`_backup`) en Supabase (EJECUTADO ✅):
+- **Clonación Física en el propio Supabase:** Se crearon y poblaron las tablas espejo clones con el sufijo **`_backup`** dentro de la base de datos PostgreSQL de Supabase:
+  - `crm_inversionistas_backup`: **220 registros** respaldados 1:1.
+  - `crm_contratos_backup`: **189 registros** respaldados 1:1.
+  - `crm_certificados_eventos_backup`: **379 registros** respaldados (Ledger completo).
+  - `crm_fondos_backup`: **17 registros** respaldados 1:1.
+  - `crm_asesores_backup`: **19 registros** respaldados 1:1.
+  - `propuestas_backup`: **156 registros** respaldados 1:1.
+- **SQL Dump Relacional Local:** Generado el archivo [SNAPSHOT_31_12_2025_FULL.sql](file:///c:/Users/rguti/Inandes.ERP.React/backups/SNAPSHOT_31_12_2025_FULL.sql) con las sentencias `INSERT INTO` en orden de dependencias.
+- **Restaurador 1 Clic:** Creado el script [restore_snapshot_31_12_2025.py](file:///c:/Users/rguti/Inandes.ERP.React/backups/restore_snapshot_31_12_2025.py) en `backups/`.
 
 ---
 
-### 📍 FASE 2: Cierre Bimestral/Trimestral (01/01/2026 ➔ 28/02/2026)
-* **Objetivo:** Correr el cierre de ciclo para todos los fondos bimestrales y el fondo trimestral con fecha de corte **28 de Febrero de 2026**.
-* **Acción Técnica:**
-  - Ejecutar el motor de cálculo V40 (`financialCalculator.ts` / `inversionistasService.ts`).
-  - Procesar la distribución de interés bruto, retención fiscal del 5% de Impuesto a la Renta de Segunda Categoría, y evaluar la modalidad (*Pagar Cupón* vs *Capitalizar*).
-  - **Auditoría Comparativa:** Cruzar los saldos devengados y valor cuota al 28/02/2026 contra la hoja de trabajo oficial en Excel de **Ricardo Gallo**.
+## 🚀 Hoja de Ruta para Mañana (Reanudación en Fase 2)
 
----
-
-### 📍 FASE 3: Corridas Progresivas Mensuales (Marzo ➔ Agosto 2026)
-* **Objetivo:** Avanzar progresivamente en el tiempo ejecutando los cierres de ciclo correspondientes a los meses de **Marzo, Abril, Mayo, Junio, Julio y Agosto de 2026**.
-* **Acción Técnica:**
-  - Correr cierre de Marzo 2026 ➔ Comparar vs Excel Ricardo Gallo.
-  - Correr cierre de Abril 2026 ➔ Comparar vs Excel Ricardo Gallo.
-  - Continuar iterativamente hasta completar el corte a **Finales de Agosto de 2026**.
-  - Verificar que el loop de retroalimentación de capitalización (*feedback loop*) genere correctamente los eventos `aumento_capital` en Supabase a valor cuota del día.
-
----
-
-### 📍 FASE 4: Certificación Final y Emisión de Reportes
-* **Objetivo:** Emisión oficial de los documentos de cierre contable y verificación de cero discrepancias.
-* **Entregables:**
-  - Estados de Cuenta en PDF por cada partícipe.
-  - Certificados de Retención de 2da Categoría.
-  - Cuadro de Mapeo de Auditoría Centavo a Centavo (React vs Excel).
+```
+[MAÑANA - PASO 1] ➔ Estudiar función de reseteo contable (regresar_todo) para llevar limpia la vista activa al 31/12/2025.
+[MAÑANA - PASO 2] ➔ Correr el cierre de ciclo para fondos bimestrales y trimestral al 28 de Febrero de 2026.
+[MAÑANA - PASO 3] ➔ Mapeo y comparación centavo a centavo (ERP vs Excel de Ricardo Gallo).
+[MAÑANA - PASO 4] ➔ Avanzar progresivamente con cierres de Marzo, Abril, Mayo, Junio, Julio y Agosto 2026.
+```
 
 ---
 
@@ -69,12 +63,13 @@ graph TD
 
 | Componente | Archivo / Función | Responsabilidad |
 |------------|-------------------|-----------------|
-| **Función Reset** | `regresar_todo` / `inversionistasService.ts` | Retorno de base de datos al 31/12/2025 |
+| **Script Restaurador** | `backups/restore_snapshot_31_12_2025.py` | Restauración en 1 clic al estado 31/12/2025 |
+| **Dump Relacional** | `backups/SNAPSHOT_31_12_2025_FULL.sql` | Respaldos relacionales `INSERT INTO` |
+| **Tablas Espejo Supabase** | `*_backup` en Supabase | Copias clonadas físicas en Supabase |
 | **Motor V40** | `financialCalculator.ts` | Cálculo in-memory de intereses, waiver e impuestos |
 | **Persistencia** | `inversionistasService.ts` | Inserción de eventos en `crm_certificados_eventos` |
-| **Base de Datos** | Supabase (`egvcinsbyropumybatdf`) | Ledger inmutable de transacciones |
 | **Reportes PDF** | WeasyPrint Engine | Generación de Estados de Cuenta y Certificados |
 
 ---
 
-*Última actualización: 2026-08-06 (Generado a partir de la transcripción oficial Whisper)*
+*Última actualización: 2026-08-06 22:43 (Cierre de Sesión y Estado Blindado al 100%)*

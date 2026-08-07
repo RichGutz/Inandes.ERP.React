@@ -147,3 +147,5 @@
 [2026-08-06 21:45:00-05:00] ESTADO: Completado con éxito. Actualizado DashboardTab.tsx, verificado npm run build 0 errores y desplegado a /var/www/inandes en el VPS. La distribución de cartera suma exactamente 100.0%.
 [2026-08-06 21:50:00-05:00] TAREA: Actualización integral de notas Obsidian (Bienvenido.md, Lecciones.de.Bienvenida.md, 00.E.LIQUIDACIONES.md) documentando la arquitectura de conexión con FastAPI, la estrategia de resiliencia con fallback a Supabase y la incrustación de variables en .env y .env.production.
 [2026-08-06 21:50:00-05:00] ESTADO: Completado con éxito. Todas las notas de arquitectura documentadas y sincronizadas.
+[2026-08-06 22:43:00-05:00] TAREA: Transcripción de audio LOOP.CALIDAD.CRM.INVERSIONISTAS.ogg con Whisper, generación de diagrama V4 React en Graphviz (PDF/PNG), duplicación de tablas con sufijo _backup en Supabase (220 partícipes, 189 contratos, 379 eventos) y actualización final de PLAN_CONTROL_CALIDAD_CRM_INVERSIONISTAS.md.
+[2026-08-06 22:43:00-05:00] ESTADO: Completado con éxito. Base de datos blindada con triple capa de resguardo y hoja de ruta lista para reanudar mañana en la Fase 2 (cierre Ene-Feb 2026).
