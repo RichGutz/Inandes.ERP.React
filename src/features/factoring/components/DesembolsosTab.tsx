@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { getApiBaseUrl } from '../../../config/apiConfig';
+import { factoringService } from '../../../services/factoringService';
 import { supabase } from '../../../services/supabaseClient';
 import { DriveTreeView } from './DriveTreeView';
 import { 
@@ -68,39 +69,53 @@ export const DesembolsosTab: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      let rawData: any[] = [];
-      
-      // Intentar consulta a Supabase por estados de aprobación
-      const { data, error: sbError } = await supabase
-        .from('propuestas')
-        .select('*')
-        .in('estado', ['APROBADO', 'APROBADA', 'Activo', 'ACTIVO']);
-        
-      if (!sbError && data && data.length > 0) {
-        rawData = data;
-      } else {
-        // Fallback: si no devuelve por filtro exacto, traer todas las propuestas y filtrar manualmente por estado
-        const { data: allData, error: allErr } = await supabase
-          .from('propuestas')
-          .select('*');
-        if (allErr) throw allErr;
-        rawData = (allData || []).filter((item: any) => {
-          const est = String(item.estado || '').toUpperCase();
-          return est.includes('APROBAD') || est.includes('ACTIV') || est.includes('DESEMBOLSA');
+
+      // Usar factoringService igual que AprobacionesTab, LiquidacionesTab y RepositorioTab
+      const ops = await factoringService.getOperaciones('APROBADO');
+      let finalOps = ops;
+
+      if (!finalOps || finalOps.length === 0) {
+        const allOps = await factoringService.getOperaciones();
+        finalOps = allOps.filter(o => {
+          const est = (o.estado || '').toUpperCase();
+          return est.includes('APROBAD') || est.includes('ACTIV') || est.includes('ORIGINAD');
         });
       }
 
-      const mapped: FacturaDesembolso[] = rawData.map((item: any) => ({
-        proposal_id: item.proposal_id,
-        emisor_nombre: item.emisor_nombre || 'S/N',
-        emisor_ruc: String(item.emisor_ruc || ''),
-        aceptante_nombre: item.aceptante_nombre || 'S/N',
-        moneda_factura: item.moneda_factura || 'PEN',
-        monto_neto_factura: Number(item.monto_neto_factura || 0),
-        monto_a_desembolsar: Number(item.abono_real_calculado || item.capital_calculado || item.monto_neto_factura || 0),
-        identificador_lote: item.identificador_lote || 'LOTE-GENERAL',
-        recalculate_result_json: item.recalculate_result_json
+      // Si por alguna razón sigue vacío, consulta directa a Supabase
+      if (!finalOps || finalOps.length === 0) {
+        const { data } = await supabase.from('propuestas').select('*');
+        if (data && data.length > 0) {
+          finalOps = data.map((item: any) => ({
+            proposal_id: item.proposal_id,
+            emisor_ruc: item.emisor_ruc || '',
+            emisor_nombre: item.emisor_nombre || 'S/N',
+            aceptante_ruc: item.aceptante_ruc || '',
+            aceptante_nombre: item.aceptante_nombre || 'S/N',
+            moneda: item.moneda_factura || 'PEN',
+            monto_bruto_total: Number(item.monto_total_factura || 0),
+            monto_neto_total: Number(item.monto_neto_factura || 0),
+            interes_total: Number(item.interes_calculado || 0),
+            abono_real_total: Number(item.abono_real_calculado || item.capital_calculado || item.monto_neto_factura || 0),
+            comisiones_fijas: 0,
+            dias_promedio: Number(item.plazo_operacion_calculado || 30),
+            estado: item.estado,
+            identificador_lote: item.identificador_lote || 'LOTE-GENERAL',
+            recalculate_result_json: item.recalculate_result_json
+          }));
+        }
+      }
+
+      const mapped: FacturaDesembolso[] = (finalOps || []).map((op: any) => ({
+        proposal_id: op.proposal_id,
+        emisor_nombre: op.emisor_nombre || 'S/N',
+        emisor_ruc: String(op.emisor_ruc || ''),
+        aceptante_nombre: op.aceptante_nombre || 'S/N',
+        moneda_factura: op.moneda || op.moneda_factura || 'PEN',
+        monto_neto_factura: Number(op.monto_neto_total || op.monto_neto_factura || 0),
+        monto_a_desembolsar: Number(op.abono_real_total || op.abono_real_calculado || op.capital_calculado || op.monto_neto_total || 0),
+        identificador_lote: op.identificador_lote || 'LOTE-GENERAL',
+        recalculate_result_json: op.recalculate_result_json
       }));
 
       console.log('Facturas pendientes de desembolso encontradas:', mapped.length);
@@ -476,43 +491,44 @@ export const DesembolsosTab: React.FC = () => {
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
         <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">1. Facturas Pendientes de Desembolso</h2>
         
+        {/* Rolodex Abecedario A-Z Oficial (Regla 6 - SIEMPRE VISIBLE) */}
+        <div className="flex flex-wrap items-center gap-2 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+          {['TODOS', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), '#'].map(letter => {
+            const count = letterCounts[letter] || 0;
+            const isActive = activeLetter === letter;
+            const isTodos = letter === 'TODOS';
+
+            return (
+              <button
+                key={letter}
+                onClick={() => setActiveLetter(letter)}
+                className={`relative flex items-center justify-center font-black transition-all cursor-pointer ${
+                  isTodos 
+                    ? 'px-4 h-10 rounded-xl text-xs uppercase tracking-wider' 
+                    : 'w-10 h-10 rounded-xl text-sm'
+                } ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105' 
+                    : count > 0 
+                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
+                      : 'bg-slate-100 text-slate-400 dark:bg-slate-800/40 dark:text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {letter}
+                {count > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black shadow-xs border border-white dark:border-slate-900 min-w-[18px] text-center">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {invoices.length === 0 ? (
-          <div className="text-center text-slate-500 py-8">No hay facturas aprobadas pendientes de desembolso.</div>
+          <div className="text-center text-slate-500 py-8 font-semibold">No hay facturas aprobadas pendientes de desembolso en la base de datos.</div>
         ) : (
           <>
-            {/* Rolodex Abecedario A-Z Oficial (Regla 6) */}
-            <div className="flex flex-wrap items-center gap-2 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
-              {['TODOS', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), '#'].map(letter => {
-                const count = letterCounts[letter] || 0;
-                const isActive = activeLetter === letter;
-                const isTodos = letter === 'TODOS';
-
-                return (
-                  <button
-                    key={letter}
-                    onClick={() => setActiveLetter(letter)}
-                    className={`relative flex items-center justify-center font-black transition-all cursor-pointer ${
-                      isTodos 
-                        ? 'px-4 h-10 rounded-xl text-xs uppercase tracking-wider' 
-                        : 'w-10 h-10 rounded-xl text-sm'
-                    } ${
-                      isActive 
-                        ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105' 
-                        : count > 0 
-                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
-                          : 'bg-slate-100 text-slate-400 dark:bg-slate-800/40 dark:text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {letter}
-                    {count > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black shadow-xs border border-white dark:border-slate-900 min-w-[18px] text-center">
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
 
             <div className="space-y-4">
               {(() => {
