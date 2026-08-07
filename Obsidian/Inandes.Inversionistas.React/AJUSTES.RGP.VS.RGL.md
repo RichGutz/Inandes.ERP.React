@@ -34,9 +34,53 @@ Alinear y certificar centavo a centavo las cifras del ERP InAndes frente al mode
    * **En RGP (BD):** Contrato `NSGPEN01-046.20160101` por **S/ 50,000.00** a tasa 10.5%.
    * **Acción:** ✅ Mapeado y confirmado 100% válido.
 
-2. **Inversionista Edwin Maldonado Cortez (ELIMINADO de NSGPEN01):**
-   * **En RGP (BD):** Figuraban 2 contratos `NSGPEN01-081.20160101` (S/ 25,000.00) y `NSGPEN01-084.20160101` (S/ 25,000.00) que totalizaban S/ 50,000.00 no reconocidos por Ricardo Gallo en este fondo.
-   * **Acción Realizada:** 🔴 **SE ELIMINÓ / EXCLUYÓ A EDWIN MALDONADO DE NSGPEN01**. Con esto, el fondo `NSGPEN01` queda con exactamente **34 contratos** por **S/ 10,334,753.14**, coincidiendo de forma idéntica con el Excel de Ricardo Gallo.
+2. **Inversionista Edwin Maldonado Cortez — DATA EXACTA RESPALDADA:**
+
+> **Ficha del Inversionista en BD (`crm_inversionistas`):**
+> * **Código Inversionista:** `DNI07765525`
+> * **Nombre Completo:** `Maldonado Cortez Edwin`
+> * **DNI:** `07765525` | **Nacimiento:** `1964-04-04` | **Estado Civil:** `Casado (a)`
+> * **Email:** `edwinmalcor@hotmail.com` | **Teléfono:** `996 298 133`
+> * **Dirección Fiscal:** `Jr. Santa Cruz de Tenerife 155 Mz C Lote 5, La Molina, Lima (15024)`
+> * **Cónyuge:** `Carmen Beatriz Franco Vidal` (DNI `6717776`)
+> * **Ocupación / Cargo:** `Contador` | **Antigüedad Laboral:** `14 años` | **Perfil de Riesgo:** `Bajo`
+> * **Banco PEN:** `BCP` | **Cuenta:** `19316007580071`
+
+> **Contratos Identificados en BD (`crm_contratos`):**
+> 
+> ```json
+> [
+>   {
+>     "id_contrato": "NSGPEN01-081.20160101",
+>     "id_inversionista_1": "DNI07765525",
+>     "id_fondo": "NSGPEN01",
+>     "id_asesor": "ASDNI008725693",
+>     "monto_inversion": 25000.0,
+>     "moneda": "PEN",
+>     "tasa_pactada": 10.5,
+>     "frecuencia_cupones_meses": 2,
+>     "fecha_inicio": "2016-01-01",
+>     "fecha_fin": "2027-12-31",
+>     "estado": "emitido"
+>   },
+>   {
+>     "id_contrato": "NSGPEN01-084.20160101",
+>     "id_inversionista_1": "DNI07765525",
+>     "id_fondo": "NSGPEN01",
+>     "id_asesor": "ASDNI008725693",
+>     "monto_inversion": 25000.0,
+>     "moneda": "PEN",
+>     "tasa_pactada": 10.5,
+>     "frecuencia_cupones_meses": 2,
+>     "fecha_inicio": "2016-01-01",
+>     "fecha_fin": "2027-12-31",
+>     "estado": "emitido"
+>   }
+> ]
+> ```
+> 
+> * **Diagnóstico:** Estos 2 contratos suman **S/ 50,000.00**. No figuran en el libro de Ricardo Gallo al 28/02/2026 para `NSGPEN01`.
+> * **Acción:** Al excluir / eliminar ambos contratos de `NSGPEN01`, el fondo queda con exactamente **34 contratos** por **S/ 10,334,753.14**, coincidiendo de forma idéntica con el Excel de Ricardo Gallo.
 
 ---
 
