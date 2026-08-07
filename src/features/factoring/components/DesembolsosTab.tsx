@@ -193,19 +193,7 @@ export const DesembolsosTab: React.FC = () => {
     return counts;
   }, [companiesMap, invoices]);
 
-  // Auto-expandir empresas y lotes por defecto para que la UI no quede vacía
-  useEffect(() => {
-    if (invoices.length > 0) {
-      const compSet = new Set<string>();
-      const loteSet = new Set<string>();
-      invoices.forEach(inv => {
-        if (inv.emisor_nombre) compSet.add(inv.emisor_nombre.trim());
-        if (inv.identificador_lote) loteSet.add(inv.identificador_lote);
-      });
-      setExpandedCompanies(compSet);
-      setExpandedLotes(loteSet);
-    }
-  }, [invoices]);
+  // Empresas y lotes inician 100% colapsados por defecto
 
   const toggleSelection = (id: string) => {
     const newSel = new Set(selectedIds);
@@ -229,11 +217,22 @@ export const DesembolsosTab: React.FC = () => {
     setVoucherB64(null);
   };
 
-  const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
-    const newSet = new Set(set);
-    if (newSet.has(key)) newSet.delete(key);
-    else newSet.add(key);
-    setter(newSet);
+  const toggleCompany = (emisor: string) => {
+    setExpandedCompanies(prev => {
+      const next = new Set(prev);
+      if (next.has(emisor)) next.delete(emisor);
+      else next.add(emisor);
+      return next;
+    });
+  };
+
+  const toggleLote = (loteKey: string) => {
+    setExpandedLotes(prev => {
+      const next = new Set(prev);
+      if (next.has(loteKey)) next.delete(loteKey);
+      else next.add(loteKey);
+      return next;
+    });
   };
 
   const formatCurrency = (val: number, cur: string) => {
@@ -551,8 +550,8 @@ export const DesembolsosTab: React.FC = () => {
                   <div key={emisor} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                     {/* Empresa Header */}
                     <button 
-                      className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
-                      onClick={() => toggleExpanded(expandedCompanies, emisor, setExpandedCompanies)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
+                      onClick={() => toggleCompany(emisor)}
                     >
                       <div className="flex items-center gap-3">
                         <Building2 className="text-indigo-500" size={20} />
@@ -567,8 +566,8 @@ export const DesembolsosTab: React.FC = () => {
                           <div key={loteId} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                             {/* Lote Header */}
                             <button
-                              className="w-full bg-slate-50 dark:bg-slate-800/50 px-4 py-2 flex justify-between items-center border-b border-slate-200 dark:border-slate-700"
-                              onClick={() => toggleExpanded(expandedLotes, loteId, setExpandedLotes)}
+                              className="w-full bg-slate-50 dark:bg-slate-800/50 px-4 py-2 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 cursor-pointer"
+                              onClick={() => toggleLote(loteId)}
                             >
                               <div className="flex items-center gap-2">
                                 <FolderOpen className="text-emerald-500" size={16} />
