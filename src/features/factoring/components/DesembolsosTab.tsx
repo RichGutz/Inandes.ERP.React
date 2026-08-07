@@ -69,14 +69,29 @@ export const DesembolsosTab: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      let rawData: any[] = [];
+      
+      // Intentar consulta a Supabase por estados de aprobación
       const { data, error: sbError } = await supabase
         .from('propuestas')
         .select('*')
-        .in('estado', ['APROBADO', 'APROBADA']);
+        .in('estado', ['APROBADO', 'APROBADA', 'Activo', 'ACTIVO']);
         
-      if (sbError) throw sbError;
+      if (!sbError && data && data.length > 0) {
+        rawData = data;
+      } else {
+        // Fallback: si no devuelve por filtro exacto, traer todas las propuestas y filtrar manualmente por estado
+        const { data: allData, error: allErr } = await supabase
+          .from('propuestas')
+          .select('*');
+        if (allErr) throw allErr;
+        rawData = (allData || []).filter((item: any) => {
+          const est = String(item.estado || '').toUpperCase();
+          return est.includes('APROBAD') || est.includes('ACTIV') || est.includes('DESEMBOLSA');
+        });
+      }
 
-      const mapped: FacturaDesembolso[] = (data || []).map((item: any) => ({
+      const mapped: FacturaDesembolso[] = rawData.map((item: any) => ({
         proposal_id: item.proposal_id,
         emisor_nombre: item.emisor_nombre || 'S/N',
         emisor_ruc: String(item.emisor_ruc || ''),
@@ -88,6 +103,7 @@ export const DesembolsosTab: React.FC = () => {
         recalculate_result_json: item.recalculate_result_json
       }));
 
+      console.log('Facturas pendientes de desembolso encontradas:', mapped.length);
       setInvoices(mapped);
     } catch (err: any) {
       console.error('Error cargando facturas pendientes de desembolso:', err);
