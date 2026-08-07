@@ -1,0 +1,3444 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4 landscape;
+    margin: 12mm 10mm 12mm 10mm;
+    @bottom-right {
+      content: "Página " counter(page) " de " counter(pages);
+      font-size: 8pt;
+      font-family: Arial, sans-serif;
+      color: #64748b;
+    }
+  }
+  body {
+    font-family: Arial, sans-serif;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
+    font-size: 8pt;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+  .title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #0f172a;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    font-size: 9pt;
+    color: #64748b;
+    margin-top: 3px;
+  }
+  .badge {
+    background: #0284c7;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 8pt;
+    font-weight: bold;
+  }
+  .summary-cards {
+    display: table;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .card {
+    display: table-cell;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .card-label {
+    font-size: 7pt;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  .card-val {
+    font-size: 10pt;
+    font-weight: bold;
+    color: #0f172a;
+    margin-top: 2px;
+  }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  table.data-table th {
+    background: #0f172a;
+    color: white;
+    font-size: 7pt;
+    padding: 4px 5px;
+    text-align: right;
+    font-weight: bold;
+    border: 1px solid #0f172a;
+  }
+  table.data-table th.left {
+    text-align: left;
+  }
+  table.data-table td {
+    padding: 3px 5px;
+    font-size: 7pt;
+    border: 1px solid #cbd5e1;
+    text-align: right;
+  }
+  table.data-table td.left {
+    text-align: left;
+  }
+  table.data-table tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .tot-row {
+    background: #e2e8f0 !important;
+    font-weight: bold;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+
+
+
+<div class="header">
+  <div>
+    <div class="title">INANDES GRUPO FINANCIERO — CIERRE DE AUDITORÍA OFICIAL</div>
+    <div class="subtitle">Período: 01 de Enero de 2026 al 28 de Febrero de 2026 (59 Días) &nbsp;|&nbsp; Base 365 Días</div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">FONDO NSGPEN01 (PEN)</span>
+    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">34 Inversionistas Auditados</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Base Inicial</div>
+    <div class="card-val">PEN 10,384,753.14</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Interés Bruto (59d)</div>
+    <div class="card-val" style="color: #0284c7;">PEN 178,785.79</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Retención IR 5%</div>
+    <div class="card-val" style="color: #dc2626;">PEN 8,939.28</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Reparto en Efectivo</div>
+    <div class="card-val" style="color: #16a34a;">PEN 135,276.64</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Final Saldo</div>
+    <div class="card-val" style="color: #4338ca;">PEN 10,122,109.66</div>
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20px;">#</th>
+      <th class="left" style="width: 140px;">Certificado</th>
+      <th class="left">Inversionista</th>
+      <th>Capital Base</th>
+      <th>Int. Bruto</th>
+      <th>IR (5%)</th>
+      <th>Base Neta</th>
+      <th>Capitaliz.</th>
+      <th>Reparto</th>
+      <th>Deducc.</th>
+      <th>Neto Final</th>
+      <th>Rescates</th>
+      <th>Capital Final</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-001.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Parra Forero Gladys Yanneth</td>
+      <td>1,900,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">32,247.95</td>
+      <td style="color: #b91c1c;">1,612.40</td>
+      <td>30,635.55</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">30,635.55</td>
+      <td>-</td>
+      <td style="font-weight: bold;">30,635.55</td>
+      <td style="color: #c2410c;">325,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">1,575,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-002.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Gallo Pizarro Juan Ricardo</td>
+      <td>600,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">10,183.56</td>
+      <td style="color: #b91c1c;">509.18</td>
+      <td>9,674.38</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">9,674.38</td>
+      <td>-</td>
+      <td style="font-weight: bold;">9,674.38</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">600,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-013.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Julca Haschimoto Silvia Aracelli / Mejia Julca Silvia Elena</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,357.81</td>
+      <td style="color: #b91c1c;">67.89</td>
+      <td>1,289.92</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,289.92</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,289.92</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-015.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Olcese Martensen Raúl Gonzalo</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,697.26</td>
+      <td style="color: #b91c1c;">84.86</td>
+      <td>1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,612.40</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-016.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Ugaz La Rosa María Vita / Del Pozo Ugaz Oscar Agustín</td>
+      <td>335,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">5,685.82</td>
+      <td style="color: #b91c1c;">284.29</td>
+      <td>5,401.53</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">5,401.53</td>
+      <td>-</td>
+      <td style="font-weight: bold;">5,401.53</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">335,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-017.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Barton Carmen Michele</td>
+      <td>60,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,018.36</td>
+      <td style="color: #b91c1c;">50.92</td>
+      <td>967.44</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">967.44</td>
+      <td>-</td>
+      <td style="font-weight: bold;">967.44</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">60,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">7</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-018.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Chávez Carbajal Juan Carlos / Carbajal Silva Elizabeth Cecilia</td>
+      <td>65,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,103.22</td>
+      <td style="color: #b91c1c;">55.16</td>
+      <td>1,048.06</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,048.06</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,048.06</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">65,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">8</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-026.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">López Cuellar Greta Yolanda</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,545.89</td>
+      <td style="color: #b91c1c;">127.29</td>
+      <td>2,418.60</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,418.60</td>
+      <td>873.44</td>
+      <td style="font-weight: bold;">1,545.16</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">9</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-030.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Zelaya Segovia Carlos Antonio Florentino / Chávez Ramírez de Zelaya Ada Olivia</td>
+      <td>140,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,376.16</td>
+      <td style="color: #b91c1c;">118.81</td>
+      <td>2,257.35</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,257.35</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,257.35</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">140,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">10</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-031.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Del Pozo Acosta Oscar Enrique / Del Pozo Ugaz Oscar Agustín</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,697.26</td>
+      <td style="color: #b91c1c;">84.86</td>
+      <td>1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,612.40</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">11</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-035.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Claros Carrasco Pedro José / Claros Carrasco Emma Doria</td>
+      <td>600,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">10,183.56</td>
+      <td style="color: #b91c1c;">509.18</td>
+      <td>9,674.38</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">9,674.38</td>
+      <td>-</td>
+      <td style="font-weight: bold;">9,674.38</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">600,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">12</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-039.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Calmet Aranguren Javier Antonio / Figueroa Alfageme María Rosana</td>
+      <td>631,325.80</td>
+      <td style="font-weight: bold; color: #0369a1;">10,715.24</td>
+      <td style="color: #b91c1c;">535.76</td>
+      <td>10,179.48</td>
+      <td>10,179.48</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">641,505.28</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">13</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">nan</td>
+      <td class="left" style="font-weight: 500;">Julia Bertila Castillo De Milla / Rubén Milla Roca</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">848.63</td>
+      <td style="color: #b91c1c;">42.43</td>
+      <td>806.20</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">806.20</td>
+      <td>-</td>
+      <td style="font-weight: bold;">806.20</td>
+      <td style="color: #c2410c;">50,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">0.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">14</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-047.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Ezcurra Del Castillo Juan Diego Ignacio / Byrne Antezana Inés Paola</td>
+      <td>300,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">5,091.78</td>
+      <td style="color: #b91c1c;">254.59</td>
+      <td>4,837.19</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">4,837.19</td>
+      <td>5.00</td>
+      <td style="font-weight: bold;">4,837.19</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">300,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">15</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-049.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">León Montaño Luis Fernando</td>
+      <td>415,744.79</td>
+      <td style="font-weight: bold; color: #0369a1;">7,056.27</td>
+      <td style="color: #b91c1c;">352.81</td>
+      <td>6,703.46</td>
+      <td>6,703.46</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">422,448.25</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">16</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-050.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Xiangyan  Tao</td>
+      <td>107,509.52</td>
+      <td style="font-weight: bold; color: #0369a1;">1,824.72</td>
+      <td style="color: #b91c1c;">91.24</td>
+      <td>1,733.48</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,733.48</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,733.48</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">107,509.52</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">17</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-053.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Ojeda Novoa Sheila Miriam</td>
+      <td>505,709.57</td>
+      <td style="font-weight: bold; color: #0369a1;">8,583.21</td>
+      <td style="color: #b91c1c;">429.16</td>
+      <td>8,154.05</td>
+      <td>8,154.05</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">513,863.62</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">18</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-054.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Loyola Zorrilla José Luis / Bernales Campos Maria Irene</td>
+      <td>52,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">882.58</td>
+      <td style="color: #b91c1c;">44.13</td>
+      <td>838.45</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">838.45</td>
+      <td>-</td>
+      <td style="font-weight: bold;">838.45</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">52,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">19</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-056.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Torres Paucar Fanny Luz</td>
+      <td>400,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">6,789.04</td>
+      <td style="color: #b91c1c;">339.45</td>
+      <td>6,449.59</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">6,449.59</td>
+      <td>-</td>
+      <td style="font-weight: bold;">6,449.59</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">400,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">20</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-064.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Mendiola Bellina Alberto Enrique</td>
+      <td>60,926.96</td>
+      <td style="font-weight: bold; color: #0369a1;">1,034.09</td>
+      <td style="color: #b91c1c;">51.70</td>
+      <td>982.39</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">982.39</td>
+      <td>-</td>
+      <td style="font-weight: bold;">982.39</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">60,926.96</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">21</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-067.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Villagómez Chinchay Juan Alberto / Villagómez Zavala Johann Sebastian</td>
+      <td>140,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,376.16</td>
+      <td style="color: #b91c1c;">118.81</td>
+      <td>2,257.35</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,257.35</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,257.35</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">140,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">22</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-068.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Mendiola Bellina Alberto Enrique</td>
+      <td>667,346.45</td>
+      <td style="font-weight: bold; color: #0369a1;">11,326.61</td>
+      <td style="color: #b91c1c;">566.33</td>
+      <td>10,760.28</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">10,760.28</td>
+      <td>-</td>
+      <td style="font-weight: bold;">10,760.28</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">667,346.45</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">23</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-069.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Sánchez Santillán Teresa de Jesús</td>
+      <td>181,027.41</td>
+      <td style="font-weight: bold; color: #0369a1;">3,072.51</td>
+      <td style="color: #b91c1c;">153.63</td>
+      <td>2,918.88</td>
+      <td>2,918.88</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">183,946.29</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">24</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-073.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Delgado Vera María Angela / Delgado Vera Helva Olga</td>
+      <td>172,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,919.29</td>
+      <td style="color: #b91c1c;">145.96</td>
+      <td>2,773.33</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,773.33</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,773.33</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">172,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">25</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-074.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Montoya Debernardi Rosa María / Malca Barrantes Cesar Augusto</td>
+      <td>110,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,866.99</td>
+      <td style="color: #b91c1c;">93.35</td>
+      <td>1,773.64</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,773.64</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,773.64</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">110,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">26</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-077.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Acha Agustín Juan Miguel / Sánchez Segura Emelda Lucrecia</td>
+      <td>230,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,903.70</td>
+      <td style="color: #b91c1c;">195.19</td>
+      <td>3,708.51</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,708.51</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,708.51</td>
+      <td style="color: #c2410c;">10,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">220,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">27</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-078.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Araujo Novoa Carlos Alfonso / Rojas Ibañez de Araujo Jacqueline</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">848.63</td>
+      <td style="color: #b91c1c;">42.43</td>
+      <td>806.20</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">806.20</td>
+      <td>-</td>
+      <td style="font-weight: bold;">806.20</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">28</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-082.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Hudtwalcker Zegarra Christian Antonio</td>
+      <td>200,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,394.52</td>
+      <td style="color: #b91c1c;">169.73</td>
+      <td>3,224.79</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,224.79</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,224.79</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">200,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">29</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-085.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Gallegos Murga Alejandro Edgar / Paredes Solar Belu Nancy</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,697.26</td>
+      <td style="color: #b91c1c;">84.86</td>
+      <td>1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,612.40</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,612.40</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">30</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-086.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Espinosa Rivas Miguel Angel / Osorio Paulo Betty Esperanza</td>
+      <td>1,030,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">17,481.78</td>
+      <td style="color: #b91c1c;">874.09</td>
+      <td>16,607.69</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">16,607.69</td>
+      <td>-</td>
+      <td style="font-weight: bold;">16,607.69</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">1,030,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">31</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-087.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Wilson Quevedo Kenneth William / San Miguel Sevilla Ursula Beatriz</td>
+      <td>370,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">6,279.86</td>
+      <td style="color: #b91c1c;">313.99</td>
+      <td>5,965.87</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">5,965.87</td>
+      <td>-</td>
+      <td style="font-weight: bold;">5,965.87</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">370,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">32</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-088.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Chang Lock Julia Esther</td>
+      <td>220,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,733.97</td>
+      <td style="color: #b91c1c;">186.70</td>
+      <td>3,547.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,547.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,547.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">220,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">33</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-089.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Gallo González Juan Ricardo</td>
+      <td>40,221.90</td>
+      <td style="font-weight: bold; color: #0369a1;">682.67</td>
+      <td style="color: #b91c1c;">34.13</td>
+      <td>648.54</td>
+      <td>648.54</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">40,870.44</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">34</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN01-090.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Pérez Aliaga César Saul / Aliaga Cano Gloria Angelica</td>
+      <td>220,940.74</td>
+      <td style="font-weight: bold; color: #0369a1;">6,279.43</td>
+      <td style="color: #b91c1c;">313.97</td>
+      <td>5,965.46</td>
+      <td>5,965.46</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">81,213.35</td>
+      <td style="font-weight: bold; color: #3730a3;">314,692.85</td>
+    </tr>
+    
+    <tr class="tot-row">
+      <td colspan="3" class="left">TOTALES NSGPEN01 (PEN)</td>
+      <td>10,384,753.14</td>
+      <td>178,785.79</td>
+      <td>8,939.28</td>
+      <td>169,846.51</td>
+      <td>34,569.87</td>
+      <td>135,276.64</td>
+      <td>878.44</td>
+      <td>134,403.20</td>
+      <td>466,213.35</td>
+      <td>10,122,109.66</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<div class="page-break"></div>
+
+<div class="header">
+  <div>
+    <div class="title">INANDES GRUPO FINANCIERO — CIERRE DE AUDITORÍA OFICIAL</div>
+    <div class="subtitle">Período: 01 de Enero de 2026 al 28 de Febrero de 2026 (59 Días) &nbsp;|&nbsp; Base 365 Días</div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">FONDO NSGPEN02 (PEN)</span>
+    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">25 Inversionistas Auditados</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Base Inicial</div>
+    <div class="card-val">PEN 4,018,400.98</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Interés Bruto (59d)</div>
+    <div class="card-val" style="color: #0284c7;">PEN 63,052.93</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Retención IR 5%</div>
+    <div class="card-val" style="color: #dc2626;">PEN 3,152.64</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Reparto en Efectivo</div>
+    <div class="card-val" style="color: #16a34a;">PEN 46,913.90</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Final Saldo</div>
+    <div class="card-val" style="color: #4338ca;">PEN 4,031,387.37</div>
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20px;">#</th>
+      <th class="left" style="width: 140px;">Certificado</th>
+      <th class="left">Inversionista</th>
+      <th>Capital Base</th>
+      <th>Int. Bruto</th>
+      <th>IR (5%)</th>
+      <th>Base Neta</th>
+      <th>Capitaliz.</th>
+      <th>Reparto</th>
+      <th>Deducc.</th>
+      <th>Neto Final</th>
+      <th>Rescates</th>
+      <th>Capital Final</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-001.20250701.20251231</td>
+      <td class="left" style="font-weight: 500;">Córdova Silva Andrea Elizabeth / Córdova Silva Gerardo Daniel</td>
+      <td>168,693.88</td>
+      <td style="font-weight: bold; color: #0369a1;">2,863.17</td>
+      <td style="color: #b91c1c;">143.16</td>
+      <td>2,720.01</td>
+      <td>2,720.01</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">171,413.89</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-002.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Sánchez Castañeda Ricardo  / Sánchez Castro Giovanna Noemi</td>
+      <td>185,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,990.41</td>
+      <td style="color: #b91c1c;">149.52</td>
+      <td>2,840.89</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,840.89</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,840.89</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">185,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-003.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Pérez Temple Rafael Alejandro / Urbina Robinson Maria Teresa</td>
+      <td>900,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">14,547.95</td>
+      <td style="color: #b91c1c;">727.40</td>
+      <td>13,820.55</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">13,820.55</td>
+      <td>-</td>
+      <td style="font-weight: bold;">13,820.55</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">900,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-004.20230501.20251231</td>
+      <td class="left" style="font-weight: 500;">Aguinaga Oliver Edgardo  / Aguinaga Salcedo Rodrigo Edgardo / Aguinaga Salcedo Kalina Del Carmen</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-005.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Aguinaga Oliver Edgardo  / Aguinaga Salcedo Milka Patricia del Carmen</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,616.44</td>
+      <td style="color: #b91c1c;">80.82</td>
+      <td>1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,535.62</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-006.20230501.20251231</td>
+      <td class="left" style="font-weight: 500;">Hormazábal Tovar María del Pilar Jesús</td>
+      <td>157,005.93</td>
+      <td style="font-weight: bold; color: #0369a1;">2,411.01</td>
+      <td style="color: #b91c1c;">120.55</td>
+      <td>2,290.46</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,290.46</td>
+      <td>200.91</td>
+      <td style="font-weight: bold;">2,089.55</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">157,005.93</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">7</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-007.20251013.20251231</td>
+      <td class="left" style="font-weight: 500;">Lamas Arrasco Angel Eduardo / Neciosup Colchado Marlene Esperanza</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">8</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-008.20251015.20251231</td>
+      <td class="left" style="font-weight: 500;">Montenegro Castañeda Rosa Elena M</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,303.42</td>
+      <td style="color: #b91c1c;">115.17</td>
+      <td>2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,188.25</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">9</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-009.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Temple Vda. De Pérez María Isabel</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">808.22</td>
+      <td style="color: #b91c1c;">40.41</td>
+      <td>767.81</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">767.81</td>
+      <td>-</td>
+      <td style="font-weight: bold;">767.81</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">10</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-010.20251117.20251231</td>
+      <td class="left" style="font-weight: 500;">Salarrayán Holguin Mónica Merle</td>
+      <td>70,690.85</td>
+      <td style="font-weight: bold; color: #0369a1;">971.27</td>
+      <td style="color: #b91c1c;">48.56</td>
+      <td>922.71</td>
+      <td>922.71</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">71,613.56</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">11</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-011.20220901.20251231</td>
+      <td class="left" style="font-weight: 500;">Garcia Benavente Luciana Karina / García Iriarte Fernando José</td>
+      <td>90,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,527.53</td>
+      <td style="color: #b91c1c;">76.38</td>
+      <td>1,451.15</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,451.15</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,451.15</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">90,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">12</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-012.20251128.20251231</td>
+      <td class="left" style="font-weight: 500;">Amorós Cock de Quintanilla Consuelo Raquel / Quintanilla Quispe Teodoro</td>
+      <td>90,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,309.32</td>
+      <td style="color: #b91c1c;">65.47</td>
+      <td>1,243.85</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,243.85</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,243.85</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">90,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">13</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-013.20251229.20251231</td>
+      <td class="left" style="font-weight: 500;">Salas Gómez Alfredo</td>
+      <td>50,026.39</td>
+      <td style="font-weight: bold; color: #0369a1;">808.65</td>
+      <td style="color: #b91c1c;">40.43</td>
+      <td>768.22</td>
+      <td>768.22</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,794.61</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">14</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-015.20231101.20251231</td>
+      <td class="left" style="font-weight: 500;">Hormazábal Tovar María del Pilar Jesús</td>
+      <td>150,417.09</td>
+      <td style="font-weight: bold; color: #0369a1;">2,309.83</td>
+      <td style="color: #b91c1c;">115.49</td>
+      <td>2,194.34</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,194.34</td>
+      <td>192.48</td>
+      <td style="font-weight: bold;">2,001.86</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,417.09</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">15</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-029.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Saavedra Villanueva Roxana María</td>
+      <td>190,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,071.23</td>
+      <td style="color: #b91c1c;">153.56</td>
+      <td>2,917.67</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,917.67</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,917.67</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">190,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">16</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-031.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Giraldo Franco de Agüero Rosario Elena / Agüero Giraldo Jaime Andres / Agüero Giraldo Nathalie Karina</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,424.66</td>
+      <td style="color: #b91c1c;">121.23</td>
+      <td>2,303.43</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,303.43</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,303.43</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">17</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-034.20240301.20251231</td>
+      <td class="left" style="font-weight: 500;">Calle Trisano De Morales Carmen Raquel / Morales Costa Carlos Augusto</td>
+      <td>220,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,378.36</td>
+      <td style="color: #b91c1c;">168.92</td>
+      <td>3,209.44</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,209.44</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,209.44</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">220,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">18</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-035.20241217.20251231</td>
+      <td class="left" style="font-weight: 500;">Zevallos Giampietri Martha Cecilia / Encinas Zevallos María Paulina</td>
+      <td>88,537.26</td>
+      <td style="font-weight: bold; color: #0369a1;">1,359.59</td>
+      <td style="color: #b91c1c;">67.98</td>
+      <td>1,291.61</td>
+      <td>1,291.61</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">89,828.87</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">19</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-036.20250301.20251231</td>
+      <td class="left" style="font-weight: 500;">Rivadeneira Panizo Carmen Zoila</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">20</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-043.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Arenas Velasco Mónica Fiorella</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">767.81</td>
+      <td style="color: #b91c1c;">38.39</td>
+      <td>729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold;">729.42</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">21</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-044.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Villavicencio Bernedo Ricardo Augusto / Villavicencio Ferro Valeria Ivonne</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,293.15</td>
+      <td style="color: #b91c1c;">64.66</td>
+      <td>1,228.49</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,228.49</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,228.49</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">22</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-047.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Salazar Pelaez Nora Elisa / Zavaleta Salazar Sheyla Paola / Zavaleta Salazar Sergio Manuel</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">767.81</td>
+      <td style="color: #b91c1c;">38.39</td>
+      <td>729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold;">729.42</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">23</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-048.20250827.20251231</td>
+      <td class="left" style="font-weight: 500;">Aguinaga Oliver Edgardo  / Aguinaga Salcedo Kalina Del Carmen</td>
+      <td>201,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,249.04</td>
+      <td style="color: #b91c1c;">162.45</td>
+      <td>3,086.59</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,086.59</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,086.59</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">201,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">24</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-049.20250905.20251231</td>
+      <td class="left" style="font-weight: 500;">Valdéz Gonzales Luz Consuelo</td>
+      <td>219,936.25</td>
+      <td style="font-weight: bold; color: #0369a1;">3,199.62</td>
+      <td style="color: #b91c1c;">159.98</td>
+      <td>3,039.64</td>
+      <td>3,039.64</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">222,975.89</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">25</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN02-050.20250922.20251231</td>
+      <td class="left" style="font-weight: 500;">Pinto Serpa Aníbal Domingo / Pacahuala Garcia Zulema Carmen</td>
+      <td>307,093.33</td>
+      <td style="font-weight: bold; color: #0369a1;">4,467.58</td>
+      <td style="color: #b91c1c;">223.38</td>
+      <td>4,244.20</td>
+      <td>4,244.20</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">311,337.53</td>
+    </tr>
+    
+    <tr class="tot-row">
+      <td colspan="3" class="left">TOTALES NSGPEN02 (PEN)</td>
+      <td>4,018,400.98</td>
+      <td>63,052.93</td>
+      <td>3,152.64</td>
+      <td>59,900.29</td>
+      <td>12,986.39</td>
+      <td>46,913.90</td>
+      <td>393.39</td>
+      <td>46,520.51</td>
+      <td>0.00</td>
+      <td>4,031,387.37</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<div class="page-break"></div>
+
+<div class="header">
+  <div>
+    <div class="title">INANDES GRUPO FINANCIERO — CIERRE DE AUDITORÍA OFICIAL</div>
+    <div class="subtitle">Período: 01 de Enero de 2026 al 28 de Febrero de 2026 (59 Días) &nbsp;|&nbsp; Base 365 Días</div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">FONDO NSGPEN03 (PEN)</span>
+    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">72 Inversionistas Auditados</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Base Inicial</div>
+    <div class="card-val">PEN 12,843,544.66</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Interés Bruto (59d)</div>
+    <div class="card-val" style="color: #0284c7;">PEN 188,659.62</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Retención IR 5%</div>
+    <div class="card-val" style="color: #dc2626;">PEN 9,433.00</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Reparto en Efectivo</div>
+    <div class="card-val" style="color: #16a34a;">PEN 113,826.41</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Final Saldo</div>
+    <div class="card-val" style="color: #4338ca;">PEN 12,498,944.87</div>
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20px;">#</th>
+      <th class="left" style="width: 140px;">Certificado</th>
+      <th class="left">Inversionista</th>
+      <th>Capital Base</th>
+      <th>Int. Bruto</th>
+      <th>IR (5%)</th>
+      <th>Base Neta</th>
+      <th>Capitaliz.</th>
+      <th>Reparto</th>
+      <th>Deducc.</th>
+      <th>Neto Final</th>
+      <th>Rescates</th>
+      <th>Capital Final</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-001.20260120.20260120</td>
+      <td class="left" style="font-weight: 500;">Alvarado Gubler Lina Hilda Felipa / Aliaga Cano Julio Tony</td>
+      <td>84,300.00</td>
+      <td style="font-weight: bold; color: #0369a1;">785.26</td>
+      <td style="color: #b91c1c;">39.26</td>
+      <td>746.00</td>
+      <td>746.00</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">85,046.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-002.20260113.20260113</td>
+      <td class="left" style="font-weight: 500;">Oliva Rivero Luis Eduardo</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">579.45</td>
+      <td style="color: #b91c1c;">28.97</td>
+      <td>550.48</td>
+      <td>550.48</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,550.48</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-003.20241104.20251231</td>
+      <td class="left" style="font-weight: 500;">Krateil Fuentes Arabella Carmen</td>
+      <td>98,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,425.70</td>
+      <td style="color: #b91c1c;">71.29</td>
+      <td>1,354.41</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,354.41</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,354.41</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">98,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-005.20251117.20251231</td>
+      <td class="left" style="font-weight: 500;">Matos Rodríguez Mauricio Gerardo</td>
+      <td>238,808.73</td>
+      <td style="font-weight: bold; color: #0369a1;">3,860.20</td>
+      <td style="color: #b91c1c;">193.01</td>
+      <td>3,667.19</td>
+      <td>3,667.19</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">242,475.92</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-006.20251115.20251231</td>
+      <td class="left" style="font-weight: 500;">Rivas Tapia Ana María</td>
+      <td>151,638.74</td>
+      <td style="font-weight: bold; color: #0369a1;">2,206.03</td>
+      <td style="color: #b91c1c;">110.30</td>
+      <td>2,095.73</td>
+      <td>2,095.73</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">153,734.47</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-007.20251128.20251231</td>
+      <td class="left" style="font-weight: 500;">Zapata Palacios Luis Alberto</td>
+      <td>251,880.21</td>
+      <td style="font-weight: bold; color: #0369a1;">3,867.91</td>
+      <td style="color: #b91c1c;">193.40</td>
+      <td>3,674.51</td>
+      <td>3,674.51</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">255,554.72</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">7</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-008.20210925.20251231</td>
+      <td class="left" style="font-weight: 500;">Gutierrez Tapia Miguel Angel / Gutierrez Gallegos Miguel Angel</td>
+      <td>200,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,232.88</td>
+      <td style="color: #b91c1c;">161.64</td>
+      <td>3,071.24</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,071.24</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,071.24</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">200,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">8</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-009.20251217.20251231</td>
+      <td class="left" style="font-weight: 500;">Arco Pampas Carlos Antonio Nuñez del / Mantero Ordoñez María Cecilia Teresa</td>
+      <td>240,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,685.48</td>
+      <td style="color: #b91c1c;">184.27</td>
+      <td>3,501.21</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,501.21</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,501.21</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">240,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">9</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-010.20251222.20251231</td>
+      <td class="left" style="font-weight: 500;">Cruz Martínez Marino  / Farfán Falcón María Margarita</td>
+      <td>170,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,610.55</td>
+      <td style="color: #b91c1c;">130.53</td>
+      <td>2,480.02</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,480.02</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,480.02</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">170,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">10</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-011.20251201.20251231</td>
+      <td class="left" style="font-weight: 500;">Quintanilla Quispe Miguel Angel / Quintanilla Quispe Asteria Cornelia</td>
+      <td>100,752.08</td>
+      <td style="font-weight: bold; color: #0369a1;">1,628.60</td>
+      <td style="color: #b91c1c;">81.43</td>
+      <td>1,547.17</td>
+      <td>1,547.17</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">102,299.25</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">11</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-012.20251202.20251231</td>
+      <td class="left" style="font-weight: 500;">Quintanilla Quispe Asteria Cornelia / Quintanilla Quispe Miguel Angel</td>
+      <td>110,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,778.08</td>
+      <td style="color: #b91c1c;">88.90</td>
+      <td>1,689.18</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,689.18</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,689.18</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">110,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">12</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-013.20211025.20251231</td>
+      <td class="left" style="font-weight: 500;">Chacón Rondón Ronald Agustín</td>
+      <td>480,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">7,758.90</td>
+      <td style="color: #b91c1c;">387.95</td>
+      <td>7,370.95</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">7,370.95</td>
+      <td>-</td>
+      <td style="font-weight: bold;">7,370.95</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">480,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">13</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-014.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Márquez Biola Luis Fernando Gerardo / Benavente De Marquez Patricia Angelica</td>
+      <td>160,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,456.99</td>
+      <td style="color: #b91c1c;">122.85</td>
+      <td>2,334.14</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,334.14</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,334.14</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">160,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">14</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-015.20211118.20251231</td>
+      <td class="left" style="font-weight: 500;">Velit Granda de Razuri Tula Luisa / Rázuri Velit Luisa Alejandra</td>
+      <td>450,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">7,273.97</td>
+      <td style="color: #b91c1c;">363.70</td>
+      <td>6,910.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">6,910.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">6,910.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">450,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">15</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-016.20211125.20251231</td>
+      <td class="left" style="font-weight: 500;">Velit Granda Manuela Jesús / Velit Granda Juan Antonio</td>
+      <td>500,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">8,082.19</td>
+      <td style="color: #b91c1c;">404.11</td>
+      <td>7,678.08</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">7,678.08</td>
+      <td>-</td>
+      <td style="font-weight: bold;">7,678.08</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">500,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">16</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-017.20240101.20251231</td>
+      <td class="left" style="font-weight: 500;">Flores Mori Lleny Del Rosario / Mitac Flores Nuria Jimena</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">17</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-018.20251111.20251231</td>
+      <td class="left" style="font-weight: 500;">Mc Iver  Donald Angus</td>
+      <td>202,541.61</td>
+      <td style="font-weight: bold; color: #0369a1;">2,782.87</td>
+      <td style="color: #b91c1c;">139.14</td>
+      <td>2,643.73</td>
+      <td>2,643.73</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">205,185.34</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">18</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-019.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Mc Iver  Donald Angus</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>1,305.27</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">101,305.27</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">19</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-020.20240301.20251231</td>
+      <td class="left" style="font-weight: 500;">Benavente Herrera Luis José Sandro / Velando Prieto de Benavente Mónica María del Rosario</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,454.79</td>
+      <td style="color: #b91c1c;">72.74</td>
+      <td>1,382.05</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,382.05</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,382.05</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">20</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-021.20260119.20260119</td>
+      <td class="left" style="font-weight: 500;">Cossío Ventura Nicolás Max / Cossio Llacza Max Fearley / Ventura Linares Virginia Isabel</td>
+      <td>60,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">606.58</td>
+      <td style="color: #b91c1c;">30.33</td>
+      <td>576.25</td>
+      <td>576.25</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">60,576.25</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">21</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-022.20260120.20260120</td>
+      <td class="left" style="font-weight: 500;">Salazar Pelaez Nora Elisa / Zavaleta Salazar Sheyla Paola / Zavaleta Salazar Sergio Manuel</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">493.15</td>
+      <td style="color: #b91c1c;">24.66</td>
+      <td>468.49</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">468.49</td>
+      <td>-</td>
+      <td style="font-weight: bold;">468.49</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">22</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-023.20260121.20260121</td>
+      <td class="left" style="font-weight: 500;">Zavaleta Salazar Sergio Manuel / Salazar Pelaez Nora Elisa / Zavaleta Salazar Sheyla Paola</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">961.64</td>
+      <td style="color: #b91c1c;">48.08</td>
+      <td>913.56</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">913.56</td>
+      <td>-</td>
+      <td style="font-weight: bold;">913.56</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">23</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-024.20250301.20251231</td>
+      <td class="left" style="font-weight: 500;">Navarrete  Carlos Alberto / Varetto  Graciela Elisa</td>
+      <td>120,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,551.78</td>
+      <td style="color: #b91c1c;">77.59</td>
+      <td>1,474.19</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,474.19</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,474.19</td>
+      <td style="color: #c2410c;">20,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">24</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-025.20240301.20251231</td>
+      <td class="left" style="font-weight: 500;">Navarrete  Carlos Alberto / Varetto  Graciela Elisa</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,454.79</td>
+      <td style="color: #b91c1c;">72.74</td>
+      <td>1,382.05</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,382.05</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,382.05</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">25</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-026.20220210.20251231</td>
+      <td class="left" style="font-weight: 500;">Temple Vda. De Pérez María Isabel</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,616.44</td>
+      <td style="color: #b91c1c;">80.82</td>
+      <td>1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,535.62</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">26</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-027.20260202.20260202</td>
+      <td class="left" style="font-weight: 500;">Silva Mendoza Carlos Augusto / Silva Mendoza Diana Lilian / Silva Mendoza Jorge Enrique</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">351.37</td>
+      <td style="color: #b91c1c;">17.57</td>
+      <td>333.80</td>
+      <td>333.80</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,333.80</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">27</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-028.20250501.20251231</td>
+      <td class="left" style="font-weight: 500;">Cruz Martínez Marino  / Cruz Ortiz Jesús Arturo</td>
+      <td>318,539.97</td>
+      <td style="font-weight: bold; color: #0369a1;">4,891.55</td>
+      <td style="color: #b91c1c;">244.58</td>
+      <td>4,646.97</td>
+      <td>4,646.97</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">323,186.94</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">28</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-029.20260203.20260203</td>
+      <td class="left" style="font-weight: 500;">Quispe Saire Ruth Janet</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">676.71</td>
+      <td style="color: #b91c1c;">33.84</td>
+      <td>642.87</td>
+      <td>642.87</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,642.87</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">29</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-030.20260120.20260120</td>
+      <td class="left" style="font-weight: 500;">Montenegro Castañeda Rosa Elena M</td>
+      <td>550,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">5,726.03</td>
+      <td style="color: #b91c1c;">286.30</td>
+      <td>5,439.73</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">5,439.73</td>
+      <td>-</td>
+      <td style="font-weight: bold;">5,439.73</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">550,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">30</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-031.20250501.20251231</td>
+      <td class="left" style="font-weight: 500;">Yagua Padilla Tirzo</td>
+      <td>500,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">6,869.86</td>
+      <td style="color: #b91c1c;">343.49</td>
+      <td>6,526.37</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">6,526.37</td>
+      <td>-</td>
+      <td style="font-weight: bold;">6,526.37</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">500,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">31</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-032.20230501.20251231</td>
+      <td class="left" style="font-weight: 500;">Luján Uculmana Vanessa Lisett / Espinoza Luján Gianfranco Eduardo / Luján Castillo Enrique Isaac</td>
+      <td>68,410.99</td>
+      <td style="font-weight: bold; color: #0369a1;">1,105.82</td>
+      <td style="color: #b91c1c;">55.29</td>
+      <td>1,050.53</td>
+      <td>1,050.53</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">69,461.52</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">32</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-033.20250501.20251231</td>
+      <td class="left" style="font-weight: 500;">Vega Aquiño Luis Alberto / Aquiño Hizo Carmen Nelly</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">767.81</td>
+      <td style="color: #b91c1c;">38.39</td>
+      <td>729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold;">729.42</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">33</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-034.20260219.20260219</td>
+      <td class="left" style="font-weight: 500;">Mantero Ordoñez María Cecilia Teresa / Arco Pampas Carlos Antonio Nuñez del</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">390.41</td>
+      <td style="color: #b91c1c;">19.52</td>
+      <td>370.89</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">370.89</td>
+      <td>-</td>
+      <td style="font-weight: bold;">370.89</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">34</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-035.20250701.20251231</td>
+      <td class="left" style="font-weight: 500;">Guillén Lara Donny Edwin</td>
+      <td>137,106.13</td>
+      <td style="font-weight: bold; color: #0369a1;">1,883.80</td>
+      <td style="color: #b91c1c;">94.19</td>
+      <td>1,789.61</td>
+      <td>1,789.61</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">138,895.74</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">35</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-036.20240701.20251231</td>
+      <td class="left" style="font-weight: 500;">Chang Lock Julia Esther</td>
+      <td>200,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,909.59</td>
+      <td style="color: #b91c1c;">145.48</td>
+      <td>2,764.11</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,764.11</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,764.11</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">200,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">36</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-037.20260224.20260224</td>
+      <td class="left" style="font-weight: 500;">Rivas Tapia Ana María</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">104.11</td>
+      <td style="color: #b91c1c;">5.21</td>
+      <td>98.90</td>
+      <td>98.90</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,098.90</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">37</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-040.20220920.20251231</td>
+      <td class="left" style="font-weight: 500;">Puertas Flores Adriel Gustavo / Terrel Azania Nancy Elcira / Puertas Terrel Damaris Ariana</td>
+      <td>52,611.47</td>
+      <td style="font-weight: bold; color: #0369a1;">850.43</td>
+      <td style="color: #b91c1c;">42.52</td>
+      <td>807.91</td>
+      <td>807.91</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">53,419.38</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">38</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-041.20221011.20251231</td>
+      <td class="left" style="font-weight: 500;">Temoche Silva Luis Ricardo / Temoche Silva Jorge Arturo</td>
+      <td>56,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">905.21</td>
+      <td style="color: #b91c1c;">45.26</td>
+      <td>859.95</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">859.95</td>
+      <td>-</td>
+      <td style="font-weight: bold;">859.95</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">56,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">39</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-042.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Flores Mori Lleny Del Rosario / Mitac Flores Nuria Jimena</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">40</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-044.20230131.20251231</td>
+      <td class="left" style="font-weight: 500;">Espinosa Rivas Miguel Angel / Osorio Paulo Betty Esperanza</td>
+      <td>681,295.91</td>
+      <td style="font-weight: bold; color: #0369a1;">11,563.36</td>
+      <td style="color: #b91c1c;">578.17</td>
+      <td>10,985.19</td>
+      <td>10,985.19</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">692,281.10</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">41</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-045.20230220.20251231</td>
+      <td class="left" style="font-weight: 500;">Navarrete  Josefina</td>
+      <td>70,140.39</td>
+      <td style="font-weight: bold; color: #0369a1;">1,077.09</td>
+      <td style="color: #b91c1c;">53.85</td>
+      <td>1,023.24</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,023.24</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,023.24</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">70,140.39</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">42</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-046.20230309.20251231</td>
+      <td class="left" style="font-weight: 500;">Del Pozo Acosta Oscar Enrique / Del Pozo Ugaz Oscar Agustín</td>
+      <td>550,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">9,334.93</td>
+      <td style="color: #b91c1c;">466.75</td>
+      <td>8,868.18</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">8,868.18</td>
+      <td>-</td>
+      <td style="font-weight: bold;">8,868.18</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">550,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">43</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-047.20230510.20251231</td>
+      <td class="left" style="font-weight: 500;">Villavicencio Bernedo Ricardo Augusto / Villavicencio Ferro Valeria Ivonne</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,357.81</td>
+      <td style="color: #b91c1c;">67.89</td>
+      <td>1,289.92</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,289.92</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,289.92</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">44</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-049.20230901.20251231</td>
+      <td class="left" style="font-weight: 500;">Aravena Elías Rodrigo</td>
+      <td>96,270.76</td>
+      <td style="font-weight: bold; color: #0369a1;">1,478.35</td>
+      <td style="color: #b91c1c;">73.92</td>
+      <td>1,404.43</td>
+      <td>1,404.43</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">97,675.19</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">45</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-050.20240219.20251231</td>
+      <td class="left" style="font-weight: 500;">Perales Bazalar María Agueda</td>
+      <td>200,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,909.59</td>
+      <td style="color: #b91c1c;">145.48</td>
+      <td>2,764.11</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,764.11</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,764.11</td>
+      <td style="color: #c2410c;">200,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">0.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">46</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-051.20240311.20251231</td>
+      <td class="left" style="font-weight: 500;">Mejía Zeta Víctor Manuel</td>
+      <td>200,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">3,232.88</td>
+      <td style="color: #b91c1c;">161.64</td>
+      <td>3,071.24</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">3,071.24</td>
+      <td>-</td>
+      <td style="font-weight: bold;">3,071.24</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">200,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">47</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-053.20240710.20251231</td>
+      <td class="left" style="font-weight: 500;">Anicama Alzamora Carlos Alex / Yataco Castro de Anicama Doris</td>
+      <td>243,395.52</td>
+      <td style="font-weight: bold; color: #0369a1;">3,934.34</td>
+      <td style="color: #b91c1c;">196.72</td>
+      <td>3,737.62</td>
+      <td>3,737.62</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">247,133.14</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">48</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-054.20240731.20251231</td>
+      <td class="left" style="font-weight: 500;">Castillo Cervantes Marlon Eleazar</td>
+      <td>51,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">783.16</td>
+      <td style="color: #b91c1c;">39.16</td>
+      <td>744.00</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">744.00</td>
+      <td>-</td>
+      <td style="font-weight: bold;">744.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">51,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">49</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-056.20240710.20251231</td>
+      <td class="left" style="font-weight: 500;">Sánchez Monteblanco María Guadalupe / Vargas Rivera Pablo Edgardo</td>
+      <td>315,058.41</td>
+      <td style="font-weight: bold; color: #0369a1;">4,583.45</td>
+      <td style="color: #b91c1c;">229.17</td>
+      <td>4,354.28</td>
+      <td>4,354.28</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">319,412.69</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">50</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-057.20240919.20251231</td>
+      <td class="left" style="font-weight: 500;">López Cabrera Guillermina</td>
+      <td>78,040.76</td>
+      <td style="font-weight: bold; color: #0369a1;">1,135.33</td>
+      <td style="color: #b91c1c;">56.77</td>
+      <td>1,078.56</td>
+      <td>1,078.56</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">79,119.32</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">51</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-058.20240923.20251231</td>
+      <td class="left" style="font-weight: 500;">Fouscas Elera Víctor Hugo</td>
+      <td>34,987.42</td>
+      <td style="font-weight: bold; color: #0369a1;">593.83</td>
+      <td style="color: #b91c1c;">29.69</td>
+      <td>564.14</td>
+      <td>564.14</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">35,551.56</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">52</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-060.20241205.20251231</td>
+      <td class="left" style="font-weight: 500;">Cubas Pérez Haydee Marlene / Ahumada Cubas Gissella Victoria / Camacho Cubas Paola Lisseth</td>
+      <td>70,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,018.36</td>
+      <td style="color: #b91c1c;">50.92</td>
+      <td>967.44</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">967.44</td>
+      <td>-</td>
+      <td style="font-weight: bold;">967.44</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">70,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">53</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-061.20250204.20251231</td>
+      <td class="left" style="font-weight: 500;">Tello Espinoza Luis Alberto / Tello Abad Lisette Ninoshka / Tello Abad Luis Guillermo</td>
+      <td>350,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">5,374.66</td>
+      <td style="color: #b91c1c;">268.73</td>
+      <td>5,105.93</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">5,105.93</td>
+      <td>-</td>
+      <td style="font-weight: bold;">5,105.93</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">350,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">54</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-062.20250205.20251231</td>
+      <td class="left" style="font-weight: 500;">Ferro Vásquez Ivonne  / Villavicencio Ferro Valeria Ivonne</td>
+      <td>70,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,074.93</td>
+      <td style="color: #b91c1c;">53.75</td>
+      <td>1,021.18</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,021.18</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,021.18</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">70,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">55</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">nan</td>
+      <td class="left" style="font-weight: 500;">Jorge Antonio Parodi Velásquez Y/O Mirtha Felícita Tejada Chumpitaz</td>
+      <td>190,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,610.55</td>
+      <td style="color: #b91c1c;">130.53</td>
+      <td>2,480.02</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,480.02</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,480.02</td>
+      <td style="color: #c2410c;">190,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">0.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">56</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-064.20250210.20251231</td>
+      <td class="left" style="font-weight: 500;">Montenegro Castañeda Rosa Elena M</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,303.42</td>
+      <td style="color: #b91c1c;">115.17</td>
+      <td>2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,188.25</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">57</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-065.20250221.20251231</td>
+      <td class="left" style="font-weight: 500;">Espinosa Rivas Miguel Angel / Osorio Paulo Betty Esperanza</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,305.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">58</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-066.20250225.20251231</td>
+      <td class="left" style="font-weight: 500;">Pérez Pérez Walter Samuel</td>
+      <td>268,390.21</td>
+      <td style="font-weight: bold; color: #0369a1;">3,904.53</td>
+      <td style="color: #b91c1c;">195.23</td>
+      <td>3,709.30</td>
+      <td>3,709.30</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">272,099.51</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">59</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-067.20250225.20251231</td>
+      <td class="left" style="font-weight: 500;">López Palomino Vicenta</td>
+      <td>95,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,458.84</td>
+      <td style="color: #b91c1c;">72.94</td>
+      <td>1,385.90</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,385.90</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,385.90</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">95,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">60</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-068.20250303.20251231</td>
+      <td class="left" style="font-weight: 500;">Castillo Taipe Ayaze</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">767.81</td>
+      <td style="color: #b91c1c;">38.39</td>
+      <td>729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">729.42</td>
+      <td>-</td>
+      <td style="font-weight: bold;">729.42</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">61</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-069.20250312.20251231</td>
+      <td class="left" style="font-weight: 500;">Zapata Palacios Ana María</td>
+      <td>330,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">4,800.82</td>
+      <td style="color: #b91c1c;">240.04</td>
+      <td>4,560.78</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">4,560.78</td>
+      <td>-</td>
+      <td style="font-weight: bold;">4,560.78</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">330,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">62</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-070.20250331.20251231</td>
+      <td class="left" style="font-weight: 500;">Cruz Martínez Marino  / Cruz Ortiz María Del Pilar</td>
+      <td>150,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">2,303.42</td>
+      <td style="color: #b91c1c;">115.17</td>
+      <td>2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">2,188.25</td>
+      <td>-</td>
+      <td style="font-weight: bold;">2,188.25</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">150,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">63</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-071.20250331.20251231</td>
+      <td class="left" style="font-weight: 500;">Martínez Ortiz Juan José</td>
+      <td>161,065.93</td>
+      <td style="font-weight: bold; color: #0369a1;">2,603.53</td>
+      <td style="color: #b91c1c;">130.18</td>
+      <td>2,473.35</td>
+      <td>2,473.35</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">163,539.28</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">64</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-072.20250507.20251231</td>
+      <td class="left" style="font-weight: 500;">Salas Gómez Alfredo</td>
+      <td>159,520.42</td>
+      <td style="font-weight: bold; color: #0369a1;">2,578.55</td>
+      <td style="color: #b91c1c;">128.93</td>
+      <td>2,449.62</td>
+      <td>2,449.62</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">161,970.04</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">65</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-073.20250513.20251231</td>
+      <td class="left" style="font-weight: 500;">Huamán Almonacid Jorge Eliseo / Huamán Canales Jorge Fernando / Huamán Pinillos Jorge Enrique</td>
+      <td>105,550.30</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.54</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.76</td>
+      <td>1,458.76</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">107,009.06</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">66</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-074.20250513.20251231</td>
+      <td class="left" style="font-weight: 500;">Huamán Almonacid Jorge Eliseo / Huamán Canales Jorge Fernando / Huamán Pinillos Jorge Enrique</td>
+      <td>201,144.04</td>
+      <td style="font-weight: bold; color: #0369a1;">3,088.80</td>
+      <td style="color: #b91c1c;">154.44</td>
+      <td>2,934.36</td>
+      <td>2,934.36</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">204,078.40</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">67</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-075.20250522.20251231</td>
+      <td class="left" style="font-weight: 500;">Paz Ortiz Jacinto Jorge / Piedra Rojas Maria Elena</td>
+      <td>500,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">7,678.08</td>
+      <td style="color: #b91c1c;">383.90</td>
+      <td>7,294.18</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">7,294.18</td>
+      <td>-</td>
+      <td style="font-weight: bold;">7,294.18</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">500,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">68</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-076.20250714.20251231</td>
+      <td class="left" style="font-weight: 500;">Tello Espinoza Luis Alberto / Tello Abad Lisette Ninoshka / Tello Abad Luis Guillermo</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,535.62</td>
+      <td style="color: #b91c1c;">76.78</td>
+      <td>1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,458.84</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,458.84</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">69</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-077.20250805.20251231</td>
+      <td class="left" style="font-weight: 500;">Jarufe Medina Rufino</td>
+      <td>212,094.66</td>
+      <td style="font-weight: bold; color: #0369a1;">2,914.12</td>
+      <td style="color: #b91c1c;">145.71</td>
+      <td>2,768.41</td>
+      <td>2,768.41</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">214,863.07</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">70</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-078.20250812.20251231</td>
+      <td class="left" style="font-weight: 500;">Arana Quispe Jaime Ronald</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,616.44</td>
+      <td style="color: #b91c1c;">80.82</td>
+      <td>1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,535.62</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,535.62</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">71</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-079.20250819.20251231</td>
+      <td class="left" style="font-weight: 500;">Mantilla Silva Lilian Rebeca</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>1,305.27</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">101,305.27</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">72</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGPEN03-080.20250902.20251231</td>
+      <td class="left" style="font-weight: 500;">López Venturo Oscar Blass</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">727.40</td>
+      <td style="color: #b91c1c;">36.37</td>
+      <td>691.03</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">691.03</td>
+      <td>-</td>
+      <td style="font-weight: bold;">691.03</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr class="tot-row">
+      <td colspan="3" class="left">TOTALES NSGPEN03 (PEN)</td>
+      <td>12,843,544.66</td>
+      <td>188,659.62</td>
+      <td>9,433.00</td>
+      <td>179,226.62</td>
+      <td>65,400.21</td>
+      <td>113,826.41</td>
+      <td>0.00</td>
+      <td>113,826.41</td>
+      <td>410,000.00</td>
+      <td>12,498,944.87</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<div class="page-break"></div>
+
+<div class="header">
+  <div>
+    <div class="title">INANDES GRUPO FINANCIERO — CIERRE DE AUDITORÍA OFICIAL</div>
+    <div class="subtitle">Período: 01 de Enero de 2026 al 28 de Febrero de 2026 (59 Días) &nbsp;|&nbsp; Base 365 Días</div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">FONDO NSGUSD01 (USD)</span>
+    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">9 Inversionistas Auditados</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Base Inicial</div>
+    <div class="card-val">USD 621,235.10</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Interés Bruto (59d)</div>
+    <div class="card-val" style="color: #0284c7;">USD 8,535.61</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Retención IR 5%</div>
+    <div class="card-val" style="color: #dc2626;">USD 426.78</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Reparto en Efectivo</div>
+    <div class="card-val" style="color: #16a34a;">USD 5,380.94</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Final Saldo</div>
+    <div class="card-val" style="color: #4338ca;">USD 563,962.99</div>
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20px;">#</th>
+      <th class="left" style="width: 140px;">Certificado</th>
+      <th class="left">Inversionista</th>
+      <th>Capital Base</th>
+      <th>Int. Bruto</th>
+      <th>IR (5%)</th>
+      <th>Base Neta</th>
+      <th>Capitaliz.</th>
+      <th>Reparto</th>
+      <th>Deducc.</th>
+      <th>Neto Final</th>
+      <th>Rescates</th>
+      <th>Capital Final</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-005.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Peña Jimenez Pedro</td>
+      <td>72,731.46</td>
+      <td style="font-weight: bold; color: #0369a1;">999.31</td>
+      <td style="color: #b91c1c;">49.97</td>
+      <td>949.34</td>
+      <td>949.34</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">73,680.80</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-020.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Olcese Martensen Raúl Gonzalo</td>
+      <td>30,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">412.19</td>
+      <td style="color: #b91c1c;">20.61</td>
+      <td>391.58</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">391.58</td>
+      <td>-</td>
+      <td style="font-weight: bold;">391.58</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">30,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-024.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Zelaya Segovia Carlos Antonio Florentino / Chávez Ramírez de Zelaya Ada Olivia</td>
+      <td>89,500.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,229.71</td>
+      <td style="color: #b91c1c;">61.49</td>
+      <td>1,168.22</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,168.22</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,168.22</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">89,500.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-031.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Chávez Carbajal Juan Carlos / Caycho Carbajal Milena</td>
+      <td>55,742.61</td>
+      <td style="font-weight: bold; color: #0369a1;">765.89</td>
+      <td style="color: #b91c1c;">38.29</td>
+      <td>727.60</td>
+      <td>727.60</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">56,470.21</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-033.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Ojeda Novoa Sheila Miriam</td>
+      <td>80,515.11</td>
+      <td style="font-weight: bold; color: #0369a1;">1,106.26</td>
+      <td style="color: #b91c1c;">55.31</td>
+      <td>1,050.95</td>
+      <td>1,050.95</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">81,566.06</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-034.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Bastidas Santa María María Teresa Manuela</td>
+      <td>45,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">618.29</td>
+      <td style="color: #b91c1c;">30.91</td>
+      <td>587.38</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">587.38</td>
+      <td>-</td>
+      <td style="font-weight: bold;">587.38</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">45,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">7</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-035.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Xiangyan  Tao</td>
+      <td>107,745.92</td>
+      <td style="font-weight: bold; color: #0369a1;">1,480.40</td>
+      <td style="color: #b91c1c;">74.02</td>
+      <td>1,406.38</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,406.38</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,406.38</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">107,745.92</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">8</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">nan</td>
+      <td class="left" style="font-weight: 500;">Renán Alfieri Villegas Pozo y/o Shirley Elizabeth Rojas Granda</td>
+      <td>60,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">824.38</td>
+      <td style="color: #b91c1c;">41.22</td>
+      <td>783.16</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">783.16</td>
+      <td>-</td>
+      <td style="font-weight: bold;">783.16</td>
+      <td style="color: #c2410c;">60,000.00</td>
+      <td style="font-weight: bold; color: #3730a3;">0.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">9</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD01-039.20160101.20251231</td>
+      <td class="left" style="font-weight: 500;">Navarrete  Carlos Alberto / Varetto  Graciela Elisa</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,099.18</td>
+      <td style="color: #b91c1c;">54.96</td>
+      <td>1,044.22</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,044.22</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,044.22</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,000.00</td>
+    </tr>
+    
+    <tr class="tot-row">
+      <td colspan="3" class="left">TOTALES NSGUSD01 (USD)</td>
+      <td>621,235.10</td>
+      <td>8,535.61</td>
+      <td>426.78</td>
+      <td>8,108.83</td>
+      <td>2,727.89</td>
+      <td>5,380.94</td>
+      <td>0.00</td>
+      <td>5,380.94</td>
+      <td>60,000.00</td>
+      <td>563,962.99</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<div class="page-break"></div>
+
+<div class="header">
+  <div>
+    <div class="title">INANDES GRUPO FINANCIERO — CIERRE DE AUDITORÍA OFICIAL</div>
+    <div class="subtitle">Período: 01 de Enero de 2026 al 28 de Febrero de 2026 (59 Días) &nbsp;|&nbsp; Base 365 Días</div>
+  </div>
+  <div style="text-align: right;">
+    <span class="badge">FONDO NSGUSD02 (USD)</span>
+    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">45 Inversionistas Auditados</div>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Base Inicial</div>
+    <div class="card-val">USD 2,090,776.62</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Interés Bruto (59d)</div>
+    <div class="card-val" style="color: #0284c7;">USD 26,876.11</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Retención IR 5%</div>
+    <div class="card-val" style="color: #dc2626;">USD 1,343.81</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Reparto en Efectivo</div>
+    <div class="card-val" style="color: #16a34a;">USD 16,328.70</div>
+  </div>
+  <div class="card" style="width: 20%;">
+    <div class="card-label">Capital Final Saldo</div>
+    <div class="card-val" style="color: #4338ca;">USD 2,099,980.22</div>
+  </div>
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 20px;">#</th>
+      <th class="left" style="width: 140px;">Certificado</th>
+      <th class="left">Inversionista</th>
+      <th>Capital Base</th>
+      <th>Int. Bruto</th>
+      <th>IR (5%)</th>
+      <th>Base Neta</th>
+      <th>Capitaliz.</th>
+      <th>Reparto</th>
+      <th>Deducc.</th>
+      <th>Neto Final</th>
+      <th>Rescates</th>
+      <th>Capital Final</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td style="text-align: center;">1</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-002.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Schmalhausen Panizo Carla Jeanette</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,131.51</td>
+      <td style="color: #b91c1c;">56.58</td>
+      <td>1,074.93</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,074.93</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,074.93</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">2</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-003.20250901.20251231</td>
+      <td class="left" style="font-weight: 500;">Zavala Távara Piedad Corina / Durand Zavala Pamela Ynes</td>
+      <td>30,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">339.45</td>
+      <td style="color: #b91c1c;">16.97</td>
+      <td>322.48</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">322.48</td>
+      <td>-</td>
+      <td style="font-weight: bold;">322.48</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">30,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">3</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-004.20251013.20251231</td>
+      <td class="left" style="font-weight: 500;">Lamas Arrasco Angel Eduardo / Neciosup Colchado Marlene Esperanza</td>
+      <td>101,651.48</td>
+      <td style="font-weight: bold; color: #0369a1;">1,314.51</td>
+      <td style="color: #b91c1c;">65.73</td>
+      <td>1,248.78</td>
+      <td>1,248.78</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">102,900.26</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">4</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-005.20240901.20251231</td>
+      <td class="left" style="font-weight: 500;">López Cuellar Greta Yolanda</td>
+      <td>25,584.80</td>
+      <td style="font-weight: bold; color: #0369a1;">330.85</td>
+      <td style="color: #b91c1c;">16.54</td>
+      <td>314.31</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">314.31</td>
+      <td>-</td>
+      <td style="font-weight: bold;">314.31</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">25,584.80</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">5</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-006.20251029.20251231</td>
+      <td class="left" style="font-weight: 500;">Gavidia Cabrera Ernesto Henry / Alban Lopez Erika Miluska</td>
+      <td>70,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">961.78</td>
+      <td style="color: #b91c1c;">48.09</td>
+      <td>913.69</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">913.69</td>
+      <td>-</td>
+      <td style="font-weight: bold;">913.69</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">70,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">6</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-007.20260104.20260104</td>
+      <td class="left" style="font-weight: 500;">Quintanilla Quispe Asteria Cornelia / Quintanilla Quispe Miguel Angel</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">245.48</td>
+      <td style="color: #b91c1c;">12.27</td>
+      <td>233.21</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">233.21</td>
+      <td>-</td>
+      <td style="font-weight: bold;">233.21</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">7</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-008.20260203.20260203</td>
+      <td class="left" style="font-weight: 500;">Quispe Saire Ruth Janet</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">113.97</td>
+      <td style="color: #b91c1c;">5.70</td>
+      <td>108.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">108.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">108.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">8</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-010.20230301.20251231</td>
+      <td class="left" style="font-weight: 500;">Gallegos Murga Alejandro Edgar / Paredes Solar Belu Nancy</td>
+      <td>30,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">387.95</td>
+      <td style="color: #b91c1c;">19.40</td>
+      <td>368.55</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">368.55</td>
+      <td>-</td>
+      <td style="font-weight: bold;">368.55</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">30,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">9</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-011.20211108.20251231</td>
+      <td class="left" style="font-weight: 500;">Villavicencio Bernedo Ricardo Augusto / Villavicencio Ferro Valeria Ivonne</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">274.79</td>
+      <td style="color: #b91c1c;">13.74</td>
+      <td>261.05</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">261.05</td>
+      <td>-</td>
+      <td style="font-weight: bold;">261.05</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">10</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-016.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Quintanilla Quispe Asteria Cornelia / Quintanilla Quispe Miguel Angel</td>
+      <td>39,500.00</td>
+      <td style="font-weight: bold; color: #0369a1;">542.72</td>
+      <td style="color: #b91c1c;">27.14</td>
+      <td>515.58</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">515.58</td>
+      <td>-</td>
+      <td style="font-weight: bold;">515.58</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">39,500.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">11</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-017.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Tejada Cornejo Paulina Eleonor</td>
+      <td>80,866.61</td>
+      <td style="font-weight: bold; color: #0369a1;">1,045.73</td>
+      <td style="color: #b91c1c;">52.29</td>
+      <td>993.44</td>
+      <td>993.44</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">81,860.05</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">12</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-018.20250501.20251231</td>
+      <td class="left" style="font-weight: 500;">Tello Espinoza Luis Alberto / Tello Abad Lisette Ninoshka / Tello Abad Luis Guillermo</td>
+      <td>55,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">711.23</td>
+      <td style="color: #b91c1c;">35.56</td>
+      <td>675.67</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">675.67</td>
+      <td>-</td>
+      <td style="font-weight: bold;">675.67</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">55,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">13</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-019.20240301.20251231</td>
+      <td class="left" style="font-weight: 500;">Huamán Canales Jorge Fernando / Huamán Carpio Sergio Gonzalo</td>
+      <td>40,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">517.26</td>
+      <td style="color: #b91c1c;">25.86</td>
+      <td>491.40</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">491.40</td>
+      <td>-</td>
+      <td style="font-weight: bold;">491.40</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">40,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">14</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-020.20250701.20251231</td>
+      <td class="left" style="font-weight: 500;">Navarrete  Carlos Alberto / Varetto  Graciela Elisa</td>
+      <td>24,960.07</td>
+      <td style="font-weight: bold; color: #0369a1;">282.42</td>
+      <td style="color: #b91c1c;">14.12</td>
+      <td>268.30</td>
+      <td>268.30</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">25,228.37</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">15</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-021.20240901.20251231</td>
+      <td class="left" style="font-weight: 500;">Zuzuznaga Gómez de Barra Katty Ana</td>
+      <td>38,409.75</td>
+      <td style="font-weight: bold; color: #0369a1;">496.70</td>
+      <td style="color: #b91c1c;">24.84</td>
+      <td>471.86</td>
+      <td>471.86</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">38,881.61</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">16</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-022.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Quintanilla Quispe Miguel Angel / Quintanilla Quispe Asteria Cornelia</td>
+      <td>40,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">549.59</td>
+      <td style="color: #b91c1c;">27.48</td>
+      <td>522.11</td>
+      <td>522.11</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">40,522.11</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">17</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-023.20260101.20260101</td>
+      <td class="left" style="font-weight: 500;">Krateil Fuentes Arabella Carmen</td>
+      <td>35,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">424.32</td>
+      <td style="color: #b91c1c;">21.22</td>
+      <td>403.10</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">403.10</td>
+      <td>-</td>
+      <td style="font-weight: bold;">403.10</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">35,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">18</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-025.20230130.20251231</td>
+      <td class="left" style="font-weight: 500;">Ventura Linares Virginia Isabel / Cossio Llacza Max Fearley</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">258.63</td>
+      <td style="color: #b91c1c;">12.93</td>
+      <td>245.70</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">245.70</td>
+      <td>-</td>
+      <td style="font-weight: bold;">245.70</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">19</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-026.20230131.20251231</td>
+      <td class="left" style="font-weight: 500;">Salas Gómez Alfredo</td>
+      <td>30,725.06</td>
+      <td style="font-weight: bold; color: #0369a1;">422.15</td>
+      <td style="color: #b91c1c;">21.11</td>
+      <td>401.04</td>
+      <td>401.04</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">31,126.10</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">20</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-027.20240101.20251231</td>
+      <td class="left" style="font-weight: 500;">Espinosa Rivas Miguel Angel / Osorio Paulo Betty Esperanza</td>
+      <td>44,767.81</td>
+      <td style="font-weight: bold; color: #0369a1;">578.92</td>
+      <td style="color: #b91c1c;">28.95</td>
+      <td>549.97</td>
+      <td>549.97</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">45,317.78</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">21</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-028.20230309.20251231</td>
+      <td class="left" style="font-weight: 500;">Mejía Zeta Víctor Manuel</td>
+      <td>26,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">336.22</td>
+      <td style="color: #b91c1c;">16.81</td>
+      <td>319.41</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">319.41</td>
+      <td>-</td>
+      <td style="font-weight: bold;">319.41</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">26,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">22</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-029.20230503.20251231</td>
+      <td class="left" style="font-weight: 500;">Nuñez del Prado Ruiz Patricia  / Montoya Nuñez del Prado Lino Alonso</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">686.99</td>
+      <td style="color: #b91c1c;">34.35</td>
+      <td>652.64</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">652.64</td>
+      <td>-</td>
+      <td style="font-weight: bold;">652.64</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">23</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-031.20240115.20251231</td>
+      <td class="left" style="font-weight: 500;">Márquez Biola Luis Fernando Gerardo / Benavente De Marquez Patricia Angelica</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">258.63</td>
+      <td style="color: #b91c1c;">12.93</td>
+      <td>245.70</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">245.70</td>
+      <td>-</td>
+      <td style="font-weight: bold;">245.70</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">24</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-032.20240301.20251231</td>
+      <td class="left" style="font-weight: 500;">Moscoso Zapata Carmen Emilia</td>
+      <td>57,710.59</td>
+      <td style="font-weight: bold; color: #0369a1;">792.93</td>
+      <td style="color: #b91c1c;">39.65</td>
+      <td>753.28</td>
+      <td>753.28</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">58,463.87</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">25</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-033.20240415.20251231</td>
+      <td class="left" style="font-weight: 500;">Macedo Moscoso Socorro del Pilar / Delgado Macedo Rubi Christina / Delgado Macedo Jose Rafael</td>
+      <td>66,757.71</td>
+      <td style="font-weight: bold; color: #0369a1;">917.23</td>
+      <td style="color: #b91c1c;">45.86</td>
+      <td>871.37</td>
+      <td>871.37</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">67,629.08</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">26</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-034.20240422.20251231</td>
+      <td class="left" style="font-weight: 500;">Carrillo Meléndez Gissella del Pilar</td>
+      <td>28,626.92</td>
+      <td style="font-weight: bold; color: #0369a1;">393.33</td>
+      <td style="color: #b91c1c;">19.67</td>
+      <td>373.66</td>
+      <td>373.66</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">29,000.58</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">27</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-035.20250901.20251231</td>
+      <td class="left" style="font-weight: 500;">López Obregón Mario Antonio / Fuertes Pacheco María Del Pilar</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,305.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">28</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-036.20250902.20251231</td>
+      <td class="left" style="font-weight: 500;">López Venturo Oscar Blass</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">242.47</td>
+      <td style="color: #b91c1c;">12.12</td>
+      <td>230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold;">230.35</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">29</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-037.20240701.20251231</td>
+      <td class="left" style="font-weight: 500;">Vera Tudela Ugás Victor Juan / Miguel de Priego Palomio de Vera Tudela Iris Elena</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">242.47</td>
+      <td style="color: #b91c1c;">12.12</td>
+      <td>230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold;">230.35</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">30</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-038.20240701.20251231</td>
+      <td class="left" style="font-weight: 500;">Vera Tudela Ugás Victor Juan / Miguel de Priego Palomio de Vera Tudela Iris Elena</td>
+      <td>22,137.43</td>
+      <td style="font-weight: bold; color: #0369a1;">286.27</td>
+      <td style="color: #b91c1c;">14.31</td>
+      <td>271.96</td>
+      <td>271.96</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">22,409.39</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">31</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-039.20250901.20251231</td>
+      <td class="left" style="font-weight: 500;">López Obregón Mario Antonio / Fuertes Pacheco María Del Pilar</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,305.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">32</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-040.20250901.20251231</td>
+      <td class="left" style="font-weight: 500;">López Obregón Mario Antonio / Fuertes Pacheco María Del Pilar</td>
+      <td>100,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">1,373.97</td>
+      <td style="color: #b91c1c;">68.70</td>
+      <td>1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">1,305.27</td>
+      <td>-</td>
+      <td style="font-weight: bold;">1,305.27</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">100,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">33</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-041.20250101.20251231</td>
+      <td class="left" style="font-weight: 500;">Cossio Llacza Max Fearley / Ventura Linares Virginia Isabel</td>
+      <td>20,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">242.47</td>
+      <td style="color: #b91c1c;">12.12</td>
+      <td>230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">230.35</td>
+      <td>-</td>
+      <td style="font-weight: bold;">230.35</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">20,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">34</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-042.20250130.20251231</td>
+      <td class="left" style="font-weight: 500;">León Vigo Nancy Edelmira / Gutierrez Leon Richard Eduardo</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">646.58</td>
+      <td style="color: #b91c1c;">32.33</td>
+      <td>614.25</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">614.25</td>
+      <td>-</td>
+      <td style="font-weight: bold;">614.25</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">35</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-043.20250207.20251231</td>
+      <td class="left" style="font-weight: 500;">Parodi Velásquez Jorge Antonio / Tejada Chumpitaz Mirtha Felicita</td>
+      <td>30,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">363.70</td>
+      <td style="color: #b91c1c;">18.18</td>
+      <td>345.52</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">345.52</td>
+      <td>-</td>
+      <td style="font-weight: bold;">345.52</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">30,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">36</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-044.20250210.20251231</td>
+      <td class="left" style="font-weight: 500;">Montenegro Castañeda Rosa Elena M</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">646.58</td>
+      <td style="color: #b91c1c;">32.33</td>
+      <td>614.25</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">614.25</td>
+      <td>-</td>
+      <td style="font-weight: bold;">614.25</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">37</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-045.20250401.20251231</td>
+      <td class="left" style="font-weight: 500;">Moscoso Zapata Carmen Emilia</td>
+      <td>63,497.72</td>
+      <td style="font-weight: bold; color: #0369a1;">821.12</td>
+      <td style="color: #b91c1c;">41.06</td>
+      <td>780.06</td>
+      <td>780.06</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">64,277.78</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">38</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-046.20250401.20251231</td>
+      <td class="left" style="font-weight: 500;">Moscoso Zapata Jaennette Leyla</td>
+      <td>42,331.75</td>
+      <td style="font-weight: bold; color: #0369a1;">547.41</td>
+      <td style="color: #b91c1c;">27.37</td>
+      <td>520.04</td>
+      <td>520.04</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">42,851.79</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">39</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-047.20250625.20251231</td>
+      <td class="left" style="font-weight: 500;">Alcántara Cerna Alfredo</td>
+      <td>50,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">606.16</td>
+      <td style="color: #b91c1c;">30.31</td>
+      <td>575.85</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">575.85</td>
+      <td>-</td>
+      <td style="font-weight: bold;">575.85</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">50,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">40</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-048.20250704.20251231</td>
+      <td class="left" style="font-weight: 500;">Montoya Valenzuela Carolina Roxana</td>
+      <td>30,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">412.19</td>
+      <td style="color: #b91c1c;">20.61</td>
+      <td>391.58</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">391.58</td>
+      <td>-</td>
+      <td style="font-weight: bold;">391.58</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">30,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">41</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-049.20250704.20251231</td>
+      <td class="left" style="font-weight: 500;">Amat y León Rossel Claudia Cecilia / Tirado Bertuccelli Roberto Francisco</td>
+      <td>35,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">396.03</td>
+      <td style="color: #b91c1c;">19.80</td>
+      <td>376.23</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">376.23</td>
+      <td>-</td>
+      <td style="font-weight: bold;">376.23</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">35,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">42</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-050.20250709.20251231</td>
+      <td class="left" style="font-weight: 500;">Barton González Rosa Elena P</td>
+      <td>80,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">969.86</td>
+      <td style="color: #b91c1c;">48.49</td>
+      <td>921.37</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">921.37</td>
+      <td>-</td>
+      <td style="font-weight: bold;">921.37</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">80,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">43</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-051.20250811.20251231</td>
+      <td class="left" style="font-weight: 500;">Ventura Linares Virginia Isabel / Cossio Llacza Max Fearley</td>
+      <td>60,000.00</td>
+      <td style="font-weight: bold; color: #0369a1;">775.89</td>
+      <td style="color: #b91c1c;">38.79</td>
+      <td>737.10</td>
+      <td>-</td>
+      <td style="font-weight: bold; color: #15803d;">737.10</td>
+      <td>-</td>
+      <td style="font-weight: bold;">737.10</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">60,000.00</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">44</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-052.20250908.20251231</td>
+      <td class="left" style="font-weight: 500;">Humberto Fouscas Chiara Andrea</td>
+      <td>51,049.08</td>
+      <td style="font-weight: bold; color: #0369a1;">577.62</td>
+      <td style="color: #b91c1c;">28.88</td>
+      <td>548.74</td>
+      <td>548.74</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">51,597.82</td>
+    </tr>
+    
+    <tr>
+      <td style="text-align: center;">45</td>
+      <td class="left" style="font-family: monospace; font-size: 6.5pt;">NSGUSD02-053.20250908.20251231</td>
+      <td class="left" style="font-weight: 500;">Humberto Fouscas Stefano Gabriel</td>
+      <td>51,199.84</td>
+      <td style="font-weight: bold; color: #0369a1;">662.09</td>
+      <td style="color: #b91c1c;">33.10</td>
+      <td>628.99</td>
+      <td>628.99</td>
+      <td style="font-weight: bold; color: #15803d;">-</td>
+      <td>-</td>
+      <td style="font-weight: bold;">0.00</td>
+      <td style="color: #c2410c;">-</td>
+      <td style="font-weight: bold; color: #3730a3;">51,828.83</td>
+    </tr>
+    
+    <tr class="tot-row">
+      <td colspan="3" class="left">TOTALES NSGUSD02 (USD)</td>
+      <td>2,090,776.62</td>
+      <td>26,876.11</td>
+      <td>1,343.81</td>
+      <td>25,532.30</td>
+      <td>9,203.60</td>
+      <td>16,328.70</td>
+      <td>0.00</td>
+      <td>16,328.70</td>
+      <td>0.00</td>
+      <td>2,099,980.22</td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+</body>
+</html>
