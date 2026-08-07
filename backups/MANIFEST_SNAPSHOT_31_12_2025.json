@@ -1,0 +1,15 @@
+{
+  "timestamp_utc": "2026-08-06T22:26:00Z",
+  "description": "Ficha y Ledger completo de CRM Inversionistas congelado al 31/12/2025 antes del Rollback de Control de Calidad",
+  "tablas": {
+    "crm_inversionistas": 220,
+    "crm_asesores": 19,
+    "crm_fondos": 17,
+    "crm_contratos": 189,
+    "crm_certificados": 0,
+    "crm_certificados_eventos": 379,
+    "crm_deducciones_eventos": 0,
+    "propuestas": 156,
+    "EMISORES.ACEPTANTES": 68
+  }
+}
