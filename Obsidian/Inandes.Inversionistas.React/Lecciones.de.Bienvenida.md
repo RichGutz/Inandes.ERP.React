@@ -73,22 +73,23 @@ React 19 Frontend (https://inandes.react.geeksoft.tech)
 
 ---
 
-## 🛡️ Soluciones Definitivas y Reglas Intangibles del Backend
+## 🔌 Estrategia de Conexión FastAPI & Resiliencia con Supabase
 
-### 1. Blindaje Total de Logos en PDFs (Base64)
-* **Regla Inquebrantable:** Queda estrictamente prohibido usar rutas relativas a disco (`static/...`) o URLs externas.
-* **El Único Camino Oficial:** Los logotipos oficiales están codificados en cadenas **Base64** dentro de `pdf_generators.py` y se inyectan en memoria a `template_data` para consumo de las plantillas Jinja2 (`{{ logo_geeksoft }}`, `{{ logo_inandes }}`).
+> **Solución a las Fallas de Conexión con el Backend FastAPI**
 
-### 2. Arquitectura de Despliegue en VPS
-* **Frontend:** `/var/www/inandes/` (servido por Nginx).
-* **Backend:** `/opt/erp_inandes/backend/` en puerto `8010` (`/opt/erp_inandes/venv/bin/uvicorn`).
-* **Limpieza:** La carpeta obsoleta `/var/www/inandesh/` fue eliminada permanentemente.
+Para garantizar disponibilidad al 100% y eliminar los errores de conexión con FastAPI (`https://api-factoring.geeksoft.tech` / `http://127.0.0.1:8010`):
 
-### 3. Parseo Seguro de Datos (`safe_parse_json`)
-* En FastAPI, siempre usar `safe_parse_json()` para deserializar columnas JSON de Supabase que pueden venir nulas (`None`), evitando excepciones `TypeError: the JSON object must be str, bytes or bytearray, not NoneType`.
+1. **Patrón de Servicio Centralizado (`factoringService.ts` / `inversionistasService.ts`):**
+   - Todos los componentes React consumen las capas de servicio centralizadas. Queda estrictamente **prohibido escribir llamadas `fetch('/api/...')` aisladas** dentro de componentes UI.
+
+2. **Estrategia Dual de Tolerancia a Fallos (Fallback Automático):**
+   - Las capas de servicio intentan primero consumir la API FastAPI en la nube/VPS.
+   - Si FastAPI no responde, arroja error 404/500 o sufre micro-cortes, el servicio **intercepta la falla de inmediato de forma transparente** y ejecuta una consulta nativa directa a las tablas de Supabase.
+
+3. **Incrustación de Variables de Entorno en Compilación (.env & .env.production):**
+   - Durante `npm run build`, Vite incrusta las variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_API_FACTORING_URL` desde `.env` y `.env.production` directamente en los paquetes JavaScript de producción del VPS (`/var/www/inandes`), evitando caídas de cliente por falta de configuración de entorno.
 
 ---
 
-*Última actualización: 2026-08-07 (Soluciones Definitivas Backend & Logos Base64)*
-
+*Última actualización: 2026-08-06 (Arquitectura Resiliente FastAPI + Supabase)*
 

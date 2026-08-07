@@ -3,12 +3,12 @@ import { getApiBaseUrl } from '../../../config/apiConfig';
 import { factoringService } from '../../../services/factoringService';
 import { supabase } from '../../../services/supabaseClient';
 import { DriveTreeView } from './DriveTreeView';
-import { 
-  Building2, 
-  ChevronDown, 
-  ChevronUp, 
-  FolderOpen, 
-  CheckCircle2, 
+import {
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  FolderOpen,
+  CheckCircle2,
   AlertCircle,
   FileText,
   Upload,
@@ -161,13 +161,13 @@ export const DesembolsosTab: React.FC = () => {
 
       if (!map[firstLetter]) map[firstLetter] = {};
       if (!map[firstLetter][emisor]) map[firstLetter][emisor] = {};
-      
+
       const lote = inv.identificador_lote || 'Sin Lote';
       if (!map[firstLetter][emisor][lote]) map[firstLetter][emisor][lote] = {};
-      
+
       const grp = getGroupId(inv);
       if (!map[firstLetter][emisor][lote][grp]) map[firstLetter][emisor][lote][grp] = [];
-      
+
       map[firstLetter][emisor][lote][grp].push(inv);
     });
     return map;
@@ -175,7 +175,7 @@ export const DesembolsosTab: React.FC = () => {
 
   const letterCounts = useMemo(() => {
     const counts: Record<string, number> = { 'TODOS': invoices.length };
-    const allLetters = [...Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i)), '#'];
+    const allLetters = [...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), '#'];
     allLetters.forEach(l => counts[l] = 0);
 
     for (const [letter, comps] of Object.entries(companiesMap)) {
@@ -193,14 +193,26 @@ export const DesembolsosTab: React.FC = () => {
     return counts;
   }, [companiesMap, invoices]);
 
-  // Empresas y lotes inician 100% colapsados por defecto
+  // Auto-expandir empresas y lotes por defecto para que la UI no quede vacía
+  useEffect(() => {
+    if (invoices.length > 0) {
+      const compSet = new Set<string>();
+      const loteSet = new Set<string>();
+      invoices.forEach(inv => {
+        if (inv.emisor_nombre) compSet.add(inv.emisor_nombre.trim());
+        if (inv.identificador_lote) loteSet.add(inv.identificador_lote);
+      });
+      setExpandedCompanies(compSet);
+      setExpandedLotes(loteSet);
+    }
+  }, [invoices]);
 
   const toggleSelection = (id: string) => {
     const newSel = new Set(selectedIds);
     if (newSel.has(id)) newSel.delete(id);
     else newSel.add(id);
     setSelectedIds(newSel);
-    
+
     // Si la selección cambia a vacío o a otra empresa, reset de datos bancarios y voucher
     setDatosBancarios(null);
     setVoucherB64(null);
@@ -217,22 +229,11 @@ export const DesembolsosTab: React.FC = () => {
     setVoucherB64(null);
   };
 
-  const toggleCompany = (emisor: string) => {
-    setExpandedCompanies(prev => {
-      const next = new Set(prev);
-      if (next.has(emisor)) next.delete(emisor);
-      else next.add(emisor);
-      return next;
-    });
-  };
-
-  const toggleLote = (loteKey: string) => {
-    setExpandedLotes(prev => {
-      const next = new Set(prev);
-      if (next.has(loteKey)) next.delete(loteKey);
-      else next.add(loteKey);
-      return next;
-    });
+  const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+    const newSet = new Set(set);
+    if (newSet.has(key)) newSet.delete(key);
+    else newSet.add(key);
+    setter(newSet);
   };
 
   const formatCurrency = (val: number, cur: string) => {
@@ -338,7 +339,7 @@ export const DesembolsosTab: React.FC = () => {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Error al generar el voucher PDF');
-      
+
       const data = await res.json();
       setVoucherB64(data.file_base64);
     } catch (e: any) {
@@ -377,9 +378,9 @@ export const DesembolsosTab: React.FC = () => {
 
     try {
       setRegistering(true);
-      
+
       const filesPayload: any[] = [];
-      
+
       // 1. Voucher
       if (voucherB64) {
         filesPayload.push({
@@ -425,9 +426,9 @@ export const DesembolsosTab: React.FC = () => {
       });
 
       if (!res.ok) throw new Error('Error al registrar desembolsos');
-      
+
       setSuccessMsg(`¡${selectedInvoices.length} operaciones desembolsadas con éxito!`);
-      
+
       // Reset after 3 seconds
       setTimeout(() => {
         setSuccessMsg(null);
@@ -489,7 +490,7 @@ export const DesembolsosTab: React.FC = () => {
 
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
         <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">1. Facturas Pendientes de Desembolso</h2>
-        
+
         {/* Rolodex Abecedario A-Z Oficial (Regla 6 - SIEMPRE VISIBLE) */}
         <div className="flex flex-wrap items-center gap-2 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
           {['TODOS', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), '#'].map(letter => {
@@ -501,17 +502,15 @@ export const DesembolsosTab: React.FC = () => {
               <button
                 key={letter}
                 onClick={() => setActiveLetter(letter)}
-                className={`relative flex items-center justify-center font-black transition-all cursor-pointer ${
-                  isTodos 
-                    ? 'px-4 h-10 rounded-xl text-xs uppercase tracking-wider' 
+                className={`relative flex items-center justify-center font-black transition-all cursor-pointer ${isTodos
+                    ? 'px-4 h-10 rounded-xl text-xs uppercase tracking-wider'
                     : 'w-10 h-10 rounded-xl text-sm'
-                } ${
-                  isActive 
-                    ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105' 
-                    : count > 0 
-                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
+                  } ${isActive
+                    ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105'
+                    : count > 0
+                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                       : 'bg-slate-100 text-slate-400 dark:bg-slate-800/40 dark:text-slate-600 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 {letter}
                 {count > 0 && (
@@ -549,9 +548,9 @@ export const DesembolsosTab: React.FC = () => {
                 return displayEntries.map(([emisor, lotes]) => (
                   <div key={emisor} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                     {/* Empresa Header */}
-                    <button 
-                      className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer"
-                      onClick={() => toggleCompany(emisor)}
+                    <button
+                      className="w-full bg-slate-50 dark:bg-slate-800 px-4 py-3 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors"
+                      onClick={() => toggleExpanded(expandedCompanies, emisor, setExpandedCompanies)}
                     >
                       <div className="flex items-center gap-3">
                         <Building2 className="text-indigo-500" size={20} />
@@ -566,8 +565,8 @@ export const DesembolsosTab: React.FC = () => {
                           <div key={loteId} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                             {/* Lote Header */}
                             <button
-                              className="w-full bg-slate-50 dark:bg-slate-800/50 px-4 py-2 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 cursor-pointer"
-                              onClick={() => toggleLote(loteId)}
+                              className="w-full bg-slate-50 dark:bg-slate-800/50 px-4 py-2 flex justify-between items-center border-b border-slate-200 dark:border-slate-700"
+                              onClick={() => toggleExpanded(expandedLotes, loteId, setExpandedLotes)}
                             >
                               <div className="flex items-center gap-2">
                                 <FolderOpen className="text-emerald-500" size={16} />
@@ -581,13 +580,13 @@ export const DesembolsosTab: React.FC = () => {
                                 {Object.entries(grupos).map(([grupoId, fList]) => {
                                   const groupIds = fList.map(f => f.proposal_id);
                                   const allSelected = groupIds.every(id => selectedIds.has(id));
-                                  
+
                                   return (
                                     <div key={grupoId} className="border border-slate-200 dark:border-slate-700 rounded-md p-3">
                                       <div className="flex items-center gap-4 mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
                                         <h4 className="font-semibold text-sm text-slate-600 dark:text-slate-400 flex-1">Grupo: {grupoId}</h4>
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                          <input 
+                                          <input
                                             type="checkbox"
                                             checked={allSelected}
                                             onChange={() => toggleGroupSelection(groupIds, allSelected)}
@@ -612,32 +611,33 @@ export const DesembolsosTab: React.FC = () => {
                                           {fList.map(inv => {
                                             const monto = getMontoDesembolso(inv);
                                             return (
-                                            <tr key={inv.proposal_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                              <td className="px-2 py-3">
-                                                <input 
-                                                  type="checkbox"
-                                                  checked={selectedIds.has(inv.proposal_id)}
-                                                  onChange={() => toggleSelection(inv.proposal_id)}
-                                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                                />
-                                              </td>
-                                              <td className="px-2 py-3 font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                {parseInvoiceNumber(inv.proposal_id)}
-                                              </td>
-                                              <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
-                                                {inv.emisor_nombre || 'N/A'}
-                                              </td>
-                                              <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
-                                                {inv.aceptante_nombre || 'N/A'}
-                                              </td>
-                                              <td className="px-2 py-3 text-slate-700 dark:text-slate-300">
-                                                {formatCurrency(inv.monto_neto_factura || 0, inv.moneda_factura)}
-                                              </td>
-                                              <td className="px-2 py-3 text-emerald-600 font-bold">
-                                                {formatCurrency(monto, inv.moneda_factura)}
-                                              </td>
-                                            </tr>
-                                          )})}
+                                              <tr key={inv.proposal_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                <td className="px-2 py-3">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(inv.proposal_id)}
+                                                    onChange={() => toggleSelection(inv.proposal_id)}
+                                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                  />
+                                                </td>
+                                                <td className="px-2 py-3 font-mono font-bold text-slate-700 dark:text-slate-300">
+                                                  {parseInvoiceNumber(inv.proposal_id)}
+                                                </td>
+                                                <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
+                                                  {inv.emisor_nombre || 'N/A'}
+                                                </td>
+                                                <td className="px-2 py-3 truncate max-w-[150px] text-slate-600 dark:text-slate-400">
+                                                  {inv.aceptante_nombre || 'N/A'}
+                                                </td>
+                                                <td className="px-2 py-3 text-slate-700 dark:text-slate-300">
+                                                  {formatCurrency(inv.monto_neto_factura || 0, inv.moneda_factura)}
+                                                </td>
+                                                <td className="px-2 py-3 text-emerald-600 font-bold">
+                                                  {formatCurrency(monto, inv.moneda_factura)}
+                                                </td>
+                                              </tr>
+                                            )
+                                          })}
                                         </tbody>
                                       </table>
                                     </div>
@@ -662,7 +662,7 @@ export const DesembolsosTab: React.FC = () => {
           {/* SECCIÓN 2: VOUCHER */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 p-4">
             <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide mb-3">2. Generar Voucher de Transferencia</h2>
-            
+
             {!datosBancarios && !loadingBanco ? (
               <div className="text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-3 rounded-xl flex gap-2 items-center border border-red-200 dark:border-red-900 font-semibold">
                 <AlertCircle size={16} /> El emisor no tiene datos bancarios registrados o seleccionaste facturas de distinto emisor.
@@ -671,7 +671,7 @@ export const DesembolsosTab: React.FC = () => {
               <div className="flex gap-2 items-center text-xs text-slate-500 py-3"><Loader2 className="animate-spin" size={16} /> Cargando datos bancarios...</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
-                
+
                 {/* Monto */}
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 flex flex-col justify-center items-center">
                   <div className="text-slate-500 uppercase font-bold text-[10px] tracking-wider mb-0.5">Total a Transferir</div>
@@ -685,10 +685,10 @@ export const DesembolsosTab: React.FC = () => {
                     disabled={generatingVoucher}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-colors flex justify-center items-center gap-2 text-xs disabled:bg-blue-400 shadow-xs cursor-pointer"
                   >
-                    {generatingVoucher ? <Loader2 className="animate-spin" size={16}/> : <FileText size={16} />}
+                    {generatingVoucher ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
                     Generar Voucher PDF
                   </button>
-                  
+
                   {voucherB64 && (
                     <a
                       href={`data:application/pdf;base64,${voucherB64}`}
@@ -716,12 +716,12 @@ export const DesembolsosTab: React.FC = () => {
           {/* SECCIÓN 3: FORMALIZACIÓN */}
           <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
             <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">3. Formalización</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Fecha de Desembolso</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={fechaDesembolso}
                   onChange={e => setFechaDesembolso(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
@@ -729,7 +729,7 @@ export const DesembolsosTab: React.FC = () => {
               </div>
               <div className="flex flex-col justify-center">
                 <label className="flex items-center gap-2 cursor-pointer mt-6">
-                  <input 
+                  <input
                     type="checkbox"
                     checked={sustentoUnico}
                     onChange={e => setSustentoUnico(e.target.checked)}
@@ -744,8 +744,8 @@ export const DesembolsosTab: React.FC = () => {
               <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 rounded-lg text-center bg-slate-50 dark:bg-slate-800/50">
                 <Upload className="mx-auto text-slate-400 mb-2" size={24} />
                 <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Subir Evidencia Consolidada</p>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept=".pdf, .png, .jpg, .jpeg"
                   className="text-sm text-slate-500 mx-auto"
                   onChange={e => setConsolidatedFile(e.target.files?.[0] || null)}
@@ -763,10 +763,10 @@ export const DesembolsosTab: React.FC = () => {
                     </div>
                     <div className="w-1/4 flex flex-col gap-1 px-2">
                       <label className="text-[10px] uppercase font-bold text-slate-500">Fecha Desembolso</label>
-                      <input 
+                      <input
                         type="date"
                         value={individualDates[inv.proposal_id] || fechaDesembolso}
-                        onChange={e => setIndividualDates(prev => ({...prev, [inv.proposal_id]: e.target.value}))}
+                        onChange={e => setIndividualDates(prev => ({ ...prev, [inv.proposal_id]: e.target.value }))}
                         className="w-full text-xs px-2 py-1.5 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-slate-800 dark:text-white"
                       />
                     </div>
@@ -774,17 +774,17 @@ export const DesembolsosTab: React.FC = () => {
                       <label className="cursor-pointer flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-md p-2 bg-slate-50 dark:bg-slate-900 transition-colors">
                         <Upload size={18} className="text-indigo-500" />
                         <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                          {individualFiles[inv.proposal_id] 
-                            ? individualFiles[inv.proposal_id].name 
+                          {individualFiles[inv.proposal_id]
+                            ? individualFiles[inv.proposal_id].name
                             : 'Subir Voucher Indiv.'}
                         </span>
-                        <input 
+                        <input
                           type="file"
                           accept=".pdf, .png, .jpg, .jpeg"
                           className="hidden"
                           onChange={e => {
                             const f = e.target.files?.[0];
-                            if (f) setIndividualFiles(prev => ({...prev, [inv.proposal_id]: f}));
+                            if (f) setIndividualFiles(prev => ({ ...prev, [inv.proposal_id]: f }));
                           }}
                         />
                       </label>
@@ -808,7 +808,7 @@ export const DesembolsosTab: React.FC = () => {
                 Navegador del Repositorio InAndes
               </label>
               <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl h-72 overflow-y-auto shadow-inner w-full">
-                <DriveTreeView 
+                <DriveTreeView
                   rootFolderId="1Jv1r9kixL982gL-RCyPnhOY3W-qI0CLq"
                   rootFolderName="Repositorio InAndes"
                   selectedFolderId={selectedFolder?.id || ''}

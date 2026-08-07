@@ -10,6 +10,7 @@ import {
   FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
   ShieldCheck, Undo2, X, Calendar
 } from 'lucide-react';
+import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo
@@ -760,7 +761,7 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Descarga / Impresión Batch de Estados de Cuenta (EECC)
+    // Descarga / Impresión Batch de Estados de Cuenta (Plantilla Exacta generate_docs_pdf.py)
   const handleDownloadEECCBatch = () => {
     if (!batchData || batchData.eecc.length === 0) {
       alert("No hay estados de cuenta procesados para emitir.");
@@ -773,119 +774,222 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const fmt = (n: number, m: string) => (m === 'USD' ? '$ ' : 'S/ ') + (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmt = (v: any) => {
+      try {
+        if (v === "" || v === null || v === undefined) return "0.00";
+        if (Number(v) === 0) return "-";
+        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch {
+        return String(v);
+      }
+    };
+
+    const fmtVc = (v: any) => {
+      try {
+        if (v === "" || v === null || v === undefined) return "0.00";
+        if (Number(v) === 0) return "-";
+        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch {
+        return String(v);
+      }
+    };
+
+    const mesesShort = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const dIni = new Date(fStart + 'T12:00:00');
+    const dFin = new Date(fEnd + 'T12:00:00');
+    const pIniStr = `${String(dIni.getDate()).padStart(2, '0')}-${mesesShort[dIni.getMonth()]}-${String(dIni.getFullYear()).slice(-2)}`;
+    const pFinStr = `${String(dFin.getDate()).padStart(2, '0')}-${mesesShort[dFin.getMonth()]}-${String(dFin.getFullYear()).slice(-2)}`;
+    const periodoTxt = `DEL ${pIniStr} AL ${pFinStr}`.toUpperCase();
 
     const html = `
       <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
+      <html lang="es">
+      <head>
+          <meta charset="UTF-8">
           <title>Lote EECC - ${batchData.fondo} (${fEnd})</title>
           <style>
-            @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
-            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0f172a; margin: 0; font-size: 11px; }
-            .page { page-break-after: always; padding-bottom: 20px; }
-            .page:last-child { page-break-after: auto; }
-            .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #059669; padding-bottom: 10px; margin-bottom: 15px; }
-            .title { font-size: 14px; font-weight: 900; color: #064e3b; text-transform: uppercase; letter-spacing: 0.5px; }
-            .subtitle { font-size: 10px; color: #64748b; font-weight: bold; }
-            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 15px; }
-            .meta-item { display: flex; flex-direction: column; gap: 2px; }
-            .meta-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; }
-            .meta-value { font-size: 10px; font-weight: 700; color: #0f172a; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
-            th { background: #0f172a; color: #ffffff; font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 6px 8px; text-align: left; }
-            td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; font-size: 9px; }
-            .text-right { text-align: right; }
-            .highlight-row { background: #ecfdf5; font-weight: 800; color: #064e3b; }
-            .footer-note { font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 20px; text-align: center; }
-            @media print { .no-print { display: none; } }
+              @page { 
+                  size: A4; 
+                  margin: 2.5cm 2.5cm 2.5cm 2.5cm;
+              }
+              body {
+                  font-family: Arial, sans-serif;
+                  font-size: 11pt;
+                  line-height: 1.3;
+                  color: #000;
+                  margin: 0;
+                  padding: 0;
+              }
+              .header { text-align: right; margin-bottom: 20px; }
+              .logo { width: 160px; margin-bottom: 15px; } 
+              
+              .title { font-weight: bold; text-transform: uppercase; margin-bottom: 5px; font-size: 11pt; text-align: center; }
+              .subtitle { font-weight: bold; margin-bottom: 15px; font-size: 11pt; text-align: center; }
+              .period { margin-bottom: 25px; text-transform: uppercase; text-align: center; }
+              
+              .client-info p { margin: 3px 0; }
+              
+              table.data-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10pt; }
+              table.data-table td { padding: 6px 4px; vertical-align: bottom; }
+              
+              /* COLORES DE FILA */
+              .row-blue { background-color: rgb(204, 235, 255); }
+              .row-green { background-color: rgb(225, 238, 217); }
+              
+              .amount { text-align: right; font-family: 'Courier New', monospace; letter-spacing: -0.5px; }
+              .bold { font-weight: bold; }
+              .uppercase { text-transform: uppercase; }
+              .justify { text-align: justify; }
+              
+              .currency-symbol { width: 40px; text-align: left; }
+              .currency-val { width: 100px; text-align: right; }
+              
+              /* SECCION FINAL CON BORDE */
+              .summary-box {
+                  border: 2px solid #000; 
+                  padding: 10px;
+                  margin-top: 20px;
+              }
+              .summary-box table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+              .summary-box td { padding: 4px; }
+              
+              /* FOOTER ESPECIFICO */
+              .footer-eecc {
+                  margin-top: 60px;
+                  text-align: center;
+                  font-size: 9pt;
+                  color: rgb(79, 79, 255);
+                  line-height: 1.4;
+              }
+              .page-break { page-break-after: always; }
+              @media print { .no-print { display: none; } }
           </style>
-        </head>
-        <body>
-          ${batchData.eecc.map((item: any, idx: number) => `
-            <div class="page">
-              <div class="header-box">
-                <div>
-                  <div class="title">INVERSIONES ANDES — ESTADO DE CUENTA</div>
-                  <div class="subtitle">PARTICIPACIÓN EN FONDO DE INVERSIÓN PRIVADO | ${batchData.fondo}</div>
-                </div>
-                <div style="text-align: right;">
-                  <div style="font-weight: 900; font-size: 12px; color: #059669;">N° ${item.id_certificado}</div>
-                  <div style="font-size: 8px; color: #64748b;">Hoja ${idx + 1} de ${batchData.eecc.length}</div>
-                </div>
-              </div>
+      </head>
+      <body>
+          ${batchData.eecc.map((row: any, idx: number) => {
+            const certId = String(row.id_certificado || '').split('-')[0].toUpperCase();
+            const monedaTitle = row.moneda === 'USD' ? 'USD: DOLARES DE LOS ESTADOS UNIDOS DE AMERICA' : 'PEN: PERU SOLES';
+            const saldoInicial = Number(row.capital_base || 0);
+            const gananciaBruta = Number(row.interes_bruto || 0);
+            const retencion = Number(row.impuesto || 0);
+            const gananciaNeta = Number(row.neto_disponible || 0);
+            const capitalizado = Number(row.capitalizacion || 0);
+            const rescates = Number(row.devolucion_capital || 0);
+            const transferido = gananciaNeta + rescates - capitalizado;
+            const saldoFinal = Number(row.capital_final || (saldoInicial + capitalizado));
+            const cuotasFinal = saldoFinal / 1000;
 
-              <div class="meta-grid">
-                <div class="meta-item">
-                  <span class="meta-label">Titular / Partícipe:</span>
-                  <span class="meta-value">${item.inversionista}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">DNI / RUC:</span>
-                  <span class="meta-value">${item.dni}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">Domicilio Fiscal:</span>
-                  <span class="meta-value">${item.direccion}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">Período de Liquidación:</span>
-                  <span class="meta-value">${item.fecha_inicio} al ${item.fecha_fin}</span>
-                </div>
+            return `
+              <div class="header">
+                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo" alt="InAndes">
               </div>
-
-              <table>
-                <thead>
+              <div class="title">ESTADO DE CUENTA DEL CERTIFICADO ${certId}</div>
+              <div class="subtitle">${batchData.fondo.toUpperCase()}</div>
+              <div class="period">${periodoTxt}</div>
+              
+              <div class="client-info">
+                  <p>Sr(a)(s):</p>
+                  <p class="bold" style="font-size: 11pt;">${row.inversionista}</p>
+              </div>
+              
+              <div style="margin-top: 20px; font-size: 10pt;">
+                  <p>${monedaTitle}</p>
+              </div>
+              
+              <table class="data-table">
                   <tr>
-                    <th>Concepto Contable</th>
-                    <th class="text-right">Monto (${item.moneda})</th>
+                      <td>Monto inicial invertido:</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">${fmt(saldoInicial)}</td>
                   </tr>
-                </thead>
-                <tbody>
+                  <tr><td colspan="3" style="height: 10px;"></td></tr>
+                  
+                  <tr class="row-blue">
+                      <td>Ganancia bruta obtenida:</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">${fmt(gananciaBruta)}</td>
+                  </tr>
+                  <tr><td colspan="3" style="height: 5px;"></td></tr>
+                  
                   <tr>
-                    <td>Capital Base Inicial al Inicio de Período</td>
-                    <td class="text-right">${fmt(item.capital_base, item.moneda)}</td>
+                      <td>(-) Impuesto a la Renta retenido</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">${retencion > 0 ? fmt(retencion) : '-'}</td>
                   </tr>
+                  <tr><td colspan="3" style="height: 5px;"></td></tr>
+                  
+                  <tr class="row-blue">
+                      <td class="bold">Ganancia disponible del partícipe</td>
+                      <td class="amount currency-symbol bold">${row.moneda}</td>
+                      <td class="amount currency-val bold">${fmt(gananciaNeta)}</td>
+                  </tr>
+                  <tr><td colspan="3" style="height: 10px;"></td></tr>
+                  
                   <tr>
-                    <td>(+) Interés Compensatorio Devengado (Bruto)</td>
-                    <td class="text-right" style="color: #059669; font-weight: bold;">+ ${fmt(item.interes_bruto, item.moneda)}</td>
+                      <td>(-) Retenciones a las ganancias solicitadas</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">-</td>
                   </tr>
+                  <tr><td colspan="3" style="height: 15px;"></td></tr>
+                  
                   <tr>
-                    <td>(-) Retención Impuesto a la Renta de 2da Categoría (5%)</td>
-                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.impuesto, item.moneda)}</td>
+                      <td>(+) Inversiones adicionales</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">-</td>
                   </tr>
-                  ${item.deducciones > 0 ? `
-                  <tr>
-                    <td>(-) Deducciones y Penalidades Aplicadas</td>
-                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.deducciones, item.moneda)}</td>
-                  </tr>` : ''}
-                  <tr class="highlight-row">
-                    <td>(=) Interés Neto Disponible para Distribución</td>
-                    <td class="text-right">${fmt(item.neto_disponible, item.moneda)}</td>
+                  <tr><td colspan="3" style="height: 5px;"></td></tr>
+                  
+                  <tr class="row-blue">
+                      <td>Monto destinado para adquirir nuevas cuotas</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">${capitalizado > 0 ? fmt(capitalizado) : '-'}</td>
                   </tr>
-                  <tr>
-                    <td>(±) Capitalización / Reinversión en el Fondo</td>
-                    <td class="text-right">${fmt(item.capitalizacion, item.moneda)}</td>
+                  <tr><td colspan="3" style="height: 5px;"></td></tr>
+                  
+                  <tr class="row-green">
+                      <td class="bold">Monto transferido a su cuenta bancaria</td>
+                      <td class="amount currency-symbol bold">${row.moneda}</td>
+                      <td class="amount currency-val bold">${fmt(transferido)}</td>
                   </tr>
-                  ${item.devolucion_capital > 0 ? `
-                  <tr>
-                    <td>(-) Devolución / Rescate de Capital</td>
-                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.devolucion_capital, item.moneda)}</td>
-                  </tr>` : ''}
-                  <tr class="highlight-row" style="background: #0f172a; color: #ffffff;">
-                    <td style="color: #ffffff; font-weight: 900;">SALDO DE CAPITAL FINAL AL CIERRE</td>
-                    <td class="text-right" style="color: #ffffff; font-weight: 900; font-size: 11px;">${fmt(item.capital_final, item.moneda)}</td>
+                  <tr><td colspan="3" style="height: 5px;"></td></tr>
+                  
+                  <tr class="row-green">
+                      <td>Rescates solicitados por el partícipe</td>
+                      <td class="amount currency-symbol">${row.moneda}</td>
+                      <td class="amount currency-val">${rescates > 0 ? fmt(rescates) : '-'}</td>
                   </tr>
-                </tbody>
               </table>
-
-              <div class="footer-note">
-                Documento de control emitido por Inversiones Andes S.A.C. de conformidad con el Reglamento de Fondos de Inversión y la normativa tributaria vigente de SUNAT.
+              
+              <div class="summary-box">
+                  <table>
+                      <tr>
+                          <td class="bold">Monto de la inversión al ${pFinStr}</td>
+                          <td class="amount currency-symbol bold">${row.moneda}</td>
+                          <td class="amount currency-val bold">${fmt(saldoFinal)}</td>
+                      </tr>
+                      <tr>
+                          <td>Número de cuotas al ${pFinStr}</td>
+                          <td class="amount currency-symbol">CUOTAS</td>
+                          <td class="amount currency-val">${fmtVc(cuotasFinal)}</td>
+                      </tr>
+                      <tr>
+                          <td>Fecha de cierre del Fondo / cierre del contrato</td>
+                          <td class="amount currency-symbol"></td>
+                          <td class="amount currency-val">${pFinStr}</td>
+                      </tr>
+                  </table>
               </div>
-            </div>
-          `).join('')}
-        </body>
+              
+              <div class="footer-eecc">
+                  <p>INANDES ACTIVOS ALTERNATIVOS SAC<br>
+                  Calle Los Tulipanes 147 Of. 306, Urb. El Polo Hunt, Santiago de Surco, Lima CP 15023<br>
+                  info@inandes.com</p>
+              </div>
+              
+              ${idx < batchData.eecc.length - 1 ? '<div class="page-break"></div>' : ''}
+            `;
+          }).join('')}
+      </body>
       </html>
     `;
 
@@ -895,7 +999,7 @@ export const InversionistasPage: React.FC = () => {
     setTimeout(() => { printWin.print(); }, 500);
   };
 
-  // Descarga / Impresión Batch de Certificados de Retención (5% IR)
+  // Descarga / Impresión Batch de Certificados de Retención (Plantilla Exacta generate_docs_pdf.py)
   const handleDownloadRetBatch = () => {
     if (!batchData || batchData.retenciones.length === 0) {
       alert("No hay retenciones tributarias generadas en este período para reportar.");
@@ -908,139 +1012,126 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
+    const fmt = (v: any) => {
+      try {
+        if (v === "" || v === null || v === undefined) return "0.00";
+        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch {
+        return String(v);
+      }
+    };
+
     const hoy = new Date();
     const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    const diaHoy = String(hoy.getDate()).padStart(2, '0');
+    const mesesShort = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const mesHoy = meses[hoy.getMonth()];
     const anioHoy = String(hoy.getFullYear());
+    const fechaEmisionStr = `${hoy.getDate()} de ${mesHoy} del ${anioHoy}`;
+    const fechaEmisionShort = `${String(hoy.getDate()).padStart(2, '0')}-${mesesShort[hoy.getMonth()]}-${hoy.getFullYear()}`;
+
+    const dIni = new Date(fStart + 'T12:00:00');
+    const dFin = new Date(fEnd + 'T12:00:00');
+    const pIniStr = `${String(dIni.getDate()).padStart(2, '0')}-${mesesShort[dIni.getMonth()]}-${String(dIni.getFullYear()).slice(-2)}`;
+    const pFinStr = `${String(dFin.getDate()).padStart(2, '0')}-${mesesShort[dFin.getMonth()]}-${String(dFin.getFullYear()).slice(-2)}`;
 
     const html = `
       <!DOCTYPE html>
       <html lang="es">
       <head>
           <meta charset="UTF-8">
-          <title>Certificado de Rentas - ${batchData.fondo} (${fEnd})</title>
+          <title>Lote Retenciones 5% - ${batchData.fondo} (${fEnd})</title>
           <style>
-              @page {
-                  size: A4 portrait;
-                  margin: 1.5cm 2cm 2.5cm 2cm;
+              @page { 
+                  size: A4; 
+                  margin: 2.5cm 2.5cm 2.5cm 2.5cm;
               }
               body {
-                  font-family: 'Helvetica', 'Arial', sans-serif;
+                  font-family: Arial, sans-serif;
                   font-size: 11pt;
-                  line-height: 1.5;
-                  color: #333;
+                  line-height: 1.3;
+                  color: #000;
                   margin: 0;
                   padding: 0;
               }
-              .header {
-                  width: 100%;
-                  margin-bottom: 30px;
-              }
-              .header table {
-                  width: 100%;
-                  border: none;
-              }
-              .header td {
-                  vertical-align: top;
-                  border: none;
-              }
-              .logo-container {
-                  width: 100%;
-                  text-align: right;
-                  padding-top: 5px;
-              }
-              .title-box {
-                  text-align: center;
-                  margin-top: 40px;
-                  margin-bottom: 50px;
-              }
-              .title-box h1 {
-                  font-size: 14pt;
-                  font-weight: bold;
-                  margin: 0 0 5px 0;
-                  text-transform: uppercase;
-              }
-              .content {
-                  text-align: justify;
-                  margin-bottom: 40px;
-              }
-              .signature-area {
-                  text-align: center;
-                  margin-top: 80px;
-              }
-              .signature-line {
-                  width: 250px;
-                  margin: 0 auto 5px auto;
-                  border-top: 1px solid #333;
-              }
-              .footer {
-                  font-size: 8pt;
-                  margin-top: 60px;
-                  text-align: center;
-                  color: #0d47a1;
-              }
-              .footer p {
-                  margin: 2px 0;
-              }
-              .page-break {
-                  page-break-after: always;
-              }
-              @media print {
-                  .no-print { display: none; }
-              }
+              .header { text-align: right; margin-bottom: 20px; }
+              .logo { width: 160px; margin-bottom: 15px; } 
+              .title { font-weight: bold; text-transform: uppercase; margin-bottom: 5px; font-size: 11pt; text-align: center; }
+              .subtitle { font-weight: bold; margin-bottom: 15px; font-size: 11pt; text-align: center; }
+              .justify { text-align: justify; }
+              .bold { font-weight: bold; }
+              table.table-bordered { width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 20px; text-align: center; }
+              table.table-bordered th, table.table-bordered td { border: 1px solid #000; padding: 4px; vertical-align: middle; }
+              table.table-bordered th { background-color: #f0f0f0; font-weight: bold; }
+              .signature-section { margin-top: 60px; text-align: center; }
+              .signature-img { width: 180px; margin-bottom: 5px; }
+              .no-spacing p { margin: 0; line-height: 1.2; }
+              .page-break { page-break-after: always; }
+              @media print { .no-print { display: none; } }
           </style>
       </head>
       <body>
-          ${batchData.retenciones.map((cert: any, idx: number) => `
+          ${batchData.retenciones.map((cert: any, idx: number) => {
+            const certNum = String(cert.id_certificado || '').split('-')[0].toUpperCase();
+            const esSoles = cert.moneda === 'PEN';
+            const colspanTotal = esSoles ? 3 : 4;
+            const montoCalculado = Number(cert.interes_bruto || 0);
+            const montoRetencion = Number(cert.monto_impuesto || 0);
+
+            return `
               <div class="header">
-                  <table>
+                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo" alt="InAndes">
+              </div>
+              
+              <div class="title">CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS DE SEGUNDA CATEGORÍA</div>
+              <div class="subtitle">CERTIFICADO N° ${certNum}</div>
+              
+              <div class="justify" style="margin-bottom: 20px;">
+                  <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Calle Los Tulipanes 147 Oficina 306 Edificio Blu Building, Urb. El Polo Hunt, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr. Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del <b>${batchData.fondo}</b>.</p>
+              </div>
+              
+              <div class="section">
+                  <p class="bold" style="margin-bottom: 5px;">CERTIFICA QUE:</p>
+                  <div class="justify">
+                      De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <span class="bold">${cert.inversionista}</span>, identificado(a) con DNI <span class="bold">${cert.dni}</span> y con domicilio fiscal en <span class="bold">${cert.direccion}</span>, la suma de <span class="bold">${cert.moneda} ${fmt(montoRetencion)}</span> <span class="bold">(${cert.monto_impuesto_letras})</span> por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las operaciones del CERTIFICADO ${certNum} del ${batchData.fondo}, correspondiente al período comprendido entre el ${pIniStr} al ${pFinStr}.
+                  </div>
+              </div>
+              
+              <div class="section">
+                  <table class="table-bordered">
                       <tr>
-                          <td class="logo-container">
-                              <div style="font-weight: 900; font-size: 16pt; color: #0d47a1; letter-spacing: 1px;">INANDES</div>
-                              <div style="font-size: 7.5pt; color: #64748b; font-weight: bold;">ACTIVOS ALTERNATIVOS</div>
-                          </td>
+                          <th colspan="${colspanTotal}">RESUMEN DE LOS MONTOS RETENIDOS</th>
+                      </tr>
+                      <tr style="font-size: 7pt;">
+                          <td>BASE DE RETENCION</td>
+                          <td>MONTO RETENIDO</td>
+                          <td>FECHA DE LA OPERACION</td>
+                          ${!esSoles ? '<td>TIPO DE CAMBIO PEN/USD UTILIZADO</td>' : ''}
+                      </tr>
+                      <tr>
+                          <td>${cert.moneda} ${fmt(montoCalculado)}</td>
+                          <td>${cert.moneda} ${fmt(montoRetencion)}</td>
+                          <td>${fechaEmisionShort}</td>
+                          ${!esSoles ? '<td>PEN 3.662</td>' : ''}
                       </tr>
                   </table>
               </div>
-
-              <div class="title-box">
-                  <h1>CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS<br>DE SEGUNDA CATEGORÍA</h1>
+              
+              <div class="section" style="margin-top: 30px;">
+                  <p>Santiago de Surco, ${fechaEmisionStr}</p>
               </div>
-
-              <div class="content">
-                  <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147
-                      oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr.
-                      Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del
-                      FONDO <strong>${batchData.fondo}</strong> – FONDO DE INVERSION PRIVADO,</p>
-
-                  <p style="font-weight: bold;">CERTIFICA QUE:</p>
-
-                  <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>${
-                      cert.inversionista }</strong>, identificado(a) con DNI <strong>${ cert.dni }</strong> y con
-                      domicilio fiscal en <strong>${ cert.direccion }</strong>, la suma de <strong>${ cert.moneda } ${
-                      Number(cert.monto_impuesto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }</strong> (<strong>${ cert.monto_impuesto_letras }</strong>)
-                      por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las
-                      operaciones del FONDO <strong>${batchData.fondo}</strong> – FONDO DE INVERSION PRIVADO,
-                      correspondiente al período comprendido entre el <strong>${ cert.fecha_inicio.replace(/-/g, '.') }</strong> al <strong>${
-                      cert.fecha_fin.replace(/-/g, '.') }</strong>.
-                  </p>
-
-                  <p style="text-align: right; margin-top: 50px;">
-                      Santiago de Surco, <strong>${ diaHoy }</strong> de <strong>${ mesHoy }</strong> del <strong>${
-                      anioHoy }</strong>
-                  </p>
-              </div>
-
-              <div class="signature-area">
-                  <div class="signature-line"></div>
-                  Juan Ricardo Gallo Pizarro<br>
-                  <strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong><br>
-                  Gerente General
+              
+              <div class="signature-section">
+                  <img src="data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}" class="signature-img" alt="Firma Ricardo Gallo">
+                  <div class="no-spacing">
+                      <p class="bold">Juan Ricardo Gallo Pizarro</p>
+                      <p>INANDES ACTIVOS ALTERNATIVOS SAC</p>
+                      <p>Gerente General</p>
+                  </div>
               </div>
 
               ${idx < batchData.retenciones.length - 1 ? '<div class="page-break"></div>' : ''}
-          `).join('')}
+            `;
+          }).join('')}
       </body>
       </html>
     `;

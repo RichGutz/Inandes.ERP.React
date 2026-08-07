@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { factoringService } from '../../../services/factoringService';
 import type { OperacionFactoring } from '../../../services/factoringService';
-import { 
+import {
   Building2,
   FolderOpen,
   ChevronDown,
   ChevronUp,
-  CheckCircle2, 
-  XCircle, 
-  Search, 
-  Clock, 
+  CheckCircle2,
+  XCircle,
+  Search,
+  Clock,
   AlertCircle,
   Loader2,
   ShieldCheck
@@ -69,7 +69,7 @@ export const AprobacionesTab: React.FC = () => {
   };
 
   const filteredOps = operaciones.filter(op => {
-    const matchesSearch = 
+    const matchesSearch =
       op.proposal_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       op.emisor_nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       op.emisor_ruc.includes(searchTerm) ||
@@ -100,10 +100,10 @@ export const AprobacionesTab: React.FC = () => {
   // Mapeo Jerárquico: Emisor -> Lote -> Facturas
   const companiesMap = useMemo(() => {
     const map: Record<string, Record<string, OperacionFactoring[]>> = {};
-    
+
     filteredOps.forEach(op => {
       let emisor = (op.emisor_nombre || "Desconocido").trim();
-      
+
       let lote = 'LOTE-GENERAL';
       if (op.proposal_id) {
         const parts = op.proposal_id.split('-');
@@ -121,43 +121,24 @@ export const AprobacionesTab: React.FC = () => {
     return map;
   }, [filteredOps]);
 
-  const toggleCompany = (emisor: string) => {
-    setExpandedCompanies(prev => {
-      const next = new Set(prev);
-      if (next.has(emisor)) {
-        next.delete(emisor);
-      } else {
-        next.add(emisor);
-        // Al abrir la empresa, auto-abrir sus lotes para mostrar las facturas y acciones
-        const lotes = companiesMap[emisor] || {};
-        setExpandedLotes(prevLotes => {
-          const nextLotes = new Set(prevLotes);
-          Object.keys(lotes).forEach(loteId => {
-            nextLotes.add(`${emisor}__${loteId}`);
-          });
-          return nextLotes;
-        });
-      }
-      return next;
-    });
-  };
+  // Estado inicial colapsado: Tanto Empresas como Lotes inician 100% CERRADOS por defecto
+  useEffect(() => {
+    setExpandedCompanies(new Set());
+    setExpandedLotes(new Set());
+  }, [companiesMap]);
 
-  const toggleLote = (loteKey: string) => {
-    setExpandedLotes(prev => {
-      const next = new Set(prev);
-      if (next.has(loteKey)) next.delete(loteKey);
-      else next.add(loteKey);
-      return next;
-    });
+  const toggleExpanded = (set: Set<string>, key: string, setter: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+    const newSet = new Set(set);
+    if (newSet.has(key)) newSet.delete(key);
+    else newSet.add(key);
+    setter(newSet);
   };
 
   const toggleSelect = (proposalId: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(proposalId)) next.delete(proposalId);
-      else next.add(proposalId);
-      return next;
-    });
+    const next = new Set(selectedIds);
+    if (next.has(proposalId)) next.delete(proposalId);
+    else next.add(proposalId);
+    setSelectedIds(next);
   };
 
   const handleAprobarSeleccionadas = async (action: 'aprobar' | 'rechazar') => {
@@ -175,14 +156,13 @@ export const AprobacionesTab: React.FC = () => {
     setProcessing(true);
     try {
       for (const op of selectedOps) {
-        const targetId = op.proposal_id || op.id || '';
         if (action === 'aprobar') {
-          await factoringService.cambiarEstadoOperacion(targetId, 'APROBADO', {
+          await factoringService.cambiarEstadoOperacion(op.id || '', 'APROBADO', {
             observaciones_aprobacion: 'Aprobación masiva desde panel',
             fecha_aprobacion: new Date().toISOString()
           });
         } else {
-          await factoringService.cambiarEstadoOperacion(targetId, 'ORIGINADO', {
+          await factoringService.cambiarEstadoOperacion(op.id || '', 'ORIGINADO', {
             observaciones_rechazo: 'Rechazo masivo desde panel',
             estado_detalle: 'RECHAZADO_COMITE'
           });
@@ -208,14 +188,13 @@ export const AprobacionesTab: React.FC = () => {
     if (!selectedOp) return;
     try {
       setProcessing(true);
-      const targetId = selectedOp.proposal_id || selectedOp.id || '';
       if (modalAction === 'aprobar') {
-        await factoringService.cambiarEstadoOperacion(targetId, 'APROBADO', {
+        await factoringService.cambiarEstadoOperacion(selectedOp.id || '', 'APROBADO', {
           observaciones_aprobacion: observaciones,
           fecha_aprobacion: new Date().toISOString()
         });
       } else {
-        await factoringService.cambiarEstadoOperacion(targetId, 'ORIGINADO', {
+        await factoringService.cambiarEstadoOperacion(selectedOp.id || '', 'ORIGINADO', {
           observaciones_rechazo: observaciones,
           estado_detalle: 'RECHAZADO_COMITE'
         });
@@ -280,19 +259,17 @@ export const AprobacionesTab: React.FC = () => {
               <button
                 key={char}
                 onClick={() => setSelectedLetter(char)}
-                className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
-                  isSelected 
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105' 
+                className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105'
                     : hasData
                       ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
                       : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
-                }`}
+                  }`}
               >
                 <span>{char}</span>
                 {count > 0 && (
-                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                    isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
-                  }`}>
+                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                    }`}>
                     {count}
                   </span>
                 )}
@@ -335,8 +312,8 @@ export const AprobacionesTab: React.FC = () => {
               </button>
 
               <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 font-semibold cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={forceApproval}
                   onChange={(e) => setForceApproval(e.target.checked)}
                   className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
@@ -345,10 +322,10 @@ export const AprobacionesTab: React.FC = () => {
               </label>
             </div>
           </div>
-          
+
           <div className="relative w-full lg:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input 
+            <input
               type="text"
               placeholder="Buscar RUC, Empresa..."
               value={searchTerm}
@@ -380,8 +357,8 @@ export const AprobacionesTab: React.FC = () => {
               return (
                 <div key={emisor} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
                   {/* Empresa Header Button */}
-                  <button 
-                    onClick={() => toggleCompany(emisor)}
+                  <button
+                    onClick={() => toggleExpanded(expandedCompanies, emisor, setExpandedCompanies)}
                     className="w-full bg-slate-50/80 dark:bg-slate-800/60 px-5 py-4 flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
@@ -413,7 +390,7 @@ export const AprobacionesTab: React.FC = () => {
                             {/* Lote Header Button */}
                             <div className="bg-slate-100/70 dark:bg-slate-800/40 px-4 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
                               <button
-                                onClick={() => toggleLote(loteKey)}
+                                onClick={() => toggleExpanded(expandedLotes, loteKey, setExpandedLotes)}
                                 className="flex items-center gap-2 flex-1 text-left cursor-pointer"
                               >
                                 <FolderOpen className="text-emerald-600 dark:text-emerald-400" size={18} />
@@ -423,7 +400,7 @@ export const AprobacionesTab: React.FC = () => {
                               </button>
 
                               <label className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 cursor-pointer hover:underline select-none">
-                                <input 
+                                <input
                                   type="checkbox"
                                   checked={allGroupSelected}
                                   onChange={() => {
@@ -462,11 +439,11 @@ export const AprobacionesTab: React.FC = () => {
                                     {groupOps.map((op) => (
                                       <tr key={op.id || op.proposal_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                                         <td className="py-3 px-3 text-center">
-                                          <input 
-                                            type="checkbox" 
-                                            checked={selectedIds.has(op.proposal_id)} 
-                                            onChange={() => toggleSelect(op.proposal_id)} 
-                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(op.proposal_id)}
+                                            onChange={() => toggleSelect(op.proposal_id)}
+                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                           />
                                         </td>
                                         <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
@@ -488,26 +465,24 @@ export const AprobacionesTab: React.FC = () => {
                                           {op.moneda === 'USD' ? '$' : 'S/'} {op.abono_real_total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="py-3 px-3 text-center">
-                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                                            (op.status_cavali || 'ACEPTADA') === 'ACEPTADA'
+                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${(op.status_cavali || 'ACEPTADA') === 'ACEPTADA'
                                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
                                               : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
-                                          }`}>
+                                            }`}>
                                             {op.status_cavali || 'ACEPTADA'}
                                           </span>
                                         </td>
                                         <td className="py-3 px-3 text-center">
-                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                                            (op.status_letra || 'FIRMADA') === 'FIRMADA'
+                                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${(op.status_letra || 'FIRMADA') === 'FIRMADA'
                                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
                                               : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800'
-                                          }`}>
+                                            }`}>
                                             {op.status_letra || 'FIRMADA'}
                                           </span>
                                         </td>
                                         <td className="py-3 px-4">
                                           <div className="flex items-center justify-center gap-1.5">
-                                            <button 
+                                            <button
                                               onClick={() => handleActionClick(op, 'aprobar')}
                                               title="Aprobar Operación"
                                               className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-xs flex items-center gap-1 transition-colors cursor-pointer"
@@ -516,7 +491,7 @@ export const AprobacionesTab: React.FC = () => {
                                               Aprobar
                                             </button>
 
-                                            <button 
+                                            <button
                                               onClick={() => handleActionClick(op, 'rechazar')}
                                               title="Rechazar Operación"
                                               className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-colors cursor-pointer"
@@ -595,11 +570,10 @@ export const AprobacionesTab: React.FC = () => {
               <button
                 onClick={handleConfirmAction}
                 disabled={processing || (modalAction === 'rechazar' && !observaciones.trim())}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-xs flex items-center gap-2 transition-colors ${
-                  modalAction === 'aprobar' 
-                    ? 'bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50' 
+                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-xs flex items-center gap-2 transition-colors ${modalAction === 'aprobar'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50'
                     : 'bg-red-600 hover:bg-red-700 disabled:opacity-50'
-                }`}
+                  }`}
               >
                 {processing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {modalAction === 'aprobar' ? 'Confirmar Aprobación' : 'Confirmar Rechazo'}

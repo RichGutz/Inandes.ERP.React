@@ -28,7 +28,7 @@ export function exportTableToExcel(title: string, columns: ExportColumn[], data:
 
     // 3. Formatear las columnas
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
-    
+
     // Anchos de columna automáticos
     const colWidths = columns.map((col, cIndex) => {
         let maxLen = col.header.length;
@@ -130,7 +130,7 @@ export function exportTableToPDF(title: string, columns: ExportColumn[], data: a
         return `<tr class="${rowBg}">${cellsHtml}</tr>`;
     }).join('');
 
-    const formattedDate = new Date().toLocaleString('es-ES', { 
+    const formattedDate = new Date().toLocaleString('es-ES', {
         year: 'numeric', month: 'long', day: 'numeric',
         hour: '2-digit', minute: '2-digit'
     });
@@ -139,7 +139,6 @@ export function exportTableToPDF(title: string, columns: ExportColumn[], data: a
         <!DOCTYPE html>
         <html>
         <head>
-            <base href="${window.location.origin}/">
             <title>${title}</title>
             <meta charset="utf-8">
             <script src="https://cdn.tailwindcss.com"></script>

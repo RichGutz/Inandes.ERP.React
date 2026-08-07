@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getApiBaseUrl } from '../../../config/apiConfig';
-import { 
-  Trash2, 
-  Calculator, 
-  Send, 
-  AlertCircle, 
-  CheckCircle2, 
-  RefreshCw, 
-  UploadCloud, 
+import {
+  Trash2,
+  Calculator,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  UploadCloud,
   FileText,
   Download,
   Folder
@@ -461,16 +461,77 @@ export const OriginacionTab: React.FC = () => {
     }
   };
 
-  // --- Limpieza de Sesión: Sin persistencia al cambiar de pestaña ---
+  const SESSION_KEY = 'factoring_originacion_session';
+
+  // --- Restaurar Sesión desde sessionStorage al Montar el Componente ---
   useEffect(() => {
     try {
-      sessionStorage.removeItem('factoring_originacion_session');
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.invoices && Array.isArray(data.invoices)) setInvoices(data.invoices);
+        if (data.numGrupos) setNumGrupos(data.numGrupos);
+        if (data.bucketDates) setBucketDates(data.bucketDates);
+        if (data.simulacionResult) setSimulacionResult(data.simulacionResult);
+        if (data.folderId) setFolderId(data.folderId);
+        if (data.contractNumber) setContractNumber(data.contractNumber);
+        if (data.anexoNumber) setAnexoNumber(data.anexoNumber);
+        if (data.selectedDrivePath) setSelectedDrivePath(data.selectedDrivePath);
+        if (data.perfilPdfGenerated) setPerfilPdfGenerated(data.perfilPdfGenerated);
+        if (data.liquidacionPdfGenerated) setLiquidacionPdfGenerated(data.liquidacionPdfGenerated);
+        if (data.perfilPdfBase64) {
+          setPerfilPdfBase64(data.perfilPdfBase64);
+          setPerfilPdfUrl(base64ToBlobUrl(data.perfilPdfBase64));
+        }
+        if (data.liquidacionPdfBase64) {
+          setLiquidacionPdfBase64(data.liquidacionPdfBase64);
+          setLiquidacionPdfUrl(base64ToBlobUrl(data.liquidacionPdfBase64));
+        }
+      }
     } catch (e) {
-      // no-op
+      console.error("Error al restaurar sesión de Originación:", e);
     }
   }, []);
 
+  // --- Guardar Sesión Automáticamente en sessionStorage ---
+  useEffect(() => {
+    if (invoices.length === 0 && !folderId && !contractNumber && !anexoNumber) return;
+    try {
+      const dataToSave = {
+        invoices,
+        numGrupos,
+        bucketDates,
+        simulacionResult,
+        folderId,
+        contractNumber,
+        anexoNumber,
+        selectedDrivePath,
+        perfilPdfGenerated,
+        liquidacionPdfGenerated,
+        perfilPdfBase64,
+        liquidacionPdfBase64,
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(dataToSave));
+    } catch (e) {
+      console.error("Error al guardar sesión de Originación:", e);
+    }
+  }, [
+    invoices,
+    numGrupos,
+    bucketDates,
+    simulacionResult,
+    folderId,
+    contractNumber,
+    anexoNumber,
+    selectedDrivePath,
+    perfilPdfGenerated,
+    liquidacionPdfGenerated,
+    perfilPdfBase64,
+    liquidacionPdfBase64
+  ]);
+
   const handleClearSession = () => {
+    sessionStorage.removeItem(SESSION_KEY);
     setInvoices([]);
     setBucketsFiles({ 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] });
     setSimulacionResult(null);
@@ -1512,86 +1573,86 @@ export const OriginacionTab: React.FC = () => {
               {/* Visores PDF Inline (Iframes) */}
               <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-4">
                 <div className="flex flex-col gap-6">
-                    {/* Contenedor PDF Perfil */}
-                    <div className="space-y-3">
+                  {/* Contenedor PDF Perfil */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">1. PDF Perfil de Operación</span>
+                      <div className="flex items-center gap-3">
+                        {perfilPdfGenerated && perfilPdfUrl ? (
+                          <>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                              <CheckCircle2 size={14} /> Generado
+                            </span>
+                            <span className="text-slate-300">|</span>
+                            <a
+                              href={perfilPdfUrl}
+                              download={`Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                              className="text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              <Download size={13} /> Descargar
+                            </a>
+                          </>
+                        ) : (
+                          <span className="text-amber-500 font-medium">Pendiente</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {!perfilPdfUrl && (
+                      <div className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-700">
+                        <FileText size={16} />
+                        Los documentos se generarán automáticamente al calcular el desembolso.
+                      </div>
+                    )}
+
+                    {perfilPdfUrl && (
+                      <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
+                        <iframe
+                          src={perfilPdfUrl}
+                          title="Visor PDF Perfil de Operación"
+                          className="w-full h-full border-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Contenedor PDF Liquidación */}
+                  {(liquidacionPdfUrl || perfilPdfUrl) && (
+                    <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                       <div className="flex items-center justify-between text-xs font-semibold">
-                        <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">1. PDF Perfil de Operación</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">2. PDF Anexo de Liquidación</span>
                         <div className="flex items-center gap-3">
-                          {perfilPdfGenerated && perfilPdfUrl ? (
+                          {liquidacionPdfGenerated && liquidacionPdfUrl ? (
                             <>
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                                 <CheckCircle2 size={14} /> Generado
                               </span>
                               <span className="text-slate-300">|</span>
                               <a
-                                href={perfilPdfUrl}
-                                download={`Perfil_Operacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
+                                href={liquidacionPdfUrl}
+                                download={`Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
                                 className="text-blue-600 hover:underline flex items-center gap-1"
                               >
                                 <Download size={13} /> Descargar
                               </a>
                             </>
                           ) : (
-                            <span className="text-amber-500 font-medium">Pendiente</span>
+                            <span className="text-amber-500 font-medium">Generando...</span>
                           )}
                         </div>
                       </div>
-                      
-                      {!perfilPdfUrl && (
-                        <div className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 border border-dashed border-slate-300 dark:border-slate-700">
-                          <FileText size={16} />
-                          Los documentos se generarán automáticamente al calcular el desembolso.
-                        </div>
-                      )}
-                      
-                      {perfilPdfUrl && (
+
+                      {liquidacionPdfUrl && (
                         <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
                           <iframe
-                            src={perfilPdfUrl}
-                            title="Visor PDF Perfil de Operación"
+                            src={liquidacionPdfUrl}
+                            title="Visor PDF Anexo de Liquidación"
                             className="w-full h-full border-none"
                           />
                         </div>
                       )}
                     </div>
-
-                    {/* Contenedor PDF Liquidación */}
-                    {(liquidacionPdfUrl || perfilPdfUrl) && (
-                      <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <span className="text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wide">2. PDF Anexo de Liquidación</span>
-                          <div className="flex items-center gap-3">
-                            {liquidacionPdfGenerated && liquidacionPdfUrl ? (
-                              <>
-                                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                  <CheckCircle2 size={14} /> Generado
-                                </span>
-                                <span className="text-slate-300">|</span>
-                                <a
-                                  href={liquidacionPdfUrl}
-                                  download={`Anexo_Liquidacion_${contractNumber || 'CTR'}_Anexo_${anexoNumber || '1'}.pdf`}
-                                  className="text-blue-600 hover:underline flex items-center gap-1"
-                                >
-                                  <Download size={13} /> Descargar
-                                </a>
-                              </>
-                            ) : (
-                              <span className="text-amber-500 font-medium">Generando...</span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {liquidacionPdfUrl && (
-                          <div className="w-full h-[600px] bg-slate-200 rounded-xl overflow-hidden border border-slate-300 shadow-inner">
-                            <iframe
-                              src={liquidacionPdfUrl}
-                              title="Visor PDF Anexo de Liquidación"
-                              className="w-full h-full border-none"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  )}
                 </div>
               </div>
             </div>
