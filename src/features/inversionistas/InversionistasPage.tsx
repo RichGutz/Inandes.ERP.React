@@ -12,23 +12,23 @@ import {
 } from 'lucide-react';
 
 export const InversionistasPage: React.FC = () => {
-  // Tabs principales del mÃ³dulo
+  // Tabs principales del módulo
   const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos'>('datos');
 
-  // Estado modal de confirmaciÃ³n de Rollback
+  // Modal de confirmacion de Rollback
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);
   const [rollbackConfirmText, setRollbackConfirmText] = useState<string>('');
   const [rollbackLoading, setRollbackLoading] = useState<boolean>(false);
 
 
-  // Estado comÃºn de partÃ­cipes
+  // Estado común de partícipes
   const [inversionistas, setInversionistas] = useState<Inversionista[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRange, setSelectedRange] = useState<string>('TODOS');
 
-  // Estado del Formulario de EdiciÃ³n/CreaciÃ³n
+  // Estado del Formulario de Edición/Creación
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [formMode, setFormMode] = useState<'crear' | 'editar'>('crear');
   const [formData, setFormData] = useState<Partial<Inversionista>>({});
@@ -36,7 +36,7 @@ export const InversionistasPage: React.FC = () => {
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
   const [formSubmitSuccess, setFormSubmitSuccess] = useState<boolean>(false);
 
-  // Estado del Motor de Retornos y AuditorÃ­a v40
+  // Estado del Motor de Retornos y Auditoría v40
   const [fondosDisponibles, setFondosDisponibles] = useState<any[]>([]);
   const [v40SelFondo, setV40SelFondo] = useState<string>('TODOS');
   const [v40SelYear, setV40SelYear] = useState<number>(2026);
@@ -52,7 +52,7 @@ export const InversionistasPage: React.FC = () => {
   const [officialRegisterLoading, setOfficialRegisterLoading] = useState<boolean>(false);
   const [registerSuccessMsg, setRegisterSuccessMsg] = useState<string | null>(null);
 
-  // Estado de GeneraciÃ³n Documentos
+  // Estado de Generación Documentos
   const [docFondo, setDocFondo] = useState<string>('');
   const [docProcessing, setDocProcessing] = useState<boolean>(false);
   const [batchReady, setBatchReady] = useState<boolean>(false);
@@ -66,7 +66,7 @@ export const InversionistasPage: React.FC = () => {
       const data = await getInversionistas();
       setInversionistas(data);
     } catch (err: any) {
-      setError(err.message || 'Error inesperado al cargar los partÃ­cipes.');
+      setError(err.message || 'Error inesperado al cargar los partícipes.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export const InversionistasPage: React.FC = () => {
       const { data, error } = await supabase.from('crm_fondos').select('*').order('nombre_fondo');
       if (error) throw error;
       
-      // Agrupar Ãºnicos
+      // Agrupar únicos
       const uniqueFondos: any[] = [];
       const seen = new Set();
       if (data) {
@@ -139,7 +139,7 @@ export const InversionistasPage: React.FC = () => {
 
       setCycleDashboard(dash);
     } catch (err: any) {
-      console.error('Error Dashboard AuditorÃ­a:', err.message);
+      console.error('Error Dashboard Auditoría:', err.message);
     }
   };
 
@@ -167,7 +167,7 @@ export const InversionistasPage: React.FC = () => {
     }
   }, [v40SelFondo, fondosDisponibles]);
 
-  // --- LÃ³gica del Motor Contable v40 ---
+  // --- Lógica del Motor Contable v40 ---
   const getDates = (y: number, t: 'Bimestre' | 'Trimestre', n: number) => {
     let s_m = 1;
     let e_m = 2;
@@ -185,7 +185,7 @@ export const InversionistasPage: React.FC = () => {
 
     const s_d = formatD(y, s_m, 1);
     
-    // Obtener Ãºltimo dÃ­a del mes final
+    // Obtener último día del mes final
     const lastDay = new Date(y, e_m, 0).getDate();
     const e_d = formatD(y, e_m, lastDay);
 
@@ -219,7 +219,7 @@ export const InversionistasPage: React.FC = () => {
     setCalcResult(null);
   }, [v40SelYear, v40SelCiclo, v40SelNum, v40SelFondo]);
 
-  // EjecuciÃ³n del cÃ¡lculo local
+  // Ejecución del cálculo local
   const handleRunV40Calculation = async () => {
     setCalcLoading(true);
     setRegisterSuccessMsg(null);
@@ -243,7 +243,7 @@ export const InversionistasPage: React.FC = () => {
       currentResult = await handleRunV40Calculation();
     }
     if (!currentResult || Object.keys(currentResult.xlsDict).length === 0) {
-      alert("No hay datos calculados para exportar (posible filtraciÃ³n de ciclo).");
+      alert("No hay datos calculados para exportar (posible filtración de ciclo).");
       return;
     }
 
@@ -253,7 +253,7 @@ export const InversionistasPage: React.FC = () => {
       XLSX.utils.book_append_sheet(wb, ws, `Fondo_${fondoId.slice(0, 24)}`);
     }
 
-    // Usar link temporal para no cambiar de tab (evita el bug de navegaciÃ³n)
+    // Usar blob + anchor para no cambiar de tab (fix bug de navegacion)
     const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbOut], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
@@ -267,7 +267,7 @@ export const InversionistasPage: React.FC = () => {
     setExcelDownloaded(true);
   };
 
-  // Exportar / Imprimir PDF Condensado (GeneraciÃ³n de Ventana de ImpresiÃ³n HTML)
+  // Exportar / Imprimir PDF Condensado (Generación de Ventana de Impresión HTML)
   const handleExportPDFV40 = async () => {
     let currentResult = calcResult;
     if (!currentResult) {
@@ -278,7 +278,7 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    // Generar layout de impresiÃ³n premium
+    // Generar layout de impresión premium
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
@@ -288,7 +288,7 @@ export const InversionistasPage: React.FC = () => {
     const htmlContent = `
       <html>
         <head>
-          <title>Reporte de AuditorÃ­a InAndes v40 - ${fEnd}</title>
+          <title>Reporte de Auditoría InAndes v40 - ${fEnd}</title>
           <style>
             body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; margin: 20px; font-size: 11px; }
             h2 { color: #064e3b; margin-bottom: 2px; text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #059669; padding-bottom: 4px; }
@@ -309,7 +309,7 @@ export const InversionistasPage: React.FC = () => {
           </style>
         </head>
         <body>
-          <h2>INANDES CRM - REPORTE DE AUDITORÃA CONTABLE V40</h2>
+          <h2>INANDES CRM - REPORTE DE AUDITORÍA CONTABLE V40</h2>
           <div class="meta">Periodo: ${fStart} al ${fEnd} | Generado el: ${new Date().toLocaleDateString()}</div>
           
           ${currentResult.pdfData.map((fData: any) => `
@@ -317,7 +317,7 @@ export const InversionistasPage: React.FC = () => {
             <table>
               <thead>
                 <tr>
-                  <th>NÂ°</th>
+                  <th>N°</th>
                   <th>Certificado</th>
                   <th>Inversionista</th>
                   <th class="text-right">Capital Base</th>
@@ -336,7 +336,7 @@ export const InversionistasPage: React.FC = () => {
                   <tr class="${r.tipo === 'AUMENTO' ? 'aumento-row' : ''}">
                     <td>${r.n_orden || ''}</td>
                     <td>${r.id}</td>
-                    <td>${r.inversionista || (r.tipo === 'AUMENTO' ? 'â””â”€ Incremento de Capital' : '')}</td>
+                    <td>${r.inversionista || (r.tipo === 'AUMENTO' ? '└─ Incremento de Capital' : '')}</td>
                     <td class="text-right">${formatCurrencyVal(r.capital, fData.fondo.moneda)}</td>
                     <td class="text-right">${formatCurrencyVal(r.bruto_total, fData.fondo.moneda)}</td>
                     <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.impuesto_total, fData.fondo.moneda) : '-'}</td>
@@ -387,7 +387,7 @@ export const InversionistasPage: React.FC = () => {
     if (!excelDownloaded || !pdfDownloaded) return;
     if (collisionCount > 0) return;
 
-    if (!confirm("Â¿EstÃ¡ seguro de registrar permanentemente estos asientos en el Ledger oficial? Esta operaciÃ³n escribirÃ¡ eventos y actualizarÃ¡ contratos en Supabase.")) {
+    if (!confirm("¿Está seguro de registrar permanentemente estos asientos en el Ledger oficial? Esta operación escribirá eventos y actualizará contratos en Supabase.")) {
       return;
     }
 
@@ -479,7 +479,7 @@ export const InversionistasPage: React.FC = () => {
         }
       }
 
-      setRegisterSuccessMsg(`Se registraron con Ã©xito ${inserted} asientos contables. Se cerraron ${contratosCerrarFin.length + contratosCerrarRescate.length} contratos y se procesaron ${idsCronograma.length} cuotas de amortizaciÃ³n.`);
+      setRegisterSuccessMsg(`Se registraron con éxito ${inserted} asientos contables. Se cerraron ${contratosCerrarFin.length + contratosCerrarRescate.length} contratos y se procesaron ${idsCronograma.length} cuotas de amortización.`);
       
       // Actualizar dashboard y colisiones
       verificarColision(fEnd);
@@ -494,7 +494,7 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Verificar si el perÃ­odo seleccionado es el ÃšLTIMO perÃ­odo cerrado en DB
+  // Verificar si el periodo seleccionado es el ULTIMO periodo cerrado en DB
   const verificarEsUltimoPeriodo = async (): Promise<{ esUltimo: boolean; ultimaFecha: string | null }> => {
     try {
       const { data, error } = await supabase
@@ -507,18 +507,18 @@ export const InversionistasPage: React.FC = () => {
       const ultimaFecha = data && data.length > 0 ? data[0].fecha_periodo_fin : null;
       return { esUltimo: ultimaFecha === fEnd, ultimaFecha };
     } catch (err) {
-      console.error('Error verificando Ãºltimo perÃ­odo:', err);
+      console.error('Error verificando ultimo periodo:', err);
       return { esUltimo: false, ultimaFecha: null };
     }
   };
 
-  // Abrir modal de rollback con verificaciÃ³n de orden cronolÃ³gico
+  // Abrir modal de rollback con verificacion de orden cronologico
   const handleOpenRollbackModal = async () => {
     const { esUltimo, ultimaFecha } = await verificarEsUltimoPeriodo();
     if (!esUltimo) {
       const msg = ultimaFecha
-        ? `No se puede hacer rollback de ${fEnd} porque existe un perÃ­odo mÃ¡s reciente cerrado: ${ultimaFecha}. Debes revertir primero ese perÃ­odo.`
-        : `No hay asientos registrados para el perÃ­odo ${fEnd}.`;
+        ? `No se puede hacer rollback de ${fEnd} porque existe un periodo mas reciente cerrado: ${ultimaFecha}. Debes revertir primero ese periodo.`
+        : `No hay asientos registrados para el periodo ${fEnd}.`;
       alert(msg);
       return;
     }
@@ -526,7 +526,7 @@ export const InversionistasPage: React.FC = () => {
     setRollbackModalOpen(true);
   };
 
-  // ReversiÃ³n (Rollback) de periodo â€” se llama solo desde el modal tras confirmaciÃ³n
+  // Reversion (Rollback) de periodo - se llama solo desde el modal tras confirmacion EJECUTAR
   const handleRollback = async () => {
     setRollbackLoading(true);
 
@@ -605,9 +605,7 @@ export const InversionistasPage: React.FC = () => {
       if (errDel) throw errDel;
 
       setRollbackModalOpen(false);
-      alert(`Rollback completado con Ã©xito. Se eliminaron los asientos y se reactivaron contratos y cuotas del periodo ${fEnd}.`);
-
-      // Actualizar vista
+      alert(`Rollback completado. Se eliminaron los asientos y se reactivaron contratos y cuotas del periodo ${fEnd}.`);
       verificarColision(fEnd);
       fetchCycleDashboard(v40SelYear);
     } catch (err: any) {
@@ -617,17 +615,17 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // --- LÃ³gica de PestaÃ±a C: GeneraciÃ³n Documentos ---
+  // --- Lógica de Pestaña C: Generación Documentos ---
   const handleProcessDocBatch = async () => {
     if (!docFondo) return;
     setDocProcessing(true);
     setBatchReady(false);
     try {
-      // Usar motor financiero local para obtener los datos de la pestaÃ±a actual
-      // Tomamos como rango el aÃ±o actual o el seleccionado
+      // Usar motor financiero local para obtener los datos de la pestaña actual
+      // Tomamos como rango el año actual o el seleccionado
       const year = v40SelYear;
       const s_d = `${year}-01-01`;
-      const e_d = `${year}-12-31`; // calculamos aÃ±o completo para lotes
+      const e_d = `${year}-12-31`; // calculamos año completo para lotes
       
       const res = await generateRetornosV40(docFondo, s_d, e_d);
       
@@ -684,10 +682,10 @@ export const InversionistasPage: React.FC = () => {
 
   const handleDownloadRetBatch = () => {
     if (!batchData) return;
-    alert(`Generando PDF unificado para ${batchData.retenciones.length} Certificados de RetenciÃ³n (Batch)...`);
+    alert(`Generando PDF unificado para ${batchData.retenciones.length} Certificados de Retención (Batch)...`);
   };
 
-  // --- LÃ³gica del Formulario Modal de PartÃ­cipes ---
+  // --- Lógica del Formulario Modal de Partícipes ---
   const handleOpenEditModal = (investor: Inversionista | null) => {
     setFormSubmitError(null);
     setFormSubmitSuccess(false);
@@ -748,7 +746,7 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Filtrado de partÃ­cipes reactivo
+  // Filtrado de partícipes reactivo
   const filteredInversionistas = inversionistas.filter(item => {
     // Filtro por texto
     const term = searchTerm.toLowerCase();
@@ -759,7 +757,7 @@ export const InversionistasPage: React.FC = () => {
       (item.email && item.email.toLowerCase().includes(term))
     );
 
-    // Filtro por rango alfabÃ©tico
+    // Filtro por rango alfabético
     let matchesRange = true;
     if (selectedRange !== 'TODOS') {
       const apellido = (item.apellido_1 || item.nombre_completo || 'Z').trim();
@@ -783,7 +781,7 @@ export const InversionistasPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full">
       
-      {/* Selector de sub-pestaÃ±as superior */}
+      {/* Selector de sub-pestañas superior */}
       <div className="border-b border-slate-200 dark:border-slate-800 w-full flex items-center justify-between">
         <div className="flex gap-6">
           <button
@@ -794,7 +792,7 @@ export const InversionistasPage: React.FC = () => {
             }`}
             onClick={() => setActiveSubTab('datos')}
           >
-            ðŸ‘¥ Datos Inversionistas
+            👥 Datos Inversionistas
           </button>
           <button
             className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
@@ -804,7 +802,7 @@ export const InversionistasPage: React.FC = () => {
             }`}
             onClick={() => setActiveSubTab('retornos_react')}
           >
-            ðŸ’¹ Retornos y Rendimientos
+            💹 Retornos y Rendimientos
           </button>
 
           <button
@@ -815,17 +813,17 @@ export const InversionistasPage: React.FC = () => {
             }`}
             onClick={() => setActiveSubTab('documentos')}
           >
-            ðŸ“„ GeneraciÃ³n Documentos
+            📄 Generación Documentos
           </button>
 
         </div>
       </div>
 
-      {/* --- PESTAÃ‘A A: DATOS INVERSIONISTAS --- */}
+      {/* --- PESTAÑA A: DATOS INVERSIONISTAS --- */}
       {activeSubTab === 'datos' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* Barra de BÃºsqueda y Botones de AcciÃ³n */}
+          {/* Barra de Búsqueda y Botones de Acción */}
           <div className="flex flex-wrap items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
@@ -858,7 +856,7 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Rango AlfabÃ©tico (Tabs) */}
+          {/* Rango Alfabético (Tabs) */}
           <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
             {['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQR', 'STU', 'VWX', 'YZ', 'TODOS'].map((rango) => (
               <button
@@ -879,18 +877,18 @@ export const InversionistasPage: React.FC = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
               <Loader2 className="animate-spin text-emerald-600" size={40} />
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando partÃ­cipes desde Supabase...</p>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando partícipes desde Supabase...</p>
             </div>
           ) : error ? (
             <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-950 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
               <AlertCircle className="text-rose-600" size={40} />
-              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Fallo de ConexiÃ³n</h3>
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Fallo de Conexión</h3>
               <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
               <button 
                 className="mt-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer" 
                 onClick={fetchDatos}
               >
-                Reintentar ConexiÃ³n SSL
+                Reintentar Conexión SSL
               </button>
             </div>
           ) : (
@@ -917,7 +915,7 @@ export const InversionistasPage: React.FC = () => {
                             {cleanName}
                           </h4>
                           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider mt-0.5">
-                            ðŸ†” {inv.documento_identidad} ({inv.tipo_doc})
+                            🆔 {inv.documento_identidad} ({inv.tipo_doc})
                           </span>
                         </div>
                       </div>
@@ -938,7 +936,7 @@ export const InversionistasPage: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Cuentas DÃ³lares */}
+                          {/* Cuentas Dólares */}
                           <div className="flex flex-col">
                             <span className="text-[8px] uppercase font-bold text-slate-400 dark:text-slate-500">USD</span>
                             <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 truncate max-w-[100px]">
@@ -992,23 +990,24 @@ export const InversionistasPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- NUEVA PESTAÃ‘A: RETORNOS Y RENDIMIENTOS REACT (APROBADO) --- */}
+
+      {/* --- NUEVA PESTAÑA: RETORNOS Y RENDIMIENTOS REACT (APROBADO) --- */}
       {activeSubTab === 'retornos_react' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* SECCIÃ“N 1: TABLERO ANUAL DE 12 MESES (VISIÃ“N DE ESTADO GLOBAL) */}
+          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (VISIÓN DE ESTADO GLOBAL) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                  ðŸ“… Tablero Anual de Cierres ({v40SelYear})
+                  📅 Tablero Anual de Cierres ({v40SelYear})
                 </h3>
               </div>
 
-              {/* Selector de AÃ±o */}
+              {/* Selector de Año */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">AÃ±o:</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año:</span>
                 <select
                   className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1 px-3 text-xs font-black text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
                   value={v40SelYear}
@@ -1076,7 +1075,7 @@ export const InversionistasPage: React.FC = () => {
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                             : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                         }`}>
-                          {isClosedInDb ? 'ðŸŸ¢ CERRADO' : 'ðŸ”´ PENDIENTE'}
+                          {isClosedInDb ? '🟢 CERRADO' : '🔴 PENDIENTE'}
                         </span>
                       )}
                     </div>
@@ -1107,7 +1106,7 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* SECCIÃ“N 2: PANEL OPERATIVO DE LIQUIDACIÃ“N Y AUDITORÃA (MODO DUAL) */}
+          {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA (MODO DUAL) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-5">
             
             {/* Header del Panel y Modo Activo */}
@@ -1115,13 +1114,13 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
-                    âš™ï¸ Panel Operativo de LiquidaciÃ³n ({fStart} al {fEnd})
+                    ⚙️ Panel Operativo de Liquidación ({fStart} al {fEnd})
                   </h3>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {collisionCount > 0 
-                    ? 'ðŸŸ¢ MODO CONSULTA Y LECTURA RETROACTIVA: Los datos estÃ¡n oficializados en la base de datos.'
-                    : 'ðŸŸ¡ MODO PRE-CIERRE Y SIMULACIÃ“N: Genere borradores, revise y oficialice los asientos.'}
+                    ? '🟢 MODO CONSULTA Y LECTURA RETROACTIVA: Los datos están oficializados en la base de datos.'
+                    : '🟡 MODO PRE-CIERRE Y SIMULACIÓN: Genere borradores, revise y oficialice los asientos.'}
                 </p>
               </div>
 
@@ -1134,19 +1133,19 @@ export const InversionistasPage: React.FC = () => {
                   {collisionCount > 0 ? (
                     <>
                       <CheckCircle size={16} />
-                      <span>ðŸŸ¢ PERÃODO CERRADO Y OFICIALIZADO ({collisionCount} Registros)</span>
+                      <span>🟢 PERÍODO CERRADO Y OFICIALIZADO ({collisionCount} Registros)</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={16} />
-                      <span>ðŸŸ¡ MODO BORRADOR / PENDIENTE DE REGISTRO</span>
+                      <span>🟡 MODO BORRADOR / PENDIENTE DE REGISTRO</span>
                     </>
                   )}
                 </span>
               </div>
             </div>
 
-            {/* Filtros Finitos de SelecciÃ³n */}
+            {/* Filtros Finitos de Selección */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Auditar / Liquidar</label>
@@ -1175,7 +1174,7 @@ export const InversionistasPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">NÃºmero de PerÃ­odo</label>
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Número de Período</label>
                 <select
                   className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
                   value={v40SelNum}
@@ -1202,10 +1201,10 @@ export const InversionistasPage: React.FC = () => {
               </div>
             </div>
 
-            {/* FASE 1: DESCARGA DE REPORTES DE AUDITORÃA */}
+            {/* FASE 1: DESCARGA DE REPORTES DE AUDITORÍA */}
             <div className="flex flex-col gap-3">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                ðŸ“„ Paso 1: Generar y Revisar Reportes de AuditorÃ­a ({fEnd})
+                📄 Paso 1: Generar y Revisar Reportes de Auditoría ({fEnd})
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1243,10 +1242,10 @@ export const InversionistasPage: React.FC = () => {
               </div>
             </div>
 
-            {/* FASE 2: EJECUCIÃ“N OFICIAL EN BD */}
+            {/* FASE 2: EJECUCIÓN OFICIAL EN BD */}
             <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                ðŸ’¾ Paso 2: Registro Oficial en Ledger y Persistencia DB
+                💾 Paso 2: Registro Oficial en Ledger y Persistencia DB
               </h4>
 
               {registerSuccessMsg && (
@@ -1262,19 +1261,19 @@ export const InversionistasPage: React.FC = () => {
                 <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
                     <ShieldCheck size={18} />
-                    <span>PERÃODO OFICIALIZADO: Los {collisionCount} asientos ya se encuentran registrados en Supabase.</span>
+                    <span>PERÍODO OFICIALIZADO: Los {collisionCount} asientos ya se encuentran registrados en Supabase.</span>
                   </div>
                   <span className="text-[10px] font-semibold text-slate-400">
-                    ProtecciÃ³n contra duplicados activa
+                    Protección contra duplicados activa
                   </span>
                 </div>
               ) : (!excelDownloaded || !pdfDownloaded) ? (
                 <div className="bg-amber-50 dark:bg-amber-950/15 border border-amber-250 dark:border-amber-900 rounded-xl p-4 flex items-start gap-3">
                   <AlertTriangle className="text-amber-600 dark:text-amber-450 shrink-0 mt-0.5" size={16} />
                   <div className="flex flex-col gap-0.5">
-                    <h4 className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tight">Bloqueo de AuditorÃ­a</h4>
+                    <h4 className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tight">Bloqueo de Auditoría</h4>
                     <p className="text-[10px] text-amber-650 dark:text-amber-450 font-medium">
-                      ðŸ”’ Para habilitar el registro oficial en Supabase, primero debes descargar y revisar el **Excel Maestro** y el **PDF Oficial** del perÃ­odo.
+                      🔒 Para habilitar el registro oficial en Supabase, primero debes descargar y revisar el **Excel Maestro** y el **PDF Oficial** del período.
                     </p>
                   </div>
                 </div>
@@ -1282,7 +1281,7 @@ export const InversionistasPage: React.FC = () => {
                 <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
                     <CheckCircle size={18} />
-                    <span>RevisiÃ³n completada: Tienes habilitado el registro contable en la base de datos.</span>
+                    <span>Revisión completada: Tienes habilitado el registro contable en la base de datos.</span>
                   </div>
                   <button
                     className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl cursor-pointer shadow transition-all flex items-center gap-2"
@@ -1302,11 +1301,11 @@ export const InversionistasPage: React.FC = () => {
                   onClick={handleOpenRollbackModal}
                 >
                   <Undo2 size={14} />
-                  <span>ReversiÃ³n / Rollback Seguro del PerÃ­odo</span>
+                  <span>Reversión / Rollback Seguro del Período</span>
                 </button>
 
                 <span className="text-[10px] font-semibold text-slate-400">
-                  Permite reabrir el perÃ­odo eliminando los asientos de la fecha de corte seleccionada.
+                  Permite reabrir el período eliminando los asientos de la fecha de corte seleccionada.
                 </span>
               </div>
             </div>
@@ -1317,17 +1316,17 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
-      {/* --- PESTAÃ‘A C: GENERACIÃ“N DOCUMENTOS (BATCH) --- */}
+      {/* --- PESTAÑA C: GENERACIÓN DOCUMENTOS (BATCH) --- */}
       {activeSubTab === 'documentos' && (
 
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-slate-750 dark:text-slate-300 uppercase tracking-wider mb-2">
-              ðŸ“„ GeneraciÃ³n Masiva de Documentos por Lote (Batch)
+              📄 Generación Masiva de Documentos por Lote (Batch)
             </h3>
             <p className="text-xs text-slate-450 dark:text-slate-500 leading-relaxed max-w-xl mb-6">
-              Permite procesar la contabilidad de certificados de un fondo especÃ­fico y preparar de forma condensada los Estados de Cuenta (EECC) y Certificados de RetenciÃ³n del Impuesto para su descarga masiva en un solo PDF.
+              Permite procesar la contabilidad de certificados de un fondo específico y preparar de forma condensada los Estados de Cuenta (EECC) y Certificados de Retención del Impuesto para su descarga masiva en un solo PDF.
             </p>
 
             <div className="flex items-end gap-4 max-w-lg mb-6 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl">
@@ -1365,10 +1364,10 @@ export const InversionistasPage: React.FC = () => {
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Estados de Cuenta (EECC Batch)</h4>
                     <p className="text-[10px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed mt-1">
-                      Genera el lote unificado de estados de cuenta. Incluye datos de partÃ­cipes, saldo de capitalizaciÃ³n, tasas y amortizaciones.
+                      Genera el lote unificado de estados de cuenta. Incluye datos de partícipes, saldo de capitalización, tasas y amortizaciones.
                     </p>
                     <div className="mt-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-                      ðŸ“„ Registros en lote: <span className="text-emerald-600 dark:text-emerald-450 font-black">{batchData.eecc.length} EECC</span>
+                      📄 Registros en lote: <span className="text-emerald-600 dark:text-emerald-450 font-black">{batchData.eecc.length} EECC</span>
                     </div>
                   </div>
 
@@ -1384,12 +1383,12 @@ export const InversionistasPage: React.FC = () => {
                 {/* Lote Retenciones */}
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl p-5 flex flex-col justify-between gap-4">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Certificados de RetenciÃ³n</h4>
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Certificados de Retención</h4>
                     <p className="text-[10px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed mt-1">
-                      Genera el lote unificado de certificados de retenciÃ³n de Impuesto a la Renta de 2da categorÃ­a (5%).
+                      Genera el lote unificado de certificados de retención de Impuesto a la Renta de 2da categoría (5%).
                     </p>
                     <div className="mt-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-                      ðŸ“œ Registros con retenciÃ³n: <span className="text-blue-650 dark:text-blue-450 font-black">{batchData.retenciones.length} certificados</span>
+                      📜 Registros con retención: <span className="text-blue-650 dark:text-blue-450 font-black">{batchData.retenciones.length} certificados</span>
                     </div>
                   </div>
 
@@ -1410,7 +1409,7 @@ export const InversionistasPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- FORMULARIO MODAL INTERACTIVO DE CREACIÃ“N / EDICIÃ“N (5 TABS) --- */}
+      {/* --- FORMULARIO MODAL INTERACTIVO DE CREACIÓN / EDICIÓN (5 TABS) --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
@@ -1418,7 +1417,7 @@ export const InversionistasPage: React.FC = () => {
             {/* Cabecera del Modal */}
             <div className="p-5 border-b border-slate-150 dark:border-slate-800/80 flex items-center justify-between">
               <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider">
-                {formMode === 'crear' ? 'âž• Registrar Inversionista' : 'âœï¸ Editar Ficha Inversionista'}
+                {formMode === 'crear' ? '➕ Registrar Inversionista' : '✏️ Editar Ficha Inversionista'}
               </h3>
               <button 
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
@@ -1442,7 +1441,7 @@ export const InversionistasPage: React.FC = () => {
                   onClick={() => setFormActiveTab(tab)}
                 >
                   {tab === 'identidad' && 'Identidad'}
-                  {tab === 'conyuge' && 'CÃ³nyuge'}
+                  {tab === 'conyuge' && 'Cónyuge'}
                   {tab === 'laboral' && 'Laboral'}
                   {tab === 'bancario' && 'Bancario'}
                   {tab === 'compliance' && 'Compliance'}
@@ -1456,11 +1455,11 @@ export const InversionistasPage: React.FC = () => {
               {/* --- SUB-TAB 1: IDENTIDAD --- */}
               {formActiveTab === 'identidad' && (
                 <div className="flex flex-col gap-4 animate-fadeIn">
-                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight">InformaciÃ³n Personal</h4>
+                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight">Información Personal</h4>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">NÂ° Documento *</label>
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Documento *</label>
                       <input
                         type="text"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 disabled:bg-slate-50 dark:disabled:bg-slate-900 disabled:text-slate-400"
@@ -1580,13 +1579,13 @@ export const InversionistasPage: React.FC = () => {
                         checked={formData.residente_peru ?? true}
                         onChange={(e) => handleInputChange('residente_peru', e.target.checked)}
                       />
-                      <label htmlFor="residente_peru" className="text-xs font-bold text-slate-650 dark:text-slate-400">Â¿Es residente en el PerÃº?</label>
+                      <label htmlFor="residente_peru" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Es residente en el Perú?</label>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Correo ElectrÃ³nico</label>
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Correo Electrónico</label>
                       <input
                         type="email"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1596,30 +1595,30 @@ export const InversionistasPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">TelÃ©fono / Celular</label>
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Teléfono / Celular</label>
                       <input
                         type="text"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={formData.telefono || ''}
                         onChange={(e) => handleInputChange('telefono', e.target.value)}
-                        placeholder="NÂ° TelÃ©fono"
+                        placeholder="N° Teléfono"
                       />
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">DirecciÃ³n Fiscal</label>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Dirección Fiscal</label>
                     <textarea
                       rows={2}
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={formData.direccion_fiscal || ''}
                       onChange={(e) => handleInputChange('direccion_fiscal', e.target.value)}
-                      placeholder="DirecciÃ³n fiscal registrada"
+                      placeholder="Dirección fiscal registrada"
                     />
                   </div>
 
                   <div className="w-1/3 flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CÃ³digo Postal</label>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Código Postal</label>
                     <input
                       type="text"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1630,20 +1629,20 @@ export const InversionistasPage: React.FC = () => {
                 </div>
               )}
 
-              {/* --- SUB-TAB 2: CÃ“NYUGE --- */}
+              {/* --- SUB-TAB 2: CÓNYUGE --- */}
               {formActiveTab === 'conyuge' && (
                 <div className="flex flex-col gap-4 animate-fadeIn">
-                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight text-slate-700">InformaciÃ³n del CÃ³nyuge</h4>
+                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight text-slate-700">Información del Cónyuge</h4>
                   
                   {(!['Casado(a)', 'Conviviente'].includes(formData.estado_civil || '')) ? (
                     <div className="bg-slate-50 dark:bg-slate-950 text-slate-450 dark:text-slate-500 border border-slate-200 dark:border-slate-850 rounded-xl p-6 text-center text-xs font-semibold">
-                      ðŸ”’ No disponible. Se habilita Ãºnicamente si el Estado Civil es "Casado(a)" o "Conviviente" (Actual: {formData.estado_civil || 'Soltero'}).
+                      🔒 No disponible. Se habilita únicamente si el Estado Civil es "Casado(a)" o "Conviviente" (Actual: {formData.estado_civil || 'Soltero'}).
                     </div>
                   ) : (
                     <div className="flex flex-col gap-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Nombre CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Nombre Cónyuge</label>
                           <input
                             type="text"
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1652,7 +1651,7 @@ export const InversionistasPage: React.FC = () => {
                           />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Nombre CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Nombre Cónyuge</label>
                           <input
                             type="text"
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1664,7 +1663,7 @@ export const InversionistasPage: React.FC = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Apellido CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Primer Apellido Cónyuge</label>
                           <input
                             type="text"
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1673,7 +1672,7 @@ export const InversionistasPage: React.FC = () => {
                           />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Apellido CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Segundo Apellido Cónyuge</label>
                           <input
                             type="text"
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1685,7 +1684,7 @@ export const InversionistasPage: React.FC = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tipo Doc CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tipo Doc Cónyuge</label>
                           <select
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                             value={formData.conyuge_tipo_documento || 'DNI'}
@@ -1697,7 +1696,7 @@ export const InversionistasPage: React.FC = () => {
                           </select>
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">NÂ° Documento CÃ³nyuge</label>
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Documento Cónyuge</label>
                           <input
                             type="text"
                             className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1714,11 +1713,11 @@ export const InversionistasPage: React.FC = () => {
               {/* --- SUB-TAB 3: LABORAL --- */}
               {formActiveTab === 'laboral' && (
                 <div className="flex flex-col gap-4 animate-fadeIn">
-                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight text-slate-700">InformaciÃ³n Laboral</h4>
+                  <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight text-slate-700">Información Laboral</h4>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">OcupaciÃ³n / ProfesiÃ³n</label>
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ocupación / Profesión</label>
                       <input
                         type="text"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1748,7 +1747,7 @@ export const InversionistasPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">AntigÃ¼edad Laboral (AÃ±os)</label>
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Antigüedad Laboral (Años)</label>
                       <input
                         type="number"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1780,7 +1779,7 @@ export const InversionistasPage: React.FC = () => {
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">NÂ° Cuenta (PEN)</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (PEN)</label>
                         <input
                           type="text"
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1802,9 +1801,9 @@ export const InversionistasPage: React.FC = () => {
 
                   <hr className="border-slate-100 dark:border-slate-800/80" />
 
-                  {/* Cuentas DÃ³lares */}
+                  {/* Cuentas Dólares */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-blue-650 dark:text-blue-450 uppercase tracking-tight">Cuentas DÃ³lares Oficiales (USD)</h4>
+                    <h4 className="text-xs font-bold text-blue-650 dark:text-blue-450 uppercase tracking-tight">Cuentas Dólares Oficiales (USD)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (USD)</label>
@@ -1816,7 +1815,7 @@ export const InversionistasPage: React.FC = () => {
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">NÂ° Cuenta (USD)</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (USD)</label>
                         <input
                           type="text"
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
@@ -1853,7 +1852,7 @@ export const InversionistasPage: React.FC = () => {
                         checked={formData.es_pep || false}
                         onChange={(e) => handleInputChange('es_pep', e.target.checked)}
                       />
-                      <label htmlFor="es_pep" className="text-xs font-bold text-slate-650 dark:text-slate-400">Â¿Es Persona Expuesta PolÃ­ticamente (PEP)?</label>
+                      <label htmlFor="es_pep" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Es Persona Expuesta Políticamente (PEP)?</label>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -1928,11 +1927,11 @@ export const InversionistasPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Ã‰xito del formulario */}
+              {/* Éxito del formulario */}
               {formSubmitSuccess && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle size={14} />
-                  <span>Â¡Datos guardados con Ã©xito en Supabase! Cerrando formulario...</span>
+                  <span>¡Datos guardados con éxito en Supabase! Cerrando formulario...</span>
                 </div>
               )}
 
@@ -1952,7 +1951,7 @@ export const InversionistasPage: React.FC = () => {
                 onClick={handleFormSubmit}
                 className="h-9 text-xs font-black uppercase tracking-wider px-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm"
               >
-                ðŸ’¾ Guardar Ficha
+                💾 Guardar Ficha
               </button>
             </div>
 
@@ -1960,25 +1959,21 @@ export const InversionistasPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de ConfirmaciÃ³n de Rollback â€” requiere escribir EJECUTAR */}
+      {/* Modal de Confirmacion Rollback: requiere escribir EJECUTAR */}
       {rollbackModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Header */}
             <div className="bg-rose-600 px-6 py-4 flex items-center gap-3">
               <Undo2 size={20} className="text-white" />
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-wider">Confirmacion de Rollback</h3>
-                <p className="text-[10px] text-rose-200 font-semibold">Operacion destructiva â€” no se puede deshacer</p>
+                <p className="text-[10px] text-rose-200 font-semibold">Operacion destructiva - no se puede deshacer</p>
               </div>
             </div>
-
-            {/* Body */}
             <div className="px-6 py-5 flex flex-col gap-4">
               <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 rounded-xl p-4 text-xs text-rose-800 dark:text-rose-300 leading-relaxed font-medium">
                 Esta accion eliminara <strong>todos los asientos</strong> del periodo <code className="bg-rose-100 dark:bg-rose-900 px-1 py-0.5 rounded font-black">{fEnd}</code> y revertira los contratos cerrados a estado <strong>emitido</strong> y los cronogramas a <strong>PENDIENTE</strong>.
               </div>
-
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Para confirmar, escribe <span className="text-rose-600 font-black">EJECUTAR</span> en el campo:
@@ -1993,8 +1988,6 @@ export const InversionistasPage: React.FC = () => {
                 />
               </div>
             </div>
-
-            {/* Footer */}
             <div className="px-6 pb-5 flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -2021,6 +2014,7 @@ export const InversionistasPage: React.FC = () => {
           </div>
         </div>
       )}
+
 
     </div>
   );
