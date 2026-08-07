@@ -37,7 +37,7 @@ export const DesembolsosTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Navegación
-  const [activeLetter, setActiveLetter] = useState<string>('A');
+  const [activeLetter, setActiveLetter] = useState<string>('TODOS');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [expandedLotes, setExpandedLotes] = useState<Set<string>>(new Set());
@@ -143,7 +143,7 @@ export const DesembolsosTab: React.FC = () => {
   }, [invoices]);
 
   const letterCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+    const counts: Record<string, number> = { 'TODOS': invoices.length };
     const allLetters = [...Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i)), '#'];
     allLetters.forEach(l => counts[l] = 0);
 
@@ -158,15 +158,23 @@ export const DesembolsosTab: React.FC = () => {
       }
       counts[letter] = count;
     }
+    counts['TODOS'] = invoices.length;
     return counts;
-  }, [companiesMap]);
+  }, [companiesMap, invoices]);
 
+  // Auto-expandir empresas y lotes por defecto para que la UI no quede vacía
   useEffect(() => {
-    const availableLetters = Object.keys(letterCounts).filter(l => letterCounts[l] > 0);
-    if (availableLetters.length > 0 && letterCounts[activeLetter] === 0) {
-      setActiveLetter(availableLetters[0]);
+    if (invoices.length > 0) {
+      const compSet = new Set<string>();
+      const loteSet = new Set<string>();
+      invoices.forEach(inv => {
+        if (inv.emisor_nombre) compSet.add(inv.emisor_nombre.trim());
+        if (inv.identificador_lote) loteSet.add(inv.identificador_lote);
+      });
+      setExpandedCompanies(compSet);
+      setExpandedLotes(loteSet);
     }
-  }, [letterCounts]);
+  }, [invoices]);
 
   const toggleSelection = (id: string) => {
     const newSel = new Set(selectedIds);
@@ -456,29 +464,32 @@ export const DesembolsosTab: React.FC = () => {
           <div className="text-center text-slate-500 py-8">No hay facturas aprobadas pendientes de desembolso.</div>
         ) : (
           <>
-            {/* Abecedario */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {Object.keys(letterCounts).map(letter => {
-                const count = letterCounts[letter];
+            {/* Rolodex Abecedario A-Z Oficial (Regla 6) */}
+            <div className="flex flex-wrap items-center gap-2 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+              {['TODOS', ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)), '#'].map(letter => {
+                const count = letterCounts[letter] || 0;
                 const isActive = activeLetter === letter;
-                const hasInvoices = count > 0;
+                const isTodos = letter === 'TODOS';
 
                 return (
                   <button
                     key={letter}
-                    onClick={() => hasInvoices && setActiveLetter(letter)}
-                    disabled={!hasInvoices}
-                    className={`relative px-3.5 py-1.5 rounded-lg font-black text-xs transition-all ${
+                    onClick={() => setActiveLetter(letter)}
+                    className={`relative flex items-center justify-center font-black transition-all cursor-pointer ${
+                      isTodos 
+                        ? 'px-4 h-10 rounded-xl text-xs uppercase tracking-wider' 
+                        : 'w-10 h-10 rounded-xl text-sm'
+                    } ${
                       isActive 
                         ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 dark:ring-blue-600 scale-105' 
-                        : hasInvoices 
-                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 dark:hover:bg-blue-900 border border-blue-200 dark:border-blue-800' 
-                          : 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800/40 dark:text-slate-600 opacity-50'
+                        : count > 0 
+                          ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
+                          : 'bg-slate-100 text-slate-400 dark:bg-slate-800/40 dark:text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {letter}
-                    {hasInvoices && (
-                      <span className="absolute -top-2 -right-2 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black shadow-xs border border-white dark:border-slate-900">
+                    {count > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-blue-600 dark:bg-blue-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black shadow-xs border border-white dark:border-slate-900 min-w-[18px] text-center">
                         {count}
                       </span>
                     )}
@@ -488,10 +499,23 @@ export const DesembolsosTab: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {!companiesMap[activeLetter] ? (
-                <div className="text-center py-6 text-slate-500">No hay empresas registradas con la letra {activeLetter}</div>
-              ) : (
-                Object.entries(companiesMap[activeLetter]).map(([emisor, lotes]) => (
+              {(() => {
+                let displayEntries: [string, Record<string, Record<string, FacturaDesembolso[]>>][] = [];
+                if (activeLetter === 'TODOS') {
+                  Object.values(companiesMap).forEach(comps => {
+                    Object.entries(comps).forEach(([emisor, lotes]) => {
+                      displayEntries.push([emisor, lotes]);
+                    });
+                  });
+                } else if (companiesMap[activeLetter]) {
+                  displayEntries = Object.entries(companiesMap[activeLetter]);
+                }
+
+                if (displayEntries.length === 0) {
+                  return <div className="text-center py-6 text-slate-500 font-semibold">No hay facturas aprobadas pendientes para el filtro "{activeLetter}"</div>;
+                }
+
+                return displayEntries.map(([emisor, lotes]) => (
                   <div key={emisor} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                     {/* Empresa Header */}
                     <button 
@@ -595,8 +619,8 @@ export const DesembolsosTab: React.FC = () => {
                       </div>
                     )}
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </>
         )}
