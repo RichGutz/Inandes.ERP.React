@@ -145,3 +145,5 @@
 [2026-08-06 21:35:00-05:00] ESTADO: Completado con éxito. DesembolsosTab.tsx utiliza la misma capa de servicio de AprobacionesTab, verificado npm run build 0 errores y desplegado a /var/www/inandes en el VPS.
 [2026-08-06 21:45:00-05:00] TAREA: Reestructuración del header principal de DashboardTab.tsx alineando el título y las burbujas métricas en una sola fila horizontal, y corrección de la suma de porcentajes de distribución de cartera al 100%.
 [2026-08-06 21:45:00-05:00] ESTADO: Completado con éxito. Actualizado DashboardTab.tsx, verificado npm run build 0 errores y desplegado a /var/www/inandes en el VPS. La distribución de cartera suma exactamente 100.0%.
+[2026-08-06 21:50:00-05:00] TAREA: Actualización integral de notas Obsidian (Bienvenido.md, Lecciones.de.Bienvenida.md, 00.E.LIQUIDACIONES.md) documentando la arquitectura de conexión con FastAPI, la estrategia de resiliencia con fallback a Supabase y la incrustación de variables en .env y .env.production.
+[2026-08-06 21:50:00-05:00] ESTADO: Completado con éxito. Todas las notas de arquitectura documentadas y sincronizadas.

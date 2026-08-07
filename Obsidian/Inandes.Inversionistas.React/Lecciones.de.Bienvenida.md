@@ -73,4 +73,23 @@ React 19 Frontend (https://inandes.react.geeksoft.tech)
 
 ---
 
-*Última actualización: 2026-08-05*
+## 🔌 Estrategia de Conexión FastAPI & Resiliencia con Supabase
+
+> **Solución a las Fallas de Conexión con el Backend FastAPI**
+
+Para garantizar disponibilidad al 100% y eliminar los errores de conexión con FastAPI (`https://api-factoring.geeksoft.tech` / `http://127.0.0.1:8010`):
+
+1. **Patrón de Servicio Centralizado (`factoringService.ts` / `inversionistasService.ts`):**
+   - Todos los componentes React consumen las capas de servicio centralizadas. Queda estrictamente **prohibido escribir llamadas `fetch('/api/...')` aisladas** dentro de componentes UI.
+
+2. **Estrategia Dual de Tolerancia a Fallos (Fallback Automático):**
+   - Las capas de servicio intentan primero consumir la API FastAPI en la nube/VPS.
+   - Si FastAPI no responde, arroja error 404/500 o sufre micro-cortes, el servicio **intercepta la falla de inmediato de forma transparente** y ejecuta una consulta nativa directa a las tablas de Supabase.
+
+3. **Incrustación de Variables de Entorno en Compilación (.env & .env.production):**
+   - Durante `npm run build`, Vite incrusta las variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_API_FACTORING_URL` desde `.env` y `.env.production` directamente en los paquetes JavaScript de producción del VPS (`/var/www/inandes`), evitando caídas de cliente por falta de configuración de entorno.
+
+---
+
+*Última actualización: 2026-08-06 (Arquitectura Resiliente FastAPI + Supabase)*
+
