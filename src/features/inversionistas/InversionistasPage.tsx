@@ -615,57 +615,143 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // --- Lógica de Pestaña C: Generación Documentos ---
+  // Helper de conversión a letras para Certificados de Retención
+  const numeroALetrasPeru = (monto: number): string => {
+    const enteros = Math.floor(monto);
+    const centavos = Math.round((monto - enteros) * 100);
+    const centavosStr = `${centavos.toString().padStart(2, '0')}/100`;
+
+    const UNIDADES = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+    const DECENAS = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const ESPECIALES: Record<number, string> = {
+      11: 'ONCE', 12: 'DOCE', 13: 'TRECE', 14: 'CATORCE', 15: 'QUINCE',
+      16: 'DIECISEIS', 17: 'DIECISIETE', 18: 'DIECIOCHO', 19: 'DIECINUEVE',
+      21: 'VEINTIUN', 22: 'VEINTIDOS', 23: 'VEINTITRES', 24: 'VEINTICUATRO',
+      25: 'VEINTICINCO', 26: 'VEINTISEIS', 27: 'VEINTISIETE', 28: 'VEINTIOCHO', 29: 'VEINTINUEVE'
+    };
+    const CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+    const convertirTresCifras = (n: number): string => {
+      if (n === 0) return '';
+      if (n === 100) return 'CIEN';
+      const c = Math.floor(n / 100);
+      const d = Math.floor((n % 100) / 10);
+      const u = n % 10;
+      const du = n % 100;
+
+      let res = CENTENAS[c] ? CENTENAS[c] + ' ' : '';
+      if (ESPECIALES[du]) {
+        res += ESPECIALES[du];
+      } else if (d > 0 && u > 0) {
+        res += `${DECENAS[d]} Y ${UNIDADES[u]}`;
+      } else if (d > 0) {
+        res += DECENAS[d];
+      } else if (u > 0) {
+        res += UNIDADES[u];
+      }
+      return res.trim();
+    };
+
+    if (enteros === 0) return `CERO CON ${centavosStr}`;
+    
+    let texto = '';
+    const miles = Math.floor(enteros / 1000);
+    const resto = enteros % 1000;
+
+    if (miles === 1) texto = 'MIL ';
+    else if (miles > 1) texto = `${convertirTresCifras(miles)} MIL `;
+
+    texto += convertirTresCifras(resto);
+    return `${texto.trim()} CON ${centavosStr}`;
+  };
+
+  // --- Lógica de Pestaña C: EECC y Certificados de Retención Renta ---
   const handleProcessDocBatch = async () => {
-    if (!docFondo) return;
     setDocProcessing(true);
     setBatchReady(false);
     try {
-      // Usar motor financiero local para obtener los datos de la pestaña actual
-      // Tomamos como rango el año actual o el seleccionado
-      const year = v40SelYear;
-      const s_d = `${year}-01-01`;
-      const e_d = `${year}-12-31`; // calculamos año completo para lotes
-      
-      const res = await generateRetornosV40(docFondo, s_d, e_d);
-      
-      // Mapear inversionistas para direcciones fiscales
-      const { data: invs } = await supabase.from('crm_inversionistas').select('codigo_inversionista, documento_identidad, direccion_fiscal');
-      const addressMap: Record<string, string> = {};
+      const fondoId = (docFondo && docFondo !== 'TODOS') ? docFondo : null;
+      const res = await generateRetornosV40(fondoId, fStart, fEnd);
+
+      if (!res || res.asientos.length === 0) {
+        alert(`No se encontraron registros para el fondo ${docFondo} en el período ${fStart} al ${fEnd}.`);
+        return;
+      }
+
+      // Mapear inversionistas para direcciones fiscales y DNIs
+      const { data: invs } = await supabase.from('crm_inversionistas').select('codigo_inversionista, documento_identidad, direccion_fiscal, nombre_completo, nombre_1, apellido_1');
+      const addressMap: Record<string, { direccion: string; dni: string; nombre: string }> = {};
       if (invs) {
         for (const i of invs) {
-          const key = String(i.documento_identidad || i.codigo_inversionista).toLowerCase();
-          addressMap[key] = i.direccion_fiscal || "Domicilio fiscal no registrado";
+          const keyDoc = String(i.documento_identidad || '').toLowerCase();
+          const keyCod = String(i.codigo_inversionista || '').toLowerCase();
+          const info = {
+            direccion: i.direccion_fiscal || "Av. Canaval y Moreyra 425, San Isidro, Lima",
+            dni: i.documento_identidad || i.codigo_inversionista || "00000000",
+            nombre: i.nombre_completo || `${i.apellido_1 || ''} ${i.nombre_1 || ''}`.trim()
+          };
+          if (keyDoc) addressMap[keyDoc] = info;
+          if (keyCod) addressMap[keyCod] = info;
         }
       }
 
-      // Preparar lotes
+      // Preparar lote de Estados de Cuenta
       const eeccList = res.asientos.map(a => {
         const payload = a.payload_asiento || {};
+        const prefix = String(a.id_certificado.split('.')[0]).toLowerCase();
+        const invInfo = addressMap[prefix] || {
+          direccion: "Av. Canaval y Moreyra 425, San Isidro, Lima",
+          dni: prefix.toUpperCase(),
+          nombre: payload.inversionista || "Inversionista Registrado"
+        };
+
         return {
           id_certificado: a.id_certificado,
-          inversionista: payload.inversionista,
-          moneda: payload.moneda,
+          inversionista: payload.inversionista || invInfo.nombre,
+          dni: invInfo.dni,
+          direccion: invInfo.direccion,
+          moneda: payload.moneda || 'USD',
           capital_base: a.capital_base,
           interes_bruto: a.interes_generado_bruto,
           impuesto: a.impuestos_renta,
+          deducciones: a.deducciones_penalidades || 0,
+          neto_disponible: a.neto_disponible_para_reparto,
+          capitalizacion: a.capitalizacion_reinversion,
+          devolucion_capital: a.monto_rescate || 0,
           capital_final: a.capital_final_saldo,
-          direccion: addressMap[String(a.id_certificado.split('.')[0]).toLowerCase()] || "No registrado"
+          fecha_inicio: fStart,
+          fecha_fin: fEnd
         };
       });
 
+      // Preparar lote de Certificados de Retención (5% IR)
       const retencionesList = res.asientos.filter(a => a.impuestos_renta > 0).map(a => {
         const payload = a.payload_asiento || {};
+        const prefix = String(a.id_certificado.split('.')[0]).toLowerCase();
+        const invInfo = addressMap[prefix] || {
+          direccion: "Av. Canaval y Moreyra 425, San Isidro, Lima",
+          dni: prefix.toUpperCase(),
+          nombre: payload.inversionista || "Inversionista Registrado"
+        };
+        const moneda = payload.moneda || 'USD';
+        const monedaNombre = moneda === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
+
         return {
           id_certificado: a.id_certificado,
-          inversionista: payload.inversionista,
-          moneda: payload.moneda,
-          impuesto: a.impuestos_renta,
-          interes_bruto: a.interes_generado_bruto
+          inversionista: payload.inversionista || invInfo.nombre,
+          dni: invInfo.dni,
+          direccion: invInfo.direccion,
+          moneda: moneda,
+          moneda_nombre: monedaNombre,
+          interes_bruto: a.interes_generado_bruto,
+          monto_impuesto: a.impuestos_renta,
+          monto_impuesto_letras: `${numeroALetrasPeru(a.impuestos_renta)} ${monedaNombre}`,
+          fecha_inicio: fStart,
+          fecha_fin: fEnd
         };
       });
 
-      setBatchData({ eecc: eeccList, retenciones: retencionesList });
+      setBatchData({ eecc: eeccList, retenciones: retencionesList, fondo: docFondo });
       setBatchReady(true);
     } catch (err: any) {
       alert(`Error al preparar batch: ${err.message}`);
@@ -674,15 +760,282 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
+  // Descarga / Impresión Batch de Estados de Cuenta (EECC)
   const handleDownloadEECCBatch = () => {
-    if (!batchData) return;
-    // Imprimir o simular descarga
-    alert(`Generando PDF unificado para ${batchData.eecc.length} Estados de Cuenta (Batch)...`);
+    if (!batchData || batchData.eecc.length === 0) {
+      alert("No hay estados de cuenta procesados para emitir.");
+      return;
+    }
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert("Por favor permite popups en tu navegador para ver el PDF de EECC.");
+      return;
+    }
+
+    const fmt = (n: number, m: string) => (m === 'USD' ? '$ ' : 'S/ ') + (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Lote EECC - ${batchData.fondo} (${fEnd})</title>
+          <style>
+            @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0f172a; margin: 0; font-size: 11px; }
+            .page { page-break-after: always; padding-bottom: 20px; }
+            .page:last-child { page-break-after: auto; }
+            .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #059669; padding-bottom: 10px; margin-bottom: 15px; }
+            .title { font-size: 14px; font-weight: 900; color: #064e3b; text-transform: uppercase; letter-spacing: 0.5px; }
+            .subtitle { font-size: 10px; color: #64748b; font-weight: bold; }
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 15px; }
+            .meta-item { display: flex; flex-direction: column; gap: 2px; }
+            .meta-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+            .meta-value { font-size: 10px; font-weight: 700; color: #0f172a; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; }
+            th { background: #0f172a; color: #ffffff; font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 6px 8px; text-align: left; }
+            td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; font-size: 9px; }
+            .text-right { text-align: right; }
+            .highlight-row { background: #ecfdf5; font-weight: 800; color: #064e3b; }
+            .footer-note { font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 20px; text-align: center; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          ${batchData.eecc.map((item: any, idx: number) => `
+            <div class="page">
+              <div class="header-box">
+                <div>
+                  <div class="title">INVERSIONES ANDES — ESTADO DE CUENTA</div>
+                  <div class="subtitle">PARTICIPACIÓN EN FONDO DE INVERSIÓN PRIVADO | ${batchData.fondo}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-weight: 900; font-size: 12px; color: #059669;">N° ${item.id_certificado}</div>
+                  <div style="font-size: 8px; color: #64748b;">Hoja ${idx + 1} de ${batchData.eecc.length}</div>
+                </div>
+              </div>
+
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Titular / Partícipe:</span>
+                  <span class="meta-value">${item.inversionista}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">DNI / RUC:</span>
+                  <span class="meta-value">${item.dni}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Domicilio Fiscal:</span>
+                  <span class="meta-value">${item.direccion}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Período de Liquidación:</span>
+                  <span class="meta-value">${item.fecha_inicio} al ${item.fecha_fin}</span>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Concepto Contable</th>
+                    <th class="text-right">Monto (${item.moneda})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Capital Base Inicial al Inicio de Período</td>
+                    <td class="text-right">${fmt(item.capital_base, item.moneda)}</td>
+                  </tr>
+                  <tr>
+                    <td>(+) Interés Compensatorio Devengado (Bruto)</td>
+                    <td class="text-right" style="color: #059669; font-weight: bold;">+ ${fmt(item.interes_bruto, item.moneda)}</td>
+                  </tr>
+                  <tr>
+                    <td>(-) Retención Impuesto a la Renta de 2da Categoría (5%)</td>
+                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.impuesto, item.moneda)}</td>
+                  </tr>
+                  ${item.deducciones > 0 ? `
+                  <tr>
+                    <td>(-) Deducciones y Penalidades Aplicadas</td>
+                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.deducciones, item.moneda)}</td>
+                  </tr>` : ''}
+                  <tr class="highlight-row">
+                    <td>(=) Interés Neto Disponible para Distribución</td>
+                    <td class="text-right">${fmt(item.neto_disponible, item.moneda)}</td>
+                  </tr>
+                  <tr>
+                    <td>(±) Capitalización / Reinversión en el Fondo</td>
+                    <td class="text-right">${fmt(item.capitalizacion, item.moneda)}</td>
+                  </tr>
+                  ${item.devolucion_capital > 0 ? `
+                  <tr>
+                    <td>(-) Devolución / Rescate de Capital</td>
+                    <td class="text-right" style="color: #e11d48;">- ${fmt(item.devolucion_capital, item.moneda)}</td>
+                  </tr>` : ''}
+                  <tr class="highlight-row" style="background: #0f172a; color: #ffffff;">
+                    <td style="color: #ffffff; font-weight: 900;">SALDO DE CAPITAL FINAL AL CIERRE</td>
+                    <td class="text-right" style="color: #ffffff; font-weight: 900; font-size: 11px;">${fmt(item.capital_final, item.moneda)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="footer-note">
+                Documento de control emitido por Inversiones Andes S.A.C. de conformidad con el Reglamento de Fondos de Inversión y la normativa tributaria vigente de SUNAT.
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => { printWin.print(); }, 500);
   };
 
+  // Descarga / Impresión Batch de Certificados de Retención (5% IR)
   const handleDownloadRetBatch = () => {
-    if (!batchData) return;
-    alert(`Generando PDF unificado para ${batchData.retenciones.length} Certificados de Retención (Batch)...`);
+    if (!batchData || batchData.retenciones.length === 0) {
+      alert("No hay retenciones tributarias generadas en este período para reportar.");
+      return;
+    }
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert("Por favor permite popups en tu navegador para ver los Certificados de Retención.");
+      return;
+    }
+
+    const fmt = (n: number, m: string) => (m === 'USD' ? '$ ' : 'S/ ') + (n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Lote Retenciones 5% - ${batchData.fondo} (${fEnd})</title>
+          <style>
+            @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0f172a; margin: 0; font-size: 11px; }
+            .page { page-break-after: always; padding: 10px 0; }
+            .page:last-child { page-break-after: auto; }
+            .cert-box { border: 2px solid #0f172a; border-radius: 12px; padding: 24px; }
+            .header-cert { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 18px; }
+            .main-title { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.4; }
+            .sub-title { font-size: 9px; color: #64748b; font-weight: bold; margin-top: 4px; }
+            .section-title { font-size: 9px; font-weight: 900; color: #059669; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 14px; margin-bottom: 6px; }
+            .info-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+            .info-table td { padding: 4px 6px; font-size: 9.5px; border: 1px solid #cbd5e1; }
+            .info-label { width: 32%; background: #f8fafc; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 8.5px; }
+            .info-val { font-weight: 700; color: #0f172a; }
+            .amount-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin: 16px 0; text-align: center; }
+            .amount-num { font-size: 15px; font-weight: 900; color: #15803d; }
+            .amount-words { font-size: 9.5px; font-weight: 800; color: #166534; text-transform: uppercase; margin-top: 4px; }
+            .legal-text { font-size: 8px; color: #64748b; line-height: 1.5; text-align: justify; margin-top: 14px; }
+            .signature-box { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 36px; padding-top: 12px; }
+            .signature-block { text-align: center; width: 220px; }
+            .sign-line { border-top: 1px solid #0f172a; margin-top: 35px; padding-top: 4px; font-size: 9px; font-weight: 900; }
+            .sign-sub { font-size: 7.5px; color: #64748b; font-weight: bold; text-transform: uppercase; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          ${batchData.retenciones.map((item: any, idx: number) => `
+            <div class="page">
+              <div class="cert-box">
+                <div class="header-cert">
+                  <div class="main-title">CERTIFICADO DE RETENCIÓN DE IMPUESTO A LA RENTA<br />DE SEGUNDA CATEGORÍA</div>
+                  <div class="sub-title">DE CONFORMIDAD CON EL TEXTO ÚNICO ORDENADO DE LA LEY DEL IMPUESTO A LA RENTA (D.S. N° 179-2004-EF)</div>
+                </div>
+
+                <div class="section-title">1. DATOS DEL AGENTE DE RETENCIÓN</div>
+                <table class="info-table">
+                  <tr>
+                    <td class="info-label">Razón Social:</td>
+                    <td class="info-val">INVERSIONES ANDES S.A.C.</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">R.U.C.:</td>
+                    <td class="info-val">20608518884</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Fondo de Inversión:</td>
+                    <td class="info-val">${batchData.fondo}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Domicilio Fiscal:</td>
+                    <td class="info-val">Av. Canaval y Moreyra 425, Of. 1001, San Isidro, Lima, Perú</td>
+                  </tr>
+                </table>
+
+                <div class="section-title">2. DATOS DEL SUJETO RETENIDO (INVERSIONISTA)</div>
+                <table class="info-table">
+                  <tr>
+                    <td class="info-label">Nombres y Apellidos / Razón Social:</td>
+                    <td class="info-val">${item.inversionista}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Documento de Identidad (DNI/RUC):</td>
+                    <td class="info-val">${item.dni}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Certificado de Participación:</td>
+                    <td class="info-val">${item.id_certificado}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Domicilio Fiscal Registrado:</td>
+                    <td class="info-val">${item.direccion}</td>
+                  </tr>
+                </table>
+
+                <div class="section-title">3. LIQUIDACIÓN DEL IMPUESTO RETENIDO (5%)</div>
+                <table class="info-table">
+                  <tr>
+                    <td class="info-label">Período Devengado:</td>
+                    <td class="info-val">${item.fecha_inicio} al ${item.fecha_fin}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Renta Bruta de 2da Categoría (Interés):</td>
+                    <td class="info-val">${fmt(item.interes_bruto, item.moneda)}</td>
+                  </tr>
+                  <tr>
+                    <td class="info-label">Tasa Efectiva de Retención:</td>
+                    <td class="info-val">5.00% (Inciso a, Art. 72° LIR)</td>
+                  </tr>
+                </table>
+
+                <div class="amount-box">
+                  <div class="amount-num">MONTO RETENIDO: ${fmt(item.monto_impuesto, item.moneda)}</div>
+                  <div class="amount-words">SON: ${item.monto_impuesto_letras}</div>
+                </div>
+
+                <div class="legal-text">
+                  Se expide el presente certificado a solicitud del interesado para los fines tributarios pertinentes ante la Superintendencia Nacional de Aduanas y de Administración Tributaria (SUNAT), acreditando la retención efectuada en la fuente y su correspondiente pago mediante la Planilla Mensual de Pagos (PDT 617 / PLAME).
+                </div>
+
+                <div class="signature-box">
+                  <div style="font-size: 8.5px; color: #64748b;">
+                    Lima, ${new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}<br />
+                    Certificado ${idx + 1} de ${batchData.retenciones.length}
+                  </div>
+                  <div class="signature-block">
+                    <div class="sign-line">RICARDO GALLO</div>
+                    <div class="sign-sub">Director Ejecutivo / Representante Legal<br />Inversiones Andes S.A.C.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => { printWin.print(); }, 500);
   };
 
   // --- Lógica del Formulario Modal de Partícipes ---
@@ -813,7 +1166,7 @@ export const InversionistasPage: React.FC = () => {
             }`}
             onClick={() => setActiveSubTab('documentos')}
           >
-            📄 Generación Documentos
+            📄 EECC / CERTIFICADOS DE RETENCIÓN RENTA
           </button>
 
         </div>
@@ -1316,89 +1669,197 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
-      {/* --- PESTAÑA C: GENERACIÓN DOCUMENTOS (BATCH) --- */}
+      {/* --- PESTAÑA C: EECC / CERTIFICADOS DE RETENCIÓN RENTA --- */}
       {activeSubTab === 'documentos' && (
 
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
-            <h3 className="text-xs font-bold text-slate-750 dark:text-slate-300 uppercase tracking-wider mb-2">
-              📄 Generación Masiva de Documentos por Lote (Batch)
-            </h3>
-            <p className="text-xs text-slate-450 dark:text-slate-500 leading-relaxed max-w-xl mb-6">
-              Permite procesar la contabilidad de certificados de un fondo específico y preparar de forma condensada los Estados de Cuenta (EECC) y Certificados de Retención del Impuesto para su descarga masiva en un solo PDF.
+            <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                📄 Emisión y Descarga Masiva de Documentos por Lote (EECC y Retenciones 5%)
+              </h3>
+
+              {/* Indicador de Estado del Período */}
+              {collisionCount > 0 ? (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  🟢 PERÍODO OFICIALIZADO EN BD ({collisionCount} Registros)
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  🔴 PERÍODO EN BORRADOR / SIMULACIÓN
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-450 dark:text-slate-500 leading-relaxed max-w-2xl mb-6">
+              Emite los documentos oficiales vinculados estrictamente al <strong>Fondo de Inversión</strong> y a la <strong>Fecha de Corte del Período ({fEnd})</strong>. Genera en un solo archivo PDF el compilado de Estados de Cuenta y Certificados de Retención Tributaria (SUNAT) para todos los partícipes.
             </p>
 
-            <div className="flex items-end gap-4 max-w-lg mb-6 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl">
-              <div className="flex flex-col gap-1 flex-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Seleccione el Fondo</label>
+            {/* Selectores Vinculados al Fondo y Fecha de Corte */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl items-end">
+              
+              {/* Selector de Fondo */}
+              <div className="flex flex-col gap-1 lg:col-span-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Emitir</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   value={docFondo}
                   onChange={(e) => {
                     setDocFondo(e.target.value);
                     setBatchReady(false);
                   }}
                 >
+                  <option value="TODOS">TODOS LOS FONDOS</option>
                   {fondosDisponibles.map(f => (
                     <option key={f.id_fondo} value={f.id_fondo}>{f.nombre_fondo}</option>
                   ))}
                 </select>
               </div>
 
+              {/* Año */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  value={v40SelYear}
+                  onChange={(e) => {
+                    setV40SelYear(Number(e.target.value));
+                    setBatchReady(false);
+                  }}
+                >
+                  <option value={2024}>2024</option>
+                  <option value={2025}>2025</option>
+                  <option value={2026}>2026</option>
+                  <option value={2027}>2027</option>
+                </select>
+              </div>
+
+              {/* Ciclo */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ciclo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  value={v40SelCiclo}
+                  onChange={(e) => {
+                    setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre');
+                    setBatchReady(false);
+                  }}
+                >
+                  <option value="Bimestre">Bimestre</option>
+                  <option value="Trimestre">Trimestre</option>
+                </select>
+              </div>
+
+              {/* Período / Mes */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Período</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  value={v40SelNum}
+                  onChange={(e) => {
+                    setV40SelNum(Number(e.target.value));
+                    setBatchReady(false);
+                  }}
+                >
+                  {v40SelCiclo === 'Bimestre' ? (
+                    <>
+                      <option value={1}>1: Ene-Feb (Feb 28)</option>
+                      <option value={2}>2: Mar-Abr (Abr 30)</option>
+                      <option value={3}>3: May-Jun (Jun 30)</option>
+                      <option value={4}>4: Jul-Ago (Ago 31)</option>
+                      <option value={5}>5: Sep-Oct (Oct 31)</option>
+                      <option value={6}>6: Nov-Dic (Dic 31)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value={1}>1: Ene-Mar (Mar 31)</option>
+                      <option value={2}>2: Abr-Jun (Jun 30)</option>
+                      <option value={3}>3: Jul-Sep (Sep 30)</option>
+                      <option value={4}>4: Oct-Dic (Dic 31)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+            </div>
+
+            {/* Barra de Período y Botón de Procesar */}
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                <Calendar size={15} className="text-emerald-600" />
+                <span>Fecha de Corte Liquidada:</span>
+                <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-black text-slate-800 dark:text-slate-100">
+                  {fStart} al {fEnd}
+                </span>
+              </div>
+
               <button
-                className="h-9 text-xs font-bold bg-emerald-650 hover:bg-emerald-705 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow transition-all disabled:opacity-50"
                 onClick={handleProcessDocBatch}
                 disabled={!docFondo || docProcessing}
               >
-                {docProcessing ? <Loader2 size={13} className="animate-spin text-white" /> : <RefreshCw size={13} />}
-                <span>Procesar Data</span>
+                {docProcessing ? <Loader2 size={15} className="animate-spin text-white" /> : <RefreshCw size={15} />}
+                <span>Procesar y Preparar Lotes ({fEnd})</span>
               </button>
             </div>
 
+            {/* Panel de 2 Botones de Descarga en Lote */}
             {batchReady && batchData && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 dark:border-slate-800/80 pt-6 animate-fadeIn">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
                 
-                {/* Lote EECC */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl p-5 flex flex-col justify-between gap-4">
+                {/* Botón 1: Lote EECC */}
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Estados de Cuenta (EECC Batch)</h4>
-                    <p className="text-[10px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed mt-1">
-                      Genera el lote unificado de estados de cuenta. Incluye datos de partícipes, saldo de capitalización, tasas y amortizaciones.
-                    </p>
-                    <div className="mt-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-                      📄 Registros en lote: <span className="text-emerald-600 dark:text-emerald-450 font-black">{batchData.eecc.length} EECC</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                        <FileText size={16} className="text-emerald-600" />
+                        <span>Estados de Cuenta (EECC Batch)</span>
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        {batchData.eecc.length} EECC
+                      </span>
                     </div>
+                    <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
+                      Genera el documento oficial unificado de estados de cuenta con balance de capital, interés devengado, reinversión y saldo final al <strong>{fEnd}</strong>.
+                    </p>
                   </div>
 
                   <button
-                    className="h-10 text-xs font-black uppercase tracking-wider bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-450 transition-colors rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
                     onClick={handleDownloadEECCBatch}
                   >
-                    <FileText size={14} className="text-emerald-600" />
-                    <span>Descargar PDF Lote EECC</span>
+                    <FileText size={16} />
+                    <span>Descargar PDF Lote EECC ({batchData.eecc.length} Clientes)</span>
                   </button>
                 </div>
 
-                {/* Lote Retenciones */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl p-5 flex flex-col justify-between gap-4">
+                {/* Botón 2: Lote Retenciones */}
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Certificados de Retención</h4>
-                    <p className="text-[10px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed mt-1">
-                      Genera el lote unificado de certificados de retención de Impuesto a la Renta de 2da categoría (5%).
-                    </p>
-                    <div className="mt-3 text-xs font-bold text-slate-600 dark:text-slate-400">
-                      📜 Registros con retención: <span className="text-blue-650 dark:text-blue-450 font-black">{batchData.retenciones.length} certificados</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                        <FileSpreadsheet size={16} className="text-blue-600" />
+                        <span>Certificados de Retención (5% IR)</span>
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                        {batchData.retenciones.length} Certificados
+                      </span>
                     </div>
+                    <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
+                      Certificados tributarios de Impuesto a la Renta de 2da Categoría con montos en números y letras, DNI/RUC, domicilio y firma de <strong>Ricardo Gallo</strong>.
+                    </p>
                   </div>
 
                   <button
-                    className="h-10 text-xs font-black uppercase tracking-wider bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/20 dark:hover:text-blue-450 transition-colors rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                    className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleDownloadRetBatch}
                     disabled={batchData.retenciones.length === 0}
                   >
-                    <FileSpreadsheet size={14} className="text-blue-650" />
-                    <span>Descargar PDF Lote Retenciones</span>
+                    <FileSpreadsheet size={16} />
+                    <span>Descargar PDF Lote Retenciones ({batchData.retenciones.length} Clientes)</span>
                   </button>
                 </div>
 
