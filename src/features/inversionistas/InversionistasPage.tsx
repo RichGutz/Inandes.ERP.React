@@ -194,15 +194,17 @@ export const InversionistasPage: React.FC = () => {
     try {
       const { count, error } = await supabase
         .from('crm_certificados_eventos')
-        .select('id', { count: 'exact', head: true })
+        .select('id_evento', { count: 'exact', head: true })
         .eq('fecha_periodo_fin', endDate);
       
       if (error) throw error;
       setCollisionCount(count || 0);
     } catch (err) {
+      console.error("Error al verificar colision:", err);
       setCollisionCount(0);
     }
   };
+
 
   useEffect(() => {
     verificarColision(fEnd);
