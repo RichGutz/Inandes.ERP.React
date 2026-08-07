@@ -25,9 +25,10 @@ graph TD
 
 ---
 
-## 🏆 Hito Concluido: Fase 2 — Cierre y Auditoría al 28/02/2026 (100.00% EXACTO)
+## 🚀 Hito Concluido: Fase 2 — Cierre y Auditoría al 28/02/2026 (100.00% EXACTO)
 
-Se procesó, auditó y oficializó el ledger contable de **los 5 fondos y 185 contratos de partícipes**:
+Se procesó, auditó y oficializó el ledger contable de **los 5 fondos y 185 contratos de partícipes**. Además, se implementó en la UI la nueva pestaña **`🚀 Retornos y Rendimientos React`** con el mismo patrón estético de *Datos Inversionistas*, manteniendo en paralelo la pestaña legacy de Streamlit para comparación.
+
 
 | Fondo | Moneda | Asientos Auditados | Coincidencias al Centavo | % Convergencia | Capital Base Inicial | Interés Bruto (59d) | Retención IR (5%) | Capital Final Vigente | Estado Oficial |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
