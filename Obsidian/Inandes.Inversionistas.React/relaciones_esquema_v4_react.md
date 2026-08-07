@@ -4,6 +4,14 @@ Esta versión es una evolución organizativa y de arquitectura visual basada en 
 
 ---
 
+## 📊 Diagrama de Flujo Oficial (Graphviz V4 - React)
+
+![Diagrama de Flujo V4 React](file:///C:/Users/rguti/.gemini/antigravity-ide/brain/56861980-a028-433f-895b-b00980ba8e58/relaciones_esquema_v4_diagrama.png)
+
+> **Descarga Directa PDF:** [relaciones_esquema_v4_diagrama.pdf](file:///c:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/relaciones_esquema_v4_diagrama.pdf)
+
+---
+
 ## 📌 Diferenciación de Capas (V4 React)
 
 1. **Capa Maestra (Top)**: Módulos de catálogos y entidades de negocio principales:
