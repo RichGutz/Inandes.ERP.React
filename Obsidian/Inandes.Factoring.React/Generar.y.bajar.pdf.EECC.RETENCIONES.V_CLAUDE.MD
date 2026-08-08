@@ -1,255 +1,201 @@
-# Arquitectura Oficial V_CLAUDE: Generacion de PDFs EECC y Retenciones
-# Estado: IMPLEMENTADO, DESPLEGADO Y TAGGEADO (99percent) - 2026-08-08
-# Commit: 5cab047 | Tag: 99percent
+# Arquitectura ACORDADA: Generacion de PDFs EECC y Retenciones
+# Estado: ACORDADA - Pendiente de implementacion
+# Fecha: 2026-08-08
 
 ---
 
-## REGLA MAESTRA — LEER PRIMERO, SIEMPRE
-
-> PROHIBIDO generar PDFs con Python/WeasyPrint y subirlos al VPS.
-> PROHIBIDO usar archivos estaticos /var/www/inandes/reports/*.pdf para EECC y Retenciones.
-> OBLIGATORIO generar el HTML en React con datos del Motor V40 y abrirlo con window.open + document.write + setTimeout(print, 500).
-> ESTA ES LA UNICA ARQUITECTURA VALIDA PARA PRODUCCION.
-
----
-
-## 1. FLUJO DE DATOS (De extremo a extremo, sin excepciones)
+## ARQUITECTURA FINAL ACORDADA
 
 ```
-[Supabase]
-  crm_contratos + crm_certificados + crm_inversionistas + crm_cronograma
+[Usuario hace clic en boton EECC o Retenciones en React]
+        |
+        | window.open(URL_DEL_ENDPOINT, '_blank')   <- SINCRONO, SIN await
+        v
+[FastAPI en https://api-factoring.geeksoft.tech]
+  Endpoint recibe: id_fondo + fecha_fin (periodo cerrado)
         |
         v
-[Motor V40 TypeScript]
-  src/utils/financialCalculator.ts -> generateRetornosV40()
-  Calcula: bruto_total, impuesto_total, base_neta, capitalizacion,
-           devolucion_capital (= rescates), reparto_valor, capital_final
+[Supabase: crm_certificados_eventos]
+  Filtra por: id_fondo + fecha_periodo_fin
+  Lee datos FIRMES del periodo cerrado (NO recalcula)
         |
         v
-[calcResult] — estado React en memoria en InversionistasPage.tsx
+[WeasyPrint en el VPS]
+  Renderiza plantilla HTML con los datos leidos
+  Genera binario PDF
         |
-        +---> Audit PDF     handleExportPDFV40()       -> window.open + document.write + print()
-        +---> EECC          handleExportEECC()          -> window.open + document.write + print()
-        +---> Retenciones   handleExportRetenciones()   -> window.open + document.write + print()
+        v
+[FastAPI devuelve StreamingResponse]
+  Content-Type: application/pdf
+  Content-Disposition: inline; filename="EECC_NSGPEN01_2026-02-28.pdf"
+        |
+        v
+[Chrome recibe PDF binario]
+  Abre visor nativo: fondo negro + documento centrado + scroll + boton de descarga
+  IDENTICO al visor del vecino (RETORNOS Y RENDIMIENTOS periodo 2026-02-28)
 ```
-
-LOS TRES BOTONES USAN EL MISMO calcResult. MISMO DATO. DIFERENTE FORMATO HTML.
 
 ---
 
-## 2. ARCHIVO UNICO DE IMPLEMENTACION
+## PRINCIPIO FUNDAMENTAL INAMOVIBLE
 
-```
-C:\Users\rguti\Inandes.ERP.React\src\features\inversionistas\InversionistasPage.tsx
-```
-
-- handleExportEECC()          -> lineas ~752-854
-- handleExportRetenciones()   -> lineas ~859-1023
-
-NO existe ningun otro archivo que genere EECC o Retenciones en produccion.
-
-Los scripts Python en la raiz:
-- _run_eecc_v33.py            -> OBSOLETO. Solo respaldo offline.
-- _run_retenciones_v33.py     -> OBSOLETO. Solo respaldo offline.
-
-Las plantillas HTML en src/templates/:
-- estado_cuenta_inversionista_v2.html  -> REFERENCIA VISUAL SOLAMENTE. No se usa en produccion.
-- retencion_renta_v2.html              -> REFERENCIA VISUAL SOLAMENTE. No se usa en produccion.
+> La fuente de datos es EXCLUSIVAMENTE `crm_certificados_eventos`.
+> PROHIBIDO recalcular con el Motor V40 o V32 para generar documentos oficiales.
+> Los PDFs solo se generan para periodos CERRADOS (datos ya firmados en la tabla).
+> El PDF es generado en el VPS por FastAPI — NO localmente en la maquina del usuario.
 
 ---
 
-## 3. PATRON EXACTO DE APERTURA (IDENTICO AL VECINO handleExportPDFV40)
+## POR QUE ESTA ARQUITECTURA Y NO OTRA
+
+### Por que NO document.write + print():
+- Genera una pagina HTML blanca, NO un PDF binario.
+- Chrome no abre su visor nativo (fondo negro, scroll, boton descarga).
+- El usuario ve un dialogo de impresion, no un visor de PDF.
+
+### Por que NO Python local + SFTP al VPS:
+- Depende de la maquina del desarrollador.
+- Si no se corre el script, el PDF en el VPS queda desactualizado.
+- Proceso manual propenso a errores.
+
+### Por que SI FastAPI endpoint:
+- El PDF se genera ON DEMAND en el momento que el usuario hace clic.
+- Los datos siempre son frescos de crm_certificados_eventos.
+- Chrome recibe Content-Type: application/pdf y abre el visor nativo.
+- Es identico a la experiencia del vecino.
+- Sin dependencias de la maquina local del desarrollador.
+
+---
+
+## ENDPOINTS A CREAR EN FastAPI
+
+### Endpoint 1: EECC
+```
+GET /inversionistas/eecc/{id_fondo}/{fecha_fin}
+Ejemplo: GET /inversionistas/eecc/NSGPEN01/2026-02-28
+         GET /inversionistas/eecc/TODOS/2026-02-28
+
+Respuesta: StreamingResponse(
+    content=pdf_bytes,
+    media_type='application/pdf',
+    headers={'Content-Disposition': 'inline; filename="EECC_{id_fondo}_{fecha_fin}.pdf"'}
+)
+```
+
+### Endpoint 2: Retenciones
+```
+GET /inversionistas/retenciones/{id_fondo}/{fecha_fin}
+Ejemplo: GET /inversionistas/retenciones/NSGPEN01/2026-02-28
+         GET /inversionistas/retenciones/TODOS/2026-02-28
+
+Respuesta: StreamingResponse(
+    content=pdf_bytes,
+    media_type='application/pdf',
+    headers={'Content-Disposition': 'inline; filename="RETENCIONES_{id_fondo}_{fecha_fin}.pdf"'}
+)
+```
+
+---
+
+## COMO REACCIONA EL BOTON EN REACT
 
 ```typescript
-const printWindow = window.open('', '_blank');
-if (!printWindow) {
-  alert('Habilita las ventanas emergentes para ver el documento.');
-  return;
-}
-// ... construir html string ...
-printWindow.document.write(html);
-printWindow.document.close();
-printWindow.focus();
-setTimeout(() => {
-  printWindow.print();   // <-- dispara dialogo Chrome: fondo oscuro + PDF centrado + boton descarga
-}, 500);
+// EECC — sincrono, sin await, sin logica intermedia
+onClick={() => {
+  const fondo = docFondo || 'TODOS';
+  window.open(`https://api-factoring.geeksoft.tech/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
+}}
+
+// Retenciones — identico patron
+onClick={() => {
+  const fondo = docFondo || 'TODOS';
+  window.open(`https://api-factoring.geeksoft.tech/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
+}}
 ```
 
-ESTE PATRON ES INTANGIBLE. NO SE MODIFICA. NO SE "MEJORA".
-- PROHIBIDO usar Blob URLs (URL.createObjectURL).
-- PROHIBIDO usar iframes o modales React.
-- PROHIBIDO poner await de Supabase ANTES del window.open (Bandera Roja 4).
-- El window.open es sincrono si calcResult ya existe. El await solo ocurre si calcResult es null.
+- SIN calcResult, SIN Motor V40, SIN await antes del window.open.
+- El boton es 100% sincrono. No hay User Gesture Context que perder.
+- Chrome abre el PDF del endpoint exactamente como abre el PDF del vecino.
 
 ---
 
-## 4. HANDLER EECC: handleExportEECC()
+## LOGICA DEL ENDPOINT FASTAPI (descripcion funcional)
 
-### Prerequisito:
-calcResult debe existir. Si es null, el handler llama handleRunV40Calculation() automaticamente.
+### Para EECC:
+1. Recibir id_fondo y fecha_fin como parametros de ruta.
+2. Consultar crm_certificados_eventos en Supabase:
+   - Filtrar por fecha_periodo_fin = fecha_fin
+   - Si id_fondo != 'TODOS': filtrar tambien por id_fondo
+3. Para cada registro (cada certificado):
+   - Leer: monto_bruto, monto_impuesto, monto_deducciones, monto_neto,
+           monto_capitalizacion, monto_rescate, monto_reparto,
+           capital_inicial, capital_final, valor_cuota, numero_cuotas,
+           fecha_periodo_inicio, fecha_periodo_fin, moneda
+4. Renderizar la plantilla HTML: src/templates/estado_cuenta_inversionista_v2.html
+5. Generar PDF con WeasyPrint.
+6. Devolver StreamingResponse con Content-Type: application/pdf.
 
-### Filtro de fondo:
-```typescript
-const fondosFiltrados = (docFondo && docFondo !== 'TODOS')
-  ? currentResult.pdfData.filter((f: any) => f.fondo.id_fondo === docFondo)
-  : currentResult.pdfData;
-```
-
-### Filas incluidas:
-Solo `r.tipo === 'CERT'` (excluye filas tipo 'AUMENTO').
-
-### Tabla de campos — fuente exacta de cada dato del documento:
-
-| Campo en el documento EECC                        | Fuente en calcResult / estado               |
-|---------------------------------------------------|---------------------------------------------|
-| Sr(a)(s): [nombre]                                | r.inversionista                             |
-| Certificado N:                                    | r.id                                        |
-| Nombre del fondo (titulo)                         | fData.fondo.nombre_fondo                    |
-| Periodo inicio                                    | fStart (getDates(v40SelYear, v40SelCiclo, v40SelNum).fStart) |
-| Periodo fin                                       | fEnd   (getDates(v40SelYear, v40SelCiclo, v40SelNum).fEnd)   |
-| Moneda del fondo                                  | fData.fondo.moneda ('PEN' o 'USD')          |
-| Prefijo moneda                                    | 'PEN ' o 'USD '                             |
-| Monto inicial invertido                           | r.capital                                   |
-| Ganancia bruta obtenida                           | r.bruto_total                               |
-| (-) Impuesto a la renta retenido                  | -r.impuesto_total                           |
-| (-) Deducciones (si > 0, negativo; si = 0, '-')   | r.deducciones_total                         |
-| Ganancia disponible al inversionista              | r.base_neta                                 |
-| Ganancias capitalizadas (si > 0; si = 0, '-')     | r.capitalizacion                            |
-| Rescates (si > 0; si = 0, '-')                    | r.devolucion_capital                        |
-| Monto transferido a su cuenta bancaria            | r.reparto_valor                             |
-| Monto de la inversion al [fEnd]                   | r.capital_final                             |
-| Valor cuota al [fEnd]                             | fondosDisponibles.find(id_fondo).valor_cuota|
-| Numero de cuotas al [fEnd]                        | r.capital_final / valor_cuota (2 decimales) |
-| Logo InAndes                                      | LOGO_EFI_BASE64 (importado de src/assets/base64Images.ts) |
+### Para Retenciones:
+1. Misma consulta a crm_certificados_eventos.
+2. Filtrar solo registros con monto_impuesto > 0.
+3. Para cada registro, leer tambien datos del inversionista (DNI, domicilio)
+   desde crm_inversionistas (JOIN por id_certificado -> crm_contratos -> id_inversionista).
+4. Calcular IR en PEN:
+   - Fondos PEN: ir_pen = monto_impuesto
+   - Fondos USD: ir_pen = monto_impuesto * tipo_cambio (leer de crm_certificados_eventos o crm_fondos)
+5. Renderizar plantilla: src/templates/retencion_renta_v2.html
+6. Generar PDF con WeasyPrint.
+7. Devolver StreamingResponse con Content-Type: application/pdf.
 
 ---
 
-## 5. HANDLER RETENCIONES: handleExportRetenciones()
+## ARCHIVOS A CREAR/MODIFICAR
 
-### Prerequisito:
-calcResult debe existir. Si es null, llama handleRunV40Calculation().
+| Archivo | Accion | Descripcion |
+|---------|--------|-------------|
+| mini_erp_v2_antigravity/src/api/routers/inversionistas.py | CREAR | Endpoints EECC y Retenciones |
+| mini_erp_v2_antigravity/src/api/main.py | MODIFICAR | Incluir el nuevo router |
+| InversionistasPage.tsx (React) | MODIFICAR | Reemplazar handleExportEECC y handleExportRetenciones con window.open al endpoint |
 
-### Filtro de filas incluidas:
-`r.tipo === 'CERT'` Y `r.impuesto_total > 0`
-(Si impuesto_total = 0, no se emite certificado para ese inversionista.)
-
-### TC_USD_PEN:
-```typescript
-// TODO: traer de Supabase cuando este disponible
-const TC_USD_PEN = 3.662;
-```
-Para fondos PEN: irPen = r.impuesto_total (ya en PEN, sin conversion).
-Para fondos USD: irPen = Math.round(r.impuesto_total * TC_USD_PEN * 100) / 100.
-
-### Lookup de DNI y domicilio:
-El array `inversionistas` ya esta cargado al montar el componente (fetchDatos()).
-Se construye un Map dentro del handler:
-```typescript
-const invLookup = new Map<string, Inversionista>();
-for (const inv of inversionistas) {
-  const nombre = [inv.apellido_1, inv.apellido_2, inv.nombre_1, inv.nombre_2]
-    .filter(Boolean).join(' ').toUpperCase().trim();
-  invLookup.set(nombre, inv);
-}
-const inv = invLookup.get(r.inversionista.toUpperCase().trim());
-const dni = inv?.documento_identidad ?? '';
-const domicilio = inv?.direccion_fiscal ?? 'Domicilio no registrado';
-```
-
-LIMITACION CONOCIDA: Si el formato de nombre del Motor V40 difiere del reconstruido
-desde inv.apellido_1/2/nombre_1/2, el DNI y domicilio quedan vacios. Degradacion graceful.
-
-### Tabla de campos — fuente exacta de cada dato del certificado de retencion:
-
-| Campo en el certificado de Retencion                    | Fuente                                           |
-|---------------------------------------------------------|--------------------------------------------------|
-| Nombre del fondo                                        | fData.fondo.nombre_fondo                         |
-| Certificado N:                                          | r.id                                             |
-| Nombre del inversionista                                | r.inversionista                                  |
-| DNI del inversionista                                   | inv.documento_identidad (lookup por nombre)       |
-| Domicilio fiscal                                        | inv.direccion_fiscal (lookup por nombre)          |
-| Moneda del fondo (para tabla Base de Retencion)         | fData.fondo.moneda                               |
-| Base de retencion (tabla)                               | fData.fondo.moneda + ' ' + r.bruto_total         |
-| Monto retenido (tabla) — SIEMPRE EN PEN                 | 'PEN ' + irPen                                  |
-| IR fondos PEN                                           | r.impuesto_total (sin conversion)                |
-| IR fondos USD                                           | r.impuesto_total * 3.662 (redondeo 2 decimales)  |
-| Tipo de cambio (tabla, SOLO fondos USD)                 | 'PEN 3.662'                                      |
-| Tipo de cambio (tabla, fondos PEN)                      | columna omitida del <thead> y <tbody>            |
-| Monto en letras (parrafo legal)                         | numLetras(irPen) + ' soles'                      |
-| Fecha de operacion (tabla)                              | fEnd                                             |
-| Fecha de certificacion (parrafo firma)                  | new Date() — dia/mes/anio de hoy                 |
-| Periodo inicio (parrafo legal)                          | fStart                                           |
-| Periodo fin (parrafo legal)                             | fEnd                                             |
-| Logo InAndes                                            | LOGO_EFI_BASE64 (base64, inline en <img src=>)   |
-| Firma de Ricardo Gallo                                  | /assets/firma_ricardo_gallo.png (URL publica)    |
-| Nombre firmante                                         | Juan Ricardo Gallo Pizarro                       |
-| Empresa firmante                                        | INANDES ACTIVOS ALTERNATIVOS SAC                 |
-| Cargo firmante                                          | Gerente General                                  |
-
-### REGLA DE MONEDA EN EL PARRAFO LEGAL (INAMOVIBLE):
-El parrafo SIEMPRE dice "...la suma de PEN [monto_ir_pen] ([letras] SOLES)..."
-El IR se paga SIEMPRE EN PEN. Para fondos USD se convierte con TC.
-NUNCA debe decir "dolares de los Estados Unidos de America" en el parrafo legal.
+Las plantillas HTML ya existen en:
+- src/templates/estado_cuenta_inversionista_v2.html
+- src/templates/retencion_renta_v2.html
 
 ---
 
-## 6. SELECTORES QUE CONTROLAN EL PERIODO Y FONDO
+## CAMPOS EXACTOS A LEER DE crm_certificados_eventos
 
-Los handlers leen el estado React. No reciben parametros.
+Los siguientes campos deben existir en la tabla. Si alguno no existe,
+el agente DEBE preguntar al usuario antes de asumir un nombre alternativo.
 
-| Estado React       | Descripcion                                         | Ejemplo           |
-|--------------------|-----------------------------------------------------|-------------------|
-| v40SelYear         | Ano del periodo                                     | 2026              |
-| v40SelCiclo        | 'Bimestre' o 'Trimestre'                            | 'Bimestre'        |
-| v40SelNum          | Numero del ciclo (1,2,3,4,5,6 para Bimestre)        | 1 (= Ene-Feb)     |
-| fStart             | Derivado: primer dia del periodo                    | '2026-01-01'      |
-| fEnd               | Derivado: ultimo dia del periodo                    | '2026-02-28'      |
-| docFondo           | Fondo seleccionado en tab Documentos                | 'NSGPEN01'        |
-
-fStart y fEnd se calculan en:
-```typescript
-const { fStart, fEnd } = getDates(v40SelYear, v40SelCiclo, v40SelNum);
-```
-
----
-
-## 7. CUANDO SE EJECUTA EL MOTOR V40
-
-El Motor V40 se ejecuta UNA SOLA VEZ por periodo. calcResult queda en estado.
-Los botones EECC y Retenciones reusan calcResult sin recalcular.
-
-Si el usuario va directamente a la pestana Documentos sin pasar por Auditoria:
-calcResult = null -> los handlers llaman handleRunV40Calculation() automaticamente.
-
-Cambiar v40SelYear / v40SelCiclo / v40SelNum resetea calcResult a null (useEffect linea 212).
+| Campo requerido en crm_certificados_eventos | Uso en el documento |
+|---------------------------------------------|---------------------|
+| id_certificado | Numero de certificado |
+| id_fondo | Filtro y titulo del fondo |
+| fecha_periodo_inicio | Inicio del periodo en el documento |
+| fecha_periodo_fin | Fin del periodo, usado como filtro |
+| monto_bruto | Ganancia bruta obtenida |
+| monto_impuesto | IR retenido (en moneda del fondo) |
+| monto_deducciones | Deducciones |
+| monto_neto | Ganancia disponible al inversionista |
+| monto_capitalizacion | Ganancias capitalizadas |
+| monto_rescate | Rescates |
+| monto_reparto | Monto transferido a cuenta bancaria |
+| capital_inicial | Monto inicial invertido |
+| capital_final | Monto de la inversion al fecha_fin |
+| valor_cuota | Valor cuota al fecha_fin |
+| moneda | 'PEN' o 'USD' |
 
 ---
 
-## 8. COMMITS Y TAGS DE REFERENCIA
+## PENDIENTE ANTES DE IMPLEMENTAR
 
-| Commit/Tag           | Descripcion                                                      |
-|----------------------|------------------------------------------------------------------|
-| ca31e2e              | FIX.TS6133.dead.code.numeroALetrasPeru                           |
-| 08264a6              | ARCH.EECC.RET.V40.REACT.WINDOW.OPEN (nueva arquitectura base)    |
-| 5cab047 = 99percent  | FIX.window.print.EECC.RET.igual.vecino (setTimeout print 500ms)  |
+El agente que implemente esto DEBE PRIMERO:
+1. Verificar que los campos listados existen en crm_certificados_eventos
+   (ejecutar: SELECT column_name FROM information_schema.columns WHERE table_name = 'crm_certificados_eventos')
+2. Verificar que WeasyPrint esta instalado en el VPS del backend
+   (ejecutar en VPS: python -c "import weasyprint; print('OK')")
+3. Verificar que el endpoint no existe ya en https://api-factoring.geeksoft.tech/docs
+4. Confirmar con el usuario el nombre del campo tipo_cambio si es USD
 
----
-
-## 9. PENDIENTES CONOCIDOS (No actuar sin orden explicita del usuario)
-
-1. TC_USD_PEN = 3.662 hardcodeado. Conectar a Supabase cuando este disponible.
-2. Validar con datos reales que r.capitalizacion y r.devolucion_capital
-   del Motor V40 muestran valores correctos (ej: Sra. Parra ~325,000 en rescates).
-3. Si el DNI lookup falla por formato de nombre, mejorar algoritmo de matching.
-
----
-
-## 10. BANDERAS ROJAS VIGENTES
-
-| Bandera | Descripcion | Aplica a esta arquitectura |
-|---------|-------------|---------------------------|
-| 1 | Nginx devuelve index.html para .pdf | NO APLICA. No hay URLs .pdf en VPS. |
-| 2 | 404 por archivos no sincronizados | NO APLICA. No hay archivos estaticos PDF. |
-| 3 | Blob URLs y modales | VIGENTE. Prohibido. Usar window.open + document.write. |
-| 4 | await antes de window.open | VIGENTE. window.open es sincrono si calcResult existe. |
-| 5 | Creatividad no solicitada | VIGENTE. Copiar patron vecino exacto. Cero variaciones. |
+NO IMPLEMENTAR sin completar estos 4 pasos de verificacion.
