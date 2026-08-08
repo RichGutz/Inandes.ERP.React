@@ -109,6 +109,18 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
     Genera y sirve el PDF de Estado de Cuenta (EECC) para el periodo cerrado especificado.
     """
     try:
+        cache_dir = os.path.join(backend_root, 'cache_reports')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, f"EECC_{id_fondo}_{fecha_fin}.pdf")
+        filename = f"EECC_{id_fondo}_{fecha_fin}.pdf"
+
+        if os.path.exists(cache_file):
+            return FileResponse(
+                cache_file,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"inline; filename={filename}"}
+            )
+
         supabase = get_supabase_client()
         query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', fecha_fin)
         res = query.execute()
@@ -155,18 +167,6 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
                 'valor_cuota': valor_cuota,
             }
             certs.append(cert_data)
-
-        cache_dir = os.path.join(backend_root, 'cache_reports')
-        os.makedirs(cache_dir, exist_ok=True)
-        cache_file = os.path.join(cache_dir, f"EECC_{id_fondo}_{fecha_fin}.pdf")
-        filename = f"EECC_{id_fondo}_{fecha_fin}.pdf"
-
-        if os.path.exists(cache_file):
-            return FileResponse(
-                cache_file,
-                media_type="application/pdf",
-                headers={"Content-Disposition": f"inline; filename={filename}"}
-            )
 
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.globals['format_num'] = format_num
