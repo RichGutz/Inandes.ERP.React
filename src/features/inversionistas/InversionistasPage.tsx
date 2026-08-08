@@ -351,7 +351,7 @@ export const InversionistasPage: React.FC = () => {
         neto_disponible: Number(e.interes_neto_disponible || 0),
         capitalizacion: Number(e.monto_capitalizacion || 0),
         rescates: Number(e.monto_rescate || 0),
-        monto_transferido: Number(e.monto_reparto || 0),
+        monto_transferido: Number(e.monto_reparto || 0) + Number(e.monto_rescate || 0),
         capital_final: Number(e.capital_final_saldo || 0),
         valor_cuota: valorCuota
       };
@@ -369,7 +369,7 @@ export const InversionistasPage: React.FC = () => {
     .header { width: 100%; margin-bottom: 25px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: middle; border: none; }
-    .logo-container { text-align: right; }
+    .logo-container { width: 100%; text-align: right; }
     .logo-container img { max-width: 160px; max-height: 80px; }
     .title-box { text-align: center; margin-bottom: 25px; }
     .title-box h1 { font-size: 11pt; font-weight: 800; margin: 0; line-height: 1.35; text-transform: uppercase; color: #0f172a; }
@@ -395,7 +395,6 @@ export const InversionistasPage: React.FC = () => {
       <div class="header">
         <table>
           <tr>
-            <td style="font-size: 9pt; color: #64748b;">INANDES ACTIVOS ALTERNATIVOS S.A.C.</td>
             <td class="logo-container">
               <img src="/logo_inandes.png" alt="Logo Inandes" onerror="this.style.display='none'" />
             </td>
