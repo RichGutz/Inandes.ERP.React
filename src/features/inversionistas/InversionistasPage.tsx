@@ -1489,7 +1489,7 @@ export const InversionistasPage: React.FC = () => {
                   className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
                   onClick={() => {
                     const fondo = docFondo || 'TODOS';
-                    window.open(`https://api-factoring.geeksoft.tech/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
+                    window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
                   }}
                 >
                   <FileText size={16} />
@@ -1515,7 +1515,7 @@ export const InversionistasPage: React.FC = () => {
                   className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
                   onClick={() => {
                     const fondo = docFondo || 'TODOS';
-                    window.open(`https://api-factoring.geeksoft.tech/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
+                    window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
                   }}
                 >
                   <FileSpreadsheet size={16} />
