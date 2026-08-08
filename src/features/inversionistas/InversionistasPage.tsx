@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
-  ShieldCheck, Undo2, X, Calendar
+  ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download
 } from 'lucide-react';
 import { LOGO_EFI_BASE64 } from '../../assets/base64Images';
 
@@ -53,8 +53,10 @@ export const InversionistasPage: React.FC = () => {
   const [officialRegisterLoading, setOfficialRegisterLoading] = useState<boolean>(false);
   const [registerSuccessMsg, setRegisterSuccessMsg] = useState<string | null>(null);
 
-  // Estado de Generación Documentos
-  const [docFondo, setDocFondo] = useState<string>('');
+  // Estado de Generación Documentos y Visores Duales Estilo Forecast
+  const [docFondo, setDocFondo] = useState<string>('TODOS');
+  const [docViewMode, setDocViewMode] = useState<'dual' | 'eecc' | 'retenciones'>('dual');
+  const [docReloadKey, setDocReloadKey] = useState<number>(Date.now());
 
   // Carga inicial
   const fetchDatos = async () => {
@@ -844,7 +846,7 @@ export const InversionistasPage: React.FC = () => {
             }`}
             onClick={() => setActiveSubTab('documentos')}
           >
-            📄 EECC / CERTIFICADOS DE RETENCIÓN RENTA
+            📄 EECC / RETENCIONES / 2 VISORES
           </button>
 
         </div>
@@ -1347,34 +1349,43 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
-      {/* --- PESTAÑA C: EECC / CERTIFICADOS DE RETENCIÓN RENTA --- */}
+      {/* --- PESTAÑA C: EECC / RETENCIONES / 2 VISORES (ESTILO FORECAST) --- */}
       {activeSubTab === 'documentos' && (
 
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                <FileText size={16} className="text-emerald-600" />
-                <span>Emisión y Descarga de Documentos Oficiales (EECC y Retenciones 5% IR)</span>
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl text-emerald-600 border border-emerald-100 dark:border-emerald-900">
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+                    AUDITORÍA Y EMISIÓN EN CALIENTE: EECC & RETENCIONES (2 VISORES DUALES)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Visualización directa en alta resolución sin popups. Compilación y caché de alta velocidad estilo Forecast.
+                  </p>
+                </div>
+              </div>
 
               {/* Indicador de Estado del Período */}
               {collisionCount > 0 ? (
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                  🟢 PERÍODO OFICIALIZADO EN BD ({collisionCount} Registros)
+                <span className="px-3 py-1.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1.5 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                  🟢 PERÍODO OFICIALIZADO EN BD ({collisionCount} Asientos)
                 </span>
               ) : (
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                <span className="px-3 py-1.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 flex items-center gap-1.5 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
                   🔴 PERÍODO EN BORRADOR / SIMULACIÓN
                 </span>
               )}
             </div>
 
             {/* Selectores Vinculados al Fondo y Fecha de Corte */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl items-end">
               
               {/* Selector de Fondo */}
               <div className="flex flex-col gap-1 lg:col-span-2">
@@ -1397,7 +1408,7 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelYear}
                   onChange={(e) => {
                     setV40SelYear(Number(e.target.value));
@@ -1414,7 +1425,7 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ciclo</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelCiclo}
                   onChange={(e) => {
                     setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre');
@@ -1429,7 +1440,7 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Período</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelNum}
                   onChange={(e) => {
                     setV40SelNum(Number(e.target.value));
@@ -1457,73 +1468,182 @@ export const InversionistasPage: React.FC = () => {
 
             </div>
 
-            {/* Barra de Período Activo */}
-            <div className="flex items-center justify-between gap-4 flex-wrap mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                <Calendar size={15} className="text-emerald-600" />
-                <span>Fecha de Corte Seleccionada:</span>
-                <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-black text-slate-800 dark:text-slate-100">
-                  {fStart} al {fEnd}
-                </span>
-              </div>
-            </div>
-
-            {/* Panel Directo de 2 Botones de Descarga en Lote */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+            {/* Barra de Control de Vistas y Recarga en Caliente */}
+            <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-900 text-white p-3 rounded-xl shadow-md mb-6">
               
-              {/* Botón 1: Lote EECC */}
-              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                      <FileText size={16} className="text-emerald-600" />
-                      <span>Estados de Cuenta (EECC Batch)</span>
-                    </h4>
-                  </div>
-                  <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
-                    Genera el documento oficial unificado de estados de cuenta con balance de capital, interés devengado, reinversión y saldo final al <strong>{fEnd}</strong>.
-                  </p>
-                </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-bold text-slate-300 uppercase">Modo de Visor:</span>
+                
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                  <button
+                    onClick={() => setDocViewMode('dual')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                      docViewMode === 'dual'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🔲 Vista Dual 50/50
+                  </button>
+                  
+                  <button
+                    onClick={() => setDocViewMode('eecc')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                      docViewMode === 'eecc'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    📑 Solo EECC (100%)
+                  </button>
 
-                <button
-                  className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
-                  onClick={() => {
-                    const fondo = docFondo || 'TODOS';
-                    window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
-                  }}
-                >
-                  <FileText size={16} />
-                  <span>Ver / Imprimir EECC ({fEnd})</span>
-                </button>
+                  <button
+                    onClick={() => setDocViewMode('retenciones')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                      docViewMode === 'retenciones'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    📜 Solo Retenciones (100%)
+                  </button>
+                </div>
               </div>
 
-              {/* Botón 2: Lote Retenciones */}
-              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                      <FileSpreadsheet size={16} className="text-blue-600" />
-                      <span>Certificados de Retención (5% IR)</span>
-                    </h4>
-                  </div>
-                  <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
-                    Certificados tributarios de Impuesto a la Renta de 2da Categoría con montos en números y letras, DNI/RUC, domicilio y firma de <strong>Ricardo Gallo</strong>.
-                  </p>
+              <div className="flex items-center gap-3">
+                <div className="text-xs font-mono text-slate-400">
+                  Corte: <strong className="text-emerald-400">{fStart} al {fEnd}</strong>
                 </div>
 
                 <button
-                  className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
-                  onClick={() => {
-                    const fondo = docFondo || 'TODOS';
-                    window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
-                  }}
+                  onClick={() => setDocReloadKey(Date.now())}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  title="Recargar visores en caliente"
                 >
-                  <FileSpreadsheet size={16} />
-                  <span>Ver / Imprimir Retenciones ({fEnd})</span>
+                  <RotateCcw size={14} />
+                  <span>Recargar en Caliente</span>
                 </button>
               </div>
 
             </div>
+
+            {/* --- CONTENEDORES DE LOS 2 VISORES (ESTILO FORECAST) --- */}
+            <div className={`grid gap-6 ${docViewMode === 'dual' ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
+              
+              {/* VISOR 1: ESTADOS DE CUENTA (EECC) */}
+              {(docViewMode === 'dual' || docViewMode === 'eecc') && (
+                <div className="flex flex-col gap-2.5 w-full bg-slate-100 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-250 dark:border-slate-800 shadow-sm">
+                  
+                  {/* Header del Visor EECC */}
+                  <div className="bg-slate-900 text-white p-3 rounded-xl shadow-sm flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileText size={18} className="text-emerald-400" />
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">
+                          ESTADOS DE CUENTA (EECC) — {docFondo || 'TODOS'}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 font-mono">
+                          Periodo: {fEnd} | Formato Oficial WeasyPrint
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const fondo = docFondo || 'TODOS';
+                          window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
+                        }}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-[11px] font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                        title="Abrir en pestaña completa independiente"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Abrir Pestaña</span>
+                      </button>
+
+                      <a
+                        href={`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${docFondo || 'TODOS'}/${fEnd}`}
+                        download={`EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF"
+                      >
+                        <Download size={13} />
+                        <span>Descargar PDF</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Contenedor IFrame de Alta Resolución */}
+                  <div className="bg-slate-900 rounded-xl overflow-hidden shadow-inner border border-slate-700/60 p-1">
+                    <iframe
+                      key={`eecc-frame-${docReloadKey}-${docFondo}-${fEnd}`}
+                      src={`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${docFondo || 'TODOS'}/${fEnd}`}
+                      className="w-full h-[800px] rounded-lg border-none bg-slate-950"
+                      title="Visor Integrado EECC"
+                    />
+                  </div>
+
+                </div>
+              )}
+
+              {/* VISOR 2: CERTIFICADOS DE RETENCIÓN (5% IR) */}
+              {(docViewMode === 'dual' || docViewMode === 'retenciones') && (
+                <div className="flex flex-col gap-2.5 w-full bg-slate-100 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-250 dark:border-slate-800 shadow-sm">
+                  
+                  {/* Header del Visor Retenciones */}
+                  <div className="bg-slate-900 text-white p-3 rounded-xl shadow-sm flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet size={18} className="text-blue-400" />
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">
+                          CERTIFICADOS DE RETENCIÓN (5% IR) — {docFondo || 'TODOS'}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 font-mono">
+                          Periodo: {fEnd} | Impuesto a la Renta de 2da Categoría
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const fondo = docFondo || 'TODOS';
+                          window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
+                        }}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-[11px] font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                        title="Abrir en pestaña completa independiente"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Abrir Pestaña</span>
+                      </button>
+
+                      <a
+                        href={`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${docFondo || 'TODOS'}/${fEnd}`}
+                        download={`RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF"
+                      >
+                        <Download size={13} />
+                        <span>Descargar PDF</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Contenedor IFrame de Alta Resolución */}
+                  <div className="bg-slate-900 rounded-xl overflow-hidden shadow-inner border border-slate-700/60 p-1">
+                    <iframe
+                      key={`ret-frame-${docReloadKey}-${docFondo}-${fEnd}`}
+                      src={`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${docFondo || 'TODOS'}/${fEnd}`}
+                      className="w-full h-[800px] rounded-lg border-none bg-slate-950"
+                      title="Visor Integrado Retenciones"
+                    />
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+
           </div>
 
         </div>
