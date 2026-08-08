@@ -1,0 +1,1080 @@
+COLUMNAS DEL EXCEL PARTICIPES
+================================================================================
+
+  1. id                                                 | No Nulos: 131/131
+  2. origen_datos                                       | No Nulos: 131/131
+  3. created_at                                         | No Nulos: 131/131
+  4. updated_at                                         | No Nulos: 131/131
+  5. Nombre_1_P1                                        | No Nulos: 131/131
+  6. Nombre_2_P1                                        | No Nulos: 112/131
+  7. Apellido_1_P1                                      | No Nulos: 131/131
+  8. Apellido_2_P1                                      | No Nulos: 127/131
+  9. tipo_doc_P1                                        | No Nulos: 131/131
+ 10. documento_identidad_P1                             | No Nulos: 131/131
+ 11. fecha_nacimiento_P1                                | No Nulos: 126/131
+ 12. estado_civil_P1                                    | No Nulos: 127/131
+ 13. nacionalidad_P1                                    | No Nulos: 131/131
+ 14. residente_peru_P1                                  | No Nulos: 131/131
+ 15. es_pep_P1                                          | No Nulos: 131/131
+ 16. pep_detalle_P1                                     | No Nulos:   0/131
+ 17. email_P1                                           | No Nulos: 130/131
+ 18. telefono_P1                                        | No Nulos: 131/131
+ 19. direccion_fiscal_P1                                | No Nulos: 131/131
+ 20. codigo_postal_P1                                   | No Nulos: 131/131
+ 21. Nombre_1_conyuge_P1                                | No Nulos:  66/131
+ 22. Nombre_2_conyuge_P1                                | No Nulos:  53/131
+ 23. Apellido_1_conyuge_P1                              | No Nulos:  66/131
+ 24. Apellido_2_conyuge_P1                              | No Nulos:  64/131
+ 25. tipo_documento_conyuge_P1                          | No Nulos:  66/131
+ 26. num_documento_conyuge_P1                           | No Nulos:  66/131
+ 27. nombre_completo_conyuge_P1                         | No Nulos:  66/131
+ 28. ocupacion_P1                                       | No Nulos: 105/131
+ 29. centro_labores_P1                                  | No Nulos:  58/131
+ 30. cargo_ocupado_P1                                   | No Nulos:  59/131
+ 31. antiguedad_laboral_anios_P1                        | No Nulos:  51/131
+ 32. perfil_riesgo_P1                                   | No Nulos:   3/131
+ 33. nombre_completo_P1                                 | No Nulos: 131/131
+ 34. Nombre_1_P2                                        | No Nulos:  65/131
+ 35. Nombre_2_P2                                        | No Nulos:  61/131
+ 36. Apellido_1_P2                                      | No Nulos:  65/131
+ 37. Apellido_2_P2                                      | No Nulos:  65/131
+ 38. tipo_doc_P2                                        | No Nulos:  65/131
+ 39. documento_identidad_P2                             | No Nulos:  65/131
+ 40. fecha_nacimiento_P2                                | No Nulos:  56/131
+ 41. estado_civil_P2                                    | No Nulos:  58/131
+ 42. nacionalidad_P2                                    | No Nulos:  57/131
+ 43. residente_peru_P2                                  | No Nulos:  55/131
+ 44. es_pep_P2                                          | No Nulos:  47/131
+ 45. pep_detalle_P2                                     | No Nulos:   0/131
+ 46. email_P2                                           | No Nulos:  38/131
+ 47. telefono_P2                                        | No Nulos:  48/131
+ 48. direccion_fiscal_P2                                | No Nulos:  58/131
+ 49. codigo_postal_P2                                   | No Nulos:  42/131
+ 50. Nombre_1_conyuge_P2                                | No Nulos:  25/131
+ 51. Nombre_2_conyuge_P2                                | No Nulos:  24/131
+ 52. Apellido_1_conyuge_P2                              | No Nulos:  25/131
+ 53. Apellido_2_conyuge_P2                              | No Nulos:  24/131
+ 54. tipo_documento_conyuge_P2                          | No Nulos:  24/131
+ 55. num_documento_conyuge_P2                           | No Nulos:  24/131
+ 56. nombre_completo_conyuge_P2                         | No Nulos:  24/131
+ 57. ocupacion_P2                                       | No Nulos:   8/131
+ 58. centro_labores_P2                                  | No Nulos:   4/131
+ 59. cargo_ocupado_P2                                   | No Nulos:   3/131
+ 60. antiguedad_laboral_anios_P2                        | No Nulos:   2/131
+ 61. perfil_riesgo_P2                                   | No Nulos:   0/131
+ 62. nombre_completo_P2                                 | No Nulos:  63/131
+ 63. Nombre_1_P3                                        | No Nulos:   8/131
+ 64. Nombre_2_P3                                        | No Nulos:   7/131
+ 65. Apellido_1_P3                                      | No Nulos:   8/131
+ 66. Apellido_2_P3                                      | No Nulos:   8/131
+ 67. tipo_doc_P3                                        | No Nulos:   8/131
+ 68. documento_identidad_P3                             | No Nulos:   8/131
+ 69. fecha_nacimiento_P3                                | No Nulos:   7/131
+ 70. estado_civil_P3                                    | No Nulos:   7/131
+ 71. nacionalidad_P3                                    | No Nulos:   5/131
+ 72. residente_peru_P3                                  | No Nulos:   7/131
+ 73. es_pep_P3                                          | No Nulos:   6/131
+ 74. pep_detalle_P3                                     | No Nulos:   0/131
+ 75. email_P3                                           | No Nulos:   4/131
+ 76. telefono_P3                                        | No Nulos:   4/131
+ 77. direccion_fiscal_P3                                | No Nulos:   4/131
+ 78. codigo_postal_P3                                   | No Nulos:   4/131
+ 79. Nombre_1_conyuge_P3                                | No Nulos:   0/131
+ 80. Nombre_2_conyuge_P3                                | No Nulos:   0/131
+ 81. Apellido_1_conyuge_P3                              | No Nulos:   0/131
+ 82. Apellido_2_conyuge_P3                              | No Nulos:   0/131
+ 83. tipo_documento_conyuge_P3                          | No Nulos:   0/131
+ 84. num_documento_conyuge_P3                           | No Nulos:   0/131
+ 85. nombre_completo_conyuge_P3                         | No Nulos:   0/131
+ 86. ocupacion_P3                                       | No Nulos:   0/131
+ 87. centro_labores_P3                                  | No Nulos:   0/131
+ 88. cargo_ocupado_P3                                   | No Nulos:   0/131
+ 89. antiguedad_laboral_anios_P3                        | No Nulos:   0/131
+ 90. perfil_riesgo_P3                                   | No Nulos:   0/131
+ 91. nombre_completo_P3                                 | No Nulos:   7/131
+ 92. Nombre_1_P4                                        | No Nulos:   4/131
+ 93. Nombre_2_P4                                        | No Nulos:   4/131
+ 94. Apellido_1_P4                                      | No Nulos:   4/131
+ 95. Apellido_2_P4                                      | No Nulos:   4/131
+ 96. tipo_doc_P4                                        | No Nulos:   4/131
+ 97. documento_identidad_P4                             | No Nulos:   4/131
+ 98. fecha_nacimiento_P4                                | No Nulos:   4/131
+ 99. estado_civil_P4                                    | No Nulos:   3/131
+100. nacionalidad_P4                                    | No Nulos:   4/131
+101. residente_peru_P4                                  | No Nulos:   4/131
+102. es_pep_P4                                          | No Nulos:   4/131
+103. pep_detalle_P4                                     | No Nulos:   0/131
+104. email_P4                                           | No Nulos:   3/131
+105. telefono_P4                                        | No Nulos:   3/131
+106. direccion_fiscal_P4                                | No Nulos:   3/131
+107. codigo_postal_P4                                   | No Nulos:   3/131
+108. Nombre_1_conyuge_P4                                | No Nulos:   1/131
+109. Nombre_2_conyuge_P4                                | No Nulos:   1/131
+110. Apellido_1_conyuge_P4                              | No Nulos:   1/131
+111. Apellido_2_conyuge_P4                              | No Nulos:   1/131
+112. tipo_documento_conyuge_P4                          | No Nulos:   1/131
+113. num_documento_conyuge_P4                           | No Nulos:   1/131
+114. nombre_completo_conyuge_P4                         | No Nulos:   1/131
+115. ocupacion_P4                                       | No Nulos:   0/131
+116. centro_labores_P4                                  | No Nulos:   0/131
+117. cargo_ocupado_P4                                   | No Nulos:   0/131
+118. antiguedad_laboral_anios_P4                        | No Nulos:   0/131
+119. perfil_riesgo_P4                                   | No Nulos:   0/131
+120. nombre_completo_P4                                 | No Nulos:   4/131
+121. moneda_cuenta_1                                    | No Nulos: 131/131
+122. banco_nombre_1                                     | No Nulos:  71/131
+123. numero_cuenta_1                                    | No Nulos:  43/131
+124. cci_1                                              | No Nulos:  42/131
+125. moneda_cuenta_2                                    | No Nulos: 131/131
+126. banco_nombre_2                                     | No Nulos:  41/131
+127. numero_cuenta_2                                    | No Nulos:  33/131
+128. cci_2                                              | No Nulos:  31/131
+129. puntaje_encuesta_INV                               | No Nulos:   0/131
+130. asesor_nombre                                      | No Nulos: 127/131
+131. asesor_email                                       | No Nulos: 123/131
+132. direccion_fiscal_INV                               | No Nulos: 131/131
+133. codigo_postal_INV                                  | No Nulos: 131/131
+134. email_INV                                          | No Nulos:   1/131
+
+
+PRIMERAS 5 FILAS (TRANSPUESTAS):
+================================================================================
+
+
+id:
+  Fila 1: 861924fb-df04-4716-a975-c6920fcb5026
+  Fila 2: 5944a3df-8688-42f0-9176-071788e0cfc8
+  Fila 3: b0ec2a13-a418-423b-bbcf-360411754828
+  Fila 4: 2c4fb9c7-45ae-492d-bdf2-a8c09dc6dca0
+  Fila 5: 43fbecb8-590b-4a69-bf22-2502b4bf5701
+
+origen_datos:
+  Fila 1: MIGRACION_PEN01
+  Fila 2: MIGRACION_PEN02
+  Fila 3: MIGRACION_USD02
+  Fila 4: MIGRACION_USD02
+  Fila 5: MIGRACION_USD02
+
+created_at:
+  Fila 1: 2026-01-17T20:18:31.157053+00:00
+  Fila 2: 2026-01-17T20:23:49.805552+00:00
+  Fila 3: 2026-01-17T20:23:49.805552+00:00
+  Fila 4: 2026-01-17T20:23:50.344436+00:00
+  Fila 5: 2026-01-17T20:23:50.344436+00:00
+
+updated_at:
+  Fila 1: 2026-01-17T20:18:31.157053+00:00
+  Fila 2: 2026-01-17T20:23:49.805552+00:00
+  Fila 3: 2026-01-17T20:23:49.805552+00:00
+  Fila 4: 2026-01-17T20:23:50.344436+00:00
+  Fila 5: 2026-01-17T20:23:50.344436+00:00
+
+Nombre_1_P1:
+  Fila 1: Juan
+  Fila 2: Edgardo
+  Fila 3: Carlos
+  Fila 4: Alfredo
+  Fila 5: Claudia
+
+Nombre_2_P1:
+  Fila 1: Miguel
+  Fila 2: nan
+  Fila 3: Alberto
+  Fila 4: nan
+  Fila 5: Cecilia
+
+Apellido_1_P1:
+  Fila 1: Acha
+  Fila 2: Aguinaga
+  Fila 3: Navarrete
+  Fila 4: Alcántara
+  Fila 5: Amat
+
+Apellido_2_P1:
+  Fila 1: Agustín
+  Fila 2: Oliver
+  Fila 3: nan
+  Fila 4: Cerna
+  Fila 5: León
+
+tipo_doc_P1:
+  Fila 1: DNI
+  Fila 2: DNI
+  Fila 3: CEX
+  Fila 4: DNI
+  Fila 5: DNI
+
+documento_identidad_P1:
+  Fila 1: 10005622
+  Fila 2: 4641802
+  Fila 3: 147063
+  Fila 4: 8847414
+  Fila 5: 10002888
+
+fecha_nacimiento_P1:
+  Fila 1: 1965-01-13 00:00:00
+  Fila 2: 1958-06-18 00:00:00
+  Fila 3: 1960-01-08 00:00:00
+  Fila 4: 1958-07-19 00:00:00
+  Fila 5: 1975-10-07 00:00:00
+
+estado_civil_P1:
+  Fila 1: Casado (a)
+  Fila 2: Casado (a)
+  Fila 3: Casado (a)
+  Fila 4: Viudo (a)
+  Fila 5: Casado (a)
+
+nacionalidad_P1:
+  Fila 1: Perú
+  Fila 2: Perú
+  Fila 3: Argentina
+  Fila 4: Perú
+  Fila 5: Perú
+
+residente_peru_P1:
+  Fila 1: True
+  Fila 2: True
+  Fila 3: True
+  Fila 4: True
+  Fila 5: True
+
+es_pep_P1:
+  Fila 1: False
+  Fila 2: False
+  Fila 3: False
+  Fila 4: False
+  Fila 5: False
+
+pep_detalle_P1:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+email_P1:
+  Fila 1: juan.acha13@hotmail.com
+  Fila 2: assyge@gmail.com
+  Fila 3: navarrete_c@hotmail.com
+  Fila 4: alalfredo1@yahoo.com
+  Fila 5: claudiaayl@hotmail.com
+
+telefono_P1:
+  Fila 1: 997 443 623
+  Fila 2: 945 222 368
+  Fila 3: 998 976 477
+  Fila 4: 991 678 269
+  Fila 5: 958 951 530
+
+direccion_fiscal_P1:
+  Fila 1: Calle Hassinger 107 Dpto 201, San Borja, Lima
+  Fila 2: Calle Tamarix 124 Urb. Los Cisnes, Santiago de Surcco, Lima
+  Fila 3: Calle La Malva 195, Torre A, Etapa 1, Dpto 602, Surco
+  Fila 4: Jr. Mariano Jurado de los Reyes 611, Surquillo, Lima
+  Fila 5: Calle Hermano Lobo 175 Dpto 201, Chacarilla, San Borja
+
+codigo_postal_P1:
+  Fila 1: 15037
+  Fila 2: 15023
+  Fila 3: 15023
+  Fila 4: 15047
+  Fila 5: 15037
+
+Nombre_1_conyuge_P1:
+  Fila 1: Emelda
+  Fila 2: Milka
+  Fila 3: Graciela
+  Fila 4: nan
+  Fila 5: Roberto
+
+Nombre_2_conyuge_P1:
+  Fila 1: Lucrecia
+  Fila 2: Cecilia del Carmen
+  Fila 3: Elisa
+  Fila 4: nan
+  Fila 5: Francisco
+
+Apellido_1_conyuge_P1:
+  Fila 1: Sánchez
+  Fila 2: Salcedo
+  Fila 3: Varetto
+  Fila 4: nan
+  Fila 5: Tirado
+
+Apellido_2_conyuge_P1:
+  Fila 1: Segura
+  Fila 2: Kuljevan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Bertuccelli
+
+tipo_documento_conyuge_P1:
+  Fila 1: DNI
+  Fila 2: DNI
+  Fila 3: CEX
+  Fila 4: nan
+  Fila 5: DNI
+
+num_documento_conyuge_P1:
+  Fila 1: 9299702.0
+  Fila 2: 4641801.0
+  Fila 3: 286039.0
+  Fila 4: nan
+  Fila 5: 10001949.0
+
+nombre_completo_conyuge_P1:
+  Fila 1: Emelda Lucrecia Sánchez Segura
+  Fila 2: Milka Cecilia del Carmen Salcedo Kuljevan
+  Fila 3: Graciela Elisa Varetto
+  Fila 4: nan
+  Fila 5: Roberto Francisco Tirado Bertuccelli
+
+ocupacion_P1:
+  Fila 1: Jubilado
+  Fila 2: Empleado
+  Fila 3: nan
+  Fila 4: Empleado
+  Fila 5: Ingeniero Industrial
+
+centro_labores_P1:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: MARSA SA
+  Fila 5: MYEYEDR
+
+cargo_ocupado_P1:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: Jefe de Control Interno
+  Fila 5: Gerente de Experiencia del Cliente
+
+antiguedad_laboral_anios_P1:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: 30.0
+  Fila 5: 2.0
+
+perfil_riesgo_P1:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_P1:
+  Fila 1: Acha Agustín Juan Miguel
+  Fila 2: Edgardo Aguinaga Oliver
+  Fila 3: Carlos Alberto Navarrete
+  Fila 4: Alfredo Alcántara Cerna
+  Fila 5: Claudia Cecilia Amat León
+
+Nombre_1_P2:
+  Fila 1: Emelda
+  Fila 2: Rodrigo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Roberto
+
+Nombre_2_P2:
+  Fila 1: Lucrecia
+  Fila 2: Edgardo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Francisco
+
+Apellido_1_P2:
+  Fila 1: Sánchez
+  Fila 2: Aguinaga
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Tirado
+
+Apellido_2_P2:
+  Fila 1: Segura
+  Fila 2: Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Bertuccelli
+
+tipo_doc_P2:
+  Fila 1: DNI
+  Fila 2: DNI
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: DNI
+
+documento_identidad_P2:
+  Fila 1: 9299702.0
+  Fila 2: 70006502.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 10001949.0
+
+fecha_nacimiento_P2:
+  Fila 1: 1967-09-02 00:00:00
+  Fila 2: 1994-04-18 00:00:00
+  Fila 3: NaT
+  Fila 4: NaT
+  Fila 5: 1975-06-19 00:00:00
+
+estado_civil_P2:
+  Fila 1: Casado (a)
+  Fila 2: Soltero (a)
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Casado (a)
+
+nacionalidad_P2:
+  Fila 1: Perú
+  Fila 2: Perú
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Perú
+
+residente_peru_P2:
+  Fila 1: 1.0
+  Fila 2: 1.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 1.0
+
+es_pep_P2:
+  Fila 1: 0.0
+  Fila 2: 0.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 0.0
+
+pep_detalle_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+email_P2:
+  Fila 1: nan
+  Fila 2: redgardoas@gmail.com
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: rtiraccelli@gmail.com
+
+telefono_P2:
+  Fila 1: 997 443 623
+  Fila 2: 964 922 100
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 963 762 780
+
+direccion_fiscal_P2:
+  Fila 1: Calle Hassinger 107 Dpto 201, San Borja, Lima
+  Fila 2: Calle Tamarix 124, Santiago de Surco, Lima
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Calle Hermano Lobo 175 Dpto 201, Chacarilla, San Borja
+
+codigo_postal_P2:
+  Fila 1: 15037.0
+  Fila 2: 15023.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 15037.0
+
+Nombre_1_conyuge_P2:
+  Fila 1: Juan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Claudia
+
+Nombre_2_conyuge_P2:
+  Fila 1: Miguel
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Cecilia
+
+Apellido_1_conyuge_P2:
+  Fila 1: Acha
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Amat
+
+Apellido_2_conyuge_P2:
+  Fila 1: Agustín
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: León
+
+tipo_documento_conyuge_P2:
+  Fila 1: DNI
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: DNI
+
+num_documento_conyuge_P2:
+  Fila 1: 10005622.0
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 10002888.0
+
+nombre_completo_conyuge_P2:
+  Fila 1: Acha Agustín Juan Miguel
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Claudia Cecilia Amat León
+
+ocupacion_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Ingeniero de Sistemas
+
+centro_labores_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: ASSISTING HANDS
+
+cargo_ocupado_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Gerente General
+
+antiguedad_laboral_anios_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 1.0
+
+perfil_riesgo_P2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_P2:
+  Fila 1: Emelda Lucrecia Sánchez Segura
+  Fila 2: Rodrigo Edgardo Aguinaga Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: Roberto Francisco Tirado Bertuccelli
+
+Nombre_1_P3:
+  Fila 1: nan
+  Fila 2: Kalina
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_2_P3:
+  Fila 1: nan
+  Fila 2: Del Carmen
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_1_P3:
+  Fila 1: nan
+  Fila 2: Aguinaga
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_2_P3:
+  Fila 1: nan
+  Fila 2: Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+tipo_doc_P3:
+  Fila 1: nan
+  Fila 2: DNI
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+documento_identidad_P3:
+  Fila 1: nan
+  Fila 2: 70006505.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+fecha_nacimiento_P3:
+  Fila 1: NaT
+  Fila 2: 1992-04-08 00:00:00
+  Fila 3: NaT
+  Fila 4: NaT
+  Fila 5: NaT
+
+estado_civil_P3:
+  Fila 1: nan
+  Fila 2: Soltero (a)
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nacionalidad_P3:
+  Fila 1: nan
+  Fila 2: Perú
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+residente_peru_P3:
+  Fila 1: nan
+  Fila 2: 1.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+es_pep_P3:
+  Fila 1: nan
+  Fila 2: 0.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+pep_detalle_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+email_P3:
+  Fila 1: nan
+  Fila 2: kalina.aguinaga@gmail.com
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+telefono_P3:
+  Fila 1: nan
+  Fila 2: 964 623 018
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+direccion_fiscal_P3:
+  Fila 1: nan
+  Fila 2: Calle Roma 316 Dpto 306, Miraflores, Lima
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+codigo_postal_P3:
+  Fila 1: nan
+  Fila 2: 15074.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_1_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_2_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_1_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_2_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+tipo_documento_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+num_documento_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_conyuge_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+ocupacion_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+centro_labores_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+cargo_ocupado_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+antiguedad_laboral_anios_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+perfil_riesgo_P3:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_P3:
+  Fila 1: nan
+  Fila 2: Kalina del Carmen Aguinaga Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_1_P4:
+  Fila 1: nan
+  Fila 2: Milka
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_2_P4:
+  Fila 1: nan
+  Fila 2: Patricia del Carmen
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_1_P4:
+  Fila 1: nan
+  Fila 2: Aguinaga
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_2_P4:
+  Fila 1: nan
+  Fila 2: Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+tipo_doc_P4:
+  Fila 1: nan
+  Fila 2: DNI
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+documento_identidad_P4:
+  Fila 1: nan
+  Fila 2: 70006504.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+fecha_nacimiento_P4:
+  Fila 1: NaT
+  Fila 2: 1989-08-04 00:00:00
+  Fila 3: NaT
+  Fila 4: NaT
+  Fila 5: NaT
+
+estado_civil_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nacionalidad_P4:
+  Fila 1: nan
+  Fila 2: Perú
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+residente_peru_P4:
+  Fila 1: nan
+  Fila 2: 1.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+es_pep_P4:
+  Fila 1: nan
+  Fila 2: 0.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+pep_detalle_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+email_P4:
+  Fila 1: nan
+  Fila 2: milka_aguinaga@hotmail.com
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+telefono_P4:
+  Fila 1: nan
+  Fila 2: 989 458 018
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+direccion_fiscal_P4:
+  Fila 1: nan
+  Fila 2: Calle Roma 316 Dpto 306, Miraflores, Lima
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+codigo_postal_P4:
+  Fila 1: nan
+  Fila 2: 15076.0
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_1_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Nombre_2_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_1_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+Apellido_2_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+tipo_documento_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+num_documento_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_conyuge_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+ocupacion_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+centro_labores_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+cargo_ocupado_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+antiguedad_laboral_anios_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+perfil_riesgo_P4:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+nombre_completo_P4:
+  Fila 1: nan
+  Fila 2: Milka Patricia del Carmen Aguinaga Salcedo
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+moneda_cuenta_1:
+  Fila 1: PEN
+  Fila 2: PEN
+  Fila 3: PEN
+  Fila 4: PEN
+  Fila 5: PEN
+
+banco_nombre_1:
+  Fila 1: BCP
+  Fila 2: BCP
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+numero_cuenta_1:
+  Fila 1: 193 163 823 95 0 72
+  Fila 2: 191 397 926 07 0 51
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+cci_1:
+  Fila 1: 002 193 116 382 395 072 15
+  Fila 2: 002 191 139 792 607 051 56
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+moneda_cuenta_2:
+  Fila 1: USD
+  Fila 2: USD
+  Fila 3: USD
+  Fila 4: USD
+  Fila 5: USD
+
+banco_nombre_2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: BBVA
+  Fila 4: INTERBANK
+  Fila 5: BCP
+
+numero_cuenta_2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: 193 214 639 56 1 62
+
+cci_2:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: 011 486 000 201 381 995 84
+  Fila 4: 003 898 013 427 972 217 44
+  Fila 5: 002 193 121 463 956 162 16
+
+puntaje_encuesta_INV:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan
+
+asesor_nombre:
+  Fila 1: Julio Carlos Irribarren Rivera
+  Fila 2: Luis Angel Villalba Jara
+  Fila 3: Gladys Yanneth Parra Forero
+  Fila 4: Fernando José García Iriarte
+  Fila 5: Julio Carlos Irribarren Rivera
+
+asesor_email:
+  Fila 1: jirribarren.brokerdeinversiones@gmail.com
+  Fila 2: lvillalva@gmail.com
+  Fila 3: jparra@inandes.com
+  Fila 4: pachogarcia369@gmail.com
+  Fila 5: jirribarren.brokerdeinversiones@gmail.com
+
+direccion_fiscal_INV:
+  Fila 1: Calle Hassinger 107 Dpto 201, San Borja, Lima
+  Fila 2: Calle Tamarix 124 Urb. Los Cisnes, Santiago de Surcco, Lima
+  Fila 3: Calle La Malva 195, Torre A, Etapa 1, Dpto 602, Surco
+  Fila 4: Jr. Mariano Jurado de los Reyes 611, Surquillo, Lima
+  Fila 5: Calle Hermano Lobo 175 Dpto 201, Chacarilla, San Borja
+
+codigo_postal_INV:
+  Fila 1: 15037
+  Fila 2: 15023
+  Fila 3: 15023
+  Fila 4: 15047
+  Fila 5: 15037
+
+email_INV:
+  Fila 1: nan
+  Fila 2: nan
+  Fila 3: nan
+  Fila 4: nan
+  Fila 5: nan

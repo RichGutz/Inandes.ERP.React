@@ -15,6 +15,14 @@ Estamos reemplazando la interfaz heredada de **Streamlit** por un **Frontend Rea
 | **Base de Datos** | Supabase (`egvcinsbyropumybatdf`) | ✅ Operativa |
 | **Motores Financieros** | Motores Python V32, V25 y V2 | ✅ Intactos en `mini_erp_v2_antigravity` |
 
+## 🔒 Regla Intangible de Desarrollo: CLONAR Significa Copia Literal 1:1
+
+Cuando el usuario instruya **"CLONAR [Elemento A] en [Elemento B]"**:
+1. **Inspección Previa Obligatoria**: Abrir e inspeccionar el archivo de referencia original y citar el fragmento antes de codificar.
+2. **Cero Creatividad / Cero Sustitutos**: Si el original usa `window.open('/ruta.pdf', '_blank')` y un archivo estático en disco, la réplica DEBE usar exactamente la misma técnica. Prohibido usar Blobs, modales (`DocumentoBatchModal`) o iframes.
+3. **Cero `await` en `onClick`**: Prohibido anteponer llamadas asíncronas que destruyan el contexto del navegador y cierren pestañas.
+4. **Nginx para PDFs**: Los archivos binarios deben servirse con `Content-Type: application/pdf; Content-Disposition: inline;` para abrir el visor nativo de Chrome con fondo oscuro.
+
 ---
 
 ## 🚫 Regla de Oro — NO Reinventar la Rueda

@@ -10,8 +10,7 @@ import {
   FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
   ShieldCheck, Undo2, X, Calendar
 } from 'lucide-react';
-import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
-import { DocumentoBatchModal } from './components/DocumentoBatchModal';
+import { LOGO_EFI_BASE64 } from '../../assets/base64Images';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo
@@ -21,13 +20,6 @@ export const InversionistasPage: React.FC = () => {
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);
   const [rollbackConfirmText, setRollbackConfirmText] = useState<string>('');
   const [rollbackLoading, setRollbackLoading] = useState<boolean>(false);
-
-  // Modal Visor PDF de Documentos Batch (Cero popups bloqueados, Cero sharing violations)
-  const [docModalOpen, setDocModalOpen] = useState<boolean>(false);
-  const [docModalTitle, setDocModalTitle] = useState<string>('');
-  const [docModalSubtitle, setDocModalSubtitle] = useState<string>('');
-  const [docModalHtml, setDocModalHtml] = useState<string>('');
-  const [docModalFilename, setDocModalFilename] = useState<string>('');
 
 
   // Estado común de partícipes
@@ -63,9 +55,6 @@ export const InversionistasPage: React.FC = () => {
 
   // Estado de Generación Documentos
   const [docFondo, setDocFondo] = useState<string>('');
-  const [docProcessing, setDocProcessing] = useState<boolean>(false);
-  const [batchReady, setBatchReady] = useState<boolean>(false);
-  const [batchData, setBatchData] = useState<any>(null);
 
   // Carga inicial
   const fetchDatos = async () => {
@@ -287,7 +276,7 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    // Generar layout de impresión premium
+    // Generar layout de impresión premium con encabezado oficial
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
@@ -295,83 +284,186 @@ export const InversionistasPage: React.FC = () => {
     }
 
     const htmlContent = `
-      <html>
+      <!DOCTYPE html>
+      <html lang="es">
         <head>
-          <title>Reporte de Auditoría InAndes v40 - ${fEnd}</title>
+          <meta charset="UTF-8">
+          <title>Reporte de Auditoría InAndes - ${fEnd}</title>
           <style>
-            body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; margin: 20px; font-size: 11px; }
-            h2 { color: #064e3b; margin-bottom: 2px; text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #059669; padding-bottom: 4px; }
-            .meta { font-size: 10px; color: #64748b; margin-bottom: 15px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 25px; page-break-inside: avoid; }
-            th { background-color: #0f172a; color: white; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 6px 4px; text-align: left; }
-            td { border-bottom: 1px solid #e2e8f0; padding: 5px 4px; }
-            .totals-row { background-color: #f1f5f9; font-weight: bold; }
-            .aumento-row { color: #0369a1; font-style: italic; background-color: #f0f9ff; }
+            @page {
+              size: A4 landscape;
+              margin: 0mm !important;
+            }
+            * { box-sizing: border-box; }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background-color: #ffffff !important;
+              font-family: Arial, Helvetica, sans-serif;
+              color: #1e293b;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .report-page {
+              width: 297mm;
+              min-height: 210mm;
+              padding: 10mm 12mm;
+              margin: 0 auto;
+              page-break-after: always;
+              page-break-inside: avoid;
+            }
+            .header-container {
+              position: relative;
+              text-align: center;
+              margin-bottom: 12px;
+              padding-bottom: 8px;
+              border-bottom: 2px solid #059669;
+            }
+            .header-right {
+              position: absolute;
+              right: 0;
+              top: 0;
+            }
+            .logo {
+              width: 105px;
+              max-height: 42px;
+              object-fit: contain;
+            }
+            .header-center {
+              margin: 0 auto;
+              text-align: center;
+            }
+            .company-title {
+              font-weight: 900;
+              font-size: 11.5pt;
+              text-transform: uppercase;
+              color: #064e3b;
+              margin: 0 0 2px 0;
+            }
+            .report-title {
+              font-weight: 800;
+              font-size: 10.5pt;
+              text-transform: uppercase;
+              color: #0f172a;
+              margin: 0 0 2px 0;
+            }
+            .period-subtitle {
+              font-size: 9pt;
+              font-weight: bold;
+              color: #475569;
+              text-transform: uppercase;
+              margin: 0;
+            }
+            .fund-section-title {
+              font-size: 10pt;
+              font-weight: bold;
+              color: #064e3b;
+              margin: 10px 0 4px 0;
+              text-transform: uppercase;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 16px;
+              font-size: 8pt;
+            }
+            th {
+              background-color: #0f172a !important;
+              color: #ffffff !important;
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 7.5pt;
+              padding: 4px 3px;
+              text-align: left;
+              border: 1px solid #0f172a;
+            }
+            td {
+              border: 1px solid #cbd5e1;
+              padding: 3.5px 3px;
+              vertical-align: middle;
+            }
+            .totals-row {
+              background-color: #f1f5f9 !important;
+              font-weight: bold;
+              border-top: 2px solid #0f172a;
+            }
+            .aumento-row {
+              color: #0369a1;
+              font-style: italic;
+              background-color: #f0f9ff !important;
+            }
             .text-right { text-align: right; }
-            .badge { padding: 1px 4px; border-radius: 4px; font-size: 8px; font-weight: bold; color: white; }
-            .bg-soles { background-color: #10b981; }
-            .bg-usd { background-color: #3b82f6; }
+            .text-center { text-align: center; }
             @media print {
               .no-print { display: none; }
-              body { margin: 10px; }
             }
           </style>
         </head>
         <body>
-          <h2>INANDES CRM - REPORTE DE AUDITORÍA CONTABLE V40</h2>
-          <div class="meta">Periodo: ${fStart} al ${fEnd} | Generado el: ${new Date().toLocaleDateString()}</div>
-          
-          ${currentResult.pdfData.map((fData: any) => `
-            <h3>Fondo: ${fData.fondo.nombre_fondo} (${fData.fondo.id_fondo})</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Certificado</th>
-                  <th>Inversionista</th>
-                  <th class="text-right">Capital Base</th>
-                  <th class="text-right">Int. Bruto</th>
-                  <th class="text-right">IR (5%)</th>
-                  <th class="text-right">Neto Disp.</th>
-                  <th class="text-right">Capitaliz.</th>
-                  <th class="text-right">Reparto</th>
-                  <th class="text-right">Deducciones</th>
-                  <th class="text-right">Rescates</th>
-                  <th class="text-right">Capital Final</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${fData.blocks[0].rows.map((r: any) => `
-                  <tr class="${r.tipo === 'AUMENTO' ? 'aumento-row' : ''}">
-                    <td>${r.n_orden || ''}</td>
-                    <td>${r.id}</td>
-                    <td>${r.inversionista || (r.tipo === 'AUMENTO' ? '└─ Incremento de Capital' : '')}</td>
-                    <td class="text-right">${formatCurrencyVal(r.capital, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(r.bruto_total, fData.fondo.moneda)}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.impuesto_total, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.base_neta, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capitalizacion, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.reparto_valor, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.deducciones_total, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.devolucion_capital, fData.fondo.moneda) : '-'}</td>
-                    <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capital_final, fData.fondo.moneda) : '-'}</td>
+          <div class="report-page">
+            <div class="header-container">
+              <div class="header-right">
+                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo" alt="EFI">
+              </div>
+              <div class="header-center">
+                <div class="company-title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
+                <div class="report-title">REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)</div>
+                <div class="period-subtitle">FECHA DE CORTE: DEL ${fStart} AL ${fEnd}</div>
+              </div>
+            </div>
+            
+            ${currentResult.pdfData.map((fData: any) => `
+              <div class="fund-section-title">FONDO: ${fData.fondo.nombre_fondo} (${fData.fondo.id_fondo})</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th class="text-center" style="width: 25px;">N°</th>
+                    <th style="width: 85px;">Certificado</th>
+                    <th>Inversionista</th>
+                    <th class="text-right">Capital Base</th>
+                    <th class="text-right">Int. Bruto</th>
+                    <th class="text-right">IR (5%)</th>
+                    <th class="text-right">Neto Disp.</th>
+                    <th class="text-right">Capitaliz.</th>
+                    <th class="text-right">Reparto</th>
+                    <th class="text-right">Deducciones</th>
+                    <th class="text-right">Rescates</th>
+                    <th class="text-right">Capital Final</th>
                   </tr>
-                `).join('')}
-                <tr class="totals-row">
-                  <td colspan="3">TOTALES</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.capital, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.bruto_total, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.impuesto_total, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.base_neta, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.capitalizacion, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.reparto_valor, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.deducciones_total, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.devolucion_capital, fData.fondo.moneda)}</td>
-                  <td class="text-right">${formatCurrencyVal(fData.totals.capital_final, fData.fondo.moneda)}</td>
-                </tr>
-              </tbody>
-            </table>
-          `).join('')}
+                </thead>
+                <tbody>
+                  ${fData.blocks[0].rows.map((r: any) => `
+                    <tr class="${r.tipo === 'AUMENTO' ? 'aumento-row' : ''}">
+                      <td class="text-center">${r.n_orden || ''}</td>
+                      <td>${r.id}</td>
+                      <td>${r.inversionista || (r.tipo === 'AUMENTO' ? '└─ Incremento de Capital' : '')}</td>
+                      <td class="text-right">${formatCurrencyVal(r.capital, fData.fondo.moneda)}</td>
+                      <td class="text-right">${formatCurrencyVal(r.bruto_total, fData.fondo.moneda)}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.impuesto_total, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.base_neta, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capitalizacion, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.reparto_valor, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.deducciones_total, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.devolucion_capital, fData.fondo.moneda) : '-'}</td>
+                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capital_final, fData.fondo.moneda) : '-'}</td>
+                    </tr>
+                  `).join('')}
+                  <tr class="totals-row">
+                    <td colspan="3" class="text-center">TOTALES ACUMULADOS</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.capital, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.bruto_total, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.impuesto_total, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.base_neta, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.capitalizacion, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.reparto_valor, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.deducciones_total, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.devolucion_capital, fData.fondo.moneda)}</td>
+                    <td class="text-right">${formatCurrencyVal(fData.totals.capital_final, fData.fondo.moneda)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            `).join('')}
+          </div>
         </body>
       </html>
     `;
@@ -674,483 +766,10 @@ export const InversionistasPage: React.FC = () => {
     return `${texto.trim()} CON ${centavosStr}`;
   };
 
-  // --- Lógica de Pestaña C: EECC y Certificados de Retención Renta ---
-  const handleProcessDocBatch = async () => {
-    setDocProcessing(true);
-    setBatchReady(false);
-    try {
-      const fondoId = (docFondo && docFondo !== 'TODOS') ? docFondo : null;
-      const res = await generateRetornosV40(fondoId, fStart, fEnd);
-
-      if (!res || res.asientos.length === 0) {
-        alert(`No se encontraron registros para el fondo ${docFondo} en el período ${fStart} al ${fEnd}.`);
-        return;
-      }
-
-      // Mapear inversionistas para direcciones fiscales y DNIs
-      const { data: invs } = await supabase.from('crm_inversionistas').select('codigo_inversionista, documento_identidad, direccion_fiscal, nombre_completo, nombre_1, apellido_1');
-      const addressMap: Record<string, { direccion: string; dni: string; nombre: string }> = {};
-      if (invs) {
-        for (const i of invs) {
-          const keyDoc = String(i.documento_identidad || '').toLowerCase();
-          const keyCod = String(i.codigo_inversionista || '').toLowerCase();
-          const info = {
-            direccion: i.direccion_fiscal || "Av. Canaval y Moreyra 425, San Isidro, Lima",
-            dni: i.documento_identidad || i.codigo_inversionista || "00000000",
-            nombre: i.nombre_completo || `${i.apellido_1 || ''} ${i.nombre_1 || ''}`.trim()
-          };
-          if (keyDoc) addressMap[keyDoc] = info;
-          if (keyCod) addressMap[keyCod] = info;
-        }
-      }
-
-      // Preparar lote de Estados de Cuenta
-      const eeccList = res.asientos.map(a => {
-        const payload = a.payload_asiento || {};
-        const prefix = String(a.id_certificado.split('.')[0]).toLowerCase();
-        const invInfo = addressMap[prefix] || {
-          direccion: "Av. Canaval y Moreyra 425, San Isidro, Lima",
-          dni: prefix.toUpperCase(),
-          nombre: payload.inversionista || "Inversionista Registrado"
-        };
-
-        return {
-          id_certificado: a.id_certificado,
-          inversionista: payload.inversionista || invInfo.nombre,
-          dni: invInfo.dni,
-          direccion: invInfo.direccion,
-          moneda: payload.moneda || 'USD',
-          capital_base: a.capital_base,
-          interes_bruto: a.interes_generado_bruto,
-          impuesto: a.impuestos_renta,
-          deducciones: a.deducciones_penalidades || 0,
-          neto_disponible: a.neto_disponible_para_reparto,
-          capitalizacion: a.capitalizacion_reinversion,
-          devolucion_capital: a.monto_rescate || 0,
-          capital_final: a.capital_final_saldo,
-          fecha_inicio: fStart,
-          fecha_fin: fEnd
-        };
-      });
-
-      // Preparar lote de Certificados de Retención (5% IR)
-      const retencionesList = res.asientos.filter(a => a.impuestos_renta > 0).map(a => {
-        const payload = a.payload_asiento || {};
-        const prefix = String(a.id_certificado.split('.')[0]).toLowerCase();
-        const invInfo = addressMap[prefix] || {
-          direccion: "Av. Canaval y Moreyra 425, San Isidro, Lima",
-          dni: prefix.toUpperCase(),
-          nombre: payload.inversionista || "Inversionista Registrado"
-        };
-        const moneda = payload.moneda || 'USD';
-        const monedaNombre = moneda === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
-
-        return {
-          id_certificado: a.id_certificado,
-          inversionista: payload.inversionista || invInfo.nombre,
-          dni: invInfo.dni,
-          direccion: invInfo.direccion,
-          moneda: moneda,
-          moneda_nombre: monedaNombre,
-          interes_bruto: a.interes_generado_bruto,
-          monto_impuesto: a.impuestos_renta,
-          monto_impuesto_letras: `${numeroALetrasPeru(a.impuestos_renta)} ${monedaNombre}`,
-          fecha_inicio: fStart,
-          fecha_fin: fEnd
-        };
-      });
-
-      setBatchData({ eecc: eeccList, retenciones: retencionesList, fondo: docFondo });
-      setBatchReady(true);
-    } catch (err: any) {
-      alert(`Error al preparar batch: ${err.message}`);
-    } finally {
-      setDocProcessing(false);
-    }
-  };
-
-    // Descarga / Impresión Batch de Estados de Cuenta (Plantilla Exacta generate_docs_pdf.py)
-  const handleDownloadEECCBatch = () => {
-    if (!batchData || batchData.eecc.length === 0) {
-      alert("No hay estados de cuenta procesados para emitir.");
-      return;
-    }
-
-    // Configurar y abrir el Visor Modal Nativo (Sin popups ni bloqueos de Windows)
-
-    const fmt = (v: any) => {
-      try {
-        if (v === "" || v === null || v === undefined) return "0.00";
-        if (Number(v) === 0) return "-";
-        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } catch {
-        return String(v);
-      }
-    };
-
-    const fmtVc = (v: any) => {
-      try {
-        if (v === "" || v === null || v === undefined) return "0.00";
-        if (Number(v) === 0) return "-";
-        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } catch {
-        return String(v);
-      }
-    };
-
-    const mesesShort = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    const dIni = new Date(fStart + 'T12:00:00');
-    const dFin = new Date(fEnd + 'T12:00:00');
-    const pIniStr = `${String(dIni.getDate()).padStart(2, '0')}-${mesesShort[dIni.getMonth()]}-${String(dIni.getFullYear()).slice(-2)}`;
-    const pFinStr = `${String(dFin.getDate()).padStart(2, '0')}-${mesesShort[dFin.getMonth()]}-${String(dFin.getFullYear()).slice(-2)}`;
-    const periodoTxt = `DEL ${pIniStr} AL ${pFinStr}`.toUpperCase();
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-          <meta charset="UTF-8">
-          <title>Lote EECC - ${batchData.fondo} (${fEnd})</title>
-          <style>
-              @page { 
-                  size: A4; 
-                  margin: 2.5cm 2.5cm 2.5cm 2.5cm;
-              }
-              body {
-                  font-family: Arial, sans-serif;
-                  font-size: 11pt;
-                  line-height: 1.3;
-                  color: #000;
-                  margin: 0;
-                  padding: 0;
-              }
-              .header { text-align: right; margin-bottom: 20px; }
-              .logo { width: 160px; margin-bottom: 15px; } 
-              
-              .title { font-weight: bold; text-transform: uppercase; margin-bottom: 5px; font-size: 11pt; text-align: center; }
-              .subtitle { font-weight: bold; margin-bottom: 15px; font-size: 11pt; text-align: center; }
-              .period { margin-bottom: 25px; text-transform: uppercase; text-align: center; }
-              
-              .client-info p { margin: 3px 0; }
-              
-              table.data-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10pt; }
-              table.data-table td { padding: 6px 4px; vertical-align: bottom; }
-              
-              /* COLORES DE FILA */
-              .row-blue { background-color: rgb(204, 235, 255); }
-              .row-green { background-color: rgb(225, 238, 217); }
-              
-              .amount { text-align: right; font-family: 'Courier New', monospace; letter-spacing: -0.5px; }
-              .bold { font-weight: bold; }
-              .uppercase { text-transform: uppercase; }
-              .justify { text-align: justify; }
-              
-              .currency-symbol { width: 40px; text-align: left; }
-              .currency-val { width: 100px; text-align: right; }
-              
-              /* SECCION FINAL CON BORDE */
-              .summary-box {
-                  border: 2px solid #000; 
-                  padding: 10px;
-                  margin-top: 20px;
-              }
-              .summary-box table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-              .summary-box td { padding: 4px; }
-              
-              /* FOOTER ESPECIFICO */
-              .footer-eecc {
-                  margin-top: 60px;
-                  text-align: center;
-                  font-size: 9pt;
-                  color: rgb(79, 79, 255);
-                  line-height: 1.4;
-              }
-              .page-break { page-break-after: always; }
-              @media print { .no-print { display: none; } }
-          </style>
-      </head>
-      <body>
-          ${batchData.eecc.map((row: any, idx: number) => {
-            const certId = String(row.id_certificado || '').split('-')[0].toUpperCase();
-            const monedaTitle = row.moneda === 'USD' ? 'USD: DOLARES DE LOS ESTADOS UNIDOS DE AMERICA' : 'PEN: PERU SOLES';
-            const saldoInicial = Number(row.capital_base || 0);
-            const gananciaBruta = Number(row.interes_bruto || 0);
-            const retencion = Number(row.impuesto || 0);
-            const gananciaNeta = Number(row.neto_disponible || 0);
-            const capitalizado = Number(row.capitalizacion || 0);
-            const rescates = Number(row.devolucion_capital || 0);
-            const transferido = gananciaNeta + rescates - capitalizado;
-            const saldoFinal = Number(row.capital_final || (saldoInicial + capitalizado));
-            const cuotasFinal = saldoFinal / 1000;
-
-            return `
-              <div class="header">
-                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo" alt="InAndes">
-              </div>
-              <div class="title">ESTADO DE CUENTA DEL CERTIFICADO ${certId}</div>
-              <div class="subtitle">${batchData.fondo.toUpperCase()}</div>
-              <div class="period">${periodoTxt}</div>
-              
-              <div class="client-info">
-                  <p>Sr(a)(s):</p>
-                  <p class="bold" style="font-size: 11pt;">${row.inversionista}</p>
-              </div>
-              
-              <div style="margin-top: 20px; font-size: 10pt;">
-                  <p>${monedaTitle}</p>
-              </div>
-              
-              <table class="data-table">
-                  <tr>
-                      <td>Monto inicial invertido:</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">${fmt(saldoInicial)}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 10px;"></td></tr>
-                  
-                  <tr class="row-blue">
-                      <td>Ganancia bruta obtenida:</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">${fmt(gananciaBruta)}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 5px;"></td></tr>
-                  
-                  <tr>
-                      <td>(-) Impuesto a la Renta retenido</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">${retencion > 0 ? fmt(retencion) : '-'}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 5px;"></td></tr>
-                  
-                  <tr class="row-blue">
-                      <td class="bold">Ganancia disponible del partícipe</td>
-                      <td class="amount currency-symbol bold">${row.moneda}</td>
-                      <td class="amount currency-val bold">${fmt(gananciaNeta)}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 10px;"></td></tr>
-                  
-                  <tr>
-                      <td>(-) Retenciones a las ganancias solicitadas</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">-</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 15px;"></td></tr>
-                  
-                  <tr>
-                      <td>(+) Inversiones adicionales</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">-</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 5px;"></td></tr>
-                  
-                  <tr class="row-blue">
-                      <td>Monto destinado para adquirir nuevas cuotas</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">${capitalizado > 0 ? fmt(capitalizado) : '-'}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 5px;"></td></tr>
-                  
-                  <tr class="row-green">
-                      <td class="bold">Monto transferido a su cuenta bancaria</td>
-                      <td class="amount currency-symbol bold">${row.moneda}</td>
-                      <td class="amount currency-val bold">${fmt(transferido)}</td>
-                  </tr>
-                  <tr><td colspan="3" style="height: 5px;"></td></tr>
-                  
-                  <tr class="row-green">
-                      <td>Rescates solicitados por el partícipe</td>
-                      <td class="amount currency-symbol">${row.moneda}</td>
-                      <td class="amount currency-val">${rescates > 0 ? fmt(rescates) : '-'}</td>
-                  </tr>
-              </table>
-              
-              <div class="summary-box">
-                  <table>
-                      <tr>
-                          <td class="bold">Monto de la inversión al ${pFinStr}</td>
-                          <td class="amount currency-symbol bold">${row.moneda}</td>
-                          <td class="amount currency-val bold">${fmt(saldoFinal)}</td>
-                      </tr>
-                      <tr>
-                          <td>Número de cuotas al ${pFinStr}</td>
-                          <td class="amount currency-symbol">CUOTAS</td>
-                          <td class="amount currency-val">${fmtVc(cuotasFinal)}</td>
-                      </tr>
-                      <tr>
-                          <td>Fecha de cierre del Fondo / cierre del contrato</td>
-                          <td class="amount currency-symbol"></td>
-                          <td class="amount currency-val">${pFinStr}</td>
-                      </tr>
-                  </table>
-              </div>
-              
-              <div class="footer-eecc">
-                  <p>INANDES ACTIVOS ALTERNATIVOS SAC<br>
-                  Calle Los Tulipanes 147 Of. 306, Urb. El Polo Hunt, Santiago de Surco, Lima CP 15023<br>
-                  info@inandes.com</p>
-              </div>
-              
-              ${idx < batchData.eecc.length - 1 ? '<div class="page-break"></div>' : ''}
-            `;
-          }).join('')}
-      </body>
-      </html>
-    `;
-
-    setDocModalTitle(`Lote de Estados de Cuenta (EECC)`);
-    setDocModalSubtitle(`FONDO ${batchData.fondo} | PERÍODO ${periodoTxt}`);
-    setDocModalHtml(html);
-    setDocModalFilename(`Lote_EECC_${batchData.fondo}_${fEnd}`);
-    setDocModalOpen(true);
-  };
-
-  // Descarga / Impresión Batch de Certificados de Retención (Plantilla Exacta generate_docs_pdf.py)
-  const handleDownloadRetBatch = () => {
-    if (!batchData || batchData.retenciones.length === 0) {
-      alert("No hay retenciones tributarias generadas en este período para reportar.");
-      return;
-    }
-
-    // Configurar y abrir el Visor Modal Nativo (Sin popups ni bloqueos de Windows)
-
-    const fmt = (v: any) => {
-      try {
-        if (v === "" || v === null || v === undefined) return "0.00";
-        return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } catch {
-        return String(v);
-      }
-    };
-
-    const hoy = new Date();
-    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    const mesesShort = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-    const mesHoy = meses[hoy.getMonth()];
-    const anioHoy = String(hoy.getFullYear());
-    const fechaEmisionStr = `${hoy.getDate()} de ${mesHoy} del ${anioHoy}`;
-    const fechaEmisionShort = `${String(hoy.getDate()).padStart(2, '0')}-${mesesShort[hoy.getMonth()]}-${hoy.getFullYear()}`;
-
-    const dIni = new Date(fStart + 'T12:00:00');
-    const dFin = new Date(fEnd + 'T12:00:00');
-    const pIniStr = `${String(dIni.getDate()).padStart(2, '0')}-${mesesShort[dIni.getMonth()]}-${String(dIni.getFullYear()).slice(-2)}`;
-    const pFinStr = `${String(dFin.getDate()).padStart(2, '0')}-${mesesShort[dFin.getMonth()]}-${String(dFin.getFullYear()).slice(-2)}`;
-    const periodoTxt = `DEL ${pIniStr} AL ${pFinStr}`.toUpperCase();
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-          <meta charset="UTF-8">
-          <title>Lote Retenciones 5% - ${batchData.fondo} (${fEnd})</title>
-          <style>
-              @page { 
-                  size: A4; 
-                  margin: 2.5cm 2.5cm 2.5cm 2.5cm;
-              }
-              body {
-                  font-family: Arial, sans-serif;
-                  font-size: 11pt;
-                  line-height: 1.3;
-                  color: #000;
-                  margin: 0;
-                  padding: 0;
-              }
-              .header { text-align: right; margin-bottom: 20px; }
-              .logo { width: 160px; margin-bottom: 15px; } 
-              .title { font-weight: bold; text-transform: uppercase; margin-bottom: 5px; font-size: 11pt; text-align: center; }
-              .subtitle { font-weight: bold; margin-bottom: 15px; font-size: 11pt; text-align: center; }
-              .justify { text-align: justify; }
-              .bold { font-weight: bold; }
-              table.table-bordered { width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 20px; text-align: center; }
-              table.table-bordered th, table.table-bordered td { border: 1px solid #000; padding: 4px; vertical-align: middle; }
-              table.table-bordered th { background-color: #f0f0f0; font-weight: bold; }
-              .signature-section { margin-top: 60px; text-align: center; }
-              .signature-img { width: 180px; margin-bottom: 5px; }
-              .no-spacing p { margin: 0; line-height: 1.2; }
-              .page-break { page-break-after: always; }
-              @media print { .no-print { display: none; } }
-          </style>
-      </head>
-      <body>
-          ${batchData.retenciones.map((cert: any, idx: number) => {
-            const certNum = String(cert.id_certificado || '').split('-')[0].toUpperCase();
-            const esSoles = cert.moneda === 'PEN';
-            const colspanTotal = esSoles ? 3 : 4;
-            const montoCalculado = Number(cert.interes_bruto || 0);
-            const montoRetencion = Number(cert.monto_impuesto || 0);
-
-            return `
-              <div class="header">
-                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo" alt="InAndes">
-              </div>
-              
-              <div class="title">CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS DE SEGUNDA CATEGORÍA</div>
-              <div class="subtitle">CERTIFICADO N° ${certNum}</div>
-              
-              <div class="justify" style="margin-bottom: 20px;">
-                  <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Calle Los Tulipanes 147 Oficina 306 Edificio Blu Building, Urb. El Polo Hunt, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr. Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del <b>${batchData.fondo}</b>.</p>
-              </div>
-              
-              <div class="section">
-                  <p class="bold" style="margin-bottom: 5px;">CERTIFICA QUE:</p>
-                  <div class="justify">
-                      De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <span class="bold">${cert.inversionista}</span>, identificado(a) con DNI <span class="bold">${cert.dni}</span> y con domicilio fiscal en <span class="bold">${cert.direccion}</span>, la suma de <span class="bold">${cert.moneda} ${fmt(montoRetencion)}</span> <span class="bold">(${cert.monto_impuesto_letras})</span> por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las operaciones del CERTIFICADO ${certNum} del ${batchData.fondo}, correspondiente al período comprendido entre el ${pIniStr} al ${pFinStr}.
-                  </div>
-              </div>
-              
-              <div class="section">
-                  <table class="table-bordered">
-                      <tr>
-                          <th colspan="${colspanTotal}">RESUMEN DE LOS MONTOS RETENIDOS</th>
-                      </tr>
-                      <tr style="font-size: 7pt;">
-                          <td>BASE DE RETENCION</td>
-                          <td>MONTO RETENIDO</td>
-                          <td>FECHA DE LA OPERACION</td>
-                          ${!esSoles ? '<td>TIPO DE CAMBIO PEN/USD UTILIZADO</td>' : ''}
-                      </tr>
-                      <tr>
-                          <td>${cert.moneda} ${fmt(montoCalculado)}</td>
-                          <td>${cert.moneda} ${fmt(montoRetencion)}</td>
-                          <td>${fechaEmisionShort}</td>
-                          ${!esSoles ? '<td>PEN 3.662</td>' : ''}
-                      </tr>
-                  </table>
-              </div>
-              
-              <div class="section" style="margin-top: 30px;">
-                  <p>Santiago de Surco, ${fechaEmisionStr}</p>
-              </div>
-              
-              <div class="signature-section">
-                  <img src="data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}" class="signature-img" alt="Firma Ricardo Gallo">
-                  <div class="no-spacing">
-                      <p class="bold">Juan Ricardo Gallo Pizarro</p>
-                      <p>INANDES ACTIVOS ALTERNATIVOS SAC</p>
-                      <p>Gerente General</p>
-                  </div>
-              </div>
-
-              ${idx < batchData.retenciones.length - 1 ? '<div class="page-break"></div>' : ''}
-            `;
-          }).join('')}
-      </body>
-      </html>
-    `;
-
-    setDocModalTitle(`Certificados de Retención de 2da Categoría (5% IR)`);
-    setDocModalSubtitle(`FONDO ${batchData.fondo} | PERÍODO ${periodoTxt}`);
-    setDocModalHtml(html);
-    setDocModalFilename(`Certificados_Retencion_5pct_${batchData.fondo}_${fEnd}`);
-    setDocModalOpen(true);
-  };
-
-  // --- Lógica del Formulario Modal de Partícipes ---
   const handleOpenEditModal = (investor: Inversionista | null) => {
     setFormSubmitError(null);
     setFormSubmitSuccess(false);
     setFormActiveTab('identidad');
-    
     if (investor) {
       setFormMode('editar');
       setFormData({ ...investor });
@@ -1170,11 +789,22 @@ export const InversionistasPage: React.FC = () => {
         telefono: '',
         direccion_fiscal: '',
         codigo_postal: '',
-        estado_compliance: 'borrador',
-        perfil_riesgo: 'Medio'
+        estado_compliance: 'borrador'
       });
     }
     setIsModalOpen(true);
+  };
+
+  // Descarga / Apertura de Estados de Cuenta Oficiales (PDF Nativo en Visor Chrome con fondo negro y flecha de download)
+  const handleDownloadEECCBatch = () => {
+    const cleanFondo = docFondo && docFondo !== 'TODOS' ? docFondo : 'TODOS';
+    window.open(`/reports/EECC_${cleanFondo}.pdf`, '_blank');
+  };
+
+  // Descarga / Apertura de Certificados de Retención Oficiales (PDF Nativo en Visor Chrome con fondo negro y flecha de download)
+  const handleDownloadRetBatch = () => {
+    const cleanFondo = docFondo && docFondo !== 'TODOS' ? docFondo : 'TODOS';
+    window.open(`/reports/RETENCIONES_${cleanFondo}.pdf`, '_blank');
   };
 
   const handleInputChange = (field: keyof Inversionista, value: any) => {
@@ -1782,9 +1412,10 @@ export const InversionistasPage: React.FC = () => {
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
-              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                📄 Emisión y Descarga Masiva de Documentos por Lote (EECC y Retenciones 5%)
+            <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <FileText size={16} className="text-emerald-600" />
+                <span>Emisión y Descarga de Documentos Oficiales (EECC y Retenciones 5% IR)</span>
               </h3>
 
               {/* Indicador de Estado del Período */}
@@ -1801,10 +1432,6 @@ export const InversionistasPage: React.FC = () => {
               )}
             </div>
 
-            <p className="text-xs text-slate-450 dark:text-slate-500 leading-relaxed max-w-2xl mb-6">
-              Emite los documentos oficiales vinculados estrictamente al <strong>Fondo de Inversión</strong> y a la <strong>Fecha de Corte del Período ({fEnd})</strong>. Genera en un solo archivo PDF el compilado de Estados de Cuenta y Certificados de Retención Tributaria (SUNAT) para todos los partícipes.
-            </p>
-
             {/* Selectores Vinculados al Fondo y Fecha de Corte */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl items-end">
               
@@ -1812,11 +1439,10 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1 lg:col-span-2">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Emitir</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={docFondo}
                   onChange={(e) => {
                     setDocFondo(e.target.value);
-                    setBatchReady(false);
                   }}
                 >
                   <option value="TODOS">TODOS LOS FONDOS</option>
@@ -1830,11 +1456,10 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelYear}
                   onChange={(e) => {
                     setV40SelYear(Number(e.target.value));
-                    setBatchReady(false);
                   }}
                 >
                   <option value={2024}>2024</option>
@@ -1848,11 +1473,10 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ciclo</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelCiclo}
                   onChange={(e) => {
                     setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre');
-                    setBatchReady(false);
                   }}
                 >
                   <option value="Bimestre">Bimestre</option>
@@ -1864,11 +1488,10 @@ export const InversionistasPage: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Período</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
                   value={v40SelNum}
                   onChange={(e) => {
                     setV40SelNum(Number(e.target.value));
-                    setBatchReady(false);
                   }}
                 >
                   {v40SelCiclo === 'Bimestre' ? (
@@ -1893,85 +1516,67 @@ export const InversionistasPage: React.FC = () => {
 
             </div>
 
-            {/* Barra de Período y Botón de Procesar */}
+            {/* Barra de Período Activo */}
             <div className="flex items-center justify-between gap-4 flex-wrap mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
                 <Calendar size={15} className="text-emerald-600" />
-                <span>Fecha de Corte Liquidada:</span>
+                <span>Fecha de Corte Seleccionada:</span>
                 <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-black text-slate-800 dark:text-slate-100">
                   {fStart} al {fEnd}
                 </span>
               </div>
-
-              <button
-                className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow transition-all disabled:opacity-50"
-                onClick={handleProcessDocBatch}
-                disabled={!docFondo || docProcessing}
-              >
-                {docProcessing ? <Loader2 size={15} className="animate-spin text-white" /> : <RefreshCw size={15} />}
-                <span>Procesar y Preparar Lotes ({fEnd})</span>
-              </button>
             </div>
 
-            {/* Panel de 2 Botones de Descarga en Lote */}
-            {batchReady && batchData && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
-                
-                {/* Botón 1: Lote EECC */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                        <FileText size={16} className="text-emerald-600" />
-                        <span>Estados de Cuenta (EECC Batch)</span>
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                        {batchData.eecc.length} EECC
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
-                      Genera el documento oficial unificado de estados de cuenta con balance de capital, interés devengado, reinversión y saldo final al <strong>{fEnd}</strong>.
-                    </p>
+            {/* Panel Directo de 2 Botones de Descarga en Lote */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+              
+              {/* Botón 1: Lote EECC */}
+              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                      <FileText size={16} className="text-emerald-600" />
+                      <span>Estados de Cuenta (EECC Batch)</span>
+                    </h4>
                   </div>
-
-                  <button
-                    className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
-                    onClick={handleDownloadEECCBatch}
-                  >
-                    <FileText size={16} />
-                    <span>Descargar PDF Lote EECC ({batchData.eecc.length} Clientes)</span>
-                  </button>
+                  <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
+                    Genera el documento oficial unificado de estados de cuenta con balance de capital, interés devengado, reinversión y saldo final al <strong>{fEnd}</strong>.
+                  </p>
                 </div>
 
-                {/* Botón 2: Lote Retenciones */}
-                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                        <FileSpreadsheet size={16} className="text-blue-600" />
-                        <span>Certificados de Retención (5% IR)</span>
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                        {batchData.retenciones.length} Certificados
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
-                      Certificados tributarios de Impuesto a la Renta de 2da Categoría con montos en números y letras, DNI/RUC, domicilio y firma de <strong>Ricardo Gallo</strong>.
-                    </p>
-                  </div>
-
-                  <button
-                    className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleDownloadRetBatch}
-                    disabled={batchData.retenciones.length === 0}
-                  >
-                    <FileSpreadsheet size={16} />
-                    <span>Descargar PDF Lote Retenciones ({batchData.retenciones.length} Clientes)</span>
-                  </button>
-                </div>
-
+                <button
+                  className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
+                  onClick={handleDownloadEECCBatch}
+                >
+                  <FileText size={16} />
+                  <span>Descargar PDF Lote EECC ({fEnd})</span>
+                </button>
               </div>
-            )}
+
+              {/* Botón 2: Lote Retenciones */}
+              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-6 flex flex-col justify-between gap-5 hover:shadow-md transition-shadow">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                      <FileSpreadsheet size={16} className="text-blue-600" />
+                      <span>Certificados de Retención (5% IR)</span>
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-slate-450 dark:text-slate-500 font-medium leading-relaxed">
+                    Certificados tributarios de Impuesto a la Renta de 2da Categoría con montos en números y letras, DNI/RUC, domicilio y firma de <strong>Ricardo Gallo</strong>.
+                  </p>
+                </div>
+
+                <button
+                  className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
+                  onClick={handleDownloadRetBatch}
+                >
+                  <FileSpreadsheet size={16} />
+                  <span>Descargar PDF Lote Retenciones ({fEnd})</span>
+                </button>
+              </div>
+
+            </div>
           </div>
 
         </div>
@@ -2582,16 +2187,6 @@ export const InversionistasPage: React.FC = () => {
           </div>
         </div>
       )}
-
-
-      <DocumentoBatchModal
-        isOpen={docModalOpen}
-        onClose={() => setDocModalOpen(false)}
-        title={docModalTitle}
-        subtitle={docModalSubtitle}
-        htmlContent={docModalHtml}
-        filename={docModalFilename}
-      />
     </div>
   );
 };

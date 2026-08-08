@@ -66,10 +66,16 @@ def deploy():
         # 1. Preparar el directorio de despliegue en el VPS
         run(client, f"mkdir -p {APP_DIR} && rm -rf {APP_DIR}/*", "1. Preparar directorio destino en VPS")
 
-        # 2. Subir la carpeta dist compilada por SFTP
+        # 2. Subir la carpeta dist compilada y la carpeta reports por SFTP
         print(f"\n[2. Subiendo archivos compilados via SFTP]")
         sftp = client.open_sftp()
         put_dir(sftp, DIST_DIR, APP_DIR)
+        
+        # Sincronización explícita de todos los PDFs a /var/www/inandes/reports
+        LOCAL_REPORTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public", "reports")
+        if os.path.exists(LOCAL_REPORTS):
+            put_dir(sftp, LOCAL_REPORTS, APP_DIR + "/reports")
+            
         sftp.close()
         print(f"  >> Archivos subidos con éxito a {APP_DIR} ✓")
 
@@ -129,13 +135,20 @@ def deploy():
         proxy_read_timeout 120;
     }}
 
+    # Servir archivos PDF nativos directamente (Visor oscuro con flecha de descarga)
+    location ~* \.pdf$ {{
+        add_header Content-Type application/pdf;
+        add_header Content-Disposition inline;
+        try_files $uri =404;
+    }}
+
     # Rutas SPA de React (redirección al index.html para React Router)
     location / {{
         try_files $uri $uri/ /index.html;
     }}
 
     gzip on;
-    gzip_types text/plain text/css application/javascript application/json;
+    gzip_types text/plain text/css application/javascript application/json application/pdf;
 }}"""
         
         # Escribir la configuración en sites-available, habilitarla y probar Nginx

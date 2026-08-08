@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { X, Printer, Download, FileText, CheckCircle2 } from 'lucide-react';
+import { X, Printer, FileText, CheckCircle2 } from 'lucide-react';
 
 interface DocumentoBatchModalProps {
   isOpen: boolean;
@@ -7,7 +7,7 @@ interface DocumentoBatchModalProps {
   title: string;
   subtitle: string;
   htmlContent: string;
-  filename: string;
+  filename?: string;
 }
 
 export const DocumentoBatchModal: React.FC<DocumentoBatchModalProps> = ({
@@ -15,8 +15,7 @@ export const DocumentoBatchModal: React.FC<DocumentoBatchModalProps> = ({
   onClose,
   title,
   subtitle,
-  htmlContent,
-  filename
+  htmlContent
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -37,27 +36,10 @@ export const DocumentoBatchModal: React.FC<DocumentoBatchModalProps> = ({
   if (!isOpen) return null;
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
-      return;
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.focus();
+      iframeRef.current.contentWindow.print();
     }
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  };
-
-  const handleDownload = () => {
-    if (!blobUrl) return;
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename.endsWith('.html') ? filename : `${filename}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   return (
@@ -79,23 +61,15 @@ export const DocumentoBatchModal: React.FC<DocumentoBatchModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md shadow-emerald-200 transition-all active:scale-95"
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md shadow-emerald-200 transition-all active:scale-95 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               IMPRIMIR / GUARDAR COMO PDF
             </button>
-
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md shadow-indigo-200 transition-all active:scale-95"
-            >
-              <Download className="w-4 h-4" />
-              DESCARGAR ARCHIVO
-            </button>
             
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-colors ml-2"
+              className="p-2 hover:bg-slate-200 rounded-xl text-slate-500 hover:text-slate-800 transition-colors ml-2 cursor-pointer"
               title="Cerrar modal"
             >
               <X className="w-6 h-6" />

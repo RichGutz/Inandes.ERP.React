@@ -1,0 +1,47 @@
+# SEUDOCODIGO V25 - Antigravity Agentic Logic
+# Fecha: 2026-03-06
+# Objetivo: Explicar el cálculo híbrido (Neutralidad V24 + Resumen V20) y la gestión del Ledger.
+
+1. ESTRUCTURA DEL LEDGER (crm_certificados_eventos)
+-------------------------------------------------
+- Para lograr coherencia mensual, se reinició el Ledger con un evento de "Birth" (Nacimiento) para cada uno de los 189 certificados al 01/01/2026.
+- El evento Birth carga el capital inicial del certificado.
+- Para el contrato NSGPEN01-090 (ítem 36), se desglosó el capital:
+    * 01/01/2026 (Birth): $51,940.74
+    * 02/01/2026 (+Aumento): $60,000.00
+    * 03/01/2026 (+Aumento): $9,000.00
+    * 12/01/2026 (+Aumento): $100,000.00
+    * Saldo Final Ledger: $220,940.74 (Coincide con crm_certificados)
+
+2. MOTOR DE CÁLCULO GESTOR (generate_cuotas_v25.py)
+---------------------------------------------------
+A) Inicialización:
+   - Se cargan los fondos, tasas (activa, admin, capt, misc) y certificados 'emitidos'.
+   - Se ignoran visualmente los sub-items del 01/01 (se tratan como capital base del certificado).
+
+B) Simulación Diaria (Loops):
+   - Día 1 a n:
+     1. Se calcula el INGRESO BRUTO DEL FONDO sobre el patrimonio total del día anterior (Tasa Activa / 360).
+     2. Se calculan las 3 COMISIONES (Admin/Capt/Misc) sobre el capital invertido (Tasa / 365).
+     3. GANANCIA OPERATIVA DÍA = Ingreso Bruto - Σ Comisiones.
+     4. VALOR CUOTA HOY = (Patrimonio Ayer + Ganancia Operativa Día) / Total Cuotas Ayer.
+     
+C) Devengue Individual Certificados:
+   - Cada certificado genera interés diario: Capital * (Tasa Activa / 360).
+   - Los AUMENTOS DE CAPITAL (hijos) generan interés proporcional desde su fecha de ingreso (ej. el aumento del 12/01 solo genera interés del 12 al 31).
+
+D) Suscripciones (Cierre del día):
+   - Si hay un aumento ese día, se compran cuotas: Monto / Valor Cuota Hoy.
+   - Esas nuevas cuotas solo participan en el rendimiento del día siguiente.
+
+3. ESTÉTICA Y PRECISIÓN (reporte_cuotas_transpuesto_v25.html)
+------------------------------------------------------------
+- N° CUOTAS: Se forzó color NEGRO para legibilidad.
+- TOTAL CAPITAL: Celdas del 01/01 y 01/02 se muestran en BLANCO para indicar que es el baseline de inicio de mes.
+- PRECISION: Los campos de Valor Cuota (Inicial y Final) muestran 6 decimales para evitar errores de redondeo en periodos largos.
+- VISUALIZACIÓN: Solo se despliegan sub-filas de aumentos si la fecha es posterior al 01/01/2026.
+
+4. VALIDACIÓN DE CUADRE
+-----------------------
+- La suma de (Capital Base + Aumentos Reales) debe ser igual al 'monto_inversion' de la tabla 'crm_certificados'.
+- El Valor Cuota Final de un mes es el Inicial del mes siguiente.

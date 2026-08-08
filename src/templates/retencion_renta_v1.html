@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Certificado de Rentas</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 2cm 2.5cm 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11pt;
+            /* Tamaño letra documento formal */
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .dummy {
+            /* Placeholder quitado rojo */
+            font-weight: bold;
+        }
+
+        .header {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .header table {
+            width: 100%;
+            border: none;
+        }
+
+        .header td {
+            vertical-align: top;
+            border: none;
+        }
+
+        .logo-container {
+            width: 100%;
+            text-align: right;
+            padding-top: 5px;
+        }
+
+        .logo-container img {
+            max-width: 173px;
+            max-height: 96px;
+        }
+
+        .title-box {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 50px;
+        }
+
+        .title-box h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .content {
+            text-align: justify;
+            margin-bottom: 40px;
+        }
+
+        .signature-area {
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        .signature-img {
+            max-height: 120px;
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            font-size: 8pt;
+            margin-top: 60px;
+            text-align: center;
+            color: #0d47a1;
+            /* Azul corporativo */
+        }
+
+        .footer p {
+            margin: 2px 0;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+
+<body>
+    {% for cert in certificados %}
+    <div class="header">
+        <table>
+            <tr>
+                <td class="logo-container">
+                    <img src="file:///{{ logo_path }}" alt="Logo Inandes" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="title-box">
+        <h1>CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS<br>DE SEGUNDA CATEGORÍA</h1>
+    </div>
+
+    <div class="content">
+        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147
+            oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr.
+            Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del
+            FONDO <strong>{{ cert.nombre_fondo }}</strong> – FONDO DE INVERSION PRIVADO,</p>
+
+        <p style="font-weight: bold;">CERTIFICA QUE:</p>
+
+        <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>{{
+                cert.nombres_participes }}</strong>, identificado(a) con DNI <strong>{{ cert.dni_participes }}</strong>
+            y con
+            domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, la suma de <strong>{{ cert.moneda }} {{
+                cert.monto_impuesto_num }}</strong> (<strong>{{ cert.monto_impuesto_letras }} dólares de los Estados
+                Unidos de
+                América</strong>)
+            por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las
+            operaciones del FONDO <strong>{{ cert.nombre_fondo }}</strong> – FONDO DE INVERSION PRIVADO,
+            correspondiente al período comprendido entre el <strong>{{ cert.f_inicio }}</strong> al <strong>{{
+                cert.f_fin }}</strong>.
+        </p>
+
+        <p style="text-align: right; margin-top: 50px;">
+            Santiago de Surco, <strong>{{ cert.dia_hoy }}</strong> de <strong>{{ cert.mes_hoy }}</strong> del <strong>{{
+                cert.anio_hoy }}</strong>
+        </p>
+    </div>
+
+    <div class="signature-area">
+        <img class="signature-img" src="file:///{{ firma_path }}" alt="Firma Ricardo Gallo" /><br>
+        Juan Ricardo Gallo Pizarro<br>
+        <strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong><br>
+        Gerente General
+    </div>
+    {% if not loop.last %}
+    <div class="page-break"></div>
+    {% endif %}
+    {% endfor %}
+</body>
+
+</html>

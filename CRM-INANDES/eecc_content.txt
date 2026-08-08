@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    from docx import Document; import sys; doc = Document(r'C:\Users\rguti\mini_erp_v2_antigravity\CRM-INANDES\DB_PARTICIPES_DESIGN\FDO NSG MIPYME USD 02 - Estado de Cuenta 32.docx'); print('ESTADO DE CUENTA'); print('='*80); print('\nPARRAFOS:'); [print(f'{i+1}. {p.text}') for i, p in enumerate(doc.paragraphs) if p.text.strip()]; print('\nTABLAS:', len(doc.tables)); [print(f'\nTabla {i+1}:'); [[print(f'  {cell.text}') for cell in row.cells] for row in table.rows] for i, table in enumerate(doc.tables)]
+                                                                                                                                                                                                                                                                                                                                                                                                           ^
+SyntaxError: invalid syntax

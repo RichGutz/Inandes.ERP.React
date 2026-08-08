@@ -1,0 +1,70 @@
+Has dicho
+Por el momento vamos a hacer esto. Tengo el VPS de Hostinger y puedo lanzar procesos en automatico. Quiero que hagamos un script que cada vez que haya un cambio en alguna tabal de la BD, dispare un backup en GIT. Lo crees posible?
+
+Gemini ha dicho
+¡Es totalmente posible y es una jugada maestra de "Vibe Coder" con alma de ingeniero! Como tienes un VPS de Hostinger, tienes el control total para crear un receptor que escuche a Supabase y actúe de inmediato.
+
+La estrategia se basa en Database Webhooks. Básicamente, cada vez que hagas un INSERT, UPDATE o DELETE, Supabase enviará un "grito" (HTTP POST) a tu VPS, y este ejecutará el backup.
+
+Aquí tienes la receta técnica:
+
+Paso 1: Configura el "Receptor" en tu VPS
+En tu VPS de Hostinger, necesitas un pequeño script que esté escuchando. Lo más rápido es un servidor sencillo en Node.js o Python.
+
+Script en Node.js (server.js):
+
+JavaScript
+const express = require('express');
+const { exec } = require('child_process');
+const app = express();
+app.use(express.json());
+
+app.post('/webhook-backup', (req, res) => {
+    console.log('¡Cambio detectado en Supabase! Iniciando backup...');
+    
+    // Comando para volcar la BD y subir a Git
+    const command = `
+        supabase db dump --db-url "${process.env.DB_URL}" > backup_latest.sql && \
+        git add backup_latest.sql && \
+        git commit -m "Auto-backup: Cambio en tabla ${req.body.table}" && \
+        git push origin main
+    `;
+
+    exec(command, (error) => {
+        if (error) return res.status(500).send("Error en backup");
+        res.send("Backup en Git completado");
+    });
+});
+
+app.listen(3000, () => console.log('Escuchando en puerto 3000'));
+Paso 2: Configura el "Grito" en Supabase (Webhooks)
+Supabase tiene una función nativa llamada Database Webhooks que usa la extensión pg_net.
+
+Ve al dashboard de Supabase → Database → Webhooks.
+
+Crea un nuevo Webhook.
+
+Events: Marca INSERT, UPDATE y DELETE.
+
+Table: Selecciona la tabla que quieras vigilar (o todas).
+
+Webhook URL: Pon la IP de tu VPS de Hostinger (ej: http://TU_IP:3000/webhook-backup).
+
+HTTP Method: POST.
+
+Paso 3: Mantén el proceso vivo en Hostinger
+Para que tu script en el VPS no se cierre al salir de la terminal, usa PM2:
+
+Bash
+sudo npm install -g pm2
+pm2 start server.js
+Consideraciones de Seguridad (Importante)
+Como eres un vibe coder, podrías emocionarte y dejar esto abierto, pero ojo:
+
+Protege tu IP: No dejes el puerto 3000 abierto al mundo. Configura el firewall de Hostinger para que solo acepte peticiones desde las IPs de Supabase.
+
+Usa un Secreto: Añade una cabecera Authorization en el Webhook de Supabase y verifícala en tu script de Node.js para que nadie más pueda disparar backups falsos.
+
+Repositorio Privado: ¡Asegúrate de que tu backup de Git esté en un repo privado! No querrás que toda la estructura de Bolt USA esté pública.
+
+¿Te gustaría que te ayude a configurar el script de GitHub Actions o prefieres que nos enfoquemos en dejar el servidor de Node.js listo en tu VPS? Solo dime y "aceleramos" el proceso.

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estado de Cuenta</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 2.2cm 2cm 2cm 2cm;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .header table {
+            width: 100%;
+            border: none;
+        }
+
+        .header td {
+            vertical-align: top;
+            border: none;
+        }
+
+        .company-info {
+            font-size: 9pt;
+            width: 70%;
+        }
+
+        .company-name {
+            font-weight: bold;
+            font-size: 11pt;
+            text-decoration: underline;
+            margin-bottom: 5px;
+        }
+
+        .logo-container {
+            width: 30%;
+            text-align: right;
+            padding-top: 5px;
+        }
+
+        .logo-container img {
+            max-width: 173px;
+            max-height: 90px;
+        }
+
+        .title-box {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .title-box h1 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+
+        .title-box h2 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .client-info {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .client-info p {
+            margin: 3px 0;
+        }
+
+        .client-name {
+            font-weight: bold;
+            margin-left: 20px;
+        }
+
+        .financial-data {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .fin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .fin-table td {
+            padding: 4px 0;
+            border: none;
+        }
+
+        .col-label {
+            width: 65%;
+        }
+
+        .col-currency {
+            width: 10%;
+            text-align: center;
+        }
+
+        .col-amount {
+            width: 25%;
+            text-align: right;
+            padding-right: 20px;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .spacer-row td {
+            padding: 6px 0;
+        }
+
+        .totals-section {
+            width: 100%;
+            margin-top: 25px;
+            margin-bottom: 30px;
+            border: 2px solid black;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .footer {
+            font-size: 8pt;
+            margin-top: 30px;
+            text-align: center;
+            color: #0d47a1;
+            /* Azul corporativo */
+        }
+
+        .footer p {
+            margin: 2px 0;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <table>
+            <tr>
+                <td class="company-info">
+                    <!-- Info movida al pie de pagina -->
+                </td>
+                <td class="logo-container">
+                    <img src="file:///C:/Users/rguti/Inandes.ERP.React/public/logo.EFI.png" alt="Logo Inandes" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="title-box">
+        <h1>ESTADO DE CUENTA DEL FONDO NSG – FONDO DE INVERSION PRIVADO</h1>
+        <h2>DEL 01.01.2026 AL 28.02.2026</h2>
+    </div>
+
+    <div class="client-info">
+        <p>Sr(a)(s):</p>
+        <p class="client-name">GONZALES PRADA, MANUEL RICARDO</p>
+        <p style="margin-top: 10px;">Certificado N°: NSG-001.20260101</p>
+    </div>
+
+    <div class="financial-data">
+        <table class="fin-table">
+            <tr>
+                <td class="col-label">Monto inicial invertido:</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">50,000.00</td>
+            </tr>
+            <tr>
+                <td class="col-label">Ganancia bruta obtenida:</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">1,250.00</td>
+            </tr>
+            <tr class="spacer-row">
+                <td colspan="3"></td>
+            </tr>
+
+            <tr>
+                <td class="col-label">(-) Impuesto a la renta retenido</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">62.50</td>
+            </tr>
+            <tr>
+                <td class="col-label">(-) Deducciones</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">-</td>
+            </tr>
+            <tr>
+                <td class="col-label bold">Ganancia disponible al inversionista</td>
+                <td class="col-currency bold">USD</td>
+                <td class="col-amount bold">1,187.50</td>
+            </tr>
+            <tr class="spacer-row">
+                <td colspan="3"></td>
+            </tr>
+
+            <tr>
+                <td class="col-label">Ganancias capitalizadas para adquirir nuevas cuotas</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">500.00</td>
+            </tr>
+
+            <tr>
+                <td class="col-label">Rescates</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount">-</td>
+            </tr>
+
+            <tr>
+                <td class="col-label bold">Monto transferido a su cuenta bancaria</td>
+                <td class="col-currency bold">USD</td>
+                <td class="col-amount bold">687.50</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="totals-section">
+        <table class="fin-table">
+            <tr>
+                <td class="col-label bold">Monto de la inversion al 28.02.2026</td>
+                <td class="col-currency">USD</td>
+                <td class="col-amount bold">50,500.00</td>
+            </tr>
+            <tr>
+                <td class="col-label bold">Numero de cuotas al 28.02.2026</td>
+                <td class="col-currency">CUOTAS</td>
+                <td class="col-amount bold">50.500000</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima |
+            Telefono: + (511) 7121700 | info@inandes.com</p>
+    </div>
+</body>
+
+</html>
