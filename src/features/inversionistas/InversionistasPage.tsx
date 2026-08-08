@@ -848,6 +848,9 @@ td.a{width:22%;text-align:right;font-weight:bold}
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   // -----------------------------------------------------------------------
@@ -1014,6 +1017,9 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#1e293b;backgrou
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   const handleInputChange = (field: keyof Inversionista, value: any) => {
