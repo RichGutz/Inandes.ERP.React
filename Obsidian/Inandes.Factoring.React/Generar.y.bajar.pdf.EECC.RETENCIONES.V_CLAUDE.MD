@@ -39,10 +39,10 @@
 
 ## PRINCIPIO FUNDAMENTAL INAMOVIBLE
 
-> La fuente de datos es EXCLUSIVAMENTE `crm_certificados_eventos`.
+> La fuente de datos es EXCLUSIVAMENTE crm_certificados_eventos.
 > PROHIBIDO recalcular con el Motor V40 o V32 para generar documentos oficiales.
 > Los PDFs solo se generan para periodos CERRADOS (datos ya firmados en la tabla).
-> El PDF es generado en el VPS por FastAPI — NO localmente en la maquina del usuario.
+> El PDF es generado en el VPS por FastAPI. NO localmente en la maquina del usuario.
 
 ---
 
@@ -64,6 +64,12 @@
 - Chrome recibe Content-Type: application/pdf y abre el visor nativo.
 - Es identico a la experiencia del vecino.
 - Sin dependencias de la maquina local del desarrollador.
+
+### Por que NO CORS es un problema:
+- window.open(url, '_blank') abre una NUEVA PESTANA del navegador.
+- Es una navegacion directa, NO un fetch/XHR desde React.
+- El navegador simplemente va a la URL. CORS no aplica a navegaciones directas.
+- No se necesita configurar nada de CORS para que esto funcione.
 
 ---
 
@@ -97,25 +103,37 @@ Respuesta: StreamingResponse(
 
 ---
 
-## COMO REACCIONA EL BOTON EN REACT
+## COMO QUEDA EL BOTON EN REACT (codigo exacto)
 
+ARCHIVO: C:\Users\rguti\Inandes.ERP.React\src\features\inversionistas\InversionistasPage.tsx
+
+### BOTON EECC (reemplaza onClick={handleExportEECC}):
 ```typescript
-// EECC — sincrono, sin await, sin logica intermedia
 onClick={() => {
   const fondo = docFondo || 'TODOS';
   window.open(`https://api-factoring.geeksoft.tech/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
 }}
+```
 
-// Retenciones — identico patron
+### BOTON RETENCIONES (reemplaza onClick={handleExportRetenciones}):
+```typescript
 onClick={() => {
   const fondo = docFondo || 'TODOS';
   window.open(`https://api-factoring.geeksoft.tech/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
 }}
 ```
 
-- SIN calcResult, SIN Motor V40, SIN await antes del window.open.
-- El boton es 100% sincrono. No hay User Gesture Context que perder.
-- Chrome abre el PDF del endpoint exactamente como abre el PDF del vecino.
+- SIN calcResult. SIN Motor V40. SIN await. SIN logica intermedia.
+- El onClick es una arrow function sincrona de UNA SOLA LINEA.
+- PROHIBIDO agregar loading states, validaciones o llamadas async en estos onClick.
+
+### QUE SE ELIMINA DE InversionistasPage.tsx:
+Las siguientes funciones async DEBEN SER ELIMINADAS COMPLETAMENTE del archivo:
+- handleExportEECC (lineas ~752-854)
+- handleExportRetenciones (lineas ~859-1023)
+
+Son reemplazadas por el onClick directo descrito arriba.
+No se migra logica de esas funciones. Se borran. La logica vive en el backend.
 
 ---
 
@@ -125,77 +143,131 @@ onClick={() => {
 1. Recibir id_fondo y fecha_fin como parametros de ruta.
 2. Consultar crm_certificados_eventos en Supabase:
    - Filtrar por fecha_periodo_fin = fecha_fin
-   - Si id_fondo != 'TODOS': filtrar tambien por id_fondo
-3. Para cada registro (cada certificado):
-   - Leer: monto_bruto, monto_impuesto, monto_deducciones, monto_neto,
-           monto_capitalizacion, monto_rescate, monto_reparto,
-           capital_inicial, capital_final, valor_cuota, numero_cuotas,
-           fecha_periodo_inicio, fecha_periodo_fin, moneda
-4. Renderizar la plantilla HTML: src/templates/estado_cuenta_inversionista_v2.html
-5. Generar PDF con WeasyPrint.
-6. Devolver StreamingResponse con Content-Type: application/pdf.
+   - Si id_fondo != 'TODOS': filtrar tambien por id_fondo (campo: ver tabla de campos abajo)
+3. Para cada registro (cada certificado), extraer los campos de la tabla de campos abajo.
+4. Renderizar la plantilla Jinja2: estado_cuenta_inversionista_v2.html
+5. Generar PDF con WeasyPrint (from weasyprint import HTML; HTML(string=html_str).write_pdf())
+6. Devolver StreamingResponse(io.BytesIO(pdf_bytes), media_type='application/pdf')
 
 ### Para Retenciones:
 1. Misma consulta a crm_certificados_eventos.
 2. Filtrar solo registros con monto_impuesto > 0.
-3. Para cada registro, leer tambien datos del inversionista (DNI, domicilio)
-   desde crm_inversionistas (JOIN por id_certificado -> crm_contratos -> id_inversionista).
+3. Para cada registro, leer tambien datos del inversionista:
+   JOIN crm_certificados_eventos -> (campo que une con inversionista, confirmar nombre)
+   Para obtener: documento_identidad (DNI), direccion_fiscal (domicilio)
 4. Calcular IR en PEN:
-   - Fondos PEN: ir_pen = monto_impuesto
-   - Fondos USD: ir_pen = monto_impuesto * tipo_cambio (leer de crm_certificados_eventos o crm_fondos)
-5. Renderizar plantilla: src/templates/retencion_renta_v2.html
-6. Generar PDF con WeasyPrint.
-7. Devolver StreamingResponse con Content-Type: application/pdf.
+   - Fondos PEN: ir_pen = monto_impuesto (ya en PEN)
+   - Fondos USD: ir_pen = monto_impuesto * tipo_cambio (leer campo de la tabla)
+5. Calcular monto_ir_pen_letras con funcion numero_a_letras() existente en el backend.
+6. Renderizar plantilla: retencion_renta_v2.html
+7. Generar PDF con WeasyPrint.
+8. Devolver StreamingResponse(io.BytesIO(pdf_bytes), media_type='application/pdf')
 
 ---
 
 ## ARCHIVOS A CREAR/MODIFICAR
 
+### En el backend (C:\Users\rguti\mini_erp_v2_antigravity):
+
 | Archivo | Accion | Descripcion |
 |---------|--------|-------------|
-| mini_erp_v2_antigravity/src/api/routers/inversionistas.py | CREAR | Endpoints EECC y Retenciones |
-| mini_erp_v2_antigravity/src/api/main.py | MODIFICAR | Incluir el nuevo router |
-| InversionistasPage.tsx (React) | MODIFICAR | Reemplazar handleExportEECC y handleExportRetenciones con window.open al endpoint |
+| src/api/routers/inversionistas.py | CREAR NUEVO | Contiene los 2 endpoints EECC y Retenciones |
+| src/api/main.py | MODIFICAR | Agregar: from routers import inversionistas; app.include_router(inversionistas.router) |
+| src/templates/estado_cuenta_inversionista_v2.html | COPIAR DESDE REACT | La plantilla ya existe en el proyecto React |
+| src/templates/retencion_renta_v2.html | COPIAR DESDE REACT | La plantilla ya existe en el proyecto React |
 
-Las plantillas HTML ya existen en:
-- src/templates/estado_cuenta_inversionista_v2.html
-- src/templates/retencion_renta_v2.html
+ORIGEN DE LAS PLANTILLAS (copiar de aqui):
+- C:\Users\rguti\Inandes.ERP.React\src\templates\estado_cuenta_inversionista_v2.html
+- C:\Users\rguti\Inandes.ERP.React\src\templates\retencion_renta_v2.html
+
+### En el frontend (C:\Users\rguti\Inandes.ERP.React):
+
+| Archivo | Accion | Descripcion |
+|---------|--------|-------------|
+| src/features/inversionistas/InversionistasPage.tsx | MODIFICAR | Eliminar handleExportEECC y handleExportRetenciones. Cambiar onClick de ambos botones. |
+
+---
+
+## DESPLIEGUE DEL BACKEND
+
+El backend en mini_erp_v2_antigravity se despliega con:
+```
+git push railway main
+```
+(Segun la regla del usuario: Despliegue de ERP -> git push railway main)
+
+El frontend React se despliega con:
+```
+python deploy_vps.py
+```
+(Desde C:\Users\rguti\Inandes.ERP.React)
+
+ORDEN DE DESPLIEGUE OBLIGATORIO:
+1. PRIMERO desplegar el backend (para que el endpoint exista)
+2. LUEGO desplegar el frontend (para que el boton apunte a un endpoint real)
 
 ---
 
 ## CAMPOS EXACTOS A LEER DE crm_certificados_eventos
 
-Los siguientes campos deben existir en la tabla. Si alguno no existe,
-el agente DEBE preguntar al usuario antes de asumir un nombre alternativo.
+ADVERTENCIA: Los nombres de los campos son los que estan en Supabase. Si algun campo
+no existe con ese nombre exacto, el agente DEBE PARAR y preguntar al usuario.
+PROHIBIDO asumir nombres alternativos.
 
-| Campo requerido en crm_certificados_eventos | Uso en el documento |
-|---------------------------------------------|---------------------|
+| Campo en crm_certificados_eventos | Uso en el documento |
+|-----------------------------------|---------------------|
 | id_certificado | Numero de certificado |
-| id_fondo | Filtro y titulo del fondo |
-| fecha_periodo_inicio | Inicio del periodo en el documento |
-| fecha_periodo_fin | Fin del periodo, usado como filtro |
+| id_fondo | Filtro por fondo y titulo del documento |
+| fecha_periodo_inicio | Fecha inicio del periodo en el documento |
+| fecha_periodo_fin | Fecha fin del periodo, usado como filtro principal |
 | monto_bruto | Ganancia bruta obtenida |
 | monto_impuesto | IR retenido (en moneda del fondo) |
 | monto_deducciones | Deducciones |
 | monto_neto | Ganancia disponible al inversionista |
-| monto_capitalizacion | Ganancias capitalizadas |
+| monto_capitalizacion | Ganancias capitalizadas para adquirir nuevas cuotas |
 | monto_rescate | Rescates |
 | monto_reparto | Monto transferido a cuenta bancaria |
 | capital_inicial | Monto inicial invertido |
 | capital_final | Monto de la inversion al fecha_fin |
 | valor_cuota | Valor cuota al fecha_fin |
 | moneda | 'PEN' o 'USD' |
+| (campo para nombre inversionista) | VERIFICAR nombre exacto |
+| (campo para tipo de cambio USD)   | VERIFICAR nombre exacto |
 
 ---
 
-## PENDIENTE ANTES DE IMPLEMENTAR
+## REGLAS DE MONEDA (INAMOVIBLES)
 
-El agente que implemente esto DEBE PRIMERO:
-1. Verificar que los campos listados existen en crm_certificados_eventos
-   (ejecutar: SELECT column_name FROM information_schema.columns WHERE table_name = 'crm_certificados_eventos')
-2. Verificar que WeasyPrint esta instalado en el VPS del backend
-   (ejecutar en VPS: python -c "import weasyprint; print('OK')")
-3. Verificar que el endpoint no existe ya en https://api-factoring.geeksoft.tech/docs
-4. Confirmar con el usuario el nombre del campo tipo_cambio si es USD
+1. El parrafo legal de Retenciones SIEMPRE dice "la suma de PEN [monto] ([letras] soles)".
+2. El IR se expresa SIEMPRE en PEN, incluso para fondos USD (se convierte con tipo_cambio).
+3. NUNCA dice "dolares de los Estados Unidos de America" en el parrafo legal.
+4. La tabla resumen de Retenciones muestra la BASE en la moneda del fondo (USD o PEN)
+   pero el MONTO RETENIDO siempre en PEN.
 
-NO IMPLEMENTAR sin completar estos 4 pasos de verificacion.
+---
+
+## 4 PASOS OBLIGATORIOS ANTES DE ESCRIBIR UNA SOLA LINEA DE CODIGO
+
+1. Verificar columnas reales de crm_certificados_eventos:
+   Ejecutar en Supabase SQL Editor:
+   SELECT column_name, data_type FROM information_schema.columns
+   WHERE table_name = 'crm_certificados_eventos' ORDER BY ordinal_position;
+
+2. Verificar WeasyPrint en el VPS:
+   ssh root@91.108.125.253 'python3 -c "import weasyprint; print(weasyprint.__version__)"'
+
+3. Verificar que el endpoint no existe ya en:
+   https://api-factoring.geeksoft.tech/docs
+
+4. Verificar que Jinja2 esta en requirements.txt del backend:
+   Leer C:\Users\rguti\mini_erp_v2_antigravity\src\api\requirements.txt
+
+---
+
+## LO QUE DEFINITIVAMENTE NO SE TOCA
+
+- pdf_parser.py (Regla global)
+- frontend_app.py (Regla global)
+- Cualquier archivo del proyecto React que no sea InversionistasPage.tsx
+- La estructura del motor V40 (financialCalculator.ts) - no tiene rol aqui
+- Los scripts Python _run_eecc_v33.py y _run_retenciones_v33.py - no se modifican ni eliminan
