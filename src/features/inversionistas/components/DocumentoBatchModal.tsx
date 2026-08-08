@@ -37,10 +37,17 @@ export const DocumentoBatchModal: React.FC<DocumentoBatchModalProps> = ({
   if (!isOpen) return null;
 
   const handlePrint = () => {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.focus();
-      iframeRef.current.contentWindow.print();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
+      return;
     }
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   const handleDownload = () => {
