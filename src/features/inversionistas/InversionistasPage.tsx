@@ -716,55 +716,6 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Helper de conversión a letras para Certificados de Retención
-  const numeroALetrasPeru = (monto: number): string => {
-    const enteros = Math.floor(monto);
-    const centavos = Math.round((monto - enteros) * 100);
-    const centavosStr = `${centavos.toString().padStart(2, '0')}/100`;
-
-    const UNIDADES = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
-    const DECENAS = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
-    const ESPECIALES: Record<number, string> = {
-      11: 'ONCE', 12: 'DOCE', 13: 'TRECE', 14: 'CATORCE', 15: 'QUINCE',
-      16: 'DIECISEIS', 17: 'DIECISIETE', 18: 'DIECIOCHO', 19: 'DIECINUEVE',
-      21: 'VEINTIUN', 22: 'VEINTIDOS', 23: 'VEINTITRES', 24: 'VEINTICUATRO',
-      25: 'VEINTICINCO', 26: 'VEINTISEIS', 27: 'VEINTISIETE', 28: 'VEINTIOCHO', 29: 'VEINTINUEVE'
-    };
-    const CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
-
-    const convertirTresCifras = (n: number): string => {
-      if (n === 0) return '';
-      if (n === 100) return 'CIEN';
-      const c = Math.floor(n / 100);
-      const d = Math.floor((n % 100) / 10);
-      const u = n % 10;
-      const du = n % 100;
-
-      let res = CENTENAS[c] ? CENTENAS[c] + ' ' : '';
-      if (ESPECIALES[du]) {
-        res += ESPECIALES[du];
-      } else if (d > 0 && u > 0) {
-        res += `${DECENAS[d]} Y ${UNIDADES[u]}`;
-      } else if (d > 0) {
-        res += DECENAS[d];
-      } else if (u > 0) {
-        res += UNIDADES[u];
-      }
-      return res.trim();
-    };
-
-    if (enteros === 0) return `CERO CON ${centavosStr}`;
-    
-    let texto = '';
-    const miles = Math.floor(enteros / 1000);
-    const resto = enteros % 1000;
-
-    if (miles === 1) texto = 'MIL ';
-    else if (miles > 1) texto = `${convertirTresCifras(miles)} MIL `;
-
-    texto += convertirTresCifras(resto);
-    return `${texto.trim()} CON ${centavosStr}`;
-  };
 
   const handleOpenEditModal = (investor: Inversionista | null) => {
     setFormSubmitError(null);
