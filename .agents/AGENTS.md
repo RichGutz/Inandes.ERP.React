@@ -42,13 +42,14 @@ Deben consultar y apoyarse activamente en el usuario (quien conoce el negocio y 
 
 ## Regla 5 - LECTURA OBLIGATORIA al Iniciar Sesion
 
-AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer uno de los siguientes archivos antes de tomar cualquier accion:
+AL INICIO DE CADA SESION de trabajo en este proyecto, el agente DEBE leer los siguientes archivos antes de tomar cualquier accion:
 
   C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\Bienvenido.md
   C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Inversionistas.React\Lecciones.de.Bienvenida.md
+  C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md
 
-Estos archivos contienen los principios fundamentales, la arquitectura del proyecto, reglas intangibles de UI y las URLs/credenciales clave.
-No leerlo equivale a operar sin contexto y es causa de errores graves.
+Estos archivos contienen los principios fundamentales, la arquitectura del proyecto, reglas intangibles de UI, procedimientos de despliegue y las URLs/credenciales clave.
+No leerlos equivale a operar sin contexto y es causa de errores graves.
 
 ## Regla 6 - PROTECCION INTANGIBLE: Selector de Letras A-Z (Modulo Aprobaciones)
 
@@ -77,9 +78,13 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 1. Uso Exclusivo de MAIN: Queda estrictamente PROHIBIDO crear nuevas ramas (branches) en Git. Todo el desarrollo, commits y pushes se realizan UNICAMENTE en la rama `main`.
 2. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o tags asignados directamente por el usuario.
 
-## Regla 10 - Obligacion de Inspeccionar Ejemplos Existentes (UI o PDF)
+## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO
+1. Lectura Obligatoria de Procedimientos: El agente DEBE consultar y seguir estrictamente lo estipulado en `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md`.
+2. Repositorio Oficial Git: El repositorio oficial y unico de este proyecto es `RichGutz/Inandes.Inversionistas.React` (`origin/main`). Todo push se dirige prioritariamente a `origin main`.
+3. Procedimiento de Despliegue:
+   - Compilar frontend: `npm run build`
+   - Subir archivos al VPS: `python deploy_vps.py`
+   - Sincronizar en Git: `git add .` -> `git commit -m "..."` -> `git push origin main`
 
-1. Analisis Previo Obligatorio: Cuando el usuario solicite replicar o basarse en el formato de un ejemplo existente (sea de UI o plantillas PDF/HTML), el agente DEBE abrir e inspeccionar directamente el archivo fuente original del ejemplo antes de escribir cualquier codigo.
-2. Replica Fiel: Analizar la estructura, CSS, clases y marcas de la plantilla de referencia para replicarla exactamente sin inventar estilos ni asumir disenos creativos propios.
 
 
