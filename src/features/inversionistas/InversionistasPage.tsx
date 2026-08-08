@@ -746,16 +746,274 @@ export const InversionistasPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Descarga / Apertura de Estados de Cuenta Oficiales (PDF Nativo en Visor Chrome con fondo negro y flecha de download)
-  const handleDownloadEECCBatch = () => {
-    const cleanFondo = docFondo && docFondo !== 'TODOS' ? docFondo : 'TODOS';
-    window.open(`/reports/EECC_${cleanFondo}.pdf`, '_blank');
+  // -----------------------------------------------------------------------
+  // ESTADO DE CUENTA (EECC) — genera HTML desde calcResult del Motor V40
+  // -----------------------------------------------------------------------
+  const handleExportEECC = async () => {
+    let currentResult = calcResult;
+    if (!currentResult) {
+      currentResult = await handleRunV40Calculation();
+    }
+    if (!currentResult || currentResult.pdfData.length === 0) {
+      alert('No hay datos calculados. Primero genere el reporte desde la pestana Auditoria.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Habilita las ventanas emergentes para ver el documento.');
+      return;
+    }
+
+    const fondosFiltrados = (docFondo && docFondo !== 'TODOS')
+      ? currentResult.pdfData.filter((f: any) => f.fondo.id_fondo === docFondo)
+      : currentResult.pdfData;
+
+    const fmt = (v: number | null | undefined, moneda: string) => {
+      if (v === undefined || v === null || isNaN(Number(v))) return (moneda === 'USD' ? 'USD' : 'PEN') + ' -';
+      const prefix = moneda === 'USD' ? 'USD ' : 'PEN ';
+      return prefix + Number(v).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const certPages = fondosFiltrados.flatMap((fData: any) => {
+      const fondoInfo = fondosDisponibles.find((f: any) => f.id_fondo === fData.fondo.id_fondo);
+      const valorCuota: number = fondoInfo?.valor_cuota ?? 0;
+      const moneda: string = fData.fondo.moneda;
+      const prefix = moneda === 'USD' ? 'USD ' : 'PEN ';
+
+      return fData.blocks[0].rows
+        .filter((r: any) => r.tipo === 'CERT')
+        .map((r: any) => {
+          const numCuotas = (valorCuota > 0 && r.capital_final > 0)
+            ? (r.capital_final / valorCuota).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '-';
+          const cap = r.capitalizacion > 0 ? fmt(r.capitalizacion, moneda) : prefix + '-';
+          const res = r.devolucion_capital > 0 ? fmt(r.devolucion_capital, moneda) : prefix + '-';
+          const ded = r.deducciones_total > 0 ? fmt(-r.deducciones_total, moneda) : prefix + '-';
+          return `
+<div class="cert-page">
+  <div class="hdr">
+    <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo" alt="InAndes">
+    <div class="hdr-title">
+      <div class="t1">ESTADO DE CUENTA DEL FONDO</div>
+      <div class="t2">${fData.fondo.nombre_fondo} - FONDO DE INVERSION PRIVADO</div>
+      <div class="t3">PERIODO: ${fStart} AL ${fEnd}</div>
+    </div>
+  </div>
+  <div class="client">
+    <div><span class="lbl">Sr(a)(s):</span> ${r.inversionista}</div>
+    <div><span class="lbl">Certificado N&deg;:</span> ${r.id}</div>
+  </div>
+  <table>
+    <tr><td class="c">Monto inicial invertido</td><td class="a">${fmt(r.capital, moneda)}</td></tr>
+    <tr><td class="c">Ganancia bruta obtenida</td><td class="a">${fmt(r.bruto_total, moneda)}</td></tr>
+    <tr><td class="c">(-) Impuesto a la renta retenido</td><td class="a">${fmt(-r.impuesto_total, moneda)}</td></tr>
+    <tr><td class="c">(-) Deducciones</td><td class="a">${ded}</td></tr>
+    <tr class="hl"><td class="c">Ganancia disponible al inversionista</td><td class="a">${fmt(r.base_neta, moneda)}</td></tr>
+    <tr><td class="c">Ganancias capitalizadas para adquirir nuevas cuotas</td><td class="a">${cap}</td></tr>
+    <tr><td class="c">Rescates</td><td class="a">${res}</td></tr>
+    <tr><td class="c">Monto transferido a su cuenta bancaria</td><td class="a">${fmt(r.reparto_valor, moneda)}</td></tr>
+    <tr class="sep"><td colspan="2"></td></tr>
+    <tr class="fr"><td class="c">Monto de la inversion al ${fEnd}</td><td class="a">${fmt(r.capital_final, moneda)}</td></tr>
+    <tr class="fr"><td class="c">Valor cuota al ${fEnd}</td><td class="a">${valorCuota > 0 ? fmt(valorCuota, moneda) : '-'}</td></tr>
+    <tr class="fr"><td class="c">Numero de cuotas al ${fEnd}</td><td class="a">${numCuotas}</td></tr>
+  </table>
+</div>`;
+        });
+    });
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>EECC ${fEnd}</title><style>
+@page{size:A4 portrait;margin:15mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#1e293b;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cert-page{width:100%;page-break-after:always;padding:4mm 0}
+.cert-page:last-child{page-break-after:auto}
+.hdr{display:flex;align-items:center;gap:6mm;border-bottom:2px solid #059669;padding-bottom:4mm;margin-bottom:5mm}
+.logo{width:75px}
+.t1{font-size:10pt;font-weight:900;text-transform:uppercase;color:#064e3b}
+.t2{font-size:9pt;font-weight:bold;color:#0f172a;margin-top:1px}
+.t3{font-size:8pt;color:#475569;margin-top:1px}
+.client{margin-bottom:5mm;padding:2mm 0;border-bottom:1px solid #e2e8f0;font-size:9pt}
+.client div{margin-bottom:1mm}
+.lbl{font-weight:bold}
+table{width:100%;border-collapse:collapse;margin-top:3mm}
+td{padding:2.5mm 3mm;border-bottom:1px solid #f1f5f9;font-size:9pt}
+td.c{width:78%}
+td.a{width:22%;text-align:right;font-weight:bold}
+.hl td{background:#f0fdf4;font-weight:bold;border-top:2px solid #059669;border-bottom:2px solid #059669}
+.sep td{height:3mm;border:none}
+.fr td{background:#f8fafc;font-weight:bold;border:1px solid #e2e8f0}
+</style></head><body>${certPages.join('')}</body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
-  // Descarga / Apertura de Certificados de Retención Oficiales (PDF Nativo en Visor Chrome con fondo negro y flecha de download)
-  const handleDownloadRetBatch = () => {
-    const cleanFondo = docFondo && docFondo !== 'TODOS' ? docFondo : 'TODOS';
-    window.open(`/reports/RETENCIONES_${cleanFondo}.pdf`, '_blank');
+  // -----------------------------------------------------------------------
+  // CERTIFICADOS DE RETENCION — genera HTML desde calcResult del Motor V40
+  // -----------------------------------------------------------------------
+  const handleExportRetenciones = async () => {
+    // TODO: TC_USD_PEN hardcodeado — obtener de Supabase cuando este disponible
+    const TC_USD_PEN = 3.662;
+
+    let currentResult = calcResult;
+    if (!currentResult) {
+      currentResult = await handleRunV40Calculation();
+    }
+    if (!currentResult || currentResult.pdfData.length === 0) {
+      alert('No hay datos calculados. Primero genere el reporte desde la pestana Auditoria.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Habilita las ventanas emergentes para ver el documento.');
+      return;
+    }
+
+    // Mapa nombre normalizado -> inversionista (para lookup de DNI y domicilio)
+    const invLookup = new Map<string, Inversionista>();
+    for (const inv of inversionistas) {
+      const nombre = [inv.apellido_1, inv.apellido_2, inv.nombre_1, inv.nombre_2]
+        .filter(Boolean).join(' ').toUpperCase().trim();
+      invLookup.set(nombre, inv);
+    }
+
+    const numLetras = (monto: number): string => {
+      const enteros = Math.floor(monto);
+      const centavos = Math.round((monto - enteros) * 100);
+      const cc = `${centavos.toString().padStart(2, '0')}/100`;
+      const UNI = ['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE'];
+      const DEC = ['','DIEZ','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+      const ESP: Record<number,string> = {11:'ONCE',12:'DOCE',13:'TRECE',14:'CATORCE',15:'QUINCE',
+        16:'DIECISEIS',17:'DIECISIETE',18:'DIECIOCHO',19:'DIECINUEVE',21:'VEINTIUN',22:'VEINTIDOS',
+        23:'VEINTITRES',24:'VEINTICUATRO',25:'VEINTICINCO',26:'VEINTISEIS',27:'VEINTISIETE',
+        28:'VEINTIOCHO',29:'VEINTINUEVE'};
+      const CEN = ['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS',
+        'SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+      const t3 = (n: number): string => {
+        if (n === 0) return '';
+        if (n === 100) return 'CIEN';
+        const c = Math.floor(n/100), d = Math.floor((n%100)/10), u = n%10, du = n%100;
+        let r = CEN[c] ? CEN[c]+' ' : '';
+        if (ESP[du]) r += ESP[du];
+        else if (d > 0 && u > 0) r += `${DEC[d]} Y ${UNI[u]}`;
+        else if (d > 0) r += DEC[d];
+        else if (u > 0) r += UNI[u];
+        return r.trim();
+      };
+      if (enteros === 0) return `CERO CON ${cc}`;
+      const miles = Math.floor(enteros/1000), resto = enteros%1000;
+      let txt = miles === 1 ? 'MIL ' : miles > 1 ? `${t3(miles)} MIL ` : '';
+      txt += t3(resto);
+      return `${txt.trim()} CON ${cc}`;
+    };
+
+    const fmt2 = (v: number) =>
+      v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const fondosFiltrados = (docFondo && docFondo !== 'TODOS')
+      ? currentResult.pdfData.filter((f: any) => f.fondo.id_fondo === docFondo)
+      : currentResult.pdfData;
+
+    const hoy = new Date();
+    const dia = String(hoy.getDate()).padStart(2,'0');
+    const meses = ['enero','febrero','marzo','abril','mayo','junio',
+      'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const mes = meses[hoy.getMonth()];
+    const anio = hoy.getFullYear();
+
+    const certPages = fondosFiltrados.flatMap((fData: any) => {
+      const moneda: string = fData.fondo.moneda;
+
+      return fData.blocks[0].rows
+        .filter((r: any) => r.tipo === 'CERT' && r.impuesto_total > 0)
+        .map((r: any) => {
+          const irPen = moneda === 'USD'
+            ? Math.round(r.impuesto_total * TC_USD_PEN * 100) / 100
+            : Math.round(r.impuesto_total * 100) / 100;
+          const tcDisplay = moneda === 'USD' ? `PEN ${TC_USD_PEN.toFixed(3)}` : '-';
+
+          const nombreKey = r.inversionista.toUpperCase().trim();
+          const inv = invLookup.get(nombreKey);
+          const dni = inv?.documento_identidad ?? '';
+          const domicilio = inv?.direccion_fiscal ?? 'Domicilio no registrado';
+
+          const tcRow = moneda === 'USD'
+            ? `<td>${tcDisplay}</td>`
+            : '';
+          const tcHeader = moneda === 'USD'
+            ? `<th>TIPO DE CAMBIO PEN/USD UTILIZADO</th>`
+            : '';
+
+          return `
+<div class="cert-page">
+  <div class="hdr">
+    <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo" alt="InAndes">
+    <div class="hdr-title">
+      <div class="t0">CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS</div>
+      <div class="t0">DE SEGUNDA CATEGOR&Iacute;A</div>
+    </div>
+  </div>
+  <p class="certnum">CERTIFICADO N&deg;: ${r.id}</p>
+  <p class="body">INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N&deg; 20601555256, domiciliada
+  en Los Tulipanes 147 oficina 306, Santiago de Surco, provincia y departamento de Lima,
+  representada por su Gerente General, Sr. Juan Ricardo Gallo Pizarro, identificado con DNI
+  02816271, en su calidad de sociedad administradora del FONDO <strong>${fData.fondo.nombre_fondo}</strong> &ndash; FONDO DE INVERSION PRIVADO,</p>
+  <p class="certifica">CERTIFICA QUE:</p>
+  <p class="body">De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a).
+  <strong>${r.inversionista}</strong>, identificado(a) con DNI <strong>${dni}</strong>
+  y con domicilio fiscal en <strong>${domicilio}</strong>, la suma de <strong>PEN ${fmt2(irPen)}</strong>
+  (<strong>${numLetras(irPen)} soles</strong>)
+  por concepto de Impuesto a la Renta de Segunda Categor&iacute;a generado por la distribuci&oacute;n
+  de beneficios de las operaciones del FONDO <strong>${fData.fondo.nombre_fondo}</strong> &ndash; FONDO DE INVERSION PRIVADO,
+  correspondiente al per&iacute;odo comprendido entre el <strong>${fStart}</strong> al <strong>${fEnd}</strong>.</p>
+  <p class="resumen-title">RESUMEN DE LOS MONTOS RETENIDOS</p>
+  <table class="rtable">
+    <thead><tr><th>BASE DE RETENCION</th><th>MONTO RETENIDO</th><th>FECHA DE LA OPERACION</th>${tcHeader}</tr></thead>
+    <tbody><tr>
+      <td>${moneda} ${fmt2(r.bruto_total)}</td>
+      <td>PEN ${fmt2(irPen)}</td>
+      <td>${fEnd}</td>
+      ${tcRow}
+    </tr></tbody>
+  </table>
+  <p class="fecha">Santiago de Surco, <strong>${dia}</strong> de <strong>${mes}</strong> del <strong>${anio}</strong></p>
+  <div class="firma">
+    <img src="/assets/firma_ricardo_gallo.png" class="firma-img" alt="Firma">
+    <div>Juan Ricardo Gallo Pizarro</div>
+    <div><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong></div>
+    <div>Gerente General</div>
+  </div>
+</div>`;
+        });
+    });
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Retenciones ${fEnd}</title><style>
+@page{size:A4 portrait;margin:15mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#1e293b;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cert-page{width:100%;page-break-after:always;padding:4mm 0}
+.cert-page:last-child{page-break-after:auto}
+.hdr{display:flex;align-items:center;gap:6mm;border-bottom:2px solid #1e40af;padding-bottom:4mm;margin-bottom:4mm}
+.logo{width:70px}
+.t0{font-size:10pt;font-weight:900;text-transform:uppercase;color:#1e3a8a;line-height:1.3}
+.certnum{font-size:9pt;font-weight:bold;margin-bottom:4mm;color:#475569}
+.body{font-size:8.5pt;margin-bottom:4mm;line-height:1.5;text-align:justify}
+.certifica{font-size:9pt;font-weight:bold;margin-bottom:3mm}
+.resumen-title{font-size:8.5pt;font-weight:bold;text-transform:uppercase;margin-bottom:2mm;color:#1e3a8a}
+.rtable{width:100%;border-collapse:collapse;margin-bottom:5mm}
+.rtable th{background:#555555;color:#fff;font-size:8pt;padding:2.5mm 3mm;text-align:left;border:1px solid #555555}
+.rtable td{border:1px solid #cbd5e1;padding:2.5mm 3mm;font-size:8.5pt}
+.fecha{text-align:right;font-size:8.5pt;margin-bottom:6mm}
+.firma{margin-top:4mm;font-size:8.5pt;line-height:1.6}
+.firma-img{height:40px;display:block;margin-bottom:2mm}
+</style></head><body>${certPages.join('')}</body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const handleInputChange = (field: keyof Inversionista, value: any) => {
@@ -1497,10 +1755,10 @@ export const InversionistasPage: React.FC = () => {
 
                 <button
                   className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
-                  onClick={handleDownloadEECCBatch}
+                  onClick={handleExportEECC}
                 >
                   <FileText size={16} />
-                  <span>Descargar PDF Lote EECC ({fEnd})</span>
+                  <span>Ver / Imprimir EECC ({fEnd})</span>
                 </button>
               </div>
 
@@ -1520,10 +1778,10 @@ export const InversionistasPage: React.FC = () => {
 
                 <button
                   className="h-12 text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white transition-all rounded-xl flex items-center justify-center gap-2.5 cursor-pointer shadow hover:shadow-lg"
-                  onClick={handleDownloadRetBatch}
+                  onClick={handleExportRetenciones}
                 >
                   <FileSpreadsheet size={16} />
-                  <span>Descargar PDF Lote Retenciones ({fEnd})</span>
+                  <span>Ver / Imprimir Retenciones ({fEnd})</span>
                 </button>
               </div>
 
