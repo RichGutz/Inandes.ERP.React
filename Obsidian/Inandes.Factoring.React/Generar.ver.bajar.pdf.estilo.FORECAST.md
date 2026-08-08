@@ -9,8 +9,13 @@
 
 En **Forecast** (`forecast.geeksoft.tech/liquidations-pdf-audit`), la generación y auditoría de documentos de 30+ páginas funciona de forma instantánea (1-2 segundos) y dentro de la misma interfaz mediante **visores integrados en caliente**.
 
-### ¿Por qué funciona la receta de Forecast?
-1. **Visor Directo dentro de la Pantalla:** El usuario no lidia con ventanas emergentes bloqueadas por el navegador ni con pestañas perdidas; el documento se renderiza en un visor embebido de alta resolución dentro del propio dashboard.
+### 1.1 Fuente Oficial de Referencia Inspeccionada
+- **Componente Visor Original:** [LiquidationsExecutivePdfAudit.tsx](file:///C:/Users/rguti/PETRAL.SMART.DASHBOARD/Desarrollo.Profesional/Geeksoft_Frontend/src/components/CommercialForecast/LiquidationsExecutivePdfAudit.tsx)
+- **Página de Herramienta:** [LiquidationsAuditPdf_V2.tsx](file:///C:/Users/rguti/PETRAL.SMART.DASHBOARD/Desarrollo.Profesional/Geeksoft_Frontend/src/pages/Tools/LiquidationsAuditPdf_V2.tsx)
+- **Ruta en Producción:** `https://forecast.geeksoft.tech/liquidations-pdf-audit`
+
+### 1.2 ¿Por qué funciona la receta de Forecast?
+1. **Visor Directo dentro de la Pantalla:** El usuario no lidia con ventanas emergentes bloqueadas por el navegador ni con pestañas perdidas; el documento se renderiza en un visor embebido de alta resolución dentro del propio dashboard con contenedor `aspect-[1.414/1]` y `max-h-[85vh]`.
 2. **Transmisión de Binario Puro (`application/pdf`):** El frontend no maqueta HTML pesado con JavaScript ni usa `document.write()`. Simplemente monta un contenedor `<iframe src="..." />` que delega el renderizado al motor nativo C++ de Chrome (PDFium).
 3. **Persistencia en Caché de Disco (Cache-First en VPS):** La primera vez que se consulta el periodo cerrado, WeasyPrint compila el PDF en Linux y lo guarda en disco (`cache_reports/`). Las siguientes consultas o cambios de vista responden en **0.05 segundos** mediante `FileResponse`.
 
