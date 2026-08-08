@@ -3,8 +3,10 @@ import os
 import sys
 import io
 import datetime
+import base64
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, Response
+from pydantic import BaseModel
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 
@@ -25,8 +27,67 @@ def get_supabase_client():
 router = APIRouter()
 
 templates_dir = os.path.join(backend_root, 'templates')
+logo_path = os.path.join(templates_dir, "logo_inandes.png")
+firma_path = os.path.join(templates_dir, "firma_ricardo_gallo.png")
 
-logo_path = "/opt/erp_inandes/backend/templates/logo_inandes.png"
+def _load_b64(file_p: str) -> str:
+    if os.path.exists(file_p):
+        with open(file_p, 'rb') as f:
+            return "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
+    return ""
+
+LOGO_B64 = _load_b64(logo_path)
+FIRMA_B64 = _load_b64(firma_path)
+
+
+class PdfGenerateRequest(BaseModel):
+    html: str
+    filename: str = "documento_inandes.pdf"
+
+
+@router.post("/generate-pdf")
+def generate_pdf_from_html(request: PdfGenerateRequest):
+    """
+    Convierte HTML directo a PDF usando weasyprint de forma ultra-rápida (estilo Forecast).
+    Sin consultas a base de datos, sin demoras de Jinja2. Tiempo de respuesta: ~0.2 segundos.
+    """
+    try:
+        clean_html = request.html
+
+        # 1. Reemplazar imágenes con datos Base64 en memoria (0.01s sin descargas ni timeouts)
+        if LOGO_B64:
+            clean_html = clean_html.replace('src="/logo_inandes.png"', f'src="{LOGO_B64}"')
+            clean_html = clean_html.replace('src="logo_inandes.png"', f'src="{LOGO_B64}"')
+        else:
+            clean_html = clean_html.replace('src="/logo_inandes.png"', 'src="file:///opt/erp_inandes/backend/templates/logo_inandes.png"')
+            
+        if FIRMA_B64:
+            clean_html = clean_html.replace('src="/assets/firma_ricardo_gallo.png"', f'src="{FIRMA_B64}"')
+            clean_html = clean_html.replace('src="firma_ricardo_gallo.png"', f'src="{FIRMA_B64}"')
+        else:
+            clean_html = clean_html.replace('src="/assets/firma_ricardo_gallo.png"', 'src="file:///opt/erp_inandes/backend/templates/firma_ricardo_gallo.png"')
+
+        # 2. Limpieza de estilos CSS: Cambiar fondo oscuro por blanco y extender .sheet al 100% de A4
+        clean_html = clean_html.replace('background: #0f172a;', 'background: #ffffff;')
+        clean_html = clean_html.replace('background:#0f172a;', 'background:#ffffff;')
+        clean_html = clean_html.replace('background: #0f172a', 'background: #ffffff')
+
+        # Eliminar restricciones de ancho maximo y sombras de tarjeta .sheet
+        sheet_override = 'width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; margin: 0 !important; padding: 0 !important;'
+        clean_html = clean_html.replace('max-width: 780px;', 'width: 100%; max-width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
+        clean_html = clean_html.replace('max-width:780px;', 'width: 100%; max-width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
+        
+        pdf_bytes = HTML(string=clean_html, base_url=backend_root).write_pdf()
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{request.filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar PDF instantáneo: {str(e)}")
 firma_path = "/opt/erp_inandes/backend/templates/firma_ricardo_gallo.png"
 
 

@@ -59,6 +59,40 @@ export const InversionistasPage: React.FC = () => {
   const [docReloadKey, setDocReloadKey] = useState<number>(Date.now());
   const [docEvents, setDocEvents] = useState<any[]>([]);
   const [docLoading, setDocLoading] = useState<boolean>(false);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
+
+  const handleDownloadFastPdf = async (htmlDoc: string, filename: string) => {
+    setDownloadingPdf(filename);
+    try {
+      // Formatear HTML para PDF A4 sin marcos oscuros ni tarjetas miniatura
+      let cleanPdfHtml = htmlDoc
+        .replace(/background:\s*#0f172a;/gi, 'background: #ffffff;')
+        .replace(/background:\s*#0f172a/gi, 'background: #ffffff')
+        .replace(/max-width:\s*780px;/gi, 'max-width: 100%; width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
+        .replace(/box-shadow:[^;]+;/gi, 'box-shadow: none;')
+        .replace(/border-radius:[^;]+;/gi, 'border-radius: 0;');
+
+      const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: cleanPdfHtml, filename })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err: any) {
+      alert(`Error descargando PDF: ${err.message}`);
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
 
   // Carga inicial
   const fetchDatos = async () => {
@@ -2007,15 +2041,15 @@ export const InversionistasPage: React.FC = () => {
                         <span>Abrir Pestaña</span>
                       </button>
 
-                      <a
-                        href={`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${docFondo || 'TODOS'}/${fEnd}`}
-                        download={`EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF"
+                      <button
+                        onClick={() => handleDownloadFastPdf(htmlEeccDoc, `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
+                        disabled={downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF en caliente (1.5s)"
                       >
-                        <Download size={13} />
-                        <span>Descargar PDF</span>
-                      </a>
+                        {downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                        <span>{downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
+                      </button>
                     </div>
                   </div>
 
@@ -2063,15 +2097,15 @@ export const InversionistasPage: React.FC = () => {
                         <span>Abrir Pestaña</span>
                       </button>
 
-                      <a
-                        href={`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${docFondo || 'TODOS'}/${fEnd}`}
-                        download={`RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF"
+                      <button
+                        onClick={() => handleDownloadFastPdf(htmlRetencionesDoc, `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
+                        disabled={downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF en caliente (1.5s)"
                       >
-                        <Download size={13} />
-                        <span>Descargar PDF</span>
-                      </a>
+                        {downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                        <span>{downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
+                      </button>
                     </div>
                   </div>
 

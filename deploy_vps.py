@@ -16,6 +16,8 @@ VPS_PASS  = "Thiagutz061121@"
 DOMAIN    = "inandes.react.geeksoft.tech"
 APP_DIR   = "/var/www/inandes"
 DIST_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
+BACKEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+VPS_BACKEND_DIR = "/opt/erp_inandes/backend"
 CERTBOT_MAIL = "contacto@geeksoft.pe"
 
 def put_dir(sftp, localpath, remotepath):
@@ -26,6 +28,8 @@ def put_dir(sftp, localpath, remotepath):
         pass
     
     for item in os.listdir(localpath):
+        if item in ['__pycache__', '.git', '.venv']:
+            continue
         localitem = os.path.join(localpath, item)
         remoteitem = remotepath + '/' + item
         if os.path.isdir(localitem):
@@ -47,7 +51,7 @@ def run(client, cmd, desc=""):
 
 def deploy():
     print(f"\n{'='*60}")
-    print(f"  DEPLOY FRONTEND -> https://{DOMAIN}")
+    print(f"  DEPLOY FRONTEND & BACKEND -> https://{DOMAIN}")
     print(f"{'='*60}")
 
     if not os.path.exists(DIST_DIR):
@@ -64,10 +68,11 @@ def deploy():
         print("  >> Conexión SSH establecida con éxito ✓")
 
         # 1. Preparar el directorio de despliegue en el VPS
-        run(client, f"mkdir -p {APP_DIR} && rm -rf {APP_DIR}/*", "1. Preparar directorio destino en VPS")
+        run(client, f"mkdir -p {APP_DIR} && rm -rf {APP_DIR}/*", "1. Preparar directorio destino Frontend en VPS")
+        run(client, f"mkdir -p {VPS_BACKEND_DIR}", "1b. Preparar directorio destino Backend en VPS")
 
-        # 2. Subir la carpeta dist compilada y la carpeta reports por SFTP
-        print(f"\n[2. Subiendo archivos compilados via SFTP]")
+        # 2. Subir la carpeta dist compilada, reports y backend por SFTP
+        print(f"\n[2. Subiendo archivos compilados de Frontend y Backend via SFTP]")
         sftp = client.open_sftp()
         put_dir(sftp, DIST_DIR, APP_DIR)
         
@@ -76,8 +81,16 @@ def deploy():
         if os.path.exists(LOCAL_REPORTS):
             put_dir(sftp, LOCAL_REPORTS, APP_DIR + "/reports")
             
+        # Sincronización del Backend FastAPI a /opt/erp_inandes/backend
+        if os.path.exists(BACKEND_DIR):
+            put_dir(sftp, BACKEND_DIR, VPS_BACKEND_DIR)
+            print(f"  >> Backend subido con éxito a {VPS_BACKEND_DIR} ✓")
+
         sftp.close()
-        print(f"  >> Archivos subidos con éxito a {APP_DIR} ✓")
+        print(f"  >> Archivos de Frontend subidos con éxito a {APP_DIR} ✓")
+
+        # Reiniciar el servicio del Backend FastAPI (inandes-api.service)
+        run(client, "systemctl restart inandes-api.service", "2b. Reiniciar servicio FastAPI backend (inandes-api.service)")
 
         # 3. Asignar los permisos correctos en Linux para el servidor web Nginx
         run(client, 
