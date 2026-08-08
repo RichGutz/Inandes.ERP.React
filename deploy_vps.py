@@ -137,7 +137,6 @@ def deploy():
 
     # Servir archivos PDF nativos directamente (Visor oscuro con flecha de descarga)
     location ~* \.pdf$ {{
-        add_header Content-Type application/pdf;
         add_header Content-Disposition inline;
         try_files $uri =404;
     }}
