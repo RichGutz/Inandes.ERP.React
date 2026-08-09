@@ -130,3 +130,25 @@ ssh root@91.108.125.253 "journalctl -u inandes-api.service -n 50 --no-pager | gr
 | Swap | 0 MB | — |
 
 > **ALERTA:** El servidor NO tiene swap. Cuando WeasyPrint genera PDFs grandes, puede causar picos de RAM que compiten con los demas servicios activos (Streamlit Gateway, CRM Neoauto, Geeksoft Engine), alargando el tiempo de generacion de 300ms a 15-20 segundos.
+
+---
+
+## 7. BANDERAS ROJAS (Red Flags) & Prevención Técnica
+
+> [!CAUTION]
+> **Bandera Roja #1: Procesos Huérfanos de Uvicorn en Puerto 8010**
+> - **Mecanismo:** El servicio `inandes-api.service` ejecuta `run_fastapi.py` (proceso padre), el cual lanza `uvicorn main:app` (proceso hijo). Si el proceso padre muere o se reinicia de forma abrupta, el proceso hijo queda huérfano (adoptado por PID 1) y retiene el puerto 8010 en estado `LISTEN`.
+> - **Síntoma:** El log de `journalctl -u inandes-api.service` muestra reinicios constantes cada 3 segundos con el error `[Errno 98] address already in use`.
+> - **Solución / Prevención Obligatoria:** Todo script de despliegue (`deploy_vps.py`) DEBE ejecutar `pkill -9 -f 'uvicorn main:app' 2>/dev/null || true` inmediatamente ANTES de ejecutar `systemctl restart inandes-api.service`.
+
+> [!WARNING]
+> **Bandera Roja #2: Eliminación Accidental de Logos/Firmas en el Frontend React**
+> - **Mecanismo:** En `InversionistasPage.tsx`, la función de descarga de PDF ejecutaba reglas Regex `.replace(/<img...>/gi, '')` y `.replace(/<div class="logo-inandes-img"...>/gi, '')` que borraban los elementos gráficos antes de enviar el HTML al backend.
+> - **Síntoma:** El visor en pantalla (iframe) muestra el documento perfecto con logos y firmas, pero el archivo PDF descargado sale como **texto puro sin imágenes**.
+> - **Solución / Prevención:** PROHIBIDO aplicar regexes de despojo de imágenes o estilos `background-image` en el frontend antes de enviar el payload a `/api/inversionistas/generate-pdf`.
+
+> [!IMPORTANT]
+> **Bandera Roja #3: Competencia por RAM en Servidor Sin SWAP (3.9 GB Total)**
+> - **Mecanismo:** El VPS no cuenta con memoria de intercambio (SWAP=0MB). La presencia de múltiples servicios Python (Streamlit 8501, CRM Neoauto 8502, Engine 8000 y FastAPI 8010) deja un margen típico de solo ~500 MB libres.
+> - **Síntoma:** Cuando WeasyPrint requiere renderizar imágenes Base64 grandes, si la RAM libre cae por debajo de ~250 MB, el kernel Linux causa *throttling* o demoras en la respuesta.
+> - **Solución / Prevención:** Mantener limpios los servicios no esenciales y monitorear `free -m` de forma periódica con los scripts de diagnóstico.
