@@ -10,7 +10,7 @@ import {
   FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
   ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download
 } from 'lucide-react';
-import { LOGO_EFI_BASE64 } from '../../assets/base64Images';
+import { LOGO_EFI_BASE64, LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo
@@ -64,18 +64,28 @@ export const InversionistasPage: React.FC = () => {
   const handleDownloadFastPdf = async (htmlDoc: string, filename: string) => {
     setDownloadingPdf(filename);
     try {
-      // Formatear HTML para PDF A4 sin marcos oscuros ni tarjetas miniatura
-      let cleanPdfHtml = htmlDoc
-        .replace(/background:\s*#0f172a;/gi, 'background: #ffffff;')
-        .replace(/background:\s*#0f172a/gi, 'background: #ffffff')
-        .replace(/max-width:\s*780px;/gi, 'max-width: 100%; width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
-        .replace(/box-shadow:[^;]+;/gi, 'box-shadow: none;')
-        .replace(/border-radius:[^;]+;/gi, 'border-radius: 0;');
+      // Patron EXACTO de Forecast: extraer body+styles, reconstruir HTML limpio
+      const bodyContent = htmlDoc
+        .replace(/^[\s\S]*?<body[^>]*>/i, '')
+        .replace(/<\/body>[\s\S]*$/i, '');
+      let headStyles = (htmlDoc.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
+
+      // Eliminar imagenes: WeasyPrint es lento procesando Base64 grandes por hoja.
+      // El visor iframe muestra las imagenes perfectamente - el PDF oficial es texto puro.
+      const bodyNoImg = bodyContent
+        .replace(/<img[^>]*\/?>/gi, '')           // eliminar img tags
+        .replace(/<div class="logo-inandes-img"[^>]*><\/div>/gi, '')  // eliminar div logo
+        .replace(/<div class="firma-inandes-img"[^>]*><\/div>/gi, ''); // eliminar div firma
+
+      // Eliminar background-image data URLs del CSS (son el cuello de botella)
+      headStyles = headStyles.replace(/background-image\s*:\s*url\([^)]+\)\s*;/gi, '');
+
+      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyNoImg}</body></html>`;
 
       const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: cleanPdfHtml, filename })
+        body: JSON.stringify({ html: printHtml, filename })
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
@@ -397,9 +407,9 @@ export const InversionistasPage: React.FC = () => {
   <meta charset="UTF-8">
   <title>Estado de Cuenta</title>
   <style>
-    @page { size: A4 portrait; margin: 2.0cm 2.0cm 2.0cm 2.0cm; }
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt; line-height: 1.4; color: #1e293b; margin: 0; padding: 20px; background: #0f172a; }
-    .sheet { background: #ffffff; padding: 40px; margin: 0 auto 30px auto; max-width: 780px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid #334155; page-break-after: always; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: sans-serif; font-size: 10pt; line-height: 1.4; color: #1e293b; margin: 0; padding: 10mm; background: #ffffff; box-sizing: border-box; }
+    .sheet { background: #ffffff; padding: 20px 30px; margin: 0 0 10mm 0; max-width: 100%; width: 100%; box-shadow: none; border-radius: 0; border: none; page-break-after: always; box-sizing: border-box; }
     .header { width: 100%; margin-bottom: 25px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: middle; border: none; }
@@ -421,6 +431,7 @@ export const InversionistasPage: React.FC = () => {
     .totals-section { width: 100%; margin-top: 30px; margin-bottom: 30px; border: 2px solid #0f172a; padding: 12px; box-sizing: border-box; background: #fafafa; border-radius: 4px; }
     .footer { font-size: 8pt; margin-top: 40px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 10px; }
     .footer p { margin: 2px 0; }
+    .logo-inandes-img { display: block; width: 160px; height: 70px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
   </style>
 </head>
 <body>
@@ -430,7 +441,7 @@ export const InversionistasPage: React.FC = () => {
         <table>
           <tr>
             <td class="logo-container">
-              <img src="/logo_inandes.png" alt="Logo Inandes" onerror="this.style.display='none'" />
+              <div class="logo-inandes-img"></div>
             </td>
           </tr>
         </table>
@@ -611,9 +622,9 @@ export const InversionistasPage: React.FC = () => {
   <meta charset="UTF-8">
   <title>Certificado de Rentas</title>
   <style>
-    @page { size: A4 portrait; margin: 1.5cm 2cm 2.5cm 2cm; }
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; margin: 0; padding: 20px; background: #0f172a; }
-    .sheet { background: #ffffff; padding: 45px 50px; margin: 0 auto 30px auto; max-width: 780px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid #334155; page-break-after: always; }
+    @page { size: A4 portrait; margin: 0; }
+    body { font-family: sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; margin: 0; padding: 10mm; background: #ffffff; box-sizing: border-box; }
+    .sheet { background: #ffffff; padding: 20px 30px; margin: 0 0 10mm 0; max-width: 100%; width: 100%; box-shadow: none; border-radius: 0; border: none; page-break-after: always; box-sizing: border-box; }
     .header { width: 100%; margin-bottom: 25px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: top; border: none; }
@@ -632,6 +643,8 @@ export const InversionistasPage: React.FC = () => {
     .signature-img { max-height: 90px; margin-bottom: 5px; }
     .footer { font-size: 8pt; margin-top: 40px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 10px; }
     .footer p { margin: 2px 0; }
+    .logo-inandes-img { display: block; width: 160px; height: 70px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
+    .firma-inandes-img { display: block; width: 120px; height: 60px; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; margin: 0 auto 5px auto; }
   </style>
 </head>
 <body>
@@ -641,7 +654,7 @@ export const InversionistasPage: React.FC = () => {
         <table>
           <tr>
             <td class="logo-container">
-              <img src="/logo_inandes.png" alt="Logo Inandes" onerror="this.style.display='none'" />
+              <div class="logo-inandes-img"></div>
             </td>
           </tr>
         </table>
@@ -685,7 +698,7 @@ export const InversionistasPage: React.FC = () => {
       </div>
 
       <div class="signature-area">
-        <img class="signature-img" src="/assets/firma_ricardo_gallo.png" alt="Firma Ricardo Gallo" onerror="this.style.display='none'" /><br>
+        <div class="firma-inandes-img"></div><br>
         <strong>Juan Ricardo Gallo Pizarro</strong><br>
         <span style="font-size: 9pt; color: #64748b;">INANDES ACTIVOS ALTERNATIVOS SAC<br>Gerente General</span>
       </div>

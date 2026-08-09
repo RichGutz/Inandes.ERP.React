@@ -8,8 +8,7 @@
 
 Estamos reemplazando la interfaz heredada de **Streamlit** por un **Frontend React 19 + Vite** (`https://inandes.react.geeksoft.tech`), manteniendo intactos los motores de cálculo financiero en Python y la base de datos PostgreSQL en Supabase.
 
-| Componente | Tecnología | Estado |
-|------------|------------|--------|
+| **Repositorio Git** | `RichGutz/Inandes.ERP.React` | ✅ Repositorio Único Unificado (`origin/main`) |
 | **Frontend** | React 19 + TypeScript + Tailwind CSS | ✅ Desplegado en VPS |
 | **Backend API** | FastAPI (Python) | ✅ Desplegado en VPS (Puerto 8010/8502) |
 | **Base de Datos** | Supabase (`egvcinsbyropumybatdf`) | ✅ Operativa |

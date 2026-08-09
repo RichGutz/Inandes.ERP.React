@@ -48,36 +48,11 @@ class PdfGenerateRequest(BaseModel):
 @router.post("/generate-pdf")
 def generate_pdf_from_html(request: PdfGenerateRequest):
     """
-    Convierte HTML directo a PDF usando weasyprint de forma ultra-rápida (estilo Forecast).
-    Sin consultas a base de datos, sin demoras de Jinja2. Tiempo de respuesta: ~0.2 segundos.
+    Convierte HTML a PDF usando weasyprint (identico al endpoint de Forecast utils.py).
+    Las imagenes vienen como data URLs desde el frontend - sin fetches externos.
     """
     try:
-        clean_html = request.html
-
-        # 1. Reemplazar imágenes con datos Base64 en memoria (0.01s sin descargas ni timeouts)
-        if LOGO_B64:
-            clean_html = clean_html.replace('src="/logo_inandes.png"', f'src="{LOGO_B64}"')
-            clean_html = clean_html.replace('src="logo_inandes.png"', f'src="{LOGO_B64}"')
-        else:
-            clean_html = clean_html.replace('src="/logo_inandes.png"', 'src="file:///opt/erp_inandes/backend/templates/logo_inandes.png"')
-            
-        if FIRMA_B64:
-            clean_html = clean_html.replace('src="/assets/firma_ricardo_gallo.png"', f'src="{FIRMA_B64}"')
-            clean_html = clean_html.replace('src="firma_ricardo_gallo.png"', f'src="{FIRMA_B64}"')
-        else:
-            clean_html = clean_html.replace('src="/assets/firma_ricardo_gallo.png"', 'src="file:///opt/erp_inandes/backend/templates/firma_ricardo_gallo.png"')
-
-        # 2. Limpieza de estilos CSS: Cambiar fondo oscuro por blanco y extender .sheet al 100% de A4
-        clean_html = clean_html.replace('background: #0f172a;', 'background: #ffffff;')
-        clean_html = clean_html.replace('background:#0f172a;', 'background:#ffffff;')
-        clean_html = clean_html.replace('background: #0f172a', 'background: #ffffff')
-
-        # Eliminar restricciones de ancho maximo y sombras de tarjeta .sheet
-        sheet_override = 'width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; margin: 0 !important; padding: 0 !important;'
-        clean_html = clean_html.replace('max-width: 780px;', 'width: 100%; max-width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
-        clean_html = clean_html.replace('max-width:780px;', 'width: 100%; max-width: 100%; box-shadow: none; border: none; border-radius: 0; margin: 0; padding: 0;')
-        
-        pdf_bytes = HTML(string=clean_html, base_url=backend_root).write_pdf()
+        pdf_bytes = HTML(string=request.html).write_pdf()
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
@@ -87,7 +62,8 @@ def generate_pdf_from_html(request: PdfGenerateRequest):
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al generar PDF instantáneo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al generar PDF: {str(e)}")
+
 firma_path = "/opt/erp_inandes/backend/templates/firma_ricardo_gallo.png"
 
 

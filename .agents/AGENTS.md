@@ -80,11 +80,15 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 
 ## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO
 1. Lectura Obligatoria de Procedimientos: El agente DEBE consultar y seguir estrictamente lo estipulado en `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md`.
-2. Repositorio Oficial Git: El repositorio oficial y unico de este proyecto es `RichGutz/Inandes.Inversionistas.React` (`origin/main`). Todo push se dirige prioritariamente a `origin main`.
-3. Procedimiento de Despliegue:
+2. Repositorio Oficial Git: El repositorio oficial y unico de este proyecto es `RichGutz/Inandes.ERP.React` (`origin/main`). Todo push se dirige prioritariamente a `origin main`.
+3. Estructura Unificada de Obsidian: Dentro de `C:\Users\rguti\Inandes.ERP.React\Obsidian\`, conviven las notas de ambos modulos del ERP:
+   - `Inandes.Factoring.React` (Modulo Factoring)
+   - `Inandes.Inversionistas.React` (Modulo Inversionistas)
+4. Procedimiento de Despliegue:
    - Compilar frontend: `npm run build`
    - Subir archivos al VPS: `python deploy_vps.py`
    - Sincronizar en Git: `git add .` -> `git commit -m "..."` -> `git push origin main`
+
 
 
 
