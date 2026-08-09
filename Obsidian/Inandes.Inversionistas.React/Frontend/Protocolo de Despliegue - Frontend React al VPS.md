@@ -17,7 +17,7 @@ El script `deploy_vps.py` **NO** compila el proyecto de React automáticamente; 
 ## 🛠️ 2. Procedimiento Paso a Paso
 
 ### Paso 1: Validación y Compilación Local
-Abre una terminal en la raíz del proyecto (`C:\Users\rguti\Inandes.Inversionistas.React`) y ejecuta:
+Abre una terminal en la raíz del proyecto (`C:\Users\rguti\Inandes.ERP.React`) y ejecuta:
 ```bash
 npm run build
 ```

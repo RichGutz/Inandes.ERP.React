@@ -11,7 +11,7 @@ El frontend se ejecuta localmente y se conecta de forma directa y segura (SSL) a
 
 ```powershell
 # 1. Navegar al directorio del proyecto React
-cd C:\Users\rguti\Inandes.Inversionistas.React
+cd C:\Users\rguti\Inandes.ERP.React
 
 # 2. Levantar el servidor de desarrollo de Vite
 npm run dev
@@ -50,7 +50,7 @@ Para desplegar la aplicación React en el servidor web (Nginx) del VPS:
 
 ```powershell
 # 1. Compilar el proyecto localmente para generar la carpeta /dist
-cd C:\Users\rguti\Inandes.Inversionistas.React
+cd C:\Users\rguti\Inandes.ERP.React
 npm run build
 
 # 2. Transferir la carpeta dist optimizada al directorio de producción del VPS via SCP/Rsync

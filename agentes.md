@@ -54,7 +54,7 @@ El estado operativo del CRM en el VPS de Hostinger es el siguiente:
 
 ## 🚀 3. Guía para la Migración de Módulos (Streamlit ➜ React)
 
-El objetivo final es migrar la lógica financiera y operativa del CRM a una aplicación moderna de **React + Vite** (ubicada localmente en `C:\Users\rguti\Inandes.Inversionistas.React`). 
+El objetivo final es migrar la lógica financiera y operativa del CRM a una aplicación moderna de **React + Vite** (ubicada localmente en `C:\Users\rguti\Inandes.ERP.React`). 
 
 Cualquier nuevo agente debe leer, analizar y traducir los siguientes componentes clave en `/opt/erp_inandes/CRM_Inandes/`:
 

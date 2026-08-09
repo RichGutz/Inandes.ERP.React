@@ -5,7 +5,7 @@ Esta nota documenta de manera detallada el trabajo de desarrollo e infraestructu
 ---
 
 ## 🚀 1. Scaffolding y Arquitectura React (TypeScript)
-Se estructuró el proyecto en la raíz de `C:\Users\rguti\Inandes.Inversionistas.React` bajo el siguiente esquema:
+Se estructuró el proyecto en la raíz de `C:\Users\rguti\Inandes.ERP.React` bajo el siguiente esquema:
 *   **Vite v8.1** + **React 19.2** + **TypeScript 6.0**.
 *   **Dependencias Críticas**:
     *   `@supabase/supabase-js` (REST API & WebSockets).

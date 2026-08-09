@@ -192,9 +192,9 @@ ORIGEN DE LAS PLANTILLAS (copiar de aqui):
 
 El backend en mini_erp_v2_antigravity se despliega con:
 ```
-git push railway main
+git push origin main
 ```
-(Segun la regla del usuario: Despliegue de ERP -> git push railway main)
+(Segun la regla del usuario: Despliegue de ERP -> git push origin main)
 
 El frontend React se despliega con:
 ```
