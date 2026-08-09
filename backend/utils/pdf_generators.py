@@ -23,6 +23,8 @@ def _format_currency(value: Any, currency: str = "PEN") -> str:
 
 # --- Main PDF Generation Logic ---
 
+import time
+
 def _generate_pdf_in_memory(
     template_name: str,
     template_data: Dict[str, Any]
@@ -30,7 +32,7 @@ def _generate_pdf_in_memory(
     """
     Core PDF generation function that returns the PDF as bytes.
     """
-    # utils/pdf_generators.py -> backend/utils/ -> backend/
+    t0 = time.time()
     backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     templates_dir = os.path.join(backend_root, 'templates')
     
@@ -41,7 +43,10 @@ def _generate_pdf_in_memory(
     html_out = template.render(template_data)
     
     base_url = backend_root
-    return HTML(string=html_out, base_url=base_url).write_pdf()
+    pdf_bytes = HTML(string=html_out, base_url=base_url).write_pdf()
+    elapsed_ms = (time.time() - t0) * 1000
+    print(f"[PDF BENCHMARK] Template '{template_name}' generado ({len(pdf_bytes)} bytes) en {elapsed_ms:.2f} ms")
+    return pdf_bytes
 
 def _get_val(inv: dict, key: str) -> float:
     r = inv.get('recalculate_result') or {}

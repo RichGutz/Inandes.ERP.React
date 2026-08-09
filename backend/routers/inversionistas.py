@@ -45,20 +45,32 @@ class PdfGenerateRequest(BaseModel):
     filename: str = "documento_inandes.pdf"
 
 
+import time
+import re
+
 @router.post("/generate-pdf")
 def generate_pdf_from_html(request: PdfGenerateRequest):
     """
     Convierte HTML a PDF usando weasyprint (identico al endpoint de Forecast utils.py).
     Las imagenes vienen como data URLs desde el frontend - sin fetches externos.
     """
+    t0 = time.time()
     try:
-        pdf_bytes = HTML(string=request.html).write_pdf()
+        # Descartar fuentes externas por HTTP en el CSS para evitar timeouts de red en WeasyPrint
+        html_clean = request.html
+        if '@import' in html_clean:
+            html_clean = re.sub(r'@import\s+url\([^)]+\);?', '', html_clean)
+
+        pdf_bytes = HTML(string=html_clean).write_pdf()
+        elapsed_ms = (time.time() - t0) * 1000
+        print(f"[PDF BENCHMARK] Generado '{request.filename}' ({len(pdf_bytes)} bytes) en {elapsed_ms:.2f} ms")
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
                 "Content-Disposition": f'attachment; filename="{request.filename}"',
                 "Content-Length": str(len(pdf_bytes)),
+                "X-PDF-Generation-Time-MS": f"{elapsed_ms:.2f}",
             }
         )
     except Exception as e:
