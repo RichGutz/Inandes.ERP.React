@@ -70,17 +70,8 @@ export const InversionistasPage: React.FC = () => {
         .replace(/<\/body>[\s\S]*$/i, '');
       let headStyles = (htmlDoc.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
 
-      // Eliminar imagenes: WeasyPrint es lento procesando Base64 grandes por hoja.
-      // El visor iframe muestra las imagenes perfectamente - el PDF oficial es texto puro.
-      const bodyNoImg = bodyContent
-        .replace(/<img[^>]*\/?>/gi, '')           // eliminar img tags
-        .replace(/<div class="logo-inandes-img"[^>]*><\/div>/gi, '')  // eliminar div logo
-        .replace(/<div class="firma-inandes-img"[^>]*><\/div>/gi, ''); // eliminar div firma
-
-      // Eliminar background-image data URLs del CSS (son el cuello de botella)
-      headStyles = headStyles.replace(/background-image\s*:\s*url\([^)]+\)\s*;/gi, '');
-
-      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyNoImg}</body></html>`;
+      // Conservar imagenes, logos y firmas para el PDF oficial
+      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
 
       const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
         method: 'POST',
