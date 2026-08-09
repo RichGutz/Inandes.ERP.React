@@ -90,7 +90,7 @@ def deploy():
         print(f"  >> Archivos de Frontend subidos con éxito a {APP_DIR} ✓")
 
         # Reiniciar el servicio del Backend FastAPI (inandes-api.service)
-        run(client, "systemctl restart inandes-api.service", "2b. Reiniciar servicio FastAPI backend (inandes-api.service)")
+        run(client, "pkill -9 -f 'uvicorn main:app' 2>/dev/null || true; sleep 1; systemctl restart inandes-api.service", "2b. Reiniciar servicio FastAPI backend (inandes-api.service)")
 
         # 3. Asignar los permisos correctos en Linux para el servidor web Nginx
         run(client, 
