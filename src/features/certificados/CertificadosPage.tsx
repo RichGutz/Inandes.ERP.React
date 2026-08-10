@@ -673,8 +673,8 @@ export const CertificadosPage: React.FC = () => {
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Capital Adicional</label>
                     <input
                       type="number"
-                      min={0.01}
-                      step={100}
+                      min={0}
+                      step="any"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={aumentoMonto}
                       onChange={(e) => setAumentoMonto(Number(e.target.value) || 0)}

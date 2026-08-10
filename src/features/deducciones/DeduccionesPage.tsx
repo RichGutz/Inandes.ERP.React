@@ -581,7 +581,8 @@ export const DeduccionesPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase">Monto Fijo ({selectedContrato.moneda})</label>
                       <input
                         type="number"
-                        min={0.01}
+                        min={0}
+                        step="any"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={dedFijoMonto}
                         onChange={(e) => setDedFijoMonto(Number(e.target.value) || 0)}
@@ -669,6 +670,7 @@ export const DeduccionesPage: React.FC = () => {
                               <input
                                 type="number"
                                 min={0}
+                                step="any"
                                 className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded p-1 text-xs font-semibold text-center focus:outline-none"
                                 value={dedMultiMontos[i] ?? 100}
                                 onChange={(e) => {
@@ -778,7 +780,7 @@ export const DeduccionesPage: React.FC = () => {
                     <input
                       type="number"
                       min={0}
-                      step={0.1}
+                      step="any"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={resTasaWaiver}
                       onChange={(e) => setResTasaWaiver(Number(e.target.value) || 0)}
@@ -824,7 +826,8 @@ export const DeduccionesPage: React.FC = () => {
                               <label className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Rescate</label>
                               <input
                                 type="number"
-                                min={0.01}
+                                min={0}
+                                step="any"
                                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded p-1 text-xs font-semibold text-center focus:outline-none"
                                 value={arm.monto}
                                 onChange={(e) => {
@@ -845,6 +848,7 @@ export const DeduccionesPage: React.FC = () => {
                               <input
                                 type="number"
                                 min={0}
+                                step="any"
                                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 rounded p-1 text-xs font-semibold text-center focus:outline-none"
                                 value={arm.penalidad}
                                 onChange={(e) => {
