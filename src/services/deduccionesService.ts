@@ -38,6 +38,8 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
   const qStr = busqueda.trim().toUpperCase();
   if (!qStr) return [];
 
+  let contrsToFilter: any[] = [];
+
   // 1. Coincidencia exacta por ID de Contrato
   const { data: exactC } = await supabase
     .from('crm_contratos')
@@ -45,40 +47,82 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
     .eq('id_contrato', qStr);
 
   if (exactC && exactC.length > 0) {
-    return exactC as ContratoBusqueda[];
-  }
+    contrsToFilter = exactC;
+  } else {
+    // 2. Coincidencia por inversionista
+    const { data: invs } = await supabase
+      .from('crm_inversionistas')
+      .select('codigo_inversionista, nombre_completo, documento_identidad')
+      .or(`nombre_completo.ilike.%${qStr}%,documento_identidad.ilike.%${qStr}%`);
 
-  // 2. Coincidencia por inversionista
-  const { data: invs } = await supabase
-    .from('crm_inversionistas')
-    .select('codigo_inversionista, nombre_completo, documento_identidad')
-    .or(`nombre_completo.ilike.%${qStr}%,documento_identidad.ilike.%${qStr}%`);
+    if (invs && invs.length > 0) {
+      const codigos = invs.map(i => i.codigo_inversionista);
+      const legacyCodigos = codigos.map(cod => `DNI${cod.replace('DNI', '')}`);
+      const todosCodigos = Array.from(new Set([...codigos, ...legacyCodigos]));
 
-  if (invs && invs.length > 0) {
-    const codigos = invs.map(i => i.codigo_inversionista);
-    const legacyCodigos = codigos.map(cod => `DNI${cod.replace('DNI', '')}`);
-    const todosCodigos = Array.from(new Set([...codigos, ...legacyCodigos]));
+      const { data: contrs } = await supabase
+        .from('crm_contratos')
+        .select('*')
+        .in('id_inversionista_1', todosCodigos);
 
-    const { data: contrs } = await supabase
-      .from('crm_contratos')
-      .select('*')
-      .in('id_inversionista_1', todosCodigos);
+      if (contrs && contrs.length > 0) {
+        const nombresMap = new Map<string, string>();
+        invs.forEach(i => nombresMap.set(i.codigo_inversionista, i.nombre_completo));
 
-    if (contrs && contrs.length > 0) {
-      const nombresMap = new Map<string, string>();
-      invs.forEach(i => nombresMap.set(i.codigo_inversionista, i.nombre_completo));
-
-      return contrs.map(c => {
-        const cleanCode = String(c.id_inversionista_1).replace('DNI', '');
-        return {
-          ...c,
-          nombre_inversionista_temp: nombresMap.get(c.id_inversionista_1) || nombresMap.get(cleanCode) || c.id_inversionista_1
-        };
-      });
+        contrsToFilter = contrs.map(c => {
+          const cleanCode = String(c.id_inversionista_1).replace('DNI', '');
+          return {
+            ...c,
+            nombre_inversionista_temp: nombresMap.get(c.id_inversionista_1) || nombresMap.get(cleanCode) || c.id_inversionista_1
+          };
+        });
+      }
     }
   }
 
-  return [];
+  if (contrsToFilter.length === 0) return [];
+
+  // 3. Filtrado estricto: Solo devolver contratos con certificado activo y capital_actual > 0
+  const contractIds = contrsToFilter.map(c => c.id_contrato);
+
+  const { data: certs } = await supabase
+    .from('crm_certificados')
+    .select('id_certificado, id_contrato, estado')
+    .in('id_contrato', contractIds)
+    .neq('estado', 'ANULADO')
+    .neq('estado', 'CANCELADO')
+    .neq('estado', 'LIQUIDADO');
+
+  if (!certs || certs.length === 0) return [];
+
+  const certIds = certs.map(ct => ct.id_certificado);
+
+  const { data: evts } = await supabase
+    .from('crm_certificados_eventos')
+    .select('id_certificado, capital_final_saldo, fecha_periodo_fin')
+    .in('id_certificado', certIds)
+    .order('fecha_periodo_fin', { ascending: false });
+
+  const certSaldoMap = new Map<string, number>();
+  if (evts) {
+    for (const ev of evts) {
+      if (!certSaldoMap.has(ev.id_certificado)) {
+        certSaldoMap.set(ev.id_certificado, Number(ev.capital_final_saldo || 0));
+      }
+    }
+  }
+
+  const validContractIds = new Set<string>();
+  for (const cert of certs) {
+    const saldo = certSaldoMap.has(cert.id_certificado) 
+      ? certSaldoMap.get(cert.id_certificado)! 
+      : (cert.estado === 'ACTIVO' ? 1 : 0);
+    if (saldo > 0) {
+      validContractIds.add(cert.id_contrato);
+    }
+  }
+
+  return contrsToFilter.filter(c => validContractIds.has(c.id_contrato));
 };
 
 /**
