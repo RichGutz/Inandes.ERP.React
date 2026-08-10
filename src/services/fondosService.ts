@@ -377,7 +377,7 @@ export const calculateValorCuotaV26 = async (
         const endIdx = idxs[idxs.length - 1] + 1;
         const dailyCells = r.valores_dia.slice(startIdx, endIdx).map((val: number) => ({
           val,
-          css: isVc ? 'font-black text-blue-650 dark:text-blue-400' : ''
+          css: isVc ? 'font-black text-blue-600 dark:text-blue-400' : ''
         }));
 
         blockRows.push({

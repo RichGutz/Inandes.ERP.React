@@ -362,7 +362,7 @@ export const AsesoresPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
               <input
                 type="text"
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-650 focus:ring-1 focus:ring-emerald-650 transition-all shadow-sm"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all shadow-sm"
                 placeholder="Buscar por Nombre o Código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -422,7 +422,7 @@ export const AsesoresPage: React.FC = () => {
             </div>
           ) : error ? (
             <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-950 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
-              <AlertCircle className="text-rose-650" size={40} />
+              <AlertCircle className="text-rose-600" size={40} />
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Error de Conexión</h3>
               <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
             </div>
@@ -527,7 +527,7 @@ export const AsesoresPage: React.FC = () => {
             
             <div className="flex gap-2">
               <button
-                className="h-8.5 text-xs font-bold bg-emerald-650 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-8.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
                 onClick={handleExportComisionesExcel}
                 disabled={projectionLoading || projectionData.length === 0}
               >
@@ -536,7 +536,7 @@ export const AsesoresPage: React.FC = () => {
               </button>
 
               <button
-                className="h-8.5 text-xs font-bold bg-blue-650 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-8.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
                 onClick={handleExportComisionesPDF}
                 disabled={projectionLoading || projectionData.length === 0}
               >
@@ -592,7 +592,7 @@ export const AsesoresPage: React.FC = () => {
                           const key = `${m}-${String(selectedYear).slice(-2)}`;
                           const val = r[key];
                           return (
-                            <td key={m} className={`px-3 py-2 text-right font-mono ${val !== '-' ? 'font-black text-emerald-650 dark:text-emerald-450' : 'text-slate-300 dark:text-slate-700'}`}>
+                            <td key={m} className={`px-3 py-2 text-right font-mono ${val !== '-' ? 'font-black text-emerald-600 dark:text-emerald-450' : 'text-slate-300 dark:text-slate-700'}`}>
                               {val === '-' ? '-' : val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </td>
                           );
@@ -871,7 +871,7 @@ export const AsesoresPage: React.FC = () => {
                       <input
                         type="checkbox"
                         id="es_residente_fiscal"
-                        className="rounded text-emerald-600 focus:ring-emerald-650 h-4 w-4"
+                        className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4"
                         checked={formData.es_residente_fiscal ?? true}
                         onChange={(e) => handleInputChange('es_residente_fiscal', e.target.checked)}
                       />
@@ -983,7 +983,7 @@ export const AsesoresPage: React.FC = () => {
                       <input
                         type="checkbox"
                         id="es_pep"
-                        className="rounded text-emerald-600 focus:ring-emerald-650 h-4 w-4"
+                        className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4"
                         checked={formData.es_pep || false}
                         onChange={(e) => handleInputChange('es_pep', e.target.checked)}
                       />
@@ -1009,7 +1009,7 @@ export const AsesoresPage: React.FC = () => {
                   
                   {/* Cuentas Soles */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-emerald-650 dark:text-emerald-450 uppercase tracking-tight">Cuentas Soles (PEN)</h4>
+                    <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-450 uppercase tracking-tight">Cuentas Soles (PEN)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (PEN)</label>
@@ -1045,7 +1045,7 @@ export const AsesoresPage: React.FC = () => {
 
                   {/* Cuentas Dólares */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-blue-650 dark:text-blue-450 uppercase tracking-tight">Cuentas Dólares (USD)</h4>
+                    <h4 className="text-xs font-bold text-blue-600 dark:text-blue-450 uppercase tracking-tight">Cuentas Dólares (USD)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (USD)</label>
@@ -1082,14 +1082,14 @@ export const AsesoresPage: React.FC = () => {
 
               {/* Errores y Éxito */}
               {formSubmitError && (
-                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-650 dark:text-rose-450 border border-rose-200 dark:border-rose-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
+                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border border-rose-200 dark:border-rose-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
                   <AlertCircle size={14} />
                   <span>{formSubmitError}</span>
                 </div>
               )}
 
               {formSubmitSuccess && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-450 border border-emerald-250 dark:border-emerald-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 border border-emerald-250 dark:border-emerald-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle size={14} />
                   <span>¡Asesor guardado correctamente en Supabase!</span>
                 </div>

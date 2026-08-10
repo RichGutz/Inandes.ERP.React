@@ -1346,7 +1346,7 @@ export const InversionistasPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
               <input
                 type="text"
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-650 focus:ring-1 focus:ring-emerald-650 transition-all shadow-sm"
+                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all shadow-sm"
                 placeholder="Buscar por DNI, RUC o Apellidos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -1767,7 +1767,7 @@ export const InversionistasPage: React.FC = () => {
 
               {registerSuccessMsg && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-start gap-3">
-                  <CheckCircle className="text-emerald-650 dark:text-emerald-450 shrink-0" size={18} />
+                  <CheckCircle className="text-emerald-600 dark:text-emerald-450 shrink-0" size={18} />
                   <p className="text-[11px] font-semibold text-emerald-750 dark:text-emerald-400 leading-relaxed">
                     {registerSuccessMsg}
                   </p>
@@ -1789,7 +1789,7 @@ export const InversionistasPage: React.FC = () => {
                   <AlertTriangle className="text-amber-600 dark:text-amber-450 shrink-0 mt-0.5" size={16} />
                   <div className="flex flex-col gap-0.5">
                     <h4 className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tight">Bloqueo de Auditoría</h4>
-                    <p className="text-[10px] text-amber-650 dark:text-amber-450 font-medium">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-450 font-medium">
                       🔒 Para habilitar el registro oficial en Supabase, primero debes descargar y revisar el **Excel Maestro** y el **PDF Oficial** del período.
                     </p>
                   </div>
@@ -2299,7 +2299,7 @@ export const InversionistasPage: React.FC = () => {
                       <input
                         type="checkbox"
                         id="residente_peru"
-                        className="rounded text-emerald-600 focus:ring-emerald-650 h-4 w-4"
+                        className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4"
                         checked={formData.residente_peru ?? true}
                         onChange={(e) => handleInputChange('residente_peru', e.target.checked)}
                       />
@@ -2491,7 +2491,7 @@ export const InversionistasPage: React.FC = () => {
                   
                   {/* Cuentas Soles */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-emerald-650 dark:text-emerald-450 uppercase tracking-tight">Cuentas Soles Oficiales (PEN)</h4>
+                    <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-450 uppercase tracking-tight">Cuentas Soles Oficiales (PEN)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (PEN)</label>
@@ -2527,7 +2527,7 @@ export const InversionistasPage: React.FC = () => {
 
                   {/* Cuentas Dólares */}
                   <div className="flex flex-col gap-3">
-                    <h4 className="text-xs font-bold text-blue-650 dark:text-blue-450 uppercase tracking-tight">Cuentas Dólares Oficiales (USD)</h4>
+                    <h4 className="text-xs font-bold text-blue-600 dark:text-blue-450 uppercase tracking-tight">Cuentas Dólares Oficiales (USD)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (USD)</label>
@@ -2572,7 +2572,7 @@ export const InversionistasPage: React.FC = () => {
                       <input
                         type="checkbox"
                         id="es_pep"
-                        className="rounded text-emerald-600 focus:ring-emerald-650 h-4 w-4"
+                        className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4"
                         checked={formData.es_pep || false}
                         onChange={(e) => handleInputChange('es_pep', e.target.checked)}
                       />
@@ -2645,7 +2645,7 @@ export const InversionistasPage: React.FC = () => {
 
               {/* Errores del formulario */}
               {formSubmitError && (
-                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-650 dark:text-rose-400 border border-rose-200 dark:border-rose-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
+                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
                   <AlertCircle size={14} />
                   <span>{formSubmitError}</span>
                 </div>
@@ -2653,7 +2653,7 @@ export const InversionistasPage: React.FC = () => {
 
               {/* Éxito del formulario */}
               {formSubmitSuccess && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
+                <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900 rounded-lg p-3 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle size={14} />
                   <span>¡Datos guardados con éxito en Supabase! Cerrando formulario...</span>
                 </div>

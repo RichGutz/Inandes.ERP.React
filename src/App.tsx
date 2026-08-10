@@ -422,7 +422,7 @@ function App() {
         </p>
         <div className="p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-left w-full text-[10px] font-mono">
           <span className="text-slate-400 font-bold block mb-1">SCRIPT ORIGINAL:</span>
-          <span className="text-blue-650 dark:text-blue-400 break-all">{streamlitFile}</span>
+          <span className="text-blue-600 dark:text-blue-400 break-all">{streamlitFile}</span>
         </div>
       </div>
     );

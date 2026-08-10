@@ -932,7 +932,7 @@ export const InversionesPage: React.FC = () => {
                   key={tab.id}
                   className={`py-2 text-[10px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
                     activeTab === tab.id 
-                      ? 'border-emerald-650 text-emerald-600 dark:text-emerald-450' 
+                      ? 'border-emerald-600 text-emerald-600 dark:text-emerald-450' 
                       : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'
                   }`}
                   onClick={() => setActiveTab(tab.id as any)}
@@ -951,7 +951,7 @@ export const InversionesPage: React.FC = () => {
             </div>
           ) : error ? (
             <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-950 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
-              <AlertCircle className="text-rose-650" size={40} />
+              <AlertCircle className="text-rose-600" size={40} />
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Error de Conexión</h3>
               <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
             </div>
@@ -974,7 +974,7 @@ export const InversionesPage: React.FC = () => {
                               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{c.titular?.nombre_completo}</h4>
                               <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450">Borrador</span>
                             </div>
-                            <span className="text-[10px] text-emerald-650 dark:text-emerald-450 font-bold uppercase tracking-wider">
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-450 font-bold uppercase tracking-wider">
                               {c.crm_fondos?.nombre_fondo}
                             </span>
                             <span className="text-[9px] font-mono text-slate-400">ID Temp: {c.id_contrato}</span>
@@ -1007,7 +1007,7 @@ export const InversionesPage: React.FC = () => {
                               <span>Solicitar Aprobación</span>
                             </button>
                             <button
-                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-2 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-650 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer ml-auto"
+                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-2 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer ml-auto"
                               onClick={() => handleDeleteDraft(c.id_contrato)}
                             >
                               <Trash2 size={10} />
@@ -1036,7 +1036,7 @@ export const InversionesPage: React.FC = () => {
                               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{c.titular?.nombre_completo}</h4>
                               <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-450">Por Aprobar</span>
                             </div>
-                            <span className="text-[10px] text-emerald-650 dark:text-emerald-450 font-bold uppercase tracking-wider">
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-450 font-bold uppercase tracking-wider">
                               {c.crm_fondos?.nombre_fondo}
                             </span>
                             <span className="text-[9px] font-mono text-slate-400">ID Temp: {c.id_contrato}</span>
@@ -1055,7 +1055,7 @@ export const InversionesPage: React.FC = () => {
 
                           <div className="border-t border-slate-150 dark:border-slate-800 pt-3">
                             <button
-                              className="w-full h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg bg-blue-650 hover:bg-blue-700 text-white cursor-pointer shadow-sm"
+                              className="w-full h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-sm"
                               onClick={() => handleOpenApproveView(c)}
                             >
                               <Eye size={10} />
@@ -1377,7 +1377,7 @@ export const InversionesPage: React.FC = () => {
                         type="button"
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                           isSelected 
-                            ? 'bg-emerald-650 text-white' 
+                            ? 'bg-emerald-600 text-white' 
                             : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
@@ -1495,17 +1495,17 @@ export const InversionesPage: React.FC = () => {
                     {/* Alertas de Validaciones */}
                     <div className="flex flex-col gap-2 mt-2">
                       {bankCheck.error && (
-                        <div className="text-[10px] font-bold text-rose-650 flex items-center gap-1">
+                        <div className="text-[10px] font-bold text-rose-600 flex items-center gap-1">
                           <AlertCircle size={11} /> {bankCheck.error}
                         </div>
                       )}
                       {!isPartSumValid && (
-                        <div className="text-[10px] font-bold text-rose-650 flex items-center gap-1">
+                        <div className="text-[10px] font-bold text-rose-600 flex items-center gap-1">
                           <AlertCircle size={11} /> La suma de Participación debe ser exactamente 100% (Actual: {sumPart.toFixed(2)}%).
                         </div>
                       )}
                       {isPartSumValid && bankCheck.valid && (
-                        <div className="text-[10px] font-bold text-emerald-650 flex items-center gap-1">
+                        <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
                           <CheckCircle size={11} /> Distribución y cuentas bancarias validadas correctamente.
                         </div>
                       )}
@@ -1546,7 +1546,7 @@ export const InversionesPage: React.FC = () => {
             {/* Botones de Guardado de Borrador */}
             <div className="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80 pt-4">
               {formSubmitError && (
-                <span className="text-[11px] font-semibold text-rose-650">{formSubmitError}</span>
+                <span className="text-[11px] font-semibold text-rose-600">{formSubmitError}</span>
               )}
               
               <button
@@ -1559,7 +1559,7 @@ export const InversionesPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="h-9 px-6 text-xs font-black uppercase tracking-wider bg-emerald-650 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow disabled:opacity-50 transition-colors"
+                className="h-9 px-6 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow disabled:opacity-50 transition-colors"
                 disabled={!isWizardValid}
               >
                 {editingContractId ? '💾 Actualizar Contrato' : '💾 Guardar Contrato'}
@@ -1618,7 +1618,7 @@ export const InversionesPage: React.FC = () => {
                     />
                   </label>
                   {approveVoucherName && (
-                    <span className="text-[10px] font-mono text-emerald-650 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100 flex items-center gap-1">
+                    <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100 flex items-center gap-1">
                       <Check size={11} /> {approveVoucherName}
                     </span>
                   )}
@@ -1643,12 +1643,12 @@ export const InversionesPage: React.FC = () => {
             </div>
 
             {approveError && (
-              <div className="text-[10px] font-bold text-rose-650 flex items-center gap-1.5">
+              <div className="text-[10px] font-bold text-rose-600 flex items-center gap-1.5">
                 <AlertCircle size={12} /> {approveError}
               </div>
             )}
             {approveSuccess && (
-              <div className="text-[10px] font-bold text-emerald-650 flex items-center gap-1.5">
+              <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1.5">
                 <CheckCircle size={12} /> Contrato aprobado y Certificado emitido exitosamente. Redireccionando...
               </div>
             )}
@@ -1658,7 +1658,7 @@ export const InversionesPage: React.FC = () => {
               <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-0.5">
                 <button
                   className={`py-1.5 text-[9px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
-                    approveTab === 'contrato' ? 'border-emerald-650 text-emerald-650' : 'border-transparent text-slate-400'
+                    approveTab === 'contrato' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-400'
                   }`}
                   onClick={() => setApproveTab('contrato')}
                 >
@@ -1666,7 +1666,7 @@ export const InversionesPage: React.FC = () => {
                 </button>
                 <button
                   className={`py-1.5 text-[9px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
-                    approveTab === 'certificado' ? 'border-emerald-650 text-emerald-650' : 'border-transparent text-slate-400'
+                    approveTab === 'certificado' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-400'
                   }`}
                   onClick={() => setApproveTab('certificado')}
                 >
@@ -1758,14 +1758,14 @@ export const InversionesPage: React.FC = () => {
                         href={selectedContract.contrato_firmado_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-mono text-blue-650 hover:underline flex items-center gap-1 break-all"
+                        className="font-mono text-blue-600 hover:underline flex items-center gap-1 break-all"
                       >
                         <Link2 size={11} className="shrink-0" />
                         <span>{selectedContract.contrato_firmado_url}</span>
                       </a>
                     </div>
                   ) : (
-                    <span className="text-[10px] text-rose-650 font-bold bg-rose-50/50 p-2 rounded-lg border border-rose-100 flex items-center gap-1 mt-2">
+                    <span className="text-[10px] text-rose-600 font-bold bg-rose-50/50 p-2 rounded-lg border border-rose-100 flex items-center gap-1 mt-2">
                       <AlertCircle size={12} /> Sin contrato firmado en el expediente.
                     </span>
                   )}
@@ -1784,10 +1784,10 @@ export const InversionesPage: React.FC = () => {
                   </div>
 
                   {signedUploadError && (
-                    <span className="text-[10px] font-semibold text-rose-650">{signedUploadError}</span>
+                    <span className="text-[10px] font-semibold text-rose-600">{signedUploadError}</span>
                   )}
                   {signedUploadSuccess && (
-                    <span className="text-[10px] font-bold text-emerald-650 flex items-center gap-0.5">
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
                       <CheckCircle size={11} /> Guardado con éxito.
                     </span>
                   )}
@@ -1807,7 +1807,7 @@ export const InversionesPage: React.FC = () => {
                 <p className="text-[10px] text-slate-400">Verifique y descargue el certificado oficial de partícipes con firmas y logotipos autorizados.</p>
                 
                 <button
-                  className="w-full h-9 text-[10px] font-black uppercase bg-blue-650 hover:bg-blue-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 transition-colors"
+                  className="w-full h-9 text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 transition-colors"
                   onClick={handleOpenCertificateView}
                 >
                   <FileText size={12} />
@@ -1837,7 +1837,7 @@ export const InversionesPage: React.FC = () => {
             {activeCert && (
               <button
                 type="button"
-                className="h-8 text-[10px] font-black uppercase bg-blue-650 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors"
+                className="h-8 text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors"
                 onClick={() => handlePrintPdf(officialCertHtml, `Certificado_${activeCert.id_certificado}`)}
               >
                 <FileText size={11} />
@@ -1855,7 +1855,7 @@ export const InversionesPage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
               <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800/80 pb-3">
                 <div className="flex flex-col gap-0.5">
-                  <h3 className="text-sm font-black text-blue-650 dark:text-blue-400 uppercase tracking-tight">
+                  <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight">
                     📜 Certificado Emitido ({activeCert.id_certificado})
                   </h3>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -1873,7 +1873,7 @@ export const InversionesPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="py-16 text-center text-rose-650 font-bold uppercase tracking-wider border border-dashed border-rose-200 dark:border-rose-950 rounded-2xl bg-rose-50/50 dark:bg-rose-950/10">
+            <div className="py-16 text-center text-rose-600 font-bold uppercase tracking-wider border border-dashed border-rose-200 dark:border-rose-950 rounded-2xl bg-rose-50/50 dark:bg-rose-950/10">
               No se ha encontrado un certificado emitido registrado para este contrato en la base de datos.
             </div>
           )}

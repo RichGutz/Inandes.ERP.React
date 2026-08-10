@@ -185,7 +185,7 @@ export const RolesPage: React.FC = () => {
         </div>
       ) : error ? (
         <div className="max-w-md mx-auto my-12 bg-white border border-rose-200 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
-          <AlertCircle className="text-rose-650" size={40} />
+          <AlertCircle className="text-rose-600" size={40} />
           <p className="text-xs text-slate-500">{error}</p>
         </div>
       ) : (

@@ -411,10 +411,10 @@ export const CertificadosPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col justify-center border-l-4 border-l-blue-650 md:col-span-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col justify-center border-l-4 border-l-blue-600 md:col-span-2">
           <small className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-wider">Capital Total Gestionado (AUM)</small>
-          <span className="text-lg font-black text-blue-650 dark:text-blue-400 mt-1">
-            USD {totalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })} <span className="text-slate-300 dark:text-slate-650">|</span> PEN {totalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+          <span className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
+            USD {totalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })} <span className="text-slate-300 dark:text-slate-600">|</span> PEN {totalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
           </span>
         </div>
       </div>
@@ -433,7 +433,7 @@ export const CertificadosPage: React.FC = () => {
               key={tab.id}
               className={`py-2 text-[10px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
                 activeTab === tab.id 
-                  ? 'border-emerald-650 text-emerald-650' 
+                  ? 'border-emerald-600 text-emerald-600' 
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'
               }`}
               onClick={() => setActiveTab(tab.id as any)}
@@ -519,7 +519,7 @@ export const CertificadosPage: React.FC = () => {
               </div>
             ) : error ? (
               <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-900 border border-rose-250 p-6 rounded-2xl text-center flex flex-col items-center gap-3">
-                <AlertCircle className="text-rose-650" size={40} />
+                <AlertCircle className="text-rose-600" size={40} />
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">Error</h3>
                 <p className="text-xs text-slate-450 dark:text-slate-400">{error}</p>
               </div>
@@ -551,7 +551,7 @@ export const CertificadosPage: React.FC = () => {
                         </span>
                         
                         <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-black text-blue-650 dark:text-blue-400 uppercase">
+                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">
                             {totalStr.join(" / ")}
                           </span>
                           {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -712,7 +712,7 @@ export const CertificadosPage: React.FC = () => {
                       />
                     </label>
                     {aumentoVoucherName && (
-                      <span className="text-[10px] font-mono text-emerald-650 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-900 flex items-center gap-1">
+                      <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-900 flex items-center gap-1">
                         <CheckCircle size={11} /> {aumentoVoucherName}
                       </span>
                     )}
@@ -720,17 +720,17 @@ export const CertificadosPage: React.FC = () => {
                 </div>
 
                 {aumentoError && (
-                  <span className="text-[11px] font-semibold text-rose-650">{aumentoError}</span>
+                  <span className="text-[11px] font-semibold text-rose-600">{aumentoError}</span>
                 )}
                 {aumentoSuccess && (
-                  <span className="text-[11px] font-bold text-emerald-650 flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
                     <CheckCircle size={12} /> Aumento registrado con éxito en el ledger.
                   </span>
                 )}
 
                 <button
                   type="submit"
-                  className="w-full h-10 text-xs font-black uppercase tracking-wider bg-emerald-650 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
+                  className="w-full h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
                   disabled={aumentoSubmitting || !selectedAumentoCert}
                 >
                   {aumentoSubmitting ? (
@@ -772,7 +772,7 @@ export const CertificadosPage: React.FC = () => {
 
               {selectedVisorCertId && visorHtml && (
                 <button
-                  className="h-8 text-[10px] font-black uppercase bg-blue-650 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow ml-auto transition-colors"
+                  className="h-8 text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow ml-auto transition-colors"
                   onClick={handlePrintPdf}
                 >
                   <FileText size={11} />

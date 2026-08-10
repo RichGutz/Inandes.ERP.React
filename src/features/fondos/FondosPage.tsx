@@ -380,7 +380,7 @@ export const FondosPage: React.FC = () => {
                 </div>
               ) : error ? (
                 <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-950 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
-                  <AlertCircle className="text-rose-650" size={40} />
+                  <AlertCircle className="text-rose-600" size={40} />
                   <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Error de Conexión</h3>
                   <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
                 </div>
@@ -590,7 +590,7 @@ export const FondosPage: React.FC = () => {
                     <input
                       type="checkbox"
                       id="activo_maestro"
-                      className="rounded text-emerald-600 focus:ring-emerald-650 h-4 w-4"
+                      className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4"
                       checked={maestroFormData.activo ?? true}
                       onChange={(e) => setMaestroFormData(prev => ({ ...prev, activo: e.target.checked }))}
                     />
@@ -599,7 +599,7 @@ export const FondosPage: React.FC = () => {
 
                   <div className="col-span-full flex items-center justify-end gap-2.5 mt-2">
                     {maestroSubmitError && (
-                      <span className="text-[11px] font-semibold text-rose-650">{maestroSubmitError}</span>
+                      <span className="text-[11px] font-semibold text-rose-600">{maestroSubmitError}</span>
                     )}
                     {maestroSubmitSuccess && (
                       <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
@@ -813,7 +813,7 @@ export const FondosPage: React.FC = () => {
 
                   <div className="flex items-center justify-end gap-2.5 mt-2">
                     {plazoSubmitError && (
-                      <span className="text-[11px] font-semibold text-rose-650">{plazoSubmitError}</span>
+                      <span className="text-[11px] font-semibold text-rose-600">{plazoSubmitError}</span>
                     )}
                     {plazoSubmitSuccess && (
                       <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
@@ -912,7 +912,7 @@ export const FondosPage: React.FC = () => {
             
             <div className="flex gap-2">
               <button
-                className="h-8.5 text-xs font-bold bg-emerald-650 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-8.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
                 onClick={handleExportVcExcel}
                 disabled={vcLoading || vcReportData.length === 0}
               >
@@ -921,7 +921,7 @@ export const FondosPage: React.FC = () => {
               </button>
 
               <button
-                className="h-8.5 text-xs font-bold bg-blue-650 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-8.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
                 onClick={handleExportVcPdf}
                 disabled={vcLoading || vcReportData.length === 0}
               >
@@ -943,7 +943,7 @@ export const FondosPage: React.FC = () => {
                 <div key={report.fondo.id_fondo} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 overflow-hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
                     <div className="flex flex-col gap-0.5">
-                      <h3 className="text-sm font-black text-blue-650 dark:text-blue-400 uppercase tracking-tight">
+                      <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight">
                         📈 Fondo: {report.fondo.nombre_fondo} ({report.fondo.id_fondo})
                       </h3>
                       <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -1002,7 +1002,7 @@ export const FondosPage: React.FC = () => {
                                     return (
                                       <td 
                                         key={dIdx} 
-                                        className={`px-2 py-2 text-right font-mono ${isVcCell ? 'font-black text-blue-650 dark:text-blue-450' : ''} ${cellVal !== '-' && !isVcCell ? 'text-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-700'}`}
+                                        className={`px-2 py-2 text-right font-mono ${isVcCell ? 'font-black text-blue-600 dark:text-blue-450' : ''} ${cellVal !== '-' && !isVcCell ? 'text-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-700'}`}
                                       >
                                         {cellDisplay}
                                       </td>

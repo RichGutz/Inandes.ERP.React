@@ -397,7 +397,7 @@ export const DeduccionesPage: React.FC = () => {
           />
           <button
             type="submit"
-            className="h-9 px-5 bg-blue-650 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+            className="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
             disabled={searchLoading}
           >
             {searchLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
@@ -418,7 +418,7 @@ export const DeduccionesPage: React.FC = () => {
                   onClick={() => setSelectedContrato(c)}
                 >
                   <span>{c.id_contrato} 👤 {c.nombre_inversionista_temp || c.id_inversionista_1}</span>
-                  <span className="text-[9px] text-emerald-650 font-black">{c.moneda} {c.monto_inversion.toLocaleString('es-PE')}</span>
+                  <span className="text-[9px] text-emerald-600 font-black">{c.moneda} {c.monto_inversion.toLocaleString('es-PE')}</span>
                 </button>
               ))}
             </div>
@@ -433,12 +433,12 @@ export const DeduccionesPage: React.FC = () => {
           {/* Card Resumen de Ficha */}
           <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-950/20 rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
             <div className="flex flex-col gap-1">
-              <span>📜 Contrato: <strong className="text-blue-650 dark:text-blue-400 font-bold">{selectedContrato.id_contrato}</strong></span>
+              <span>📜 Contrato: <strong className="text-blue-600 dark:text-blue-400 font-bold">{selectedContrato.id_contrato}</strong></span>
               <span>👤 Inversionista: <strong>{selectedContrato.nombre_inversionista_temp || selectedContrato.id_inversionista_1}</strong></span>
               <span>🏦 Fondo: <strong>{selectedContrato.id_fondo} ({selectedContrato.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})</strong></span>
             </div>
             <div className="flex flex-col gap-1 md:text-right">
-              <span>🎟️ Certificado Activo: <strong className="text-rose-650 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
+              <span>🎟️ Certificado Activo: <strong className="text-rose-600 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
               <span>💰 Inversión Original: <strong>{selectedContrato.moneda} {selectedContrato.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
               <span>📅 Fecha Vencimiento: <strong>{selectedContrato.fecha_fin}</strong></span>
             </div>
@@ -455,7 +455,7 @@ export const DeduccionesPage: React.FC = () => {
                 key={tab.id}
                 className={`py-1.5 text-[10px] font-black uppercase border-b-2 cursor-pointer transition-colors ${
                   activeSubTab === tab.id 
-                    ? 'border-blue-650 text-blue-650 dark:text-blue-400' 
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
                     : 'border-transparent text-slate-450 hover:text-slate-600'
                 }`}
                 onClick={() => setActiveSubTab(tab.id as any)}
@@ -472,7 +472,7 @@ export const DeduccionesPage: React.FC = () => {
               
               {cronoLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-                  <Loader2 className="animate-spin text-blue-650" size={24} />
+                  <Loader2 className="animate-spin text-blue-600" size={24} />
                 </div>
               ) : cronograma.length === 0 ? (
                 <div className="py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
@@ -702,12 +702,12 @@ export const DeduccionesPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col items-end justify-end mt-2">
-                    {dedError && <span className="text-[10px] font-bold text-rose-650 mb-2">{dedError}</span>}
-                    {dedSuccess && <span className="text-[10px] font-bold text-emerald-650 mb-2 flex items-center gap-1"><CheckCircle size={11} /> {dedSuccess}</span>}
+                    {dedError && <span className="text-[10px] font-bold text-rose-600 mb-2">{dedError}</span>}
+                    {dedSuccess && <span className="text-[10px] font-bold text-emerald-600 mb-2 flex items-center gap-1"><CheckCircle size={11} /> {dedSuccess}</span>}
                     
                     <button
                       type="submit"
-                      className="h-10 px-6 bg-emerald-650 hover:bg-emerald-700 text-white rounded-lg text-xs font-black uppercase tracking-wider cursor-pointer shadow disabled:opacity-50 transition-colors"
+                      className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black uppercase tracking-wider cursor-pointer shadow disabled:opacity-50 transition-colors"
                       disabled={dedSubmitting || !dedGlosa.trim()}
                     >
                       {dedSubmitting ? 'Guardando...' : '✅ Crear Plan de Deducciones'}
@@ -742,7 +742,7 @@ export const DeduccionesPage: React.FC = () => {
                   </div>
                   <div className="flex flex-col border-l border-slate-200 dark:border-slate-800 pl-3">
                     <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Penalidad Base Fondo</span>
-                    <strong className="text-xs font-bold text-rose-650 dark:text-rose-450">{fondoRules.penalidad_rescate || 0}%</strong>
+                    <strong className="text-xs font-bold text-rose-600 dark:text-rose-450">{fondoRules.penalidad_rescate || 0}%</strong>
                   </div>
                 </div>
               )}
@@ -870,12 +870,12 @@ export const DeduccionesPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col items-end justify-end mt-4 pt-3 border-t border-slate-100 dark:border-slate-850">
-                  {resError && <span className="text-[10px] font-bold text-rose-650 mb-2">{resError}</span>}
-                  {resSuccess && <span className="text-[10px] font-bold text-emerald-650 mb-2 flex items-center gap-1"><CheckCircle size={11} /> {resSuccess}</span>}
+                  {resError && <span className="text-[10px] font-bold text-rose-600 mb-2">{resError}</span>}
+                  {resSuccess && <span className="text-[10px] font-bold text-emerald-600 mb-2 flex items-center gap-1"><CheckCircle size={11} /> {resSuccess}</span>}
 
                   <button
                     type="submit"
-                    className="h-10 px-6 bg-blue-650 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-wider cursor-pointer shadow disabled:opacity-50 transition-colors"
+                    className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-wider cursor-pointer shadow disabled:opacity-50 transition-colors"
                     disabled={resSubmitting || resArmadasData.length === 0}
                   >
                     {resSubmitting ? 'Guardando...' : '✅ Programar Rescate y Penalidades'}
