@@ -1266,8 +1266,8 @@ export const InversionesPage: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Inversión</label>
                   <input
                     type="number"
-                    min={1}
-                    step={1000}
+                    min={0}
+                    step="any"
                     className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                     value={formMonto}
                     onChange={(e) => setFormMonto(Number(e.target.value) || 0)}

@@ -902,7 +902,7 @@ export const OriginacionTab: React.FC = () => {
                   <span className="text-slate-500 text-[11px] font-semibold">Estructuración (%):</span>
                   <input
                     type="number"
-                    step="0.1"
+                    step="any"
                     value={comisionEstructuracionPct}
                     onChange={(e) => setComisionEstructuracionPct(Number(e.target.value))}
                     disabled={!aplicarComisionEstructuracion}
@@ -1057,7 +1057,7 @@ export const OriginacionTab: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="any"
                     value={interesMensualGlobal}
                     onChange={(e) => setInteresMensualGlobal(Number(e.target.value))}
                     disabled={!aplicarInteresMensualGlobal}
@@ -1077,7 +1077,7 @@ export const OriginacionTab: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="any"
                     value={interesMoratorioGlobal}
                     onChange={(e) => setInteresMoratorioGlobal(Number(e.target.value))}
                     disabled={!aplicarInteresMoratorioGlobal}
@@ -1273,7 +1273,7 @@ export const OriginacionTab: React.FC = () => {
                             <span className="text-[10px] text-slate-500 uppercase block mb-1">Tasa de Avance (%)</span>
                             <input
                               type="number"
-                              step="0.5"
+                              step="any"
                               value={inv.tasa_de_avance}
                               onChange={(e) => updateInvoiceField(inv.id, 'tasa_de_avance', Number(e.target.value))}
                               className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200"
@@ -1283,7 +1283,7 @@ export const OriginacionTab: React.FC = () => {
                             <span className="text-[10px] text-slate-500 uppercase block mb-1">Interés Mensual (%)</span>
                             <input
                               type="number"
-                              step="0.1"
+                              step="any"
                               value={inv.interes_mensual}
                               onChange={(e) => updateInvoiceField(inv.id, 'interes_mensual', Number(e.target.value))}
                               className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-amber-600"
@@ -1293,7 +1293,7 @@ export const OriginacionTab: React.FC = () => {
                             <span className="text-[10px] text-slate-500 uppercase block mb-1">Interés Moratorio (%)</span>
                             <input
                               type="number"
-                              step="0.1"
+                              step="any"
                               value={inv.interes_moratorio}
                               onChange={(e) => updateInvoiceField(inv.id, 'interes_moratorio', Number(e.target.value))}
                               className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold"

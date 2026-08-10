@@ -537,7 +537,7 @@ export const FondosPage: React.FC = () => {
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Administración Fondo (%)</label>
                     <input
                       type="number"
-                      step="0.0001"
+                      step="any"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={maestroFormData.comision_administracion_fondo ?? 0}
                       onChange={(e) => setMaestroFormData(prev => ({ ...prev, comision_administracion_fondo: Number(e.target.value) || 0 }))}
@@ -548,7 +548,7 @@ export const FondosPage: React.FC = () => {
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Captación Fondo (%)</label>
                     <input
                       type="number"
-                      step="0.0001"
+                      step="any"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={maestroFormData.comision_captacion_fondo ?? 0}
                       onChange={(e) => setMaestroFormData(prev => ({ ...prev, comision_captacion_fondo: Number(e.target.value) || 0 }))}
@@ -559,7 +559,7 @@ export const FondosPage: React.FC = () => {
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Misceláneos (%)</label>
                     <input
                       type="number"
-                      step="0.0001"
+                      step="any"
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                       value={maestroFormData.comision_miscelaneos_fondo ?? 0}
                       onChange={(e) => setMaestroFormData(prev => ({ ...prev, comision_miscelaneos_fondo: Number(e.target.value) || 0 }))}
@@ -712,7 +712,7 @@ export const FondosPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa TEA (%)</label>
                       <input
                         type="number"
-                        step="0.0001"
+                        step="any"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={plazoFormData.tasa ?? 0}
                         onChange={(e) => setPlazoFormData(prev => ({ ...prev, tasa: Number(e.target.value) || 0 }))}
@@ -723,7 +723,7 @@ export const FondosPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa Activa Empresa (%)</label>
                       <input
                         type="number"
-                        step="0.0001"
+                        step="any"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={plazoFormData.tasa_activa ?? 0}
                         onChange={(e) => setPlazoFormData(prev => ({ ...prev, tasa_activa: Number(e.target.value) || 0 }))}
@@ -736,7 +736,7 @@ export const FondosPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Penalidad Rescate (%)</label>
                       <input
                         type="number"
-                        step="0.0001"
+                        step="any"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={plazoFormData.penalidad_rescate ?? 0}
                         onChange={(e) => setPlazoFormData(prev => ({ ...prev, penalidad_rescate: Number(e.target.value) || 0 }))}
@@ -767,7 +767,7 @@ export const FondosPage: React.FC = () => {
                       <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Valor Cuota Inicial</label>
                       <input
                         type="number"
-                        step="0.0001"
+                        step="any"
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                         value={plazoFormData.valor_cuota_inicial ?? 1.0}
                         onChange={(e) => setPlazoFormData(prev => ({ ...prev, valor_cuota_inicial: Number(e.target.value) || 1.0 }))}
@@ -782,7 +782,7 @@ export const FondosPage: React.FC = () => {
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Mantenimiento Asesor (%)</label>
                         <input
                           type="number"
-                          step="0.0001"
+                          step="any"
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={plazoFormData.comision_asesor_mantenimiento ?? 0}
                           onChange={(e) => setPlazoFormData(prev => ({ ...prev, comision_asesor_mantenimiento: Number(e.target.value) || 0 }))}
@@ -792,7 +792,7 @@ export const FondosPage: React.FC = () => {
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Asesor (1er Año) (%)</label>
                         <input
                           type="number"
-                          step="0.0001"
+                          step="any"
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={plazoFormData.comision_asesor_primer_ano ?? 0}
                           onChange={(e) => setPlazoFormData(prev => ({ ...prev, comision_asesor_primer_ano: Number(e.target.value) || 0 }))}
@@ -802,7 +802,7 @@ export const FondosPage: React.FC = () => {
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Com. Asesor (Única) (%)</label>
                         <input
                           type="number"
-                          step="0.0001"
+                          step="any"
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={plazoFormData.comision_asesor_unica ?? 0}
                           onChange={(e) => setPlazoFormData(prev => ({ ...prev, comision_asesor_unica: Number(e.target.value) || 0 }))}
