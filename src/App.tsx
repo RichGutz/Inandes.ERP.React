@@ -146,26 +146,99 @@ function App() {
     try {
       if (activeTab === 'crm_inversionistas') {
         const data = await getInversionistas();
-        const formatted = data.map(inv => ({
-          'Código': inv.codigo_inversionista || '-',
-          'Inversionista': inv.nombre_completo || `${inv.nombre_1} ${inv.apellido_1}`,
-          'Tipo Doc': inv.tipo_doc,
-          'Nº Documento': inv.documento_identidad,
-          'Correo': inv.email || '-',
-          'Teléfono': inv.telefono || '-',
-          'F. Nacimiento': formatDate(inv.fecha_nacimiento),
-          'Estado Civil': inv.estado_civil || '-',
-          'Nacionalidad': inv.nacionalidad || '-',
-          'Dirección Fiscal': inv.direccion_fiscal || '-',
-          'Banco PEN': inv.banco_nombre_pen || '-',
-          'CCI PEN': inv.cci_pen || '-',
-          'Banco USD': inv.banco_nombre_usd || '-',
-          'CCI USD': inv.cci_usd || '-'
-        }));
-        const ws = XLSX.utils.json_to_sheet(formatted);
+
+        // Fila 1: Encabezados Temáticos Agrupados (Cards de la UI)
+        const groupHeader = [
+          '1. IDENTIDAD Y DATOS PERSONALES DEL PARTÍCIPE', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+          '2. DATOS DEL CÓNYUGE', '', '', '',
+          '3. DATOS LABORALES', '', '', '',
+          '4. CUENTAS BANCARIAS (PEN / USD)', '', '', '', '', '',
+          '5. COMPLIANCE & RIESGO', '', '', '', '', ''
+        ];
+
+        // Fila 2: Títulos de Columnas Individuales
+        const colHeader = [
+          // 1. Identidad
+          'Código Partícipe', 'Tipo Doc', 'Nº Documento', 'Primer Nombre', 'Segundo Nombre', 
+          'Primer Apellido', 'Segundo Apellido', 'Nombre Completo', 'F. Nacimiento', 'Estado Civil', 
+          'Nacionalidad', 'Residente Perú', 'Correo Electrónico', 'Teléfono / Celular', 'Dirección Fiscal', 'Código Postal',
+          // 2. Cónyuge
+          'Tipo Doc Cónyuge', 'Nº Doc Cónyuge', 'Nombres Cónyuge', 'Apellidos Cónyuge',
+          // 3. Laboral
+          'Ocupación / Profesión', 'Centro de Labores', 'Cargo Ocupado', 'Antigüedad (Años)',
+          // 4. Bancario
+          'Banco PEN', 'Nº Cuenta PEN', 'CCI PEN', 'Banco USD', 'Nº Cuenta USD', 'CCI USD',
+          // 5. Compliance
+          'Es PEP', 'Detalle PEP', 'Perfil de Riesgo', 'Estado Compliance', 'Fecha Solicitud Compliance', 'Fecha Registro'
+        ];
+
+        // Filas de Datos
+        const rows = data.map(inv => [
+          // 1. Identidad
+          inv.codigo_inversionista || '-',
+          inv.tipo_doc || '-',
+          inv.documento_identidad || '-',
+          inv.nombre_1 || '-',
+          inv.nombre_2 || '',
+          inv.apellido_1 || '-',
+          inv.apellido_2 || '',
+          inv.nombre_completo || `${inv.nombre_1 || ''} ${inv.apellido_1 || ''}`.trim(),
+          formatDate(inv.fecha_nacimiento),
+          inv.estado_civil || '-',
+          inv.nacionalidad || '-',
+          inv.residente_peru ? 'SÍ' : 'NO',
+          inv.email || '-',
+          inv.telefono || '-',
+          inv.direccion_fiscal || '-',
+          inv.codigo_postal || '-',
+
+          // 2. Cónyuge
+          inv.conyuge_tipo_documento || '-',
+          inv.conyuge_num_documento || '-',
+          `${inv.conyuge_nombre_1 || ''} ${inv.conyuge_nombre_2 || ''}`.trim() || '-',
+          `${inv.conyuge_apellido_1 || ''} ${inv.conyuge_apellido_2 || ''}`.trim() || '-',
+
+          // 3. Laboral
+          inv.ocupacion || '-',
+          inv.centro_labores || '-',
+          inv.cargo_ocupado || '-',
+          inv.antiguedad_laboral_anios ?? '-',
+
+          // 4. Bancario
+          inv.banco_nombre_pen || '-',
+          inv.numero_cuenta_pen || '-',
+          inv.cci_pen || '-',
+          inv.banco_nombre_usd || '-',
+          inv.numero_cuenta_usd || '-',
+          inv.cci_usd || '-',
+
+          // 5. Compliance
+          inv.es_pep ? 'SÍ' : 'NO',
+          inv.pep_detalle || '-',
+          inv.perfil_riesgo || '-',
+          inv.estado_compliance ? inv.estado_compliance.toUpperCase() : '-',
+          formatDate(inv.fecha_solicitud_compliance),
+          formatDate(inv.created_at)
+        ]);
+
+        const aoaData = [groupHeader, colHeader, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(aoaData);
+
+        // Definir fusiones de celdas superiores (Merges)
+        ws['!merges'] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 15 } },  // 1. Identidad (A1:P1)
+          { s: { r: 0, c: 16 }, e: { r: 0, c: 19 } }, // 2. Cónyuge (Q1:T1)
+          { s: { r: 0, c: 20 }, e: { r: 0, c: 23 } }, // 3. Laboral (U1:X1)
+          { s: { r: 0, c: 24 }, e: { r: 0, c: 29 } }, // 4. Bancario (Y1:AD1)
+          { s: { r: 0, c: 30 }, e: { r: 0, c: 35 } }  // 5. Compliance (AE1:AJ1)
+        ];
+
+        // Anchos de columnas automáticos
+        ws['!cols'] = colHeader.map(h => ({ wch: Math.max(h.length + 3, 16) }));
+
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Inversionistas');
-        XLSX.writeFile(wb, 'crm_inversionistas.xlsx');
+        XLSX.utils.book_append_sheet(wb, ws, 'Directorio Inversionistas');
+        XLSX.writeFile(wb, `Inversionistas_InAndes_${new Date().toISOString().split('T')[0]}.xlsx`);
       } 
       else if (activeTab === 'crm_asesores') {
         const data = await getAsesores();
