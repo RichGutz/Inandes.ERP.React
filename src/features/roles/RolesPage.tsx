@@ -168,7 +168,7 @@ export const RolesPage: React.FC = () => {
             <span className="hidden sm:inline">Nuevo Usuario</span>
           </button>
           <button 
-            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-650 cursor-pointer transition-colors shadow-sm"
+            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 cursor-pointer transition-colors shadow-sm"
             onClick={fetchAccesses}
             disabled={loading}
           >

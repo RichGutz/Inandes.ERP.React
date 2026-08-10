@@ -355,7 +355,7 @@ export const FondosPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                     onClick={handleExportMaestroExcel}
                     disabled={fondos.length === 0}
                   >
@@ -363,7 +363,7 @@ export const FondosPage: React.FC = () => {
                     <span>Exportar Excel</span>
                   </button>
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                     onClick={fetchFondos}
                     disabled={loading}
                   >
@@ -594,7 +594,7 @@ export const FondosPage: React.FC = () => {
                       checked={maestroFormData.activo ?? true}
                       onChange={(e) => setMaestroFormData(prev => ({ ...prev, activo: e.target.checked }))}
                     />
-                    <label htmlFor="activo_maestro" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Fondo Activo (Visible)?</label>
+                    <label htmlFor="activo_maestro" className="text-xs font-bold text-slate-700 dark:text-slate-400">¿Fondo Activo (Visible)?</label>
                   </div>
 
                   <div className="col-span-full flex items-center justify-end gap-2.5 mt-2">
@@ -671,7 +671,7 @@ export const FondosPage: React.FC = () => {
 
                           <div className="border-t border-slate-150 dark:border-slate-800 pt-3">
                             <button
-                              className="w-full h-8 text-[10px] font-bold flex items-center justify-center gap-1 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:bg-slate-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-450 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer transition-colors text-slate-650 dark:text-slate-300"
+                              className="w-full h-8 text-[10px] font-bold flex items-center justify-center gap-1 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 dark:bg-slate-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-450 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer transition-colors text-slate-700 dark:text-slate-300"
                               onClick={() => handleNavigateEditPlazo(plazoRow.id_fondo_plazo || '')}
                             >
                               <Edit2 size={10} />

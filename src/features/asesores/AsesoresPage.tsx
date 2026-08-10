@@ -379,7 +379,7 @@ export const AsesoresPage: React.FC = () => {
               </button>
               
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                 onClick={handleExportAsesoresExcel}
                 disabled={asesores.length === 0}
               >
@@ -388,7 +388,7 @@ export const AsesoresPage: React.FC = () => {
               </button>
 
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                 onClick={fetchAsesores}
                 disabled={loading}
               >
@@ -875,7 +875,7 @@ export const AsesoresPage: React.FC = () => {
                         checked={formData.es_residente_fiscal ?? true}
                         onChange={(e) => handleInputChange('es_residente_fiscal', e.target.checked)}
                       />
-                      <label htmlFor="es_residente_fiscal" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Es Residente Fiscal en Perú?</label>
+                      <label htmlFor="es_residente_fiscal" className="text-xs font-bold text-slate-700 dark:text-slate-400">¿Es Residente Fiscal en Perú?</label>
                     </div>
                   </div>
                 </div>
@@ -1101,7 +1101,7 @@ export const AsesoresPage: React.FC = () => {
             <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-150 dark:border-slate-850 flex items-center justify-end gap-2.5">
               <button 
                 type="button" 
-                className="h-9 text-xs font-bold px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
+                className="h-9 text-xs font-bold px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancelar

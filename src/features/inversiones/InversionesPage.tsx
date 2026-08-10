@@ -880,7 +880,7 @@ export const InversionesPage: React.FC = () => {
             
             <div className="flex items-center gap-2">
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
                 onClick={handleExportExcel}
                 disabled={contratos.length === 0}
               >
@@ -897,7 +897,7 @@ export const InversionesPage: React.FC = () => {
               </button>
 
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
                 onClick={fetchContratosData}
                 disabled={loading}
               >
@@ -993,7 +993,7 @@ export const InversionesPage: React.FC = () => {
 
                           <div className="flex gap-2 border-t border-slate-150 dark:border-slate-800 pt-3">
                             <button
-                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg border border-slate-250 dark:border-slate-800 hover:bg-slate-50 text-slate-650 dark:text-slate-300 cursor-pointer"
+                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg border border-slate-250 dark:border-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 cursor-pointer"
                               onClick={() => handleOpenEdit(c)}
                             >
                               <Edit2 size={10} />
@@ -1378,7 +1378,7 @@ export const InversionesPage: React.FC = () => {
                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                           isSelected 
                             ? 'bg-emerald-650 text-white' 
-                            : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-650 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-350 dark:hover:bg-slate-850'
+                            : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
                           if (isSelected) {
@@ -1525,7 +1525,7 @@ export const InversionesPage: React.FC = () => {
                   <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">4️⃣ Vista Previa del Borrador</h3>
                   <button
                     type="button"
-                    className="h-7 text-[9px] font-black uppercase tracking-wider bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-800 px-3 rounded-lg flex items-center gap-1 hover:bg-slate-100 transition-colors text-slate-650 dark:text-slate-300"
+                    className="h-7 text-[9px] font-black uppercase tracking-wider bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-800 px-3 rounded-lg flex items-center gap-1 hover:bg-slate-100 transition-colors text-slate-700 dark:text-slate-300"
                     onClick={() => handlePrintPdf(contractPreviewHtml, 'BorradorContrato')}
                   >
                     <FileText size={10} />
@@ -1602,7 +1602,7 @@ export const InversionesPage: React.FC = () => {
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Subir Voucher de Depósito</label>
                 <div className="flex items-center gap-3">
-                  <label className="h-9 px-4 text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-50 border border-slate-250 dark:border-slate-800 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm text-slate-650 dark:text-slate-300">
+                  <label className="h-9 px-4 text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-50 border border-slate-250 dark:border-slate-800 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm text-slate-700 dark:text-slate-300">
                     <Upload size={13} />
                     <span>Seleccionar voucher</span>
                     <input
@@ -1721,7 +1721,7 @@ export const InversionesPage: React.FC = () => {
                 <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">📑 Contrato Definitivo</h3>
                 <button
                   type="button"
-                  className="h-7 text-[9px] font-black uppercase bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-800 px-3 rounded-lg flex items-center gap-1 hover:bg-slate-100 transition-colors text-slate-650"
+                  className="h-7 text-[9px] font-black uppercase bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-800 px-3 rounded-lg flex items-center gap-1 hover:bg-slate-100 transition-colors text-slate-700 dark:text-slate-300"
                   onClick={() => handlePrintPdf(activeContractHtml, `Contrato_${selectedContract.id_contrato}`)}
                 >
                   <FileText size={10} />

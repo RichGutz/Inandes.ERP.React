@@ -1363,7 +1363,7 @@ export const InversionistasPage: React.FC = () => {
               </button>
               
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-650 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                 onClick={fetchDatos}
                 disabled={loading}
               >
@@ -2303,7 +2303,7 @@ export const InversionistasPage: React.FC = () => {
                         checked={formData.residente_peru ?? true}
                         onChange={(e) => handleInputChange('residente_peru', e.target.checked)}
                       />
-                      <label htmlFor="residente_peru" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Es residente en el Perú?</label>
+                      <label htmlFor="residente_peru" className="text-xs font-bold text-slate-700 dark:text-slate-400">¿Es residente en el Perú?</label>
                     </div>
                   </div>
 
@@ -2576,7 +2576,7 @@ export const InversionistasPage: React.FC = () => {
                         checked={formData.es_pep || false}
                         onChange={(e) => handleInputChange('es_pep', e.target.checked)}
                       />
-                      <label htmlFor="es_pep" className="text-xs font-bold text-slate-650 dark:text-slate-400">¿Es Persona Expuesta Políticamente (PEP)?</label>
+                      <label htmlFor="es_pep" className="text-xs font-bold text-slate-700 dark:text-slate-400">¿Es Persona Expuesta Políticamente (PEP)?</label>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -2665,7 +2665,7 @@ export const InversionistasPage: React.FC = () => {
             <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-150 dark:border-slate-850 flex items-center justify-end gap-2.5">
               <button 
                 type="button" 
-                className="h-9 text-xs font-bold px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
+                className="h-9 text-xs font-bold px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
                 onClick={() => setIsModalOpen(false)}
               >
                 Cancelar
