@@ -1773,8 +1773,7 @@ export const InversionistasPage: React.FC = () => {
                     if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
                       const a = document.createElement('a');
                       a.href = '/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
-                      a.target = '_blank';
-                      a.rel = 'noopener noreferrer';
+                      a.download = 'REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
