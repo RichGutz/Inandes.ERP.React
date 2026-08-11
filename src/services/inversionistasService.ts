@@ -106,7 +106,13 @@ export const upsertInversionista = async (inversionista: Partial<Inversionista>)
   delete payload.updated_at;
   delete payload.created_at;
   delete payload.id;
-  delete payload.nombre_completo;
+
+  // Recalcular siempre el nombre_completo actualizado
+  const ap1 = payload.apellido_1 || '';
+  const ap2 = payload.apellido_2 || '';
+  const nom1 = payload.nombre_1 || '';
+  const nom2 = payload.nombre_2 || '';
+  payload.nombre_completo = `${ap1} ${ap2} ${nom1} ${nom2}`.replace(/\s+/g, ' ').trim();
 
   const { data, error } = await supabase
     .from('crm_inversionistas')

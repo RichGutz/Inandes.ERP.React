@@ -1333,7 +1333,7 @@ export const InversionistasPage: React.FC = () => {
               {filteredInversionistas.length > 0 ? (
                 filteredInversionistas.map((inv) => {
                   const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
-                  const cleanName = inv.nombre_completo || `${inv.apellido_1} ${inv.apellido_2 || ''} ${inv.nombre_1} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim();
+                  const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
                   
                   return (
                     <div 
