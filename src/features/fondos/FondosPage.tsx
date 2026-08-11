@@ -453,19 +453,18 @@ export const FondosPage: React.FC = () => {
             body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; margin: 15px; }
             .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
             .top-header td { border: none; vertical-align: middle; }
-            .logo-geeksoft { height: 48px; width: auto; }
             .logo-inandes { height: 38px; width: auto; }
             .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
             .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
-            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8.5pt; font-weight: 600; color: #334155; }
+            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8pt; font-weight: 600; color: #1e293b; whitespace: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .block-title { font-size: 9.5pt; font-weight: 800; color: #01579b; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; page-break-inside: avoid; }
-            th { background-color: #0288d1; color: white; font-weight: bold; font-size: 7.5pt; padding: 4px 2px; text-align: center; border: 1px solid #0277bd; }
+            th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7.5pt; padding: 5px 3px; text-align: center; border: 1px solid #014378; }
             td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
-            .num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
-            .cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
-            .cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
-            .cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
+            td.num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
+            td.cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
+            td.cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
+            td.cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
             .day-col { text-align: right; font-family: monospace; font-size: 6.5pt; }
             .aumento-row td { background-color: #fafafa; }
             .aumento-label { padding-left: 10px !important; color: #166534 !important; font-style: italic; font-size: 6.5pt !important; border-left: 3px solid #22c55e; }
@@ -480,8 +479,11 @@ export const FondosPage: React.FC = () => {
         <body>
           <table class="top-header">
             <tr>
-              <td style="width: 25%;">
-                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+              <td style="width: 25%; text-align: left;">
+                <div style="font-family: 'Inter', sans-serif;">
+                  <span style="font-size: 16pt; font-weight: 900; color: #01579b; letter-spacing: -0.5px;">GEEK<span style="color: #0288d1;">SOFT</span></span>
+                  <div style="font-size: 6.5pt; font-weight: 800; color: #64748b; letter-spacing: 1px;">FINANCIAL TECHNOLOGIES</div>
+                </div>
               </td>
               <td style="width: 50%; text-align: center;">
                 <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
@@ -493,18 +495,9 @@ export const FondosPage: React.FC = () => {
             </tr>
           </table>
 
-          <div class="meta-box">
-            Fondo Seleccionado: <strong>${vcSelFondo}</strong> | Año: <strong>${vcSelYear}</strong> | Periodo: <strong>${vcSelTipo} N° ${vcSelNum}</strong>
-          </div>
-          
           ${vcReportData.map(rep => `
-            <div style="margin-top:15px; margin-bottom:10px;">
-              <h3 style="color:#01579b; font-size:11pt; font-weight:800; margin:0 0 2px 0; text-transform:uppercase;">
-                Fondo: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | Moneda: ${rep.fondo.moneda}
-              </h3>
-              <div style="font-size:8pt; color:#475569; font-weight:600;">
-                TASA ACTIVA EMPRESA: <strong>${rep.vars.activa}%</strong> | COMISIÓN ADMIN: <strong>${rep.vars.admin}%</strong> | COM. CAPTACIÓN: <strong>${rep.fondo.comision_captacion_fondo || 0}%</strong> | COM. MISC: <strong>${rep.fondo.comision_miscelaneos_fondo || 0}%</strong>
-              </div>
+            <div class="meta-box">
+              Fondo: <strong>${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo})</strong> | Moneda: <strong>${rep.fondo.moneda}</strong> | TASA ACTIVA EMPRESA: <strong>${rep.vars.activa}%</strong> | COMISIÓN ADMIN: <strong>${rep.vars.admin}%</strong> | COM. CAPTACIÓN: <strong>${rep.fondo.comision_captacion_fondo || 0}%</strong> | COM. MISC: <strong>${rep.fondo.comision_miscelaneos_fondo || 0}%</strong>
             </div>
             
             ${rep.blocks.map(block => `
@@ -512,12 +505,12 @@ export const FondosPage: React.FC = () => {
               <table>
                 <thead>
                   <tr>
-                    <th class="num-col">N°</th>
-                    <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
-                    <th class="cap-col">CAPITAL / REF.</th>
-                    <th class="cuotas-col">N° CUOTAS</th>
+                    <th style="width: 28px;">N°</th>
+                    <th style="width: 180px; text-align: left;">CERTIFICADO / RESUMEN</th>
+                    <th style="width: 80px; text-align: right;">CAPITAL / REF.</th>
+                    <th style="width: 75px; text-align: right;">N° CUOTAS</th>
                     ${block.days.map(d => `<th class="day-col">${d}</th>`).join('')}
-                    <th class="cap-col">TOTAL ACUM.</th>
+                    <th style="width: 80px; text-align: right;">TOTAL ACUM.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1169,193 +1162,133 @@ export const FondosPage: React.FC = () => {
       {activeSubTab === 'valorCuota' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* Panel de Filtros de Periodo */}
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-wrap gap-4 items-end shadow-sm">
-            <div className="flex flex-col gap-1.5 min-w-[200px] flex-1">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">🎯 Fondo</label>
-              <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
-                value={vcSelFondo}
-                onChange={(e) => setVcSelFondo(e.target.value)}
-              >
-                <option value="TODOS">TODOS los fondos</option>
-                {Object.keys(groupedFondos).map(code => (
-                  <option key={code} value={code}>{code}</option>
-                ))}
-              </select>
+          {/* Panel Ejecutivo de Filtros y Acciones Oficiales */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+            <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+              <h3 className="text-base font-black text-slate-850 dark:text-slate-100 tracking-tight uppercase flex items-center gap-2">
+                <span>📊 Seguimiento y Simulación de Valor Cuota v26 (NAV)</span>
+              </h3>
+              <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
+                Selecciona el fondo y el periodo para generar y descargar los reportes oficiales transpuestos en PDF o Excel.
+              </p>
             </div>
 
-            <div className="flex flex-col gap-1.5 w-[100px]">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
-              <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
-                value={vcSelYear}
-                onChange={(e) => setVcSelYear(Number(e.target.value))}
-              >
-                <option value={2024}>2024</option>
-                <option value={2025}>2025</option>
-                <option value={2026}>2026</option>
-                <option value={2027}>2027</option>
-              </select>
+            {/* Filtros de Selección */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-slate-50/50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-150 dark:border-slate-800">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">🎯 Fondo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelFondo}
+                  onChange={(e) => setVcSelFondo(e.target.value)}
+                >
+                  <option value="TODOS">TODOS LOS FONDOS</option>
+                  {Object.keys(groupedFondos).map(code => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">📅 Año</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelYear}
+                  onChange={(e) => setVcSelYear(Number(e.target.value))}
+                >
+                  <option value={2024}>2024</option>
+                  <option value={2025}>2025</option>
+                  <option value={2026}>2026</option>
+                  <option value={2027}>2027</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">⚙️ Ciclo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelTipo}
+                  onChange={(e) => setVcSelTipo(e.target.value as any)}
+                >
+                  <option value="Bimestre">Bimestre</option>
+                  <option value="Trimestre">Trimestre</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">📌 N° Periodo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelNum}
+                  onChange={(e) => setVcSelNum(Number(e.target.value))}
+                >
+                  {vcSelTipo === 'Bimestre' ? (
+                    <>
+                      <option value={1}>1: Ene - Feb</option>
+                      <option value={2}>2: Mar - Abr</option>
+                      <option value={3}>3: May - Jun</option>
+                      <option value={4}>4: Jul - Ago</option>
+                      <option value={5}>5: Sep - Oct</option>
+                      <option value={6}>6: Nov - Dic</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value={1}>1: Ene - Mar</option>
+                      <option value={2}>2: Abr - Jun</option>
+                      <option value={3}>3: Jul - Sep</option>
+                      <option value={4}>4: Oct - Dic</option>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 w-[120px]">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ciclo</label>
-              <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
-                value={vcSelTipo}
-                onChange={(e) => setVcSelTipo(e.target.value as any)}
-              >
-                <option value="Bimestre">Bimestre</option>
-                <option value="Trimestre">Trimestre</option>
-              </select>
-            </div>
+            {/* Ficha Técnica Metadata en 1 sola línea */}
+            {vcLoading ? (
+              <div className="flex items-center justify-center py-6 gap-2">
+                <Loader2 className="animate-spin text-emerald-600" size={20} />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cargando metadata de simulación...</span>
+              </div>
+            ) : (
+              vcReportData.map(rep => (
+                <div key={rep.fondo.id_fondo} className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 overflow-x-auto">
+                  <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-350 font-medium whitespace-nowrap">
+                    <span>Fondo: <strong className="text-slate-900 dark:text-white font-bold">{rep.fondo.nombre_fondo} ({rep.fondo.id_fondo})</strong></span>
+                    <span className="text-slate-300 dark:text-slate-700">|</span>
+                    <span>Moneda: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{rep.fondo.moneda}</strong></span>
+                    <span className="text-slate-300 dark:text-slate-700">|</span>
+                    <span>TASA ACTIVA EMPRESA: <strong className="font-bold">{rep.vars.activa}%</strong></span>
+                    <span className="text-slate-300 dark:text-slate-700">|</span>
+                    <span>COMISIÓN ADMIN: <strong className="font-bold">{rep.vars.admin}%</strong></span>
+                    <span className="text-slate-300 dark:text-slate-700">|</span>
+                    <span>COM. CAPTACIÓN: <strong className="font-bold">{rep.fondo.comision_captacion_fondo || 0}%</strong></span>
+                    <span className="text-slate-300 dark:text-slate-700">|</span>
+                    <span>COM. MISC: <strong className="font-bold">{rep.fondo.comision_miscelaneos_fondo || 0}%</strong></span>
+                  </div>
+                </div>
+              ))
+            )}
 
-            <div className="flex flex-col gap-1.5 w-[140px]">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Periodo</label>
-              <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
-                value={vcSelNum}
-                onChange={(e) => setVcSelNum(Number(e.target.value))}
-              >
-                {vcSelTipo === 'Bimestre' ? (
-                  <>
-                    <option value={1}>1: Ene-Feb</option>
-                    <option value={2}>2: Mar-Abr</option>
-                    <option value={3}>3: May-Jun</option>
-                    <option value={4}>4: Jul-Ago</option>
-                    <option value={5}>5: Sep-Oct</option>
-                    <option value={6}>6: Nov-Dic</option>
-                  </>
-                ) : (
-                  <>
-                    <option value={1}>1: Ene-Mar</option>
-                    <option value={2}>2: Abr-Jun</option>
-                    <option value={3}>3: Jul-Sep</option>
-                    <option value={4}>4: Oct-Dic</option>
-                  </>
-                )}
-              </select>
-            </div>
-            
-            <div className="flex gap-2">
+            {/* Botones Oficiales de Exportación e Impresión */}
+            <div className="flex flex-wrap items-center justify-end gap-4 pt-2 border-t border-slate-100 dark:border-slate-800/80">
               <button
-                className="h-8.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
-                onClick={handleExportVcExcel}
-                disabled={vcLoading || vcReportData.length === 0}
-              >
-                <FileSpreadsheet size={13} />
-                <span>Excel v26</span>
-              </button>
-
-              <button
-                className="h-8.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-11 px-6 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                 onClick={handleExportVcPdf}
                 disabled={vcLoading || vcReportData.length === 0}
               >
-                <FileText size={13} />
-                <span>PDF v26</span>
+                <FileText size={16} />
+                <span>🖨️ Generar e Imprimir Reporte PDF Oficial v26 (NAV)</span>
+              </button>
+
+              <button
+                className="h-11 px-6 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                onClick={handleExportVcExcel}
+                disabled={vcLoading || vcReportData.length === 0}
+              >
+                <FileSpreadsheet size={16} />
+                <span>📊 Exportar Matriz a Excel v26</span>
               </button>
             </div>
-          </div>
-
-          {/* Reporte Maestro Valor Cuota */}
-          <div className="flex flex-col gap-6">
-            {vcLoading ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-                <Loader2 className="animate-spin text-emerald-600" size={30} />
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">Simulando Valor Cuota v26...</p>
-              </div>
-            ) : vcReportData.length > 0 ? (
-              vcReportData.map((report) => (
-                <div key={report.fondo.id_fondo} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 overflow-hidden">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-                    <div className="flex flex-col gap-0.5">
-                      <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight">
-                        📈 Fondo: {report.fondo.nombre_fondo} ({report.fondo.id_fondo})
-                      </h3>
-                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                        TEA Activa Empresa: {report.vars.activa}% | Comisión Administración: {report.vars.admin}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {report.blocks.map((block) => (
-                    <div key={block.idx} className="flex flex-col gap-2">
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-850">
-                        🗓️ {block.monthName}
-                      </span>
-                      
-                      <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                        <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
-                          <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase tracking-wider">ITEM</th>
-                              {block.days.map(d => (
-                                <th key={d} className="font-bold text-slate-450 dark:text-slate-500 px-2 py-2 text-right">{d}</th>
-                              ))}
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 text-right uppercase tracking-wider">TOTAL</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {block.rows.map((r, rIdx) => {
-                              if (r.tipo === 'SPACER') {
-                                return (
-                                  <tr key={rIdx} className="spacer-row h-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-150 dark:border-slate-800/60">
-                                    <td colSpan={block.days.length + 2}></td>
-                                  </tr>
-                                );
-                              }
-                              const isTotal = r.tipo === 'TOTAL';
-                              const label = r.num !== undefined ? `(${r.num}) ${r.id}` : r.id;
-                              
-                              let rowClass = r.css_class || '';
-                              if (r.is_vc) rowClass += ' bg-blue-50/50 dark:bg-blue-950/20';
-
-                              return (
-                                <tr key={rIdx} className={`hover:bg-slate-50/30 dark:hover:bg-slate-850/20 border-b border-slate-150 dark:border-slate-800/50 transition-colors ${rowClass} ${r.tipo === 'AUMENTO' ? 'italic text-slate-500' : ''}`}>
-                                  <td className={`px-3 py-2 ${isTotal ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-350'} ${r.tipo === 'AUMENTO' ? 'pl-5' : ''}`}>
-                                    {label}
-                                  </td>
-                                  
-                                  {block.days.map((_, dIdx) => {
-                                    const cell = r.cells[dIdx];
-                                    const cellVal = cell?.val ?? '-';
-                                    const isVcCell = r.is_vc;
-                                    const cellDisplay = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { 
-                                      minimumFractionDigits: isVcCell ? 4 : 2,
-                                      maximumFractionDigits: isVcCell ? 4 : 2
-                                    });
-                                    
-                                    return (
-                                      <td 
-                                        key={dIdx} 
-                                        className={`px-2 py-2 text-right font-mono ${isVcCell ? 'font-black text-blue-600 dark:text-blue-450' : ''} ${cellVal !== '-' && !isVcCell ? 'text-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-700'}`}
-                                      >
-                                        {cellDisplay}
-                                      </td>
-                                    );
-                                  })}
-
-                                  <td className="px-3 py-2 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                                    {r.interes_acum !== undefined ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-'}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))}
-
-                </div>
-              ))
-            ) : (
-              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-900">
-                No se encontraron datos para simular en el periodo seleccionado.
-              </div>
-            )}
           </div>
 
         </div>
