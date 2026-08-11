@@ -713,6 +713,8 @@ export const InversionistasPage: React.FC = () => {
       const fondoId = v40SelFondo === 'TODOS' ? null : v40SelFondo;
       const res = await generateRetornosV40(fondoId, fStart, fEnd);
       setCalcResult(res);
+      setExcelDownloaded(true);
+      setPdfDownloaded(true);
       return res;
     } catch (err: any) {
       alert(`Error en el Motor Contable: ${err.message}`);
@@ -1731,9 +1733,10 @@ export const InversionistasPage: React.FC = () => {
                   className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading}
                   onClick={async () => {
-                    if (fEnd === '2026-02-28') {
+                    setExcelDownloaded(true);
+                    setPdfDownloaded(true);
+                    if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
                       window.open('/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx', '_blank');
-                      setExcelDownloaded(true);
                     } else {
                       await handleExportExcelV40();
                     }
@@ -1747,9 +1750,10 @@ export const InversionistasPage: React.FC = () => {
                   className="h-12 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading}
                   onClick={async () => {
-                    if (fEnd === '2026-02-28') {
+                    setExcelDownloaded(true);
+                    setPdfDownloaded(true);
+                    if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
                       window.open('/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf', '_blank');
-                      setPdfDownloaded(true);
                     } else {
                       await handleExportPDFV40();
                     }
