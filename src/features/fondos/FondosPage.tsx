@@ -443,58 +443,115 @@ export const FondosPage: React.FC = () => {
     }
 
     const htmlContent = `
-      <html>
+      <!DOCTYPE html>
+      <html lang="es">
         <head>
-          <title>Seguimiento de Valor Cuota v26 - InAndes</title>
+          <meta charset="UTF-8">
+          <title>REPORTE MAESTRO DE VALOR CUOTA v26 - INANDES</title>
           <style>
-            body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; margin: 20px; font-size: 8px; }
-            h2 { color: #1e3a8a; margin-bottom: 2px; text-transform: uppercase; font-size: 14px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
-            .meta { font-size: 9px; color: #64748b; margin-bottom: 10px; }
-            .block-title { font-size: 10px; font-weight: bold; color: #1e293b; margin-top: 15px; margin-bottom: 5px; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; page-break-inside: avoid; }
-            th { background-color: #1e293b; color: white; font-weight: bold; font-size: 7px; padding: 4px 2px; text-align: left; }
-            td { border-bottom: 1px solid #e2e8f0; padding: 3px 2px; }
-            .summary-row { background-color: #f8fafc; font-weight: bold; }
-            .vc-cell { background-color: #eff6ff; font-weight: bold; }
-            .spacer-row { height: 4px; background-color: #f1f5f9; }
+            @page { size: A2 landscape; margin: 0.8cm; }
+            body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; margin: 15px; }
+            .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
+            .top-header td { border: none; vertical-align: middle; }
+            .logo-geeksoft { height: 48px; width: auto; }
+            .logo-inandes { height: 38px; width: auto; }
+            .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
+            .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
+            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8.5pt; font-weight: 600; color: #334155; }
+            .block-title { font-size: 9.5pt; font-weight: 800; color: #01579b; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; page-break-inside: avoid; }
+            th { background-color: #0288d1; color: white; font-weight: bold; font-size: 7.5pt; padding: 4px 2px; text-align: center; border: 1px solid #0277bd; }
+            td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
+            .num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
+            .cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
+            .cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
+            .cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
+            .day-col { text-align: right; font-family: monospace; font-size: 6.5pt; }
+            .aumento-row td { background-color: #fafafa; }
+            .aumento-label { padding-left: 10px !important; color: #166534 !important; font-style: italic; font-size: 6.5pt !important; border-left: 3px solid #22c55e; }
+            .summary-row td { font-weight: bold !important; background-color: #fff9c4 !important; color: #000 !important; }
+            .comision-row td { color: #c62828 !important; background-color: #ffebee !important; font-weight: bold; }
+            .vc-highlight { color: #0d47a1 !important; font-weight: bold !important; background-color: #e3f2fd !important; }
+            .spacer-row td { height: 6px; background-color: #f1f5f9; border: none; }
             .text-right { text-align: right; }
-            .aumento-row { color: #64748b; font-style: italic; }
+            .footer { margin-top: 20px; text-align: right; font-size: 7pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 6px; }
           </style>
         </head>
         <body>
-          <h2>INANDES CRM - SEGUIMIENTO DE VALOR CUOTA v26</h2>
-          <div class="meta">Fondo: ${vcSelFondo} | Año: ${vcSelYear} | Periodo: ${vcSelTipo} N° ${vcSelNum}</div>
+          <table class="top-header">
+            <tr>
+              <td style="width: 25%;">
+                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+              </td>
+              <td style="width: 50%; text-align: center;">
+                <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
+                <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
+              </td>
+              <td style="width: 25%; text-align: right;">
+                <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+              </td>
+            </tr>
+          </table>
+
+          <div class="meta-box">
+            Fondo Seleccionado: <strong>${vcSelFondo}</strong> | Año: <strong>${vcSelYear}</strong> | Periodo: <strong>${vcSelTipo} N° ${vcSelNum}</strong>
+          </div>
           
           ${vcReportData.map(rep => `
-            <h3 style="color:#2563eb; font-size:12px; margin-top:20px; margin-bottom:5px;">Fondo: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo})</h3>
-            <div class="meta" style="margin-bottom:10px;">TEA Activa: ${rep.vars.activa}% | Com. Admin: ${rep.vars.admin}%</div>
+            <div style="margin-top:15px; margin-bottom:10px;">
+              <h3 style="color:#01579b; font-size:11pt; font-weight:800; margin:0 0 2px 0; text-transform:uppercase;">
+                Fondo: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | Moneda: ${rep.fondo.moneda}
+              </h3>
+              <div style="font-size:8pt; color:#475569; font-weight:600;">
+                TASA ACTIVA EMPRESA: <strong>${rep.vars.activa}%</strong> | COMISIÓN ADMIN: <strong>${rep.vars.admin}%</strong> | COM. CAPTACIÓN: <strong>${rep.fondo.comision_captacion_fondo || 0}%</strong> | COM. MISC: <strong>${rep.fondo.comision_miscelaneos_fondo || 0}%</strong>
+              </div>
+            </div>
             
             ${rep.blocks.map(block => `
-              <div class="block-title">${block.monthName}</div>
+              <div class="block-title">📅 ${block.monthName} — Devengue Diario y Cálculo de Valor Cuota</div>
               <table>
                 <thead>
                   <tr>
-                    <th>ITEM</th>
-                    ${block.days.map(d => `<th class="text-right">${d}</th>`).join('')}
-                    <th class="text-right">TOTAL</th>
+                    <th class="num-col">N°</th>
+                    <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
+                    <th class="cap-col">CAPITAL / REF.</th>
+                    <th class="cuotas-col">N° CUOTAS</th>
+                    ${block.days.map(d => `<th class="day-col">${d}</th>`).join('')}
+                    <th class="cap-col">TOTAL ACUM.</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${block.rows.map(r => {
                     if (r.tipo === 'SPACER') {
-                      return `<tr class="spacer-row"><td colspan="${block.days.length + 2}"></td></tr>`;
+                      return `<tr class="spacer-row"><td colspan="${block.days.length + 5}"></td></tr>`;
                     }
-                    const rowClass = r.css_class || (r.is_vc ? 'vc-cell' : '');
-                    const label = r.num !== undefined ? `(${r.num}) ${r.id}` : r.id;
+
+                    const isComision = r.id.includes('COM.');
+                    const isSummary = r.tipo === 'TOTAL' && !isComision;
+                    const isVc = r.is_vc || r.id.includes('VAL CUOTA');
+
+                    let rowCss = '';
+                    if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
+                    else if (isComision) rowCss = 'comision-row';
+                    else if (isSummary) rowCss = 'summary-row';
+
+                    const displayNum = Boolean(r.num) ? String(r.num) : '';
+
                     return `
-                      <tr class="${rowClass} ${r.tipo === 'AUMENTO' ? 'aumento-row' : ''}">
-                        <td style="font-weight: ${r.tipo === 'TOTAL' ? 'bold' : 'normal'}">${label}</td>
+                      <tr class="${rowCss}">
+                        <td class="num-col">${displayNum}</td>
+                        <td class="cert-id-col ${r.tipo === 'AUMENTO' ? 'aumento-label' : ''}">${r.id}</td>
+                        <td class="cap-col">${r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : ''}</td>
+                        <td class="cuotas-col">${r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : ''}</td>
                         ${block.days.map((_, i) => {
                           const cellVal = r.cells[i]?.val ?? '-';
-                          const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { minimumFractionDigits: 4 });
-                          return `<td class="text-right">${displayVal}</td>`;
+                          const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { 
+                            minimumFractionDigits: isVc ? 4 : 2,
+                            maximumFractionDigits: isVc ? 4 : 2 
+                          });
+                          return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${displayVal}</td>`;
                         }).join('')}
-                        <td class="text-right" style="font-weight:bold">${r.interes_acum !== undefined ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-'}</td>
+                        <td class="cap-col" style="font-weight:bold">${r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-'}</td>
                       </tr>
                     `;
                   }).join('')}
@@ -502,6 +559,10 @@ export const FondosPage: React.FC = () => {
               </table>
             `).join('')}
           `).join('')}
+
+          <div class="footer">
+            INANDES GRUPO FINANCIERO & GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
+          </div>
         </body>
       </html>
     `;
