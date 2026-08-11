@@ -286,14 +286,14 @@ export const generateRetornosV40 = async (
       id_fondo: c.id_fondo,
       moneda: c.moneda,
       inversionista: getInvName(c, invMap),
-      capital_base: Number(c.monto_inversion || 0) + (balPrevMap[certId] || 0.0),
+      capital_base: Number(c.monto_inversion || 0) + (balPrevMap[certId] || 0.0) + (balPrevMap[mid] || 0.0),
       emision: new Date(c.fecha_inicio.split('T')[0] + 'T00:00:00'),
       tasa_pactada: tasaP,
       porcentaje_reparto: repartoPct,
       hijos,
       interes_total_acum: 0.0,
-      cron_deducciones: cronDedMap[certId] || [],
-      cron_rescates: cronRescMap[certId] || [],
+      cron_deducciones: (cronDedMap[certId] || []).concat(cronDedMap[mid] || []).filter((v, i, a) => a.findIndex(t => t.id_cuota === v.id_cuota) === i),
+      cron_rescates: (cronRescMap[certId] || []).concat(cronRescMap[mid] || []).filter((v, i, a) => a.findIndex(t => t.id_registro === v.id_registro) === i),
       valores_dia_padre: []
     });
   }
