@@ -23,7 +23,13 @@ export const FondosPage: React.FC = () => {
 
   // Modal de Creación de Nuevo Fondo
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [createFormData, setCreateFormData] = useState<Partial<Fondo>>({
+  const [createFormData, setCreateFormData] = useState<Partial<Fondo> & {
+    tasa12?: number;
+    tasa24?: number;
+    tasa36?: number;
+    tasa60?: number;
+    tasaND?: number;
+  }>({
     id_fondo: '',
     nombre_fondo: '',
     moneda: 'PEN',
@@ -35,7 +41,12 @@ export const FondosPage: React.FC = () => {
     comision_captacion_fondo: 2,
     comision_miscelaneos_fondo: 0,
     vigencia_tasa: '2026',
-    activo: true
+    activo: true,
+    tasa12: 8.5,
+    tasa24: 9.0,
+    tasa36: 9.5,
+    tasa60: 10.0,
+    tasaND: 10.5
   });
   const [createSubmitLoading, setCreateSubmitLoading] = useState<boolean>(false);
   const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
@@ -129,10 +140,17 @@ export const FondosPage: React.FC = () => {
     const code = createFormData.id_fondo.trim().toUpperCase();
 
     try {
-      // Auto-generar 4 plazos estándar: 12, 24, 36, ND
-      const plazosEstandar = ['12', '24', '36', 'ND'];
-      const batchNewFondos: Fondo[] = plazosEstandar.map(plazo => ({
-        id_fondo_plazo: `${code}-${plazo}`,
+      // Auto-generar plazos estándar configurados: 12, 24, 36, 60, ND
+      const plazosConfig = [
+        { plazo: '12', tasa: createFormData.tasa12 ?? 8.5 },
+        { plazo: '24', tasa: createFormData.tasa24 ?? 9.0 },
+        { plazo: '36', tasa: createFormData.tasa36 ?? 9.5 },
+        { plazo: '60', tasa: createFormData.tasa60 ?? 10.0 },
+        { plazo: 'ND', tasa: createFormData.tasaND ?? 10.5 }
+      ];
+
+      const batchNewFondos: Fondo[] = plazosConfig.map(cfg => ({
+        id_fondo_plazo: `${code}-${cfg.plazo}`,
         id_fondo: code,
         nombre_fondo: createFormData.nombre_fondo!,
         moneda: createFormData.moneda || 'PEN',
@@ -146,11 +164,11 @@ export const FondosPage: React.FC = () => {
         monto_minimo_inversion: createFormData.monto_minimo_inversion || 50000,
         vigencia_tasa: createFormData.vigencia_tasa || '2026',
         activo: createFormData.activo ?? true,
-        plazo_inversion: plazo,
-        tasa: plazo === '12' ? 8.5 : (plazo === '24' ? 9.5 : (plazo === '36' ? 10.5 : 7.0)),
+        plazo_inversion: cfg.plazo,
+        tasa: cfg.tasa,
         tasa_activa: 14.0,
         penalidad_rescate: 2.0,
-        plazo_rescate_meses: plazo === 'ND' ? 0 : 12,
+        plazo_rescate_meses: cfg.plazo === 'ND' ? 0 : 12,
         plazo_opcion_de_rescate_dias: 120,
         valor_cuota_inicial: 1.0,
         comision_asesor_mantenimiento: 0,
@@ -223,7 +241,7 @@ export const FondosPage: React.FC = () => {
                 <th>Moneda</th>
                 <th>RUC</th>
                 <th>Vigencia</th>
-                <th>Tasas (12m / 24m / 36m / ND)</th>
+                <th>Desglose de Tasas TEA por Plazo</th>
                 <th>Com. Admin %</th>
                 <th>Com. Capt %</th>
               </tr>
@@ -231,11 +249,10 @@ export const FondosPage: React.FC = () => {
             <tbody>
               ${Object.entries(groupedFondos).map(([code, rows]) => {
                 const header = rows[0];
-                const t12 = rows.find(r => r.plazo_inversion === '12')?.tasa ?? '-';
-                const t24 = rows.find(r => r.plazo_inversion === '24')?.tasa ?? '-';
-                const t36 = rows.find(r => r.plazo_inversion === '36')?.tasa ?? '-';
-                const tND = rows.find(r => r.plazo_inversion === 'ND')?.tasa ?? '-';
-                const tasasStr = `${t12}% / ${t24}% / ${t36}% / ${tND}%`;
+                const tasasStr = rows
+                  .sort((a, b) => (a.plazo_inversion === 'ND' ? 99 : parseInt(a.plazo_inversion)) - (b.plazo_inversion === 'ND' ? 99 : parseInt(b.plazo_inversion)))
+                  .map(r => `${r.plazo_inversion === 'ND' ? 'ND' : r.plazo_inversion + 'M'}: ${r.tasa ?? 0}%`)
+                  .join(' | ');
                 const monedaClass = header.moneda === 'USD' ? 'badge-usd' : 'badge-pen';
 
                 return `
@@ -656,6 +673,26 @@ export const FondosPage: React.FC = () => {
                             <span className="font-semibold text-slate-750 dark:text-slate-350">
                               {h.comision_administracion_fondo || 0}% / {h.comision_captacion_fondo || 0}%
                             </span>
+                          </div>
+
+                          {/* Matriz de Tasas TEA por Plazo */}
+                          <div className="bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-lg border border-slate-150 dark:border-slate-800/80 flex flex-col gap-1.5 my-1">
+                            <span className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+                              📊 Tasas TEA por Plazo
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {rows
+                                .sort((a, b) => (a.plazo_inversion === 'ND' ? 99 : parseInt(a.plazo_inversion)) - (b.plazo_inversion === 'ND' ? 99 : parseInt(b.plazo_inversion)))
+                                .map((r) => {
+                                  const pLabel = r.plazo_inversion === 'ND' ? 'ND' : `${r.plazo_inversion}M`;
+                                  return (
+                                    <div key={r.id_fondo_plazo || r.plazo_inversion} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded text-[10px] flex items-center gap-1 shadow-2xs">
+                                      <span className="font-bold text-slate-500 dark:text-slate-400">{pLabel}:</span>
+                                      <span className="font-black text-emerald-600 dark:text-emerald-450">{r.tasa ?? 0}%</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
                           </div>
                         </div>
 
@@ -1394,6 +1431,65 @@ export const FondosPage: React.FC = () => {
                   value={createFormData.comision_captacion_fondo ?? 2}
                   onChange={(e) => setCreateFormData(prev => ({ ...prev, comision_captacion_fondo: Number(e.target.value) || 0 }))}
                 />
+              </div>
+
+              {/* Matriz de Tasas por Plazo */}
+              <div className="col-span-full border-t border-slate-150 dark:border-slate-800 pt-3 flex flex-col gap-2">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                  📊 Matriz de Tasas TEA por Plazo (%)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa 12M (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                      value={createFormData.tasa12 ?? 8.5}
+                      onChange={(e) => setCreateFormData(prev => ({ ...prev, tasa12: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa 24M (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                      value={createFormData.tasa24 ?? 9.0}
+                      onChange={(e) => setCreateFormData(prev => ({ ...prev, tasa24: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa 36M (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                      value={createFormData.tasa36 ?? 9.5}
+                      onChange={(e) => setCreateFormData(prev => ({ ...prev, tasa36: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa 60M (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                      value={createFormData.tasa60 ?? 10.0}
+                      onChange={(e) => setCreateFormData(prev => ({ ...prev, tasa60: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tasa ND (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                      value={createFormData.tasaND ?? 10.5}
+                      onChange={(e) => setCreateFormData(prev => ({ ...prev, tasaND: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="col-span-full bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-3">
