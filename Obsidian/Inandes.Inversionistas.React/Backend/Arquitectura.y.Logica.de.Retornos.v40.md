@@ -117,3 +117,20 @@ Cualquier actualización en el módulo de inversionistas debe seguir estrictamen
 1. `npm run build`
 2. `python deploy_vps.py`
 3. `git add .` -> `git commit -m "..."` -> `git push origin main`
+
+---
+
+## 6. Historial de Avances y Ajustes Realizados (Sesión 10-Ago-2026)
+
+### 🧮 6.1 Motor Financiero v4.0 y Corrección de Rescates / Deducciones
+- **Consulta Dual Robusta (`id_contrato` / `id_certificado`):** En [`deduccionesService.ts`](file:///C:/Users/rguti/Inandes.ERP.React/src/services/deduccionesService.ts), se ajustó `getCronogramaDeducciones` para consultar tanto por el ID exacto del certificado como por el ID base del contrato, evitando pérdida de cargos tras cierres de período.
+- **Integración de Rescates en el Motor:** En [`financialCalculator.ts`](file:///C:/Users/rguti/Inandes.ERP.React/src/utils/financialCalculator.ts), se vinculó `cron_rescates` comparando por contrato base. El motor descuenta los rescates y penalidades directamente en el cálculo de `Capital Final Saldo`.
+- **Buscador de Contratos Vigentes:** Se corrigió la búsqueda en la pestaña de Deducciones para consultar directamente a `crm_contratos` (eliminando la dependencia rota a la tabla obsoleta `crm_certificados`).
+- **Filtro de Rollback de Auditoría:** Se excluyeron los eventos `emision_inicial` para permitir reabrir períodos contables limpiamente tras ejecutar un rollback sin colisiones.
+
+### 💻 6.2 Mejoras de Experiencia de Usuario (UX) y Exportación
+- **Persistencia de Navegación en `sessionStorage`:** En [`InversionistasPage.tsx`](file:///C:/Users/rguti/Inandes.ERP.React/src/features/inversionistas/InversionistasPage.tsx), se configuró la memoria de sub-pestañas para mantener al usuario en la pestaña activa tras descargar reportes o recargar.
+- **Descargas Transparentes sin Pérdida de Foco:** Se eliminó la apertura de pestañas en blanco (`_blank`) para las descargas de Excel/PDF.
+- **Exportación Excel Completa Enriquecida:** Se agregaron todos los campos del perfil del inversionista al reporte Excel (Datos Personales, Compliance, Cuentas Bancarias PEN y USD) agrupados por temas.
+- **Eliminación de Flechas en Formulario:** Se removieron los spinners `▲/▼` de los campos de entrada numérica en los formularios del módulo mediante clases CSS globalizadas.
+
