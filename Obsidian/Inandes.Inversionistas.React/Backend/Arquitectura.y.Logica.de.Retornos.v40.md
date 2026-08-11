@@ -61,6 +61,21 @@ $$\text{Interés Aumento} = \text{Monto Aumento} \times \left( (1 + \text{Tasa})
 - **Penalidades por Rescate:** Cargos deducidos del rescate cuando el contrato no ha cumplido el plazo mínimo de permanencia.
 - Se descuentan al calcular el `Capital Final Saldo`.
 
+### 3.4 Diagnóstico y Solución: Integración de Rescates y Deducciones en el Motor
+- **El Problema Original:**  
+  Anteriormente, las deducciones y los rescates registrados en el módulo de Deducciones/Rescates **no eran leídos por el motor de cálculo** (`financialCalculator.ts`) ni por el generador de reportes. Esto causaba que las devoluciones de capital y las penalidades registradas en Supabase se ignoraran durante la simulación de corte, sobreestimando el `Capital Final Saldo` y omitiendo los montos de deducción en el PDF/Excel.
+
+- **La Solución Implementada:**  
+  1. **Vinculación de Cronogramas:** Se modificó la consulta a Supabase y la hidratación de estructuras en `financialCalculator.ts` para extraer explícitamente los arrays `cron_rescates` y `cron_deducciones` de cada contrato.
+  2. **Clasificación por Tipo de Cargo:**  
+     - `DEDUCCION_ORDINARIA`: Se suma a `ded_ord` y descuenta del `Neto Final` a repartir.
+     - `PENALIDAD_RESCATE`: Se suma a `penalidad_sum` y descuenta directamente del `Capital Final`.
+  3. **Impacto en Fórmulas y Reporte:**  
+     - `RESCATES`: Muestra la suma de rescates efectivos del período.
+     - `DEDUCCIONES`: Muestra la suma de gastos/deducciones ordinarias.
+     - `Capital Final` recalculado exactamente como:  
+       $$\text{Capital Final} = \text{Capital Base} + \text{Aumentos} + \text{Capitalización} - \text{Rescates} - \text{Penalidades}$$
+
 ---
 
 ## 4. Fórmula Matemática del Motor v4.0 (`financialCalculator.ts`)
