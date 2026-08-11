@@ -798,9 +798,9 @@ export const InversionistasPage: React.FC = () => {
           <style>
             @page {
               size: A4 landscape;
-              margin: 8mm 10mm 10mm 10mm;
+              margin: 10mm 12mm 12mm 12mm;
             }
-            * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+            * { box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
             body {
               margin: 0; padding: 0; background-color: #ffffff; color: #1e293b; font-size: 8pt;
               -webkit-print-color-adjust: exact !important;
@@ -811,40 +811,63 @@ export const InversionistasPage: React.FC = () => {
               page-break-after: always;
             }
             .header-table {
-              width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 2.5px solid #059669; padding-bottom: 6px;
+              width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 3px solid #059669; padding-bottom: 8px;
             }
             .header-table td { border: none; padding: 0; vertical-align: middle; }
-            .logo-inandes { height: 45px; width: auto; }
-            .logo-efi { height: 40px; width: auto; }
-            .company-title { font-weight: 900; font-size: 12pt; color: #064e3b; margin: 0; text-transform: uppercase; letter-spacing: -0.3px; }
-            .report-title { font-weight: 800; font-size: 10pt; color: #0f172a; margin: 2px 0; text-transform: uppercase; }
-            .period-subtitle { font-size: 8.5pt; font-weight: 700; color: #047857; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 2px; }
+            .logo-inandes { height: 48px; width: auto; }
+            .logo-efi { height: 42px; width: auto; }
+            .company-title { font-weight: 900; font-size: 13pt; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+            .report-title { font-weight: 800; font-size: 10.5pt; color: #059669; margin: 3px 0; text-transform: uppercase; letter-spacing: 0.2px; }
+            .period-subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 3px 10px; border-radius: 4px; display: inline-block; margin-top: 2px; }
             
             .fund-section-header {
-              background: #0f172a; color: #ffffff; font-size: 9pt; font-weight: 800; padding: 5px 8px; margin-top: 12px; margin-bottom: 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+              background: #0f172a; color: #ffffff; font-size: 9.5pt; font-weight: 800; padding: 6px 10px; margin-top: 14px; margin-bottom: 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between;
             }
             table.data-table {
-              width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 7.5pt;
+              width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 7.5pt;
             }
             table.data-table th {
-              background-color: #1e293b !important; color: #ffffff !important; font-weight: 700; text-transform: uppercase; font-size: 7pt; padding: 5px 4px; border: 1px solid #0f172a; text-align: left;
+              background-color: #0f172a !important; color: #ffffff !important; font-weight: 700; text-transform: uppercase; font-size: 7pt; padding: 6px 4px; border: 1px solid #0f172a; text-align: left;
             }
             table.data-table td {
-              border: 1px solid #cbd5e1; padding: 4px 3px; vertical-align: middle;
+              border: 1px solid #cbd5e1; padding: 5px 4px; vertical-align: middle;
             }
             table.data-table tr:nth-child(even) { background-color: #f8fafc; }
-            table.data-table tr.aumento-row { color: #0369a1; font-style: italic; background-color: #f0f9ff !important; }
-            table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #047857; }
+            table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
+            table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2.5px solid #059669; border-bottom: 3px double #059669; }
             table.data-table tr.totals-row td { color: #064e3b; font-size: 8pt; font-weight: 800; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
+
+            .signature-container {
+              margin-top: 35px;
+              page-break-inside: avoid;
+            }
+            .signature-table {
+              width: 100%; border-collapse: collapse; border: none; margin-bottom: 15px;
+            }
+            .signature-table td {
+              border: none; padding: 0; vertical-align: top;
+            }
+            .signature-line {
+              width: 220px; border-top: 1.5px solid #475569; margin: 0 auto 6px auto;
+            }
+            .signature-title {
+              font-weight: 800; font-size: 8pt; color: #0f172a; text-transform: uppercase;
+            }
+            .signature-sub {
+              font-size: 7.5pt; color: #64748b;
+            }
+            .audit-footer-text {
+              margin-top: 20px; text-align: center; font-size: 7pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 6px;
+            }
           </style>
         </head>
         <body>
           <div class="report-page">
             <table class="header-table">
               <tr>
-                <td style="width: 150px;">
+                <td style="width: 160px;">
                   <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
                 </td>
                 <td class="text-center">
@@ -852,7 +875,7 @@ export const InversionistasPage: React.FC = () => {
                   <div class="report-title">REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)</div>
                   <div class="period-subtitle">FECHA DE CORTE: DEL ${fStart} AL ${fEnd}</div>
                 </td>
-                <td style="width: 150px;" class="text-right">
+                <td style="width: 160px;" class="text-right">
                   <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-efi" alt="EFI">
                 </td>
               </tr>
@@ -909,6 +932,28 @@ export const InversionistasPage: React.FC = () => {
                 </tbody>
               </table>
             `).join('')}
+
+            <!-- Bloque de Firmas y Aprobación de Auditoría Oficial -->
+            <div class="signature-container">
+              <table class="signature-table">
+                <tr>
+                  <td style="width: 45%; text-align: center;">
+                    <div class="signature-line"></div>
+                    <div class="signature-title">Elaborado por: Área de Operaciones y Fondos</div>
+                    <div class="signature-sub">InAndes Activos Alternativos S.A.C.</div>
+                  </td>
+                  <td style="width: 10%;"></td>
+                  <td style="width: 45%; text-align: center;">
+                    <div class="signature-line"></div>
+                    <div class="signature-title">Aprobado por: Gerencia General & Directorio</div>
+                    <div class="signature-sub">Empresa Administradora de Fondos de Inversión (EFI)</div>
+                  </td>
+                </tr>
+              </table>
+              <div class="audit-footer-text">
+                Documento Oficial de Cierre Contable y Auditoría de Retornos — InAndes ERP System v4.0 — Generado el ${new Date().toLocaleDateString('es-PE')}
+              </div>
+            </div>
           </div>
         </body>
       </html>
