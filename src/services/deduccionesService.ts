@@ -118,30 +118,31 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
  * Obtiene el ID del certificado activo vinculado a un contrato (o fallback inandes)
  */
 export const getActiveCertificadoByContrato = async (idContrato: string): Promise<string> => {
-  const { data: certs } = await supabase
-    .from('crm_certificados')
-    .select('id_certificado, estado')
+  // 1. Buscar en crm_certificados_eventos la clave real de certificado del contrato
+  const { data: evts } = await supabase
+    .from('crm_certificados_eventos')
+    .select('id_certificado')
     .eq('id_contrato', idContrato)
-    .eq('estado', 'ACTIVO');
+    .order('fecha_periodo_fin', { ascending: false })
+    .limit(1);
 
-  if (certs && certs.length > 0) {
-    return certs[0].id_certificado;
+  if (evts && evts.length > 0 && evts[0].id_certificado) {
+    return evts[0].id_certificado;
   }
 
-  const { data: fallbacks } = await supabase
+  // 2. Buscar en crm_certificados como fallback
+  const { data: certs } = await supabase
     .from('crm_certificados')
     .select('id_certificado')
     .eq('id_contrato', idContrato)
-    .neq('estado', 'ANULADO')
-    .order('fecha_emision', { ascending: false })
     .limit(1);
 
-  if (fallbacks && fallbacks.length > 0) {
-    return fallbacks[0].id_certificado;
+  if (certs && certs.length > 0 && certs[0].id_certificado) {
+    return certs[0].id_certificado;
   }
 
-  // Fallback si no existe certificado
-  return `${idContrato}.00000000.00000000`;
+  // 3. Fallback de clave con fecha base
+  return `${idContrato}.20251231`;
 };
 
 /**
@@ -165,17 +166,25 @@ export const getFondoRules = async (idFondo: string): Promise<{ rules: FondoRule
 };
 
 /**
- * Obtiene las deducciones y rescates registrados para un certificado
+ * Obtiene las deducciones y rescates registrados para un certificado/contrato
  */
-export const getCronogramaDeducciones = async (idCertificado: string): Promise<DeduccionCuota[]> => {
-  const { data, error } = await supabase
-    .from('crm_cronograma_deducciones_rescates')
-    .select('*')
-    .eq('id_certificado', idCertificado)
-    .order('fecha_proyectada_cobro', { ascending: true });
+export const getCronogramaDeducciones = async (idCertificado: string, idContrato?: string): Promise<DeduccionCuota[]> => {
+  let query = supabase.from('crm_cronograma_deducciones_rescates').select('*');
+
+  if (idContrato) {
+    query = query.or(`id_certificado.eq.${idCertificado},id_contrato.eq.${idContrato}`);
+  } else {
+    query = query.eq('id_certificado', idCertificado);
+  }
+
+  const { data, error } = await query.order('fecha_proyectada_cobro', { ascending: true });
 
   if (error) throw new Error(`Error al obtener cronograma: ${error.message}`);
-  return data || [];
+  
+  // Desduplicar por id_cuota
+  const uniqueMap = new Map<string, DeduccionCuota>();
+  (data || []).forEach(item => uniqueMap.set(item.id_cuota, item));
+  return Array.from(uniqueMap.values());
 };
 
 /**
