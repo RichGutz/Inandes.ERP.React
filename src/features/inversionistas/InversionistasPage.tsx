@@ -35,7 +35,25 @@ export const InversionistasPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedRange, setSelectedRange] = useState<string>('TODOS');
+  const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+
+  const ALPHABET_AZ = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const getLetterCount = (char: string) => {
+    if (char === 'TODOS') return inversionistas.length;
+    if (char === '#') {
+      return inversionistas.filter(inv => {
+        const apellido = (inv.apellido_1 || inv.nombre_completo || 'Z').trim();
+        const firstLetter = apellido.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
+        return !/^[A-ZÑ]/.test(firstLetter);
+      }).length;
+    }
+    return inversionistas.filter(inv => {
+      const apellido = (inv.apellido_1 || inv.nombre_completo || 'Z').trim();
+      const firstLetter = apellido.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
+      return firstLetter === char;
+    }).length;
+  };
 
   // Estado del Formulario de Edición/Creación
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -1165,25 +1183,19 @@ export const InversionistasPage: React.FC = () => {
       (item.email && item.email.toLowerCase().includes(term))
     );
 
-    // Filtro por rango alfabético
-    let matchesRange = true;
-    if (selectedRange !== 'TODOS') {
+    // Filtro por Rolodex Alfabético A-Z
+    let matchesLetter = true;
+    if (selectedLetter !== 'TODOS') {
       const apellido = (item.apellido_1 || item.nombre_completo || 'Z').trim();
       const firstLetter = apellido.normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase();
-      
-      if (selectedRange === 'ABC') matchesRange = /^[A-C]/.test(firstLetter);
-      else if (selectedRange === 'DEF') matchesRange = /^[D-F]/.test(firstLetter);
-      else if (selectedRange === 'GHI') matchesRange = /^[G-I]/.test(firstLetter);
-      else if (selectedRange === 'JKL') matchesRange = /^[J-L]/.test(firstLetter);
-      else if (selectedRange === 'MNO') matchesRange = /^[M-O]/.test(firstLetter);
-      else if (selectedRange === 'PQR') matchesRange = /^[P-R]/.test(firstLetter);
-      else if (selectedRange === 'STU') matchesRange = /^[S-U]/.test(firstLetter);
-      else if (selectedRange === 'VWX') matchesRange = /^[V-X]/.test(firstLetter);
-      else if (selectedRange === 'YZ') matchesRange = /^[Y-Z]/.test(firstLetter);
-      else matchesRange = false;
+      if (selectedLetter === '#') {
+        matchesLetter = !/^[A-ZÑ]/.test(firstLetter);
+      } else {
+        matchesLetter = firstLetter === selectedLetter;
+      }
     }
 
-    return matchesText && matchesRange;
+    return matchesText && matchesLetter;
   });
 
   return (
@@ -1264,21 +1276,38 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Rango Alfabético (Tabs) */}
-          <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
-            {['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQR', 'STU', 'VWX', 'YZ', 'TODOS'].map((rango) => (
-              <button
-                key={rango}
-                onClick={() => setSelectedRange(rango)}
-                className={`px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all ${
-                  selectedRange === rango 
-                    ? 'bg-slate-800 text-white shadow-md dark:bg-emerald-600 border border-transparent' 
-                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-400 hover:text-slate-700 dark:hover:border-emerald-500 dark:hover:text-emerald-400'
-                }`}
-              >
-                {rango}
-              </button>
-            ))}
+          {/* Rolodex Abecedario A-Z Oficial */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
+              {ALPHABET_AZ.map((char) => {
+                const count = getLetterCount(char);
+                const isSelected = selectedLetter === char;
+                const hasData = count > 0;
+
+                return (
+                  <button
+                    key={char}
+                    onClick={() => setSelectedLetter(char)}
+                    className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none scale-105'
+                        : hasData
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 hover:text-emerald-600 border border-slate-200 dark:border-slate-800'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700 opacity-60'
+                    }`}
+                  >
+                    <span>{char}</span>
+                    {count > 0 && (
+                      <span className={`absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                        isSelected ? 'bg-amber-400 text-slate-900' : 'bg-emerald-600 text-white'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Listado en Tarjetas Premium */}
