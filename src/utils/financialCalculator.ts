@@ -111,8 +111,8 @@ export const generateRetornosV40 = async (
     fondosMap[fId] = data[0];
   }
 
-  // 3. Cargar contratos maestros (excluyendo únicamente contratos anulados)
-  let queryContratos = supabase.from('crm_contratos').select('*').neq('estado', 'anulado');
+  // 3. Cargar contratos maestros (filtrando solo por estado 'emitido')
+  let queryContratos = supabase.from('crm_contratos').select('*').eq('estado', 'emitido');
   if (codigoFondo && codigoFondo !== 'TODOS') {
     queryContratos = queryContratos.eq('id_fondo', codigoFondo);
   }
@@ -152,28 +152,20 @@ export const generateRetornosV40 = async (
     }
   }
 
-  // Filtrar para desduplicar: solo conservar versiones de certificado válidas al inicio o durante el periodo
+  // Filtrar para desduplicar: solo conservar versiones de certificado válidas al inicio del periodo
   const historialMap: Record<string, any[]> = {};
   const aumMap: Record<string, Array<{ fecha: Date; monto: number }>> = {};
   const balPrevMap: Record<string, number> = {};
 
-  // Asegurar que todo contrato tenga al menos una entrada en historialMap si no tiene eventos previos aún
-  for (const c of contratosMaster) {
-    const defaultCertId = c.id_contrato;
-    if (!tempHistorialMap[defaultCertId] && !Object.values(tempHistorialMap).some(arr => arr.some(e => e.id_contrato === c.id_contrato))) {
-      historialMap[defaultCertId] = [];
-    }
-  }
-
   for (const [cid, events] of Object.entries(tempHistorialMap)) {
-    if (events.length === 0) continue;
     events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
     const firstEv = events[0];
     const rawFin = firstEv.fecha_periodo_fin || '2000-01-01';
     const fFin = new Date(rawFin.split('T')[0] + 'T00:00:00');
     const isEmision = firstEv.tipo_evento === 'emision_inicial';
 
-    if (fFin <= fechaFin || isEmision) {
+    // Si el certificado inició antes del periodo o es la emisión inicial del contrato en este periodo, se procesa
+    if (fFin < fStart || isEmision) {
       historialMap[cid] = events;
       for (const e of events) {
         const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
@@ -194,59 +186,43 @@ export const generateRetornosV40 = async (
     }
   }
 
-  // 5. Carga de Cronogramas de deducciones y rescates (Por Certificado y por Contrato)
-  const todoCids = Array.from(new Set([...Object.keys(historialMap), ...cidsActivos]));
+  // 5. Carga de Cronogramas de deducciones y rescates
+  const todoCids = Object.keys(historialMap);
   const cronDedMap: Record<string, any[]> = {};
   const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number }>> = {};
 
   for (let i = 0; i < todoCids.length; i += chunkSize) {
     const chunk = todoCids.slice(i, i + chunkSize);
-    
-    // Consulta doble por id_certificado e id_contrato para no perder ningún rescate programado
-    const { data: itemsByCert } = await supabase
+    const { data: items, error: itemsErr } = await supabase
       .from('crm_cronograma_deducciones_rescates')
       .select('*')
       .in('id_certificado', chunk);
 
-    const { data: itemsByContr } = await supabase
-      .from('crm_cronograma_deducciones_rescates')
-      .select('*')
-      .in('id_contrato', chunk);
+    if (itemsErr) throw new Error(`Error en cronograma: ${itemsErr.message}`);
 
-    const combinedItemsMap = new Map<string, any>();
-    (itemsByCert || []).forEach(item => combinedItemsMap.set(item.id_cuota, item));
-    (itemsByContr || []).forEach(item => combinedItemsMap.set(item.id_cuota, item));
-    const items = Array.from(combinedItemsMap.values());
-
-    if (items.length > 0) {
+    if (items) {
       for (const item of items) {
-        const keysToMap = Array.from(new Set([item.id_certificado, item.id_contrato])).filter(Boolean) as string[];
+        const cid = item.id_certificado;
         const fP = new Date(item.fecha_proyectada_cobro.split('T')[0] + 'T00:00:00');
         const tipo = item.tipo_cargo;
 
-        for (const key of keysToMap) {
-          if (fP < fStart) {
-            if (tipo === 'RESCATE_CAPITAL') {
-              if (!balPrevMap[key]) balPrevMap[key] = 0;
-              balPrevMap[key] -= Number(item.monto_cobrar);
-            }
-          } else if (fP <= fechaFin) {
-            if (tipo === 'RESCATE_CAPITAL') {
-              if (!cronRescMap[key]) cronRescMap[key] = [];
-              if (!cronRescMap[key].some(r => r.id_registro === item.id_cuota)) {
-                cronRescMap[key].push({
-                  id_registro: item.id_cuota,
-                  fecha: fP,
-                  monto: Number(item.monto_cobrar),
-                  tasa: Number(item.tasa || 0) / 100
-                });
-              }
-            } else {
-              if (!cronDedMap[key]) cronDedMap[key] = [];
-              if (!cronDedMap[key].some(d => d.id_cuota === item.id_cuota)) {
-                cronDedMap[key].push(item);
-              }
-            }
+        if (fP < fStart) {
+          if (tipo === 'RESCATE_CAPITAL') {
+            if (!balPrevMap[cid]) balPrevMap[cid] = 0;
+            balPrevMap[cid] -= Number(item.monto_cobrar);
+          }
+        } else if (fP <= fechaFin) {
+          if (tipo === 'RESCATE_CAPITAL') {
+            if (!cronRescMap[cid]) cronRescMap[cid] = [];
+            cronRescMap[cid].push({
+              id_registro: item.id_cuota,
+              fecha: fP,
+              monto: Number(item.monto_cobrar),
+              tasa: Number(item.tasa || 0) / 100
+            });
+          } else {
+            if (!cronDedMap[cid]) cronDedMap[cid] = [];
+            cronDedMap[cid].push(item);
           }
         }
       }
@@ -286,14 +262,14 @@ export const generateRetornosV40 = async (
       id_fondo: c.id_fondo,
       moneda: c.moneda,
       inversionista: getInvName(c, invMap),
-      capital_base: Number(c.monto_inversion || 0) + (balPrevMap[certId] || 0.0) + (balPrevMap[mid] || 0.0),
+      capital_base: Number(c.monto_inversion || 0) + (balPrevMap[certId] || 0.0),
       emision: new Date(c.fecha_inicio.split('T')[0] + 'T00:00:00'),
       tasa_pactada: tasaP,
       porcentaje_reparto: repartoPct,
       hijos,
       interes_total_acum: 0.0,
-      cron_deducciones: (cronDedMap[certId] || []).concat(cronDedMap[mid] || []).filter((v, i, a) => a.findIndex(t => t.id_cuota === v.id_cuota) === i),
-      cron_rescates: (cronRescMap[certId] || []).concat(cronRescMap[mid] || []).filter((v, i, a) => a.findIndex(t => t.id_registro === v.id_registro) === i),
+      cron_deducciones: cronDedMap[certId] || [],
+      cron_rescates: cronRescMap[certId] || [],
       valores_dia_padre: []
     });
   }
@@ -356,9 +332,8 @@ export const generateRetornosV40 = async (
     const fondoMeta = fondosMap[fIdStr] || {};
     const frecuencia = Number(fondoMeta.frecuencia_cupones_meses || 1);
 
-    // Filtración por ciclo contable (Solo omitir si no hay rescates ni movimientos en el período)
-    const hasExtraordinaryMovs = rowsF.some(r => (r.cron_rescates || []).length > 0 || (r.hijos || []).length > 0);
-    if (monthFin % frecuencia !== 0 && !hasExtraordinaryMovs) {
+    // Filtración por ciclo contable
+    if (monthFin % frecuencia !== 0) {
       continue;
     }
 

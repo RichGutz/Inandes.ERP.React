@@ -132,7 +132,7 @@ export const DeduccionesPage: React.FC = () => {
       }
 
       // 4. Cargar cronograma
-      const crono = await getCronogramaDeducciones(certId, c.id_contrato);
+      const crono = await getCronogramaDeducciones(certId);
       setCronograma(crono);
     } catch (err) {
       console.error(err);
