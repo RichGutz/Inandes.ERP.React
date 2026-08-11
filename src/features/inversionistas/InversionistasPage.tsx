@@ -140,7 +140,8 @@ export const InversionistasPage: React.FC = () => {
         .from('crm_certificados_eventos')
         .select('id_certificado, fecha_periodo_fin')
         .gte('fecha_periodo_fin', `${year}-01-01`)
-        .lte('fecha_periodo_fin', `${year}-12-31`);
+        .lte('fecha_periodo_fin', `${year}-12-31`)
+        .in('tipo_evento', ['cierre_fin_ciclo', 'cierre_fin_contrato', 'cierre_por_rescate']);
 
       if (error) throw error;
 
@@ -231,13 +232,14 @@ export const InversionistasPage: React.FC = () => {
 
   const { fStart, fEnd } = getDates(v40SelYear, v40SelCiclo, v40SelNum);
 
-  // Verificar colisiones de fecha en DB
+  // Verificar colisiones de fecha en DB (solo eventos de cierre oficializados)
   const verificarColision = async (endDate: string) => {
     try {
       const { count, error } = await supabase
         .from('crm_certificados_eventos')
         .select('id_evento', { count: 'exact', head: true })
-        .eq('fecha_periodo_fin', endDate);
+        .eq('fecha_periodo_fin', endDate)
+        .in('tipo_evento', ['cierre_fin_ciclo', 'cierre_fin_contrato', 'cierre_por_rescate']);
       
       if (error) throw error;
       setCollisionCount(count || 0);
