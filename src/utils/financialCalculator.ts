@@ -456,7 +456,7 @@ export const generateRetornosV40 = async (
       // Filas secundarias para incrementos de capital
       for (const h of r.hijos) {
         const hx: Record<string, any> = {
-          "#": "",
+          "#": "-",
           "Certificado": h.id,
           "Payload_JSON_Audit": "",
           "Inversionista": "└─ Incremento de Capital",
@@ -469,7 +469,7 @@ export const generateRetornosV40 = async (
         hx["INT. BRUTO"] = Math.round(h.interes_acum * 100) / 100;
         const zeroCols = ["IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "NETO FINAL", "RESCATES", "PENALIDAD", "AUM. CAPITAL", "CAPITAL FINAL"];
         for (const col of zeroCols) {
-          hx[col] = 0.0;
+          hx[col] = "-";
         }
         rowsXls.push(hx);
       }

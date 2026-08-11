@@ -728,32 +728,100 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Exportar Excel Detallado (SheetJS)
+  // Exportar Excel Detallado Oficial y Auditoría (SheetJS)
   const handleExportExcelV40 = async () => {
     let currentResult = calcResult;
     if (!currentResult) {
       currentResult = await handleRunV40Calculation();
     }
-    if (!currentResult || Object.keys(currentResult.xlsDict).length === 0) {
-      alert("No hay datos calculados para exportar (posible filtración de ciclo).");
+    if (!currentResult || !currentResult.pdfData || currentResult.pdfData.length === 0) {
+      alert("No hay datos calculados para exportar en Excel.");
       return;
     }
 
     const wb = XLSX.utils.book_new();
-    for (const [fondoId, filas] of Object.entries(currentResult.xlsDict)) {
-      const ws = XLSX.utils.json_to_sheet(filas as any[]);
+
+    // 1. Generar pestañas limpias por Fondo con Formato Oficial y Desglose Bello
+    currentResult.pdfData.forEach((fData: any) => {
+      const fondoId = fData.fondo.id_fondo;
+      const moneda = fData.fondo.moneda;
+      const rows = fData.blocks[0].rows || [];
+      const totals = fData.totals || {};
+
+      const sheetRows: any[] = rows.map((r: any) => {
+        if (r.tipo === 'AUMENTO') {
+          return {
+            "#": "-",
+            "Certificado": r.id,
+            "Inversionista": "└─ Incremento de Capital",
+            "Capital Base": r.capital,
+            "INT. BRUTO": r.bruto_total,
+            "IR (5%)": "-",
+            "BASE NETA": "-",
+            "CAPITALIZACION": "-",
+            "REPARTO": "-",
+            "DEDUCCIONES": "-",
+            "NETO FINAL": "-",
+            "RESCATES": "-",
+            "CAPITAL FINAL": "-"
+          };
+        }
+
+        return {
+          "#": r.n_orden,
+          "Certificado": r.id,
+          "Inversionista": r.inversionista,
+          "Capital Base": r.capital,
+          "INT. BRUTO": r.bruto_total,
+          "IR (5%)": r.impuesto_total,
+          "BASE NETA": r.base_neta,
+          "CAPITALIZACION": r.capitalizacion,
+          "REPARTO": r.reparto_valor,
+          "DEDUCCIONES": r.deducciones_total,
+          "NETO FINAL": r.neto_total,
+          "RESCATES": r.devolucion_capital,
+          "CAPITAL FINAL": r.capital_final
+        };
+      });
+
+      // Fila de Totales del Fondo
+      sheetRows.push({
+        "#": "TOTALES",
+        "Certificado": `${fondoId} (${moneda})`,
+        "Inversionista": "",
+        "Capital Base": totals.capital,
+        "INT. BRUTO": totals.bruto_total,
+        "IR (5%)": totals.impuesto_total,
+        "BASE NETA": totals.base_neta,
+        "CAPITALIZACION": totals.capitalizacion,
+        "REPARTO": totals.reparto_valor,
+        "DEDUCCIONES": totals.deducciones_total,
+        "NETO FINAL": Math.round(((totals.reparto_valor || 0) - (totals.deducciones_total || 0)) * 100) / 100,
+        "RESCATES": totals.devolucion_capital,
+        "CAPITAL FINAL": totals.capital_final
+      });
+
+      const ws = XLSX.utils.json_to_sheet(sheetRows);
       XLSX.utils.book_append_sheet(wb, ws, `Fondo_${fondoId.slice(0, 24)}`);
+    });
+
+    // 2. Generar pestañas de Auditoría Diaria Detallada
+    if (currentResult.xlsDict) {
+      for (const [fondoId, filas] of Object.entries(currentResult.xlsDict)) {
+        const wsAudit = XLSX.utils.json_to_sheet(filas as any[]);
+        XLSX.utils.book_append_sheet(wb, wsAudit, `Audit_${fondoId.slice(0, 18)}`);
+      }
     }
 
-    // Usar blob + anchor para no cambiar de tab (fix bug de navegacion)
     const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbOut], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `v40_COMPLETO_${fEnd}.xlsx`;
+    a.download = `AUDITORIA_OFICIAL_SISTEMA_${fEnd}.xlsx`;
     document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     setExcelDownloaded(true);
   };
