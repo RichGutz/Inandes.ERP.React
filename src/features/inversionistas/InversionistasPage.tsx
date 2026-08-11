@@ -13,8 +13,17 @@ import {
 import { LOGO_EFI_BASE64, LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
 export const InversionistasPage: React.FC = () => {
-  // Tabs principales del módulo
-  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos'>('datos');
+  // Tabs principales del módulo con persistencia en sessionStorage
+  const [activeSubTabState, setActiveSubTabState] = useState<'datos' | 'retornos_react' | 'documentos'>(() => {
+    const saved = sessionStorage.getItem('inv_active_subtab');
+    return (saved as any) || 'datos';
+  });
+
+  const activeSubTab = activeSubTabState;
+  const setActiveSubTab = (tab: 'datos' | 'retornos_react' | 'documentos') => {
+    sessionStorage.setItem('inv_active_subtab', tab);
+    setActiveSubTabState(tab);
+  };
 
   // Modal de confirmacion de Rollback
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);
@@ -1732,11 +1741,18 @@ export const InversionistasPage: React.FC = () => {
                 <button
                   className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading}
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setExcelDownloaded(true);
                     setPdfDownloaded(true);
                     if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
-                      window.open('/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx', '_blank');
+                      const a = document.createElement('a');
+                      a.href = '/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx';
+                      a.download = 'AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
                     } else {
                       await handleExportExcelV40();
                     }
@@ -1749,11 +1765,19 @@ export const InversionistasPage: React.FC = () => {
                 <button
                   className="h-12 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading}
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setExcelDownloaded(true);
                     setPdfDownloaded(true);
                     if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
-                      window.open('/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf', '_blank');
+                      const a = document.createElement('a');
+                      a.href = '/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
+                      a.target = '_blank';
+                      a.rel = 'noopener noreferrer';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
                     } else {
                       await handleExportPDFV40();
                     }
