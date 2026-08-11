@@ -79,17 +79,17 @@ export const getInversionistas = async (): Promise<Inversionista[]> => {
 };
 
 /**
- * Consulta un inversionista individual mediante su UUID.
+ * Consulta un inversionista individual mediante su documento de identidad o código.
  */
-export const getInversionistaById = async (id: string): Promise<Inversionista | null> => {
+export const getInversionistaById = async (docOrCode: string): Promise<Inversionista | null> => {
   const { data, error } = await supabase
     .from('crm_inversionistas')
     .select('*')
-    .eq('id', id)
-    .single();
+    .or(`documento_identidad.eq.${docOrCode},codigo_inversionista.eq.${docOrCode}`)
+    .maybeSingle();
 
   if (error) {
-    console.error(`Error en getInversionistaById (${id}):`, error.message);
+    console.error(`Error en getInversionistaById (${docOrCode}):`, error.message);
     throw new Error(`Error cargando los detalles del inversionista: ${error.message}`);
   }
 
@@ -100,12 +100,17 @@ export const getInversionistaById = async (id: string): Promise<Inversionista | 
  * Registra o actualiza la ficha del inversionista (upsert).
  */
 export const upsertInversionista = async (inversionista: Partial<Inversionista>): Promise<Inversionista> => {
+  const payload = { ...inversionista };
+
+  // Eliminar columnas sintéticas/generadas que no existen en crm_inversionistas
+  delete payload.updated_at;
+  delete payload.created_at;
+  delete payload.id;
+  delete payload.nombre_completo;
+
   const { data, error } = await supabase
     .from('crm_inversionistas')
-    .upsert({
-      ...inversionista,
-      updated_at: new Date().toISOString(),
-    })
+    .upsert(payload, { onConflict: 'documento_identidad' })
     .select()
     .single();
 
