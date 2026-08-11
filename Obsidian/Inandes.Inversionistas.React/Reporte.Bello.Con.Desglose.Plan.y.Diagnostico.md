@@ -2,43 +2,40 @@
 
 > **Nota Hija de [00.A — Módulo de Inversionistas](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.A.INVERSIONISTAS.md)**  
 > **Fecha:** 11 de Agosto de 2026  
-> **Safe Point Relacionado:** `BELLO.FINALES.LOGOS.Y.RESCATES` (Commit `d522899`)
+> **Safe Point Relacionado:** `DESGLOSE.EXCEL.DINAMICO.OFICIAL` (Commit `1c570c6`)
 
 ---
 
 ## 1. 🎯 Objetivo del Requerimiento
 
-El objetivo es consolidar el módulo de Inversionistas con 2 ajustes finales de UX y consistencia de datos:
+Garantizar la presencia del **Desglose de Aumentos de Capital** en la exportación de **Excel Maestro**, coincidiendo 1:1 con la tabla del PDF Bello.
 
-1. **Persistencia Estricta de Navegación UI (`activeSubTab`):**
-   - Evitar que la interfaz salte a la pestaña de `datos` tras exportar o imprimir reportes PDF. La pantalla debe permanecer fija en `retornos_react` utilizando persisterna en `sessionStorage`.
-
-2. **Algoritmo de Desglose de Aumentos en el Excel Maestro:**
-   - Garantizar que las sub-filas de incrementos de capital figuren desglosadas en el Excel con la etiqueta `└─ Incremento de Capital` e incluyendo su `Capital Base` e `INT. BRUTO` devengado correspondiente.
-
----
-
-## 🔍 2. Diagnóstico Técnico
-
-### A. Salto de Pestaña al Imprimir PDF
-- Al invocar `window.open` y disparar el diálogo de impresión, el cambio de foco de ventana causaba un re-render de `InversionistasPage.tsx`. Como el estado `activeSubTab` iniciaba con el valor estático `'datos'`, la UI se reseteaba a la pestaña inicial.
-- **Solución:** Inicializar `activeSubTab` leyendo de `sessionStorage.getItem('inv_active_subtab') || 'retornos_react'` y guardar su valor en cada cambio.
-
-### B. Desglose en Excel Maestro (`financialCalculator.ts`)
-- En `financialCalculator.ts`, al iterar los `hijos` (aumentos de capital) para construir `rowsXls`, la propiedad `"Inversionista"` se enviaba vacía (`""`) y `"INT. BRUTO"` se forzaba a `0.0`.
-- **Solución:** Asignar `"Inversionista": "└─ Incremento de Capital"` y `"INT. BRUTO": Math.round(h.interes_acum * 100) / 100` a cada fila de aumento en `rowsXls`.
+Ejemplo oficial verificado de salida:
+```
+#   Certificado             Inversionista              Capital Base   INT. BRUTO  IR (5%)  BASE NETA ...
+33  NSGPEN01-090.20160101   Pérez Aliaga Saul / Cano   S/ 220,940.74  S/ 6,279.43 S/ 313.97 ...
+-   Aumento (02/01/26)      └─ Incremento de Capital   S/ 60,000.00   S/ 1,001.10 -        -
+-   Aumento (03/01/26)      └─ Incremento de Capital   S/ 9,000.00    S/ 147.58   -        -
+-   Aumento (12/01/26)      └─ Incremento de Capital   S/ 100,000.00  S/ 1,380.82 -        -
+```
 
 ---
 
-## 🛠️ 3. Plan de Acción (PASO 4)
+## 🔍 2. Auditoría y Loop QC de Causa Raíz
 
-1. **Modificar `InversionistasPage.tsx`:**
-   - Añadir lectura y escritura de `sessionStorage` para `activeSubTab`.
+### ❌ Causa del Problema en Excel
+* En `InversionistasPage.tsx`, el botón "Descargar / Consultar Excel Maestro" contenía un redireccionamiento estático:
+  `if (fEnd === '2026-02-28') window.open('/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx', '_blank')`.
+* Al descargar el Excel para el 28 de Febrero, la interfaz no ejecutaba la función `handleExportExcelV40()`, sino que entregaba una plantilla estática antigua en disco que no poseía las filas desglosadas de `└─ Incremento de Capital`.
 
-2. **Modificar `financialCalculator.ts`:**
-   - En la sección de construcción de `rowsXls` (líneas 457-474), poblar `Inversionista` con `"└─ Incremento de Capital"` e `INT. BRUTO` con el devengue acumulado del aumento.
+### ✅ Solución Aplicada
+1. **Eliminación del Atajo Estático:** Se removió la condición del botón de Excel en `InversionistasPage.tsx`, haciendo que cualquier descarga ejecute `handleExportExcelV40()` de forma dinámica.
+2. **Estructura Desglosada en Excel (`handleExportExcelV40`):** Cada pestaña de fondo (`Fondo_[ID]`) renderiza la lista `pdfData` con la fila del certificado principal y sus sub-filas de `Aumento (DD/MM/YY)` rotuladas como `└─ Incremento de Capital`, asignando su `Capital Base` e `INT. BRUTO` devengado, con guiones `"-"` en las columnas no aplicables.
 
-3. **Compilar y Desplegar (Regla 11):**
-   - `npm run build`
-   - `python deploy_vps.py`
-   - `git add .` -> `git commit -m "..."` -> `git push origin main`
+---
+
+## 🛠️ 3. Protocolo de Despliegue (Regla 11)
+
+1. `npm run build`
+2. `python deploy_vps.py`
+3. `git add .` -> `git commit -m "..."` -> `git push origin main`

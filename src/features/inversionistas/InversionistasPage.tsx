@@ -1620,12 +1620,7 @@ export const InversionistasPage: React.FC = () => {
                   className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading}
                   onClick={async () => {
-                    if (fEnd === '2026-02-28') {
-                      window.open('/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx', '_blank');
-                      setExcelDownloaded(true);
-                    } else {
-                      await handleExportExcelV40();
-                    }
+                    await handleExportExcelV40();
                   }}
                 >
                   {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={18} />}
