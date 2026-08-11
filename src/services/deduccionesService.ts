@@ -44,7 +44,11 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
   const { data: exactC } = await supabase
     .from('crm_contratos')
     .select('*')
-    .eq('id_contrato', qStr);
+    .eq('id_contrato', qStr)
+    .neq('estado', 'anulado')
+    .neq('estado', 'cancelado')
+    .neq('estado', 'cerrado_fin_contrato')
+    .neq('estado', 'cerrado_por_rescate');
 
   if (exactC && exactC.length > 0) {
     contrsToFilter = exactC;
@@ -63,7 +67,11 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
       const { data: contrs } = await supabase
         .from('crm_contratos')
         .select('*')
-        .in('id_inversionista_1', todosCodigos);
+        .in('id_inversionista_1', todosCodigos)
+        .neq('estado', 'anulado')
+        .neq('estado', 'cancelado')
+        .neq('estado', 'cerrado_fin_contrato')
+        .neq('estado', 'cerrado_por_rescate');
 
       if (contrs && contrs.length > 0) {
         const nombresMap = new Map<string, string>();
@@ -82,47 +90,28 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
 
   if (contrsToFilter.length === 0) return [];
 
-  // 3. Filtrado estricto: Solo devolver contratos con certificado activo y capital_actual > 0
+  // 3. Verificar el saldo del último evento registrado en crm_certificados_eventos
   const contractIds = contrsToFilter.map(c => c.id_contrato);
-
-  const { data: certs } = await supabase
-    .from('crm_certificados')
-    .select('id_certificado, id_contrato, estado')
-    .in('id_contrato', contractIds)
-    .neq('estado', 'ANULADO')
-    .neq('estado', 'CANCELADO')
-    .neq('estado', 'LIQUIDADO');
-
-  if (!certs || certs.length === 0) return [];
-
-  const certIds = certs.map(ct => ct.id_certificado);
 
   const { data: evts } = await supabase
     .from('crm_certificados_eventos')
-    .select('id_certificado, capital_final_saldo, fecha_periodo_fin')
-    .in('id_certificado', certIds)
+    .select('id_contrato, capital_final_saldo, fecha_periodo_fin, tipo_evento')
+    .in('id_contrato', contractIds)
     .order('fecha_periodo_fin', { ascending: false });
 
-  const certSaldoMap = new Map<string, number>();
+  const contrSaldoMap = new Map<string, number>();
   if (evts) {
     for (const ev of evts) {
-      if (!certSaldoMap.has(ev.id_certificado)) {
-        certSaldoMap.set(ev.id_certificado, Number(ev.capital_final_saldo || 0));
+      if (!contrSaldoMap.has(ev.id_contrato)) {
+        contrSaldoMap.set(ev.id_contrato, Number(ev.capital_final_saldo || 0));
       }
     }
   }
 
-  const validContractIds = new Set<string>();
-  for (const cert of certs) {
-    const saldo = certSaldoMap.has(cert.id_certificado) 
-      ? certSaldoMap.get(cert.id_certificado)! 
-      : (cert.estado === 'ACTIVO' ? 1 : 0);
-    if (saldo > 0) {
-      validContractIds.add(cert.id_contrato);
-    }
-  }
-
-  return contrsToFilter.filter(c => validContractIds.has(c.id_contrato));
+  return contrsToFilter.filter(c => {
+    const saldo = contrSaldoMap.has(c.id_contrato) ? contrSaldoMap.get(c.id_contrato)! : Number(c.monto_inversion || 1);
+    return saldo > 0;
+  });
 };
 
 /**
