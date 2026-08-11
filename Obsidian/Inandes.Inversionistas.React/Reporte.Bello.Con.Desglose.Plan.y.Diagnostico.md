@@ -42,6 +42,12 @@ En la consulta/cálculo de ciertos fondos (ej. `NSGPEN03`), contratos como `NSGP
 ### ❌ Causa 4: Alteración no solicitada de elementos (Bloques de Firmas)
 Se agregaron bloques de firma y textos de aprobación en el pie de página que no pertenecían al formato Bello original.
 
+### ❌ Causa 5: Bifurcación Inadecuada de Motores PDF (TODOS vs. FONDO INDIVIDUAL)
+En la implementación previa, la exportación cuando se seleccionaba **"TODOS LOS FONDOS"** abría el reporte PDF oficial consolidado (el Bello), pero al seleccionar un **"FONDO EN PARTICULAR"** en el selector (ej. `NSGPEN01`), el sistema llamaba a una función secundaria (`handleExportPDFV40()`) que ejecutaba un motor de PDF feo/unitario sin tarjetas KPI, sin logos correctos y sin el formato ejecutivo de auditoría.
+
+> ⚠️ **REGLA DE UNIFICACIÓN OBLIGATORIA:**  
+> El nuevo motor `pdfGeneratorBelloConDesglose.ts` debe actuar como el **MOTOR ÚNICO Y UNIVERSAL DE PDF**. Ya sea que se exporten **TODOS LOS FONDOS** o **UN SOLO FONDO INDIVIDUAL**, el motor debe usar **LA MISMA PLANTILLA BELLO** (con logos, 5 tarjetas KPI, paginación troceada a 25 filas/hoja y desgloses de aumentos), limitando el contenido a los datos del fondo seleccionado si no es "TODOS".
+
 ---
 
 ## 🛠️ 3. Plan de Acción y Pasos de Ejecución (Metodología para la Próxima Sesión)
