@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
+import { LOGO_INANDES_BASE64, LOGO_EFI_BASE64 } from '../../assets/base64Images';
 import { 
-  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight
+  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
+  Plus, Search, Building2, X
 } from 'lucide-react';
 
 export const FondosPage: React.FC = () => {
@@ -14,6 +16,29 @@ export const FondosPage: React.FC = () => {
   const [variablesView, setVariablesView] = useState<'list' | 'detail' | 'edit_plazo'>('list');
   const [selectedFondoCode, setSelectedFondoCode] = useState<string | null>(null);
   const [selectedPlazoId, setSelectedPlazoId] = useState<string | null>(null);
+
+  // Filtros de búsqueda en directorio
+  const [searchFondosTerm, setSearchFondosTerm] = useState<string>('');
+  const [filterMoneda, setFilterMoneda] = useState<'TODAS' | 'PEN' | 'USD'>('TODAS');
+
+  // Modal de Creación de Nuevo Fondo
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [createFormData, setCreateFormData] = useState<Partial<Fondo>>({
+    id_fondo: '',
+    nombre_fondo: '',
+    moneda: 'PEN',
+    ruc_fondo: '',
+    tamanho_maximo_fondo: 30000000,
+    monto_minimo_inversion: 50000,
+    frecuencia_cupones_meses: 2,
+    comision_administracion_fondo: 1,
+    comision_captacion_fondo: 2,
+    comision_miscelaneos_fondo: 0,
+    vigencia_tasa: '2026',
+    activo: true
+  });
+  const [createSubmitLoading, setCreateSubmitLoading] = useState<boolean>(false);
+  const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
 
   // Estados de datos de fondos
   const [fondos, setFondos] = useState<Fondo[]>([]);
@@ -89,12 +114,177 @@ export const FondosPage: React.FC = () => {
     }
   }, [activeSubTab, vcSelFondo, vcSelYear, vcSelTipo, vcSelNum]);
 
-  // Agrupar plazos por id_fondo para la vista list
+  // Crear Nuevo Fondo y auto-generar sus 4 plazos estándar
+  const handleCreateFondoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateSubmitError(null);
+    setCreateSubmitLoading(true);
+
+    if (!createFormData.id_fondo || !createFormData.nombre_fondo) {
+      setCreateSubmitError("Por favor completa el código y el nombre del fondo.");
+      setCreateSubmitLoading(false);
+      return;
+    }
+
+    const code = createFormData.id_fondo.trim().toUpperCase();
+
+    try {
+      // Auto-generar 4 plazos estándar: 12, 24, 36, ND
+      const plazosEstandar = ['12', '24', '36', 'ND'];
+      const batchNewFondos: Fondo[] = plazosEstandar.map(plazo => ({
+        id_fondo_plazo: `${code}-${plazo}`,
+        id_fondo: code,
+        nombre_fondo: createFormData.nombre_fondo!,
+        moneda: createFormData.moneda || 'PEN',
+        ruc_fondo: createFormData.ruc_fondo || null,
+        tamanho_maximo_fondo: createFormData.tamanho_maximo_fondo || 30000000,
+        fecha_cierre_fondo: createFormData.fecha_cierre_fondo || '2030-12-31',
+        frecuencia_cupones_meses: createFormData.frecuencia_cupones_meses || 2,
+        comision_administracion_fondo: createFormData.comision_administracion_fondo || 1,
+        comision_captacion_fondo: createFormData.comision_captacion_fondo || 2,
+        comision_miscelaneos_fondo: createFormData.comision_miscelaneos_fondo || 0,
+        monto_minimo_inversion: createFormData.monto_minimo_inversion || 50000,
+        vigencia_tasa: createFormData.vigencia_tasa || '2026',
+        activo: createFormData.activo ?? true,
+        plazo_inversion: plazo,
+        tasa: plazo === '12' ? 8.5 : (plazo === '24' ? 9.5 : (plazo === '36' ? 10.5 : 7.0)),
+        tasa_activa: 14.0,
+        penalidad_rescate: 2.0,
+        plazo_rescate_meses: plazo === 'ND' ? 0 : 12,
+        plazo_opcion_de_rescate_dias: 120,
+        valor_cuota_inicial: 1.0,
+        comision_asesor_mantenimiento: 0,
+        comision_asesor_primer_ano: 0,
+        comision_asesor_unica: 1.0
+      }));
+
+      await upsertFondos(batchNewFondos);
+      setIsCreateModalOpen(false);
+      fetchFondos();
+    } catch (err: any) {
+      setCreateSubmitError(err.message || 'Error al registrar el nuevo fondo.');
+    } finally {
+      setCreateSubmitLoading(false);
+    }
+  };
+
+  // Exportar / Imprimir PDF Oficial de Directorio Maestro de Fondos
+  const handleExportMaestroPdf = () => {
+    if (fondos.length === 0) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Por favor habilita los popups para descargar/imprimir el PDF.");
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>REPORTE MAESTRO DE FONDOS Y TASAS - INANDES</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #0f172a; margin: 25px; font-size: 9pt; }
+            .top-header { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+            .top-header td { border: none; vertical-align: middle; }
+            .logo-geeksoft { height: 50px; width: auto; }
+            .logo-inandes { height: 38px; width: auto; }
+            .title { font-size: 13pt; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; margin: 0; }
+            .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
+            table.data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            table.data-table th { background-color: #0f172a; color: white; padding: 6px 8px; font-size: 8pt; font-weight: 800; text-transform: uppercase; text-align: left; }
+            table.data-table td { border-bottom: 1px solid #cbd5e1; padding: 6px 8px; font-size: 8.5pt; }
+            .badge-usd { background-color: #ecfdf5; color: #047857; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+            .badge-pen { background-color: #eff6ff; color: #1d4ed8; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+            .footer { margin-top: 30px; font-size: 7.5pt; text-align: center; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+          </style>
+        </head>
+        <body>
+          <table class="top-header">
+            <tr>
+              <td style="width: 25%;">
+                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+              </td>
+              <td style="width: 50%; text-align: center;">
+                <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
+                <div class="subtitle">DIRECTORIO MAESTRO DE FONDOS DE INVERSIÓN Y TASAS VIGENTES</div>
+              </td>
+              <td style="width: 25%; text-align: right;">
+                <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+              </td>
+            </tr>
+          </table>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre del Fondo</th>
+                <th>Moneda</th>
+                <th>RUC</th>
+                <th>Vigencia</th>
+                <th>Tasas (12m / 24m / 36m / ND)</th>
+                <th>Com. Admin %</th>
+                <th>Com. Capt %</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(groupedFondos).map(([code, rows]) => {
+                const header = rows[0];
+                const t12 = rows.find(r => r.plazo_inversion === '12')?.tasa ?? '-';
+                const t24 = rows.find(r => r.plazo_inversion === '24')?.tasa ?? '-';
+                const t36 = rows.find(r => r.plazo_inversion === '36')?.tasa ?? '-';
+                const tND = rows.find(r => r.plazo_inversion === 'ND')?.tasa ?? '-';
+                const tasasStr = `${t12}% / ${t24}% / ${t36}% / ${tND}%`;
+                const monedaClass = header.moneda === 'USD' ? 'badge-usd' : 'badge-pen';
+
+                return `
+                  <tr>
+                    <td><strong>${code}</strong></td>
+                    <td>${header.nombre_fondo}</td>
+                    <td><span class="${monedaClass}">${header.moneda}</span></td>
+                    <td>${header.ruc_fondo || '-'}</td>
+                    <td>${header.vigencia_tasa || '-'}</td>
+                    <td><strong>${tasasStr}</strong></td>
+                    <td>${header.comision_administracion_fondo || 0}%</td>
+                    <td>${header.comision_captacion_fondo || 0}%</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            INANDES GRUPO FINANCIERO & GEEKSOFT — AUDITORÍA Y CONTROL DE CALIDAD DE FONDOS MAESTROS
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
+  // Agrupar plazos por id_fondo para la vista list con filtrado
+  const term = searchFondosTerm.toLowerCase().trim();
   const groupedFondos: Record<string, Fondo[]> = {};
   for (const f of fondos) {
     const code = f.id_fondo || 'UNKNOWN';
-    if (!groupedFondos[code]) groupedFondos[code] = [];
-    groupedFondos[code].push(f);
+    const matchSearch = !term || (
+      code.toLowerCase().includes(term) ||
+      (f.nombre_fondo && f.nombre_fondo.toLowerCase().includes(term)) ||
+      (f.ruc_fondo && f.ruc_fondo.toLowerCase().includes(term))
+    );
+    const matchMoneda = filterMoneda === 'TODAS' || f.moneda === filterMoneda;
+
+    if (matchSearch && matchMoneda) {
+      if (!groupedFondos[code]) groupedFondos[code] = [];
+      groupedFondos[code].push(f);
+    }
   }
 
   // Navegar al detalle
@@ -348,12 +538,51 @@ export const FondosPage: React.FC = () => {
           {variablesView === 'list' && (
             <div className="flex flex-col gap-6 w-full animate-fadeIn">
               
-              {/* Botones de acción general */}
-              <div className="flex items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight">Directorio Maestro</span>
+              {/* Botones de acción general y barra de búsqueda */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap items-center gap-3 flex-1 w-full sm:w-auto">
+                  {/* Búsqueda */}
+                  <div className="relative flex-1 max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input
+                      type="text"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-8 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 shadow-sm"
+                      placeholder="Buscar por Nombre, Código o RUC..."
+                      value={searchFondosTerm}
+                      onChange={(e) => setSearchFondosTerm(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Filtro Moneda */}
+                  <select
+                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-sm"
+                    value={filterMoneda}
+                    onChange={(e) => setFilterMoneda(e.target.value as any)}
+                  >
+                    <option value="TODAS">TODAS LAS MONEDAS</option>
+                    <option value="PEN">Soles (PEN)</option>
+                    <option value="USD">Dólares (USD)</option>
+                  </select>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button 
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm hover:shadow transition-all"
+                    onClick={() => setIsCreateModalOpen(true)}
+                  >
+                    <Plus size={14} />
+                    <span>Nuevo Fondo</span>
+                  </button>
+
+                  <button 
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    onClick={handleExportMaestroPdf}
+                    disabled={fondos.length === 0}
+                  >
+                    <FileText size={13} className="text-indigo-600" />
+                    <span>Exportar PDF</span>
+                  </button>
+
                   <button 
                     className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                     onClick={handleExportMaestroExcel}
@@ -362,6 +591,7 @@ export const FondosPage: React.FC = () => {
                     <FileSpreadsheet size={13} className="text-emerald-600" />
                     <span>Exportar Excel</span>
                   </button>
+
                   <button 
                     className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
                     onClick={fetchFondos}
@@ -1030,6 +1260,174 @@ export const FondosPage: React.FC = () => {
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL DE CREACIÓN DE NUEVO FONDO CON PLAZOS ESTÁNDAR */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl max-w-2xl w-full flex flex-col gap-5 my-8">
+            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="text-emerald-600" size={20} />
+                <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+                  ➕ Registrar Nuevo Fondo de Inversión
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsCreateModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFondoSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Código del Fondo (ID Macro) *</label>
+                <input
+                  type="text"
+                  placeholder="Ej: NSGPEN04"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold uppercase focus:outline-none focus:border-emerald-600"
+                  value={createFormData.id_fondo || ''}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, id_fondo: e.target.value.toUpperCase() }))}
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nombre Completo del Fondo *</label>
+                <input
+                  type="text"
+                  placeholder="Ej: FDO NSG MIPYME PEN 04"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none focus:border-emerald-600"
+                  value={createFormData.nombre_fondo || ''}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, nombre_fondo: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Moneda</label>
+                <select
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.moneda || 'PEN'}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, moneda: e.target.value }))}
+                >
+                  <option value="PEN">Soles (PEN)</option>
+                  <option value="USD">Dólares (USD)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">RUC del Fondo</label>
+                <input
+                  type="text"
+                  placeholder="20607995282"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.ruc_fondo || ''}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, ruc_fondo: e.target.value }))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tamaño Máximo de Emisión</label>
+                <input
+                  type="number"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.tamanho_maximo_fondo || 30000000}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, tamanho_maximo_fondo: Number(e.target.value) || 0 }))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Inversión Mínima</label>
+                <input
+                  type="number"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.monto_minimo_inversion || 50000}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, monto_minimo_inversion: Number(e.target.value) || 0 }))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Frecuencia Cupones (Meses)</label>
+                <select
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.frecuencia_cupones_meses || 2}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, frecuencia_cupones_meses: Number(e.target.value) || 2 }))}
+                >
+                  <option value={2}>2 Meses (Bimestral)</option>
+                  <option value={3}>3 Meses (Trimestral)</option>
+                  <option value={1}>1 Mes (Mensual)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Vigencia Tasa (Año)</label>
+                <input
+                  type="text"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.vigencia_tasa || '2026'}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, vigencia_tasa: e.target.value }))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Comisión Administración (%)</label>
+                <input
+                  type="number"
+                  step="any"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.comision_administracion_fondo ?? 1}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, comision_administracion_fondo: Number(e.target.value) || 0 }))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Comisión Captación (%)</label>
+                <input
+                  type="number"
+                  step="any"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
+                  value={createFormData.comision_captacion_fondo ?? 2}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, comision_captacion_fondo: Number(e.target.value) || 0 }))}
+                />
+              </div>
+
+              <div className="col-span-full bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-3">
+                <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
+                  ℹ️ Al registrar el nuevo fondo, el sistema creará automáticamente sus 4 variantes de plazos estándar (12 Meses, 24 Meses, 36 Meses y ND A la vista).
+                </p>
+              </div>
+
+              {createSubmitError && (
+                <div className="col-span-full text-xs font-semibold text-rose-600">
+                  {createSubmitError}
+                </div>
+              )}
+
+              <div className="col-span-full flex items-center justify-end gap-3 border-t border-slate-150 dark:border-slate-800 pt-3">
+                <button
+                  type="button"
+                  className="h-9 px-4 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer"
+                  onClick={() => setIsCreateModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={createSubmitLoading}
+                  className="h-9 px-5 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow-sm transition-all flex items-center gap-2"
+                >
+                  {createSubmitLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  <span>Registrar Fondo en Lote</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
