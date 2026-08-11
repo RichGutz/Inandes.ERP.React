@@ -145,7 +145,7 @@ export const generateRetornosV40 = async (
 
     if (events) {
       for (const e of events) {
-        const cid = e.id_certificado;
+        const cid = e.id_contrato || e.id_certificado;
         if (!tempHistorialMap[cid]) tempHistorialMap[cid] = [];
         tempHistorialMap[cid].push(e);
       }
@@ -196,13 +196,13 @@ export const generateRetornosV40 = async (
     const { data: items, error: itemsErr } = await supabase
       .from('crm_cronograma_deducciones_rescates')
       .select('*')
-      .in('id_certificado', chunk);
+      .in('id_contrato', chunk);
 
     if (itemsErr) throw new Error(`Error en cronograma: ${itemsErr.message}`);
 
     if (items) {
       for (const item of items) {
-        const cid = item.id_certificado;
+        const cid = item.id_contrato || item.id_certificado;
         const fP = new Date(item.fecha_proyectada_cobro.split('T')[0] + 'T00:00:00');
         const tipo = item.tipo_cargo;
 

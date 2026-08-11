@@ -1,4 +1,4 @@
-import { LOGO_EFI_BASE64 } from '../assets/base64Images';
+import { LOGO_INANDES_BASE64 } from '../assets/base64Images';
 
 export interface PdfGeneratorOptions {
   pdfData: any[];
@@ -61,15 +61,15 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
         <div class="report-page">
           <table class="top-header-table">
             <tr>
-              <td style="width: 130px;">
+              <td style="width: 160px;">
                 <img src="/Logo.Geeksoft.png" class="logo-geeksoft" alt="Geeksoft">
               </td>
               <td class="text-center">
                 <div class="report-main-title">REPORTE INTEGRAL DE LIQUIDACIÓN Y AUDITORÍA</div>
                 <div class="report-sub-title">Período: ${fStart} al ${fEnd} (${diasBase} Días Base 365)</div>
               </td>
-              <td style="width: 130px;" class="text-right">
-                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-efi" alt="EFI">
+              <td style="width: 160px;" class="text-right">
+                <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
               </td>
             </tr>
           </table>
@@ -216,8 +216,8 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
             width: 100%; border-collapse: collapse; margin-bottom: 4px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 28px; width: auto; }
-          .logo-efi { height: 38px; width: auto; }
+          .logo-geeksoft { height: 56px; width: auto; }
+          .logo-inandes { height: 48px; width: auto; }
           .report-main-title {
             font-weight: 900; font-size: 13pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.5px;
           }

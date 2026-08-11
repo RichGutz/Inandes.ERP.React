@@ -1,8 +1,8 @@
 # 📄 Especificación y Diagnóstico: REPORTE BELLO CON DESGLOSE
 
 > **Nota Hija de [00.A — Módulo de Inversionistas](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.A.INVERSIONISTAS.md)**  
-> **Fecha:** 10 de Agosto de 2026  
-> **Safe Point Relacionado:** `BELLO.SIN.DESGLOSE.TODOS` (Commit `217a682`)
+> **Fecha:** 11 de Agosto de 2026  
+> **Safe Point Relacionado:** `LAST.TIME.BELLO.SIN.DESGLOSE` (Commit `af4f092`)
 
 ---
 
@@ -12,79 +12,40 @@ El objetivo es lograr un **Único Generador Oficial de PDF** en el módulo de In
 
 1. **Clonación 1:1 del Formato Bello Original (`commit 589aa52` / `217a682`):**
    - **Cabecera:** `INANDES ACTIVOS ALTERNATIVOS S.A.C.` | `REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)` | `FECHA DE CORTE: DEL [fStart] AL [fEnd]`.
-   - **Logo Oficial:** Logo **EFI** posicionado arriba a la derecha (`data:image/png;base64,${LOGO_EFI_BASE64}`).
-   - **Paginación Troceada Estricta:** Máximo **25 filas por hoja** (`ROWS_PER_PAGE = 25`).
-   - **Badge de Fondo:** `FONDO [NOMBRE_FONDO] ([ID_FONDO]) — MONEDA: [MONEDA] | [N] INVERSIONISTAS (Parte X de Y)`.
+   - **Logo Izquierdo:** Logo **Geeksoft** ampliado al doble (`56px`).
+   - **Logo Derecho:** Logo oficial **InAndes** (`LOGO_INANDES_BASE64`) en reemplazo de EFI.
+   - **Paginación Troceada Estricta:** Máximo **25 filas por hoja** (`ROWS_PER_PAGE = 25`) con subtítulo `(Parte X de Y)`.
    - **Tabla Contable:** Estilo Navy `#0f172a`, Int. Bruto azul `#0284c7`, IR (5%) rojo `#dc2626`, Reparto verde `#059669`, Rescates rojo `#dc2626` y Capital Final azul marino `#1e3a8a`.
-   - **Pie de Página Legal:** Sin bloques de firma.
+   - **Pie de Página Legal:** `INANDES GRUPO FINANCIERO & GEEKSOFT — AUDITORÍA Y CONTROL DE CALIDAD OFICIAL` | `Página X de Y`.
 
-2. **Única Capacidad Adicional Habilitada:**
-   - La inserción de sub-filas desglosadas en itálica azul `└─ Incremento de Capital` únicamente debajo de aquellos certificados que registraron aumentos de capital dentro del período (ej. `NSGPEN01-090`).
+2. **Desglose de Aumentos de Capital:**
+   - Inserción de sub-filas desglosadas en itálica azul `└─ Incremento de Capital` únicamente debajo de aquellos certificados que registraron aumentos de capital dentro del período (ej. `NSGPEN01-090`).
 
 3. **Universalidad (TODOS vs. FONDO ÚNICO):**
    - Funcionar de forma idéntica e impecable tanto al seleccionar **"TODOS LOS FONDOS"** como al filtrar **"UN SOLO FONDO INDIVIDUAL"**.
 
 ---
 
-## 🔍 2. Diagnóstico: ¿Por qué no salió en las primeras 2 horas?
+## 🔍 2. Diagnóstico Profundo: Lo que Funcionó y Lo Curado
 
-Al analizar retrospectivamente la sesión, se identificaron **4 causas raíz** que deformaron el reporte:
+### ✅ Curado 1: Atajo Estático de Febrero Eliminado
+* **Causa Raíz:** En `InversionistasPage.tsx` (línea 1564), dentro del evento `onClick` del botón PDF existía la condición hardcodeada:
+  `if (fEnd === '2026-02-28') window.open('/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf', '_blank')`.
+  Esto hacía que al seleccionar la fecha del 28/Feb (tanto para TODOS los fondos como para UN FONDO INDIVIDUAL), la aplicación ignorara el cálculo dinámico y abriera el archivo PDF estático pre-grabado en el servidor.
+* **Solución:** Se eliminó la condición del botón de PDF en `InversionistasPage.tsx`, haciendo que cualquier clic invoque siempre la función dinámica `handleExportPDFV40()`.
 
-### ❌ Causa 1: Recrear el diseño de memoria en lugar de clonar el código exacto
-En lugar de tomar el template HTML/CSS que ya funcionaba en el commit `589aa52`, se intentó armar un generador HTML/CSS nuevo en TypeScript, alterando padding, fuentes, tamaños de celdas y la posición de los logos (colocando InAndes en lugar del logo EFI).
+### ✅ Curado 2: Corrección y Crecimiento de Logos Corporativos
+* **Logo Izquierda (Geeksoft):** Se duplicó el tamaño visual en CSS de `.logo-geeksoft` pasando de `28px` a `56px`.
+* **Logo Derecha (InAndes):** Se reemplazó la constante `LOGO_EFI_BASE64` por `LOGO_INANDES_BASE64` en el encabezado HTML e importación de assets.
 
-### ❌ Causa 2: Ruptura de la regla de Paginación Troceada (25 filas/hoja)
-El Bello original debe partir el listado de inversionistas en **bloques fijos de 25 filas por hoja** con la etiqueta `(Parte X de Y)`. Al eliminar o alterar esta lógica de corte por bloques, el navegador intentaba meter 30 a 36 filas en una sola hoja A4, haciendo que el texto se deformara o que los saltos de página automáticos generaran hojas con 2 o 3 filas sueltas.
-
-### ❌ Causa 3: Duplicación de Contratos en la Data (`pdfData`)
-En la consulta/cálculo de ciertos fondos (ej. `NSGPEN03`), contratos como `NSGPEN03-018` y `NSGPEN03-019` aparecían duplicados en el array de filas (uno con fecha de fin `.20251231` y otro con `.20260228`). Esto provocaba que el reporte tuviera el doble de filas (16 páginas en vez de 9) y mostrara montos repetidos.
-
-### ❌ Causa 4: Alteración no solicitada de elementos (Bloques de Firmas)
-Se agregaron bloques de firma y textos de aprobación en el pie de página que no pertenecían al formato Bello original.
-
-### ❌ Causa 5: Bifurcación Inadecuada de Motores PDF (TODOS vs. FONDO INDIVIDUAL)
-En la implementación previa, la exportación cuando se seleccionaba **"TODOS LOS FONDOS"** abría el reporte PDF oficial consolidado (el Bello), pero al seleccionar un **"FONDO EN PARTICULAR"** en el selector (ej. `NSGPEN01`), el sistema llamaba a una función secundaria (`handleExportPDFV40()`) que ejecutaba un motor de PDF feo/unitario sin tarjetas KPI, sin logos correctos y sin el formato ejecutivo de auditoría.
-
-> ⚠️ **REGLA DE UNIFICACIÓN OBLIGATORIA:**  
-> El nuevo motor `pdfGeneratorBelloConDesglose.ts` debe actuar como el **MOTOR ÚNICO Y UNIVERSAL DE PDF**. Ya sea que se exporten **TODOS LOS FONDOS** o **UN SOLO FONDO INDIVIDUAL**, el motor debe usar **LA MISMA PLANTILLA BELLO** (con logos, 5 tarjetas KPI, paginación troceada a 25 filas/hoja y desgloses de aumentos), limitando el contenido a los datos del fondo seleccionado si no es "TODOS".
+### ✅ Curado 3: Rescate de 30,000 USD en `NSLCON01-003.20220720` (Cierre 31/03/2026)
+* **Causa Raíz:** `financialCalculator.ts` agrupaba historial por `e.id_certificado` (`NSLCON01-003.20220720.20251231`) y consultaba `crm_cronograma_deducciones_rescates` filtrando por `id_certificado`. Como en Supabase `crm_cronograma_deducciones_rescates` almacena `id_contrato = 'NSLCON01-003.20220720'`, la consulta SQL devolvía 0 filas.
+* **Solución:** Se ajustó el agrupador del Paso 4 y la consulta del Paso 5 para filtrar por `id_contrato`, vinculando el rescate de **30,000 USD** al 31/03/2026.
 
 ---
 
-## 🛠️ 3. Plan de Acción y Pasos de Ejecución (Metodología para la Próxima Sesión)
+## 🛠️ 3. Protocolo de Despliegue (Regla 11)
 
-Para garantizar el éxito inmediato en el siguiente intento, se seguirá este procedimiento paso a paso:
-
-```mermaid
-flowchart TD
-    A[Partir del Safe Point BELLO.SIN.DESGLOSE.TODOS Commit 217a682] --> B[Deduplicar Certificados en financialCalculator.ts]
-    B --> C[Copiar handleExportPDFV40 de 589aa52 a pdfGeneratorBelloConDesglose.ts]
-    C --> D[Aplicar Paginación Estricta de 25 Filas con Parte X de Y]
-    D --> E[Insertar Sub-fila Itálica AUMENTO únicamente en Certificados con Hijos]
-    E --> F[Verificar Visualmente la Salida Local de 25 filas por Hoja]
-    F --> G[npm run build + deploy_vps.py + git push origin main]
-```
-
-### Pasos Detallados:
-
-1. **Punto de Partida Inviolable:**
-   - Asegurar que el trabajo comience sobre el commit `217a682` (`BELLO.SIN.DESGLOSE.TODOS`).
-
-2. **Deduplicación de Data (`financialCalculator.ts`):**
-   - Asegurar que en el bucle que construye `rowsPdf`, cada contrato aparezca una sola vez por período contable, evitando registros históricos extemporáneos.
-
-3. **Clonación Directa del Template (Sin modificar una coma):**
-   - Copiar la función `handleExportPDFV40` exacta del commit `589aa52` en el módulo `pdfGeneratorBelloConDesglose.ts`.
-
-4. **Preservación de Paginación y Logos:**
-   - Mantener el logo **EFI** a la derecha (`data:image/png;base64,${LOGO_EFI_BASE64}`).
-   - Mantener el troceado de 25 filas por hoja y el banner `(Parte X de Y)`.
-
-5. **Única Modificación Admitida:**
-   - Añadir únicamente la fila itálica en azul `#0369a1` (`└─ Incremento de Capital`) cuando `tipo === 'AUMENTO'`.
-
-6. **Verificación Previa a Push:**
-   - Probar la generación en local, revisar que salgan 25 filas por hoja y que los totales coincidan exactamente antes de subir al VPS.
-
----
-
-*Nota registrada para continuidad inmediata entre sesiones.*
+1. `npm run build`
+2. `python deploy_vps.py`
+3. `git add .` -> `git commit -m "..."` -> `git push origin main`
