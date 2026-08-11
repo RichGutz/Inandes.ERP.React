@@ -764,7 +764,7 @@ export const InversionistasPage: React.FC = () => {
     setExcelDownloaded(true);
   };
 
-  // Exportar / Imprimir PDF Condensado (Generación de Ventana de Impresión HTML)
+  // Exportar PDF Condensado (Generación de PDF Oficial Vectorial estilo Forecast/ReportLab)
   const handleExportPDFV40 = async () => {
     let currentResult = calcResult;
     if (!currentResult) {
@@ -775,11 +775,18 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    // Generar layout de impresión premium con encabezado oficial
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
+    const filteredPdfData = v40SelFondo && v40SelFondo !== 'TODOS'
+      ? currentResult.pdfData.filter((fData: any) => fData.fondo.id_fondo === v40SelFondo)
+      : currentResult.pdfData;
+
+    if (filteredPdfData.length === 0) {
+      alert(`No se encontraron datos para el fondo ${v40SelFondo} en el período ${fEnd}.`);
       return;
+    }
+
+    function formatCurrencyVal(amount: number, moneda: string) {
+      if (amount === undefined || amount === null) return '-';
+      return (moneda === 'USD' ? '$ ' : 'S/ ') + amount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     const htmlContent = `
@@ -791,129 +798,69 @@ export const InversionistasPage: React.FC = () => {
           <style>
             @page {
               size: A4 landscape;
-              margin: 0mm !important;
+              margin: 8mm 10mm 10mm 10mm;
             }
-            * { box-sizing: border-box; }
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background-color: #ffffff !important;
-              font-family: Arial, Helvetica, sans-serif;
-              color: #1e293b;
+            * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+            body {
+              margin: 0; padding: 0; background-color: #ffffff; color: #1e293b; font-size: 8pt;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
             .report-page {
-              width: 297mm;
-              min-height: 210mm;
-              padding: 10mm 12mm;
-              margin: 0 auto;
-              page-break-after: always;
-              page-break-inside: avoid;
-            }
-            .header-container {
-              position: relative;
-              text-align: center;
-              margin-bottom: 12px;
-              padding-bottom: 8px;
-              border-bottom: 2px solid #059669;
-            }
-            .header-right {
-              position: absolute;
-              right: 0;
-              top: 0;
-            }
-            .logo {
-              width: 105px;
-              max-height: 42px;
-              object-fit: contain;
-            }
-            .header-center {
-              margin: 0 auto;
-              text-align: center;
-            }
-            .company-title {
-              font-weight: 900;
-              font-size: 11.5pt;
-              text-transform: uppercase;
-              color: #064e3b;
-              margin: 0 0 2px 0;
-            }
-            .report-title {
-              font-weight: 800;
-              font-size: 10.5pt;
-              text-transform: uppercase;
-              color: #0f172a;
-              margin: 0 0 2px 0;
-            }
-            .period-subtitle {
-              font-size: 9pt;
-              font-weight: bold;
-              color: #475569;
-              text-transform: uppercase;
-              margin: 0;
-            }
-            .fund-section-title {
-              font-size: 10pt;
-              font-weight: bold;
-              color: #064e3b;
-              margin: 10px 0 4px 0;
-              text-transform: uppercase;
-            }
-            table {
               width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 16px;
-              font-size: 8pt;
+              page-break-after: always;
             }
-            th {
-              background-color: #0f172a !important;
-              color: #ffffff !important;
-              font-weight: bold;
-              text-transform: uppercase;
-              font-size: 7.5pt;
-              padding: 4px 3px;
-              text-align: left;
-              border: 1px solid #0f172a;
+            .header-table {
+              width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 2.5px solid #059669; padding-bottom: 6px;
             }
-            td {
-              border: 1px solid #cbd5e1;
-              padding: 3.5px 3px;
-              vertical-align: middle;
+            .header-table td { border: none; padding: 0; vertical-align: middle; }
+            .logo-inandes { height: 45px; width: auto; }
+            .logo-efi { height: 40px; width: auto; }
+            .company-title { font-weight: 900; font-size: 12pt; color: #064e3b; margin: 0; text-transform: uppercase; letter-spacing: -0.3px; }
+            .report-title { font-weight: 800; font-size: 10pt; color: #0f172a; margin: 2px 0; text-transform: uppercase; }
+            .period-subtitle { font-size: 8.5pt; font-weight: 700; color: #047857; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 2px; }
+            
+            .fund-section-header {
+              background: #0f172a; color: #ffffff; font-size: 9pt; font-weight: 800; padding: 5px 8px; margin-top: 12px; margin-bottom: 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;
             }
-            .totals-row {
-              background-color: #f1f5f9 !important;
-              font-weight: bold;
-              border-top: 2px solid #0f172a;
+            table.data-table {
+              width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 7.5pt;
             }
-            .aumento-row {
-              color: #0369a1;
-              font-style: italic;
-              background-color: #f0f9ff !important;
+            table.data-table th {
+              background-color: #1e293b !important; color: #ffffff !important; font-weight: 700; text-transform: uppercase; font-size: 7pt; padding: 5px 4px; border: 1px solid #0f172a; text-align: left;
             }
+            table.data-table td {
+              border: 1px solid #cbd5e1; padding: 4px 3px; vertical-align: middle;
+            }
+            table.data-table tr:nth-child(even) { background-color: #f8fafc; }
+            table.data-table tr.aumento-row { color: #0369a1; font-style: italic; background-color: #f0f9ff !important; }
+            table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #047857; }
+            table.data-table tr.totals-row td { color: #064e3b; font-size: 8pt; font-weight: 800; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
-            @media print {
-              .no-print { display: none; }
-            }
           </style>
         </head>
         <body>
           <div class="report-page">
-            <div class="header-container">
-              <div class="header-right">
-                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo" alt="EFI">
-              </div>
-              <div class="header-center">
-                <div class="company-title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
-                <div class="report-title">REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)</div>
-                <div class="period-subtitle">FECHA DE CORTE: DEL ${fStart} AL ${fEnd}</div>
-              </div>
-            </div>
+            <table class="header-table">
+              <tr>
+                <td style="width: 150px;">
+                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                </td>
+                <td class="text-center">
+                  <div class="company-title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
+                  <div class="report-title">REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)</div>
+                  <div class="period-subtitle">FECHA DE CORTE: DEL ${fStart} AL ${fEnd}</div>
+                </td>
+                <td style="width: 150px;" class="text-right">
+                  <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-efi" alt="EFI">
+                </td>
+              </tr>
+            </table>
             
-            ${currentResult.pdfData.map((fData: any) => `
-              <div class="fund-section-title">FONDO: ${fData.fondo.nombre_fondo} (${fData.fondo.id_fondo})</div>
-              <table>
+            ${filteredPdfData.map((fData: any) => `
+              <div class="fund-section-header">FONDO: ${fData.fondo.nombre_fondo} (${fData.fondo.id_fondo}) — MONEDA: ${fData.fondo.moneda}</div>
+              <table class="data-table">
                 <thead>
                   <tr>
                     <th class="text-center" style="width: 25px;">N°</th>
@@ -967,18 +914,8 @@ export const InversionistasPage: React.FC = () => {
       </html>
     `;
 
-    function formatCurrencyVal(amount: number, moneda: string) {
-      if (amount === undefined || amount === null) return '-';
-      return (moneda === 'USD' ? '$ ' : 'S/ ') + amount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-
+    const fileName = `REPORTE_AUDITORIA_${v40SelFondo}_${fEnd}.pdf`;
+    await handleDownloadFastPdf(htmlContent, fileName);
     setPdfDownloaded(true);
   };
 
