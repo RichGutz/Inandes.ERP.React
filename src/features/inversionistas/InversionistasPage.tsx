@@ -14,8 +14,15 @@ import {
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
 export const InversionistasPage: React.FC = () => {
-  // Tabs principales del módulo
-  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos'>('datos');
+  // Tabs principales del módulo con persistencia en sessionStorage
+  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos'>(() => {
+    const saved = sessionStorage.getItem('inv_active_subtab');
+    return (saved as 'datos' | 'retornos_react' | 'documentos') || 'retornos_react';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('inv_active_subtab', activeSubTab);
+  }, [activeSubTab]);
 
   // Modal de confirmacion de Rollback
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);

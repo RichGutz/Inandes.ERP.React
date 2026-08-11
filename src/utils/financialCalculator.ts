@@ -459,14 +459,15 @@ export const generateRetornosV40 = async (
           "#": "",
           "Certificado": h.id,
           "Payload_JSON_Audit": "",
-          "Inversionista": "",
-          "Moneda": "",
+          "Inversionista": "└─ Incremento de Capital",
+          "Moneda": r.moneda,
           "Capital Base": h.monto
         };
         for (let k = 0; k < h.v_dias.length; k++) {
           hx[columnasFechas[k]] = Math.round(h.v_dias[k] * 1000000) / 1000000;
         }
-        const zeroCols = ["INT. BRUTO", "IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "NETO FINAL", "RESCATES", "PENALIDAD", "AUM. CAPITAL", "CAPITAL FINAL"];
+        hx["INT. BRUTO"] = Math.round(h.interes_acum * 100) / 100;
+        const zeroCols = ["IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "NETO FINAL", "RESCATES", "PENALIDAD", "AUM. CAPITAL", "CAPITAL FINAL"];
         for (const col of zeroCols) {
           hx[col] = 0.0;
         }
