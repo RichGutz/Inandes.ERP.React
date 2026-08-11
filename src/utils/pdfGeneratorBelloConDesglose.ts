@@ -216,8 +216,8 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
             width: 100%; border-collapse: collapse; margin-bottom: 4px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 56px; width: auto; }
-          .logo-inandes { height: 48px; width: auto; }
+          .logo-geeksoft { height: 67px; width: auto; }
+          .logo-inandes { height: 38px; width: auto; }
           .report-main-title {
             font-weight: 900; font-size: 13pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.5px;
           }
