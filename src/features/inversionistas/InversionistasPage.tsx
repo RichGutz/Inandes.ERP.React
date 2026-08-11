@@ -1683,16 +1683,7 @@ export const InversionistasPage: React.FC = () => {
                     e.stopPropagation();
                     setExcelDownloaded(true);
                     setPdfDownloaded(true);
-                    if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
-                      const a = document.createElement('a');
-                      a.href = '/Reportes_Auditoria_2026-02-28/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx';
-                      a.download = 'AUDITORIA_OFICIAL_SISTEMA_2026-02-28_PULIDO.xlsx';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    } else {
-                      await handleExportExcelV40();
-                    }
+                    await handleExportExcelV40();
                   }}
                 >
                   {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={18} />}
@@ -1707,16 +1698,7 @@ export const InversionistasPage: React.FC = () => {
                     e.stopPropagation();
                     setExcelDownloaded(true);
                     setPdfDownloaded(true);
-                    if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
-                      const a = document.createElement('a');
-                      a.href = '/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
-                      a.download = 'REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    } else {
-                      await handleExportPDFV40();
-                    }
+                    await handleExportPDFV40();
                   }}
                 >
                   {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />}
