@@ -10,7 +10,8 @@ import {
   FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
   ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download
 } from 'lucide-react';
-import { LOGO_EFI_BASE64, LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
+import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
+import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo con persistencia en sessionStorage
@@ -764,7 +765,7 @@ export const InversionistasPage: React.FC = () => {
     setExcelDownloaded(true);
   };
 
-  // Exportar PDF Condensado (Generación de PDF Oficial Vectorial estilo Forecast/ReportLab)
+  // Exportar PDF Oficial (Generador BELLO CON DESGLOSE)
   const handleExportPDFV40 = async () => {
     let currentResult = calcResult;
     if (!currentResult) {
@@ -775,189 +776,12 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const filteredPdfData = v40SelFondo && v40SelFondo !== 'TODOS'
-      ? currentResult.pdfData.filter((fData: any) => fData.fondo.id_fondo === v40SelFondo)
-      : currentResult.pdfData;
-
-    if (filteredPdfData.length === 0) {
-      alert(`No se encontraron datos para el fondo ${v40SelFondo} en el período ${fEnd}.`);
-      return;
-    }
-
-    function formatCurrencyVal(amount: number, moneda: string) {
-      if (amount === undefined || amount === null) return '-';
-      return (moneda === 'USD' ? '$ ' : 'S/ ') + amount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="es">
-        <head>
-          <meta charset="UTF-8">
-          <title>Reporte de Auditoría InAndes - ${fEnd}</title>
-          <style>
-            @page {
-              size: A4 landscape;
-              margin: 10mm 12mm 12mm 12mm;
-            }
-            * { box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-            body {
-              margin: 0; padding: 0; background-color: #ffffff; color: #1e293b; font-size: 8pt;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            .report-page {
-              width: 100%;
-              page-break-after: always;
-            }
-            .header-table {
-              width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 3px solid #059669; padding-bottom: 8px;
-            }
-            .header-table td { border: none; padding: 0; vertical-align: middle; }
-            .logo-inandes { height: 48px; width: auto; }
-            .logo-efi { height: 42px; width: auto; }
-            .company-title { font-weight: 900; font-size: 13pt; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
-            .report-title { font-weight: 800; font-size: 10.5pt; color: #059669; margin: 3px 0; text-transform: uppercase; letter-spacing: 0.2px; }
-            .period-subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 3px 10px; border-radius: 4px; display: inline-block; margin-top: 2px; }
-            
-            .fund-section-header {
-              background: #0f172a; color: #ffffff; font-size: 9.5pt; font-weight: 800; padding: 6px 10px; margin-top: 14px; margin-bottom: 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between;
-            }
-            table.data-table {
-              width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 7.5pt;
-            }
-            table.data-table th {
-              background-color: #0f172a !important; color: #ffffff !important; font-weight: 700; text-transform: uppercase; font-size: 7pt; padding: 6px 4px; border: 1px solid #0f172a; text-align: left;
-            }
-            table.data-table td {
-              border: 1px solid #cbd5e1; padding: 5px 4px; vertical-align: middle;
-            }
-            table.data-table tr:nth-child(even) { background-color: #f8fafc; }
-            table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
-            table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2.5px solid #059669; border-bottom: 3px double #059669; }
-            table.data-table tr.totals-row td { color: #064e3b; font-size: 8pt; font-weight: 800; }
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-
-            .signature-container {
-              margin-top: 35px;
-              page-break-inside: avoid;
-            }
-            .signature-table {
-              width: 100%; border-collapse: collapse; border: none; margin-bottom: 15px;
-            }
-            .signature-table td {
-              border: none; padding: 0; vertical-align: top;
-            }
-            .signature-line {
-              width: 220px; border-top: 1.5px solid #475569; margin: 0 auto 6px auto;
-            }
-            .signature-title {
-              font-weight: 800; font-size: 8pt; color: #0f172a; text-transform: uppercase;
-            }
-            .signature-sub {
-              font-size: 7.5pt; color: #64748b;
-            }
-            .audit-footer-text {
-              margin-top: 20px; text-align: center; font-size: 7pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 6px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="report-page">
-            <table class="header-table">
-              <tr>
-                <td style="width: 160px;">
-                  <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
-                </td>
-                <td class="text-center">
-                  <div class="company-title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
-                  <div class="report-title">REPORTE OFICIAL DE AUDITORÍA Y DEVENGUE DE RETORNOS (MOTOR V40)</div>
-                  <div class="period-subtitle">FECHA DE CORTE: DEL ${fStart} AL ${fEnd}</div>
-                </td>
-                <td style="width: 160px;" class="text-right">
-                  <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-efi" alt="EFI">
-                </td>
-              </tr>
-            </table>
-            
-            ${filteredPdfData.map((fData: any) => `
-              <div class="fund-section-header">FONDO: ${fData.fondo.nombre_fondo} (${fData.fondo.id_fondo}) — MONEDA: ${fData.fondo.moneda}</div>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th class="text-center" style="width: 25px;">N°</th>
-                    <th style="width: 85px;">Certificado</th>
-                    <th>Inversionista</th>
-                    <th class="text-right">Capital Base</th>
-                    <th class="text-right">Int. Bruto</th>
-                    <th class="text-right">IR (5%)</th>
-                    <th class="text-right">Neto Disp.</th>
-                    <th class="text-right">Capitaliz.</th>
-                    <th class="text-right">Reparto</th>
-                    <th class="text-right">Deducciones</th>
-                    <th class="text-right">Rescates</th>
-                    <th class="text-right">Capital Final</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${fData.blocks[0].rows.map((r: any) => `
-                    <tr class="${r.tipo === 'AUMENTO' ? 'aumento-row' : ''}">
-                      <td class="text-center">${r.n_orden || ''}</td>
-                      <td>${r.id}</td>
-                      <td>${r.inversionista || (r.tipo === 'AUMENTO' ? '└─ Incremento de Capital' : '')}</td>
-                      <td class="text-right">${formatCurrencyVal(r.capital, fData.fondo.moneda)}</td>
-                      <td class="text-right">${formatCurrencyVal(r.bruto_total, fData.fondo.moneda)}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.impuesto_total, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.base_neta, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capitalizacion, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.reparto_valor, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.deducciones_total, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.devolucion_capital, fData.fondo.moneda) : '-'}</td>
-                      <td class="text-right">${r.tipo === 'CERT' ? formatCurrencyVal(r.capital_final, fData.fondo.moneda) : '-'}</td>
-                    </tr>
-                  `).join('')}
-                  <tr class="totals-row">
-                    <td colspan="3" class="text-center">TOTALES ACUMULADOS</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.capital, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.bruto_total, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.impuesto_total, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.base_neta, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.capitalizacion, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.reparto_valor, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.deducciones_total, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.devolucion_capital, fData.fondo.moneda)}</td>
-                    <td class="text-right">${formatCurrencyVal(fData.totals.capital_final, fData.fondo.moneda)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            `).join('')}
-
-            <!-- Bloque de Firmas y Aprobación de Auditoría Oficial -->
-            <div class="signature-container">
-              <table class="signature-table">
-                <tr>
-                  <td style="width: 45%; text-align: center;">
-                    <div class="signature-line"></div>
-                    <div class="signature-title">Elaborado por: Área de Operaciones y Fondos</div>
-                    <div class="signature-sub">InAndes Activos Alternativos S.A.C.</div>
-                  </td>
-                  <td style="width: 10%;"></td>
-                  <td style="width: 45%; text-align: center;">
-                    <div class="signature-line"></div>
-                    <div class="signature-title">Aprobado por: Gerencia General & Directorio</div>
-                    <div class="signature-sub">Empresa Administradora de Fondos de Inversión (EFI)</div>
-                  </td>
-                </tr>
-              </table>
-              <div class="audit-footer-text">
-                Documento Oficial de Cierre Contable y Auditoría de Retornos — InAndes ERP System v4.0 — Generado el ${new Date().toLocaleDateString('es-PE')}
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const htmlContent = generatePdfBelloConDesglose({
+      pdfData: currentResult.pdfData,
+      fStart,
+      fEnd,
+      selFondo: v40SelFondo
+    });
 
     const fileName = `REPORTE_AUDITORIA_${v40SelFondo}_${fEnd}.pdf`;
     await handleDownloadFastPdf(htmlContent, fileName);
@@ -1752,16 +1576,7 @@ export const InversionistasPage: React.FC = () => {
                     e.stopPropagation();
                     setExcelDownloaded(true);
                     setPdfDownloaded(true);
-                    if (fEnd === '2026-02-28' && v40SelFondo === 'TODOS') {
-                      const a = document.createElement('a');
-                      a.href = '/Reportes_Auditoria_2026-02-28/REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
-                      a.download = 'REPORTE_OFICIAL_CIERRE_AUDITORIA_2026-02-28.pdf';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    } else {
-                      await handleExportPDFV40();
-                    }
+                    await handleExportPDFV40();
                   }}
                 >
                   {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />}
