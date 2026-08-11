@@ -184,7 +184,9 @@ export const calculateValorCuotaV26 = async (
   for (const fondo of Object.values(fondosUnicosMap)) {
     const fid = fondo.id_fondo;
     const tActiva = Number(fondo.tasa_activa || 0) / 100;
-    const pAdmin = Number(fondo.comision_administracion_fondo || 0) / 100;
+    const pAdmin  = Number(fondo.comision_administracion_fondo || 0) / 100;
+    const pCap    = Number(fondo.comision_captacion_fondo || 0) / 100;
+    const pMisc   = Number(fondo.comision_miscelaneos_fondo || 0) / 100;
 
     const certsFondo = contratosData.filter(c => c.id_fondo === fid);
     if (certsFondo.length === 0) continue;
@@ -229,7 +231,10 @@ export const calculateValorCuotaV26 = async (
       { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
       { id: 'SPACER_2', css: 'spacer-row' },
       { id: 'GANANCIA TOTAL BRUTA', css: 'summary-row' },
-      { id: 'GANANCIA OPERATIVA', css: 'summary-row' },
+      { id: 'COM. ADMIN (-)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. (-)', css: 'summary-row text-rose-600' },
+      { id: 'COM. MISC. (-)', css: 'summary-row text-rose-600' },
+      { id: 'GANANCIA OPERATIVA', css: 'summary-row font-black' },
       { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row' },
       { id: 'VAL CUOTA FINAL', css: 'vc-cell' }
     ];
@@ -250,10 +255,12 @@ export const calculateValorCuotaV26 = async (
     for (const d of diasPeriodo) {
       const dStr = d.toISOString().split('T')[0];
 
-      // Devengue diario
+      // Devengue diario con las 3 comisiones Base 365
       const iBrutoD = patAyer * (tActiva / 360);
-      const gAdmD = patAyer * (pAdmin / 365);
-      const uNetaD = iBrutoD - gAdmD;
+      const gAdmD   = patAyer * (pAdmin / 365);
+      const gCapD   = patAyer * (pCap / 365);
+      const gMiscD  = patAyer * (pMisc / 365);
+      const uNetaD  = iBrutoD - (gAdmD + gCapD + gMiscD);
 
       // Valor Cuota Final de hoy
       const vCuoH = cuotasAyer > 0 ? (patAyer + uNetaD) / cuotasAyer : 1.0;
@@ -308,6 +315,9 @@ export const calculateValorCuotaV26 = async (
       setSummaryVal('INV. ORIGINALES ACUMULADAS', fInvAcu);
       setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
       setSummaryVal('GANANCIA TOTAL BRUTA', iBrutoD);
+      setSummaryVal('COM. ADMIN (-)', gAdmD);
+      setSummaryVal('COM. CAPT. (-)', gCapD);
+      setSummaryVal('COM. MISC. (-)', gMiscD);
       setSummaryVal('GANANCIA OPERATIVA', uNetaD);
       
       const patCierre = patAyer + uNetaD + apD;
