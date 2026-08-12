@@ -496,14 +496,14 @@ export const FondosPage: React.FC = () => {
             <table class="top-header">
               <tr>
                 <td style="width: 20%; text-align: left;">
-                  <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+                  <img src="https://inandes.react.geeksoft.tech/assets/Logo.Geeksoft.png" class="logo-geeksoft" alt="Geeksoft">
                 </td>
                 <td style="width: 60%; text-align: center;">
                   <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
                   <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
                 </td>
                 <td style="width: 20%; text-align: right;">
-                  <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                  <img src="https://inandes.react.geeksoft.tech/assets/Logo.Inandes.MODERNO.jpeg" class="logo-inandes" alt="InAndes">
                 </td>
               </tr>
             </table>

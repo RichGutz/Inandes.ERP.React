@@ -115,7 +115,9 @@ def deploy():
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 120;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+        proxy_read_timeout 300;
     }}
 
     location /calcular_desembolso_lote {{
@@ -125,7 +127,7 @@ def deploy():
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 120;
+        proxy_read_timeout 300;
     }}
 
     location /desembolsar_lote {{
@@ -135,7 +137,7 @@ def deploy():
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 120;
+        proxy_read_timeout 300;
     }}
 
     location /liquidaciones/ {{
