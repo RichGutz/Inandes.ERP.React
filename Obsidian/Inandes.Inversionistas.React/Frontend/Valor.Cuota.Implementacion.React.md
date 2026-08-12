@@ -2,7 +2,7 @@
 
 > **Archivo:** `src/features/fondos/FondosPage.tsx` + `src/services/fondosService.ts`
 > **Assets:** `src/assets/base64Images.ts`
-> **Ultima actualizacion:** 11 de Agosto de 2026 | **Estado:** EN PROCESO DE MEJORA CLIENT-SIDE
+> **Ultima actualizacion:** 11 de Agosto de 2026 | **Estado:** METODO 1 IMPLEMENTADO (html2pdf.js Client-Side)
 
 ---
 
@@ -11,7 +11,7 @@
 Recrear fielmente en React / TypeScript el motor de calculo de **Valor Cuota (NAV - Net Asset Value)** del sistema LEGACY (Python / generate_cuotas_v25.py), incluyendo:
 
 - Motor matematico identico al legacy con comisiones completas (Admin + Captacion + Miscelaneos)
-- Reporte PDF binario instantaneo y descargable sin fallas de Blob ni timeouts
+- Reporte PDF binario instantaneo impreso 100% en el cliente con `html2pdf.js`
 - Encabezados repetidos en TODAS las caras / paginas por mes
 - UI de control ejecutivo limpia (sin visor de tabla densa en pantalla)
 - Export a Excel con el mismo motor de calculo
@@ -71,19 +71,20 @@ Nuevas Cuotas           = Capital_Suscrito / Valor_Cuota(d_suscripcion)
 
 ---
 
-### 🟢 METODO 1: Generacion PDF Client-Side Instantanea (`html2pdf.js` / `jspdf`)
+### 🟢 METODO 1: Generacion PDF Client-Side Instantanea (`html2pdf.js` / `jspdf`) [EJECUTADO]
 
 - **Mecanismo:** El navegador convierte el HTML del reporte directamente en memoria en un archivo binario PDF legitimo (`%PDF-1.7`) usando la libreria client-side `html2pdf.js`.
 - **Ventajas:**
-  - **Velocidad:** Instantaneo (0.3 a 1 segundo) en la maquina del cliente.
+  - **Velocidad:** Instantaneo en la maquina del cliente.
   - **Cero llamadas al servidor:** No satura la CPU del VPS ni genera HTTP 504.
   - **Descarga directa:** Genera una descarga limpia del archivo `.pdf` en la carpeta de Descargas del usuario.
   - **Cero Sharing Violation:** No usa URLs `blob:about:blank` defectuosas.
 
 ---
 
-### 🔵 METODO 2: Servidor HTML con Ruta HTTPS Nativa (Fallback)
+### 🔵 METODO 2: Servidor HTML con Ruta HTTPS Nativa (Fallback - Plan B)
 
+- **Punto de Retorno:** Commit `d720d19` (Safe point de control).
 - **Mecanismo:** El servidor FastAPI expone un endpoint `/api/reportes/view/{id}.html` que devuelve el HTML con una URL HTTPS legitima (`https://inandes.react.geeksoft.tech/...`).
 - **Ventajas:**
   - Abre en una pestana independiente de Chrome ultra-rapida (50ms).
@@ -96,9 +97,9 @@ Nuevas Cuotas           = Capital_Suscrito / Valor_Cuota(d_suscripcion)
 | Commit | Descripcion |
 |---|---|
 | `de7ed88` | Fix HTTP 504 base64 y timeout 300s Nginx |
-| `e891a3a` | Documentacion inicial de lecciones aprendidas |
-| `SAFE-POINT` | Commit de control antes de implementar Metodo 1 (`html2pdf.js`) |
+| `d720d19` | `SAFE-POINT` -- Commit de control antes de Metodo 1 |
+| `770dd4f` | Implementacion completa de **Metodo 1 (`html2pdf.js` client-side)** |
 
 ---
 
-*Actualizado por Antigravity -- 11 de Agosto de 2026 (Documentación de Metodos 1 y 2 para generacion de PDF)*
+*Actualizado por Antigravity -- 11 de Agosto de 2026 (Metodo 1 desplegado y probado en produccion).*
