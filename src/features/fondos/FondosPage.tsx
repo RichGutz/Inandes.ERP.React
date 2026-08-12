@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
-import { LOGO_INANDES_BASE64, LOGO_EFI_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
+import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
 import { 
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
   Plus, Search, Building2, X
@@ -190,12 +190,6 @@ export const FondosPage: React.FC = () => {
   const handleExportMaestroPdf = () => {
     if (fondos.length === 0) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita los popups para descargar/imprimir el PDF.");
-      return;
-    }
-
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -205,7 +199,7 @@ export const FondosPage: React.FC = () => {
             body { font-family: 'Inter', system-ui, sans-serif; color: #0f172a; margin: 25px; font-size: 9pt; }
             .top-header { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
             .top-header td { border: none; vertical-align: middle; }
-            .logo-geeksoft { height: 50px; width: auto; }
+            .logo-geeksoft { height: 68px; width: auto; }
             .logo-inandes { height: 38px; width: auto; }
             .title { font-size: 13pt; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; margin: 0; }
             .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
@@ -221,7 +215,7 @@ export const FondosPage: React.FC = () => {
           <table class="top-header">
             <tr>
               <td style="width: 25%;">
-                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+                <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
               </td>
               <td style="width: 50%; text-align: center;">
                 <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
@@ -272,18 +266,22 @@ export const FondosPage: React.FC = () => {
           </table>
 
           <div class="footer">
-            INANDES GRUPO FINANCIERO & GEEKSOFT — AUDITORÍA Y CONTROL DE CALIDAD DE FONDOS MAESTROS
+            INANDES GRUPO FINANCIERO &amp; GEEKSOFT — AUDITORÍA Y CONTROL DE CALIDAD DE FONDOS MAESTROS
           </div>
         </body>
       </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
+    // Blob URL: sin sharing violation al guardar
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, '_blank');
+    if (!printWindow) {
+      URL.revokeObjectURL(blobUrl);
+      alert("Por favor habilita los popups para descargar/imprimir el PDF.");
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   };
 
   // Agrupar plazos por id_fondo para la vista list con filtrado
@@ -429,18 +427,19 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
   };
 
-  // Imprimir Valor Cuota PDF (Print Window)
+  // Imprimir Valor Cuota PDF (Blob URL - sin sharing violation)
   const handleExportVcPdf = () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para imprimir.");
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes (popups) para imprimir.");
-      return;
-    }
+    // Persistencia de pestaña: restaurar 'valorCuota' al volver el foco
+    window.addEventListener('focus', () => {
+      setActiveSubTab('valorCuota');
+    }, { once: true });
+
+    const MAX_CERTS_PER_PAGE = 60;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -457,12 +456,13 @@ export const FondosPage: React.FC = () => {
             }
             .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
             .top-header td { border: none; vertical-align: middle; }
-            .logo-geeksoft { height: 45px; width: auto; }
+            .logo-geeksoft { height: 68px; width: auto; }
             .logo-inandes { height: 38px; width: auto; }
             .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
             .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
             .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8.5pt; font-weight: 600; color: #334155; }
             .block-title { font-size: 9.5pt; font-weight: 800; color: #01579b; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
+            .page-break { page-break-before: always; margin-top: 15px; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; page-break-inside: avoid; }
             th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7.5pt; padding: 5px 3px; text-align: center; border: 1px solid #014378; }
             td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
@@ -497,63 +497,71 @@ export const FondosPage: React.FC = () => {
             </tr>
           </table>
 
-          ${vcReportData.map(rep => `
-            <div class="meta-box">
-              Fondo: <strong>${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo})</strong> | Moneda: <strong>${rep.fondo.moneda}</strong> | TASA ACTIVA EMPRESA: <strong>${rep.vars.activa}%</strong> | COMISIÓN ADMIN: <strong>${rep.vars.admin}%</strong> | COM. CAPTACIÓN: <strong>${rep.fondo.comision_captacion_fondo || 0}%</strong> | COM. MISC: <strong>${rep.fondo.comision_miscelaneos_fondo || 0}%</strong>
-            </div>
-            
-            ${rep.blocks.map(block => `
-              <div class="block-title">📅 ${block.monthName} — Devengue Diario y Cálculo de Valor Cuota</div>
-              <table>
+          ${vcReportData.map(rep => {
+            // Paginación: separar filas de certificados en chunks de MAX_CERTS_PER_PAGE
+            const blocksHtml = rep.blocks.map(block => {
+              // Separar filas de certificados (AUMENTO) de las filas de resumen
+              const certRows = block.rows.filter(r => r.tipo === 'AUMENTO' || (r.num !== undefined && r.tipo !== 'TOTAL' && !r.id.includes('COM.') && !r.is_vc));
+              const summaryRows = block.rows.filter(r => r.tipo === 'TOTAL' || r.id.includes('COM.') || r.is_vc || r.tipo === 'SPACER');
+
+              // Crear páginas de máx MAX_CERTS_PER_PAGE certificados
+              const pages: typeof block.rows[] = [];
+              for (let i = 0; i < certRows.length; i += MAX_CERTS_PER_PAGE) {
+                pages.push(certRows.slice(i, i + MAX_CERTS_PER_PAGE));
+              }
+              if (pages.length === 0) pages.push([]);
+
+              const theadHtml = `
                 <thead>
                   <tr>
                     <th style="width: 28px;">N°</th>
                     <th style="width: 180px; text-align: left;">CERTIFICADO / RESUMEN</th>
                     <th style="width: 80px; text-align: right;">CAPITAL / REF.</th>
                     <th style="width: 75px; text-align: right;">N° CUOTAS</th>
-                    ${block.days.map(d => `<th class="day-col">${d}</th>`).join('')}
+                    ${block.days.map(d => '<th class="day-col">' + d + '</th>').join('')}
                     <th style="width: 80px; text-align: right;">TOTAL ACUM.</th>
                   </tr>
-                </thead>
-                <tbody>
-                  ${block.rows.map(r => {
-                    if (r.tipo === 'SPACER') {
-                      return `<tr class="spacer-row"><td colspan="${block.days.length + 5}"></td></tr>`;
-                    }
+                </thead>`;
 
-                    const isComision = r.id.includes('COM.');
-                    const isSummary = r.tipo === 'TOTAL' && !isComision;
-                    const isVc = r.is_vc || r.id.includes('VAL CUOTA');
+              const renderRows = (rows: typeof block.rows) => rows.map(r => {
+                if (r.tipo === 'SPACER') {
+                  return '<tr class="spacer-row"><td colspan="' + (block.days.length + 5) + '"></td></tr>';
+                }
+                const isComision = r.id.includes('COM.');
+                const isSummary = r.tipo === 'TOTAL' && !isComision;
+                const isVc = r.is_vc || r.id.includes('VAL CUOTA');
+                let rowCss = '';
+                if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
+                else if (isComision) rowCss = 'comision-row';
+                else if (isSummary) rowCss = 'summary-row';
+                const displayNum = Boolean(r.num) ? String(r.num) : '';
+                const cells = block.days.map((_, i) => {
+                  const cellVal = r.cells[i]?.val ?? '-';
+                  const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { minimumFractionDigits: isVc ? 4 : 2, maximumFractionDigits: isVc ? 4 : 2 });
+                  return '<td class="day-col ' + (isVc ? 'vc-highlight' : '') + '">' + displayVal + '</td>';
+                }).join('');
+                const capitalCell = r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
+                const cuotasCell = r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
+                const totalCell = r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-';
+                return '<tr class="' + rowCss + '"><td class="num-col">' + displayNum + '</td><td class="cert-id-col ' + (r.tipo === 'AUMENTO' ? 'aumento-label' : '') + '">' + r.id + '</td><td class="cap-col">' + capitalCell + '</td><td class="cuotas-col">' + cuotasCell + '</td>' + cells + '<td class="cap-col" style="font-weight:bold">' + totalCell + '</td></tr>';
+              }).join('');
 
-                    let rowCss = '';
-                    if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
-                    else if (isComision) rowCss = 'comision-row';
-                    else if (isSummary) rowCss = 'summary-row';
+              return pages.map((pageRows, pageIdx) => {
+                const isFirstPage = pageIdx === 0;
+                const isLastPage = pageIdx === pages.length - 1;
+                return (isFirstPage ? '<div class="block-title">\uD83D\uDCC5 ' + block.monthName + ' — Devengue Diario y Cálculo de Valor Cuota</div>' : '') +
+                  '<' + (!isFirstPage ? 'div class="page-break"><' : '') + 'table>' +
+                  theadHtml +
+                  '<tbody>' +
+                  renderRows(pageRows) +
+                  (isLastPage ? renderRows(summaryRows) : '') +
+                  '</tbody></table>' +
+                  (!isFirstPage ? '</div>' : '');
+              }).join('');
+            }).join('');
 
-                    const displayNum = Boolean(r.num) ? String(r.num) : '';
-
-                    return `
-                      <tr class="${rowCss}">
-                        <td class="num-col">${displayNum}</td>
-                        <td class="cert-id-col ${r.tipo === 'AUMENTO' ? 'aumento-label' : ''}">${r.id}</td>
-                        <td class="cap-col">${r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : ''}</td>
-                        <td class="cuotas-col">${r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : ''}</td>
-                        ${block.days.map((_, i) => {
-                          const cellVal = r.cells[i]?.val ?? '-';
-                          const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { 
-                            minimumFractionDigits: isVc ? 4 : 2,
-                            maximumFractionDigits: isVc ? 4 : 2 
-                          });
-                          return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${displayVal}</td>`;
-                        }).join('')}
-                        <td class="cap-col" style="font-weight:bold">${r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-'}</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            `).join('')}
-          `).join('')}
+            return '<div class="meta-box">Fondo: <strong>' + rep.fondo.nombre_fondo + ' (' + rep.fondo.id_fondo + ')</strong> | Moneda: <strong>' + rep.fondo.moneda + '</strong> | TASA ACTIVA EMPRESA: <strong>' + rep.vars.activa + '%</strong> | COMISI\u00d3N ADMIN: <strong>' + rep.vars.admin + '%</strong> | COM. CAPTACI\u00d3N: <strong>' + (rep.fondo.comision_captacion_fondo || 0) + '%</strong> | COM. MISC: <strong>' + (rep.fondo.comision_miscelaneos_fondo || 0) + '%</strong></div>' + blocksHtml;
+          }).join('')}
 
           <div class="footer">
             INANDES GRUPO FINANCIERO &amp; GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
@@ -562,12 +570,16 @@ export const FondosPage: React.FC = () => {
       </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
+    // Blob URL: sin sharing violation al guardar
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, '_blank');
+    if (!printWindow) {
+      URL.revokeObjectURL(blobUrl);
+      alert("Por favor habilita las ventanas emergentes (popups) para imprimir.");
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   };
 
   return (
