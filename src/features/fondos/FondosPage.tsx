@@ -449,47 +449,48 @@ export const FondosPage: React.FC = () => {
           <meta charset="UTF-8">
           <title>REPORTE MAESTRO DE VALOR CUOTA v26 - INANDES</title>
           <style>
-            @page { size: A2 landscape; margin: 0.8cm; }
-            body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; margin: 15px; }
+            @page { size: A4 landscape; margin: 0.5cm; }
+            html, body { margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; background: white; }
+            .print-wrap { width: 270mm; transform-origin: top left; }
+            @media print { .print-wrap { transform: scale(0.72); } }
             .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
             .top-header td { border: none; vertical-align: middle; }
+            .logo-geeksoft { height: 45px; width: auto; }
             .logo-inandes { height: 38px; width: auto; }
-            .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
-            .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
-            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8pt; font-weight: 600; color: #1e293b; whitespace: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .block-title { font-size: 9.5pt; font-weight: 800; color: #01579b; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
-            table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; page-break-inside: avoid; }
-            th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7.5pt; padding: 5px 3px; text-align: center; border: 1px solid #014378; }
-            td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
-            td.num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
-            td.cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
-            td.cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
-            td.cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
-            .day-col { text-align: right; font-family: monospace; font-size: 6.5pt; }
+            .title { font-size: 13pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
+            .subtitle { font-size: 8pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
+            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px; margin-bottom: 10px; font-size: 7.5pt; font-weight: 600; color: #1e293b; white-space: nowrap; }
+            .block-title { font-size: 9pt; font-weight: 800; color: #01579b; margin-top: 10px; margin-bottom: 4px; text-transform: uppercase; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 12px; page-break-inside: avoid; }
+            th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7pt; padding: 4px 2px; text-align: center; border: 1px solid #014378; }
+            td { border: 1px solid #cbd5e1; padding: 2px 2px; font-size: 6.5pt; }
+            td.num-col { width: 24px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
+            td.cert-id-col { width: 160px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 6.5pt; }
+            td.cap-col { width: 70px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
+            td.cuotas-col { width: 65px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
+            .day-col { text-align: right; font-family: monospace; font-size: 6pt; }
             .aumento-row td { background-color: #fafafa; }
-            .aumento-label { padding-left: 10px !important; color: #166534 !important; font-style: italic; font-size: 6.5pt !important; border-left: 3px solid #22c55e; }
+            .aumento-label { padding-left: 8px !important; color: #166534 !important; font-style: italic; font-size: 6pt !important; border-left: 3px solid #22c55e; }
             .summary-row td { font-weight: bold !important; background-color: #fff9c4 !important; color: #000 !important; }
             .comision-row td { color: #c62828 !important; background-color: #ffebee !important; font-weight: bold; }
             .vc-highlight { color: #0d47a1 !important; font-weight: bold !important; background-color: #e3f2fd !important; }
-            .spacer-row td { height: 6px; background-color: #f1f5f9; border: none; }
+            .spacer-row td { height: 5px; background-color: #f1f5f9; border: none; }
             .text-right { text-align: right; }
-            .footer { margin-top: 20px; text-align: right; font-size: 7pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+            .footer { margin-top: 15px; text-align: right; font-size: 6.5pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 5px; }
           </style>
         </head>
         <body>
+          <div class="print-wrap">
           <table class="top-header">
             <tr>
-              <td style="width: 25%; text-align: left;">
-                <div style="font-family: 'Inter', sans-serif;">
-                  <span style="font-size: 16pt; font-weight: 900; color: #01579b; letter-spacing: -0.5px;">GEEK<span style="color: #0288d1;">SOFT</span></span>
-                  <div style="font-size: 6.5pt; font-weight: 800; color: #64748b; letter-spacing: 1px;">FINANCIAL TECHNOLOGIES</div>
-                </div>
+              <td style="width: 20%; text-align: left;">
+                <img src="data:image/png;base64,${LOGO_EFI_BASE64}" class="logo-geeksoft" alt="Geeksoft">
               </td>
-              <td style="width: 50%; text-align: center;">
+              <td style="width: 60%; text-align: center;">
                 <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
-                <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
+                <div class="subtitle">REPORTE MAESTRO DE LIQUIDACION Y VALOR CUOTA v26 (NAV)</div>
               </td>
-              <td style="width: 25%; text-align: right;">
+              <td style="width: 20%; text-align: right;">
                 <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
               </td>
             </tr>
@@ -554,7 +555,8 @@ export const FondosPage: React.FC = () => {
           `).join('')}
 
           <div class="footer">
-            INANDES GRUPO FINANCIERO & GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
+            INANDES GRUPO FINANCIERO &amp; GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
+          </div>
           </div>
         </body>
       </html>
