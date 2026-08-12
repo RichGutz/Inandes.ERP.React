@@ -1,183 +1,159 @@
-﻿# Valor Cuota (NAV v26) — Implementacion React / TypeScript
+﻿# Valor Cuota (NAV v26) -- Implementacion React / TypeScript
 
-> **Ubicacion:** `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Inversionistas.React\Frontend\Valor.Cuota.Implementacion.React.md`
-> **Relacionado con:** Backend/Destripando.Logica.Valor.Cuota.Legacy.md | FondosPage.tsx | fondosService.ts
-> **Fecha:** 11 de Agosto de 2026 | **Estado:** COMPLETO Y DESPLEGADO
+> **Archivo:** `src/features/fondos/FondosPage.tsx` + `src/services/fondosService.ts`
+> **Assets:** `src/assets/base64Images.ts`
+> **Ultima actualizacion:** 11 de Agosto de 2026 | **Estado:** COMPLETO Y DESPLEGADO EN PRODUCCION
 
 ---
 
 ## 1. Objetivo
 
-Recrear fielmente en React / TypeScript el motor de calculo de **Valor Cuota (NAV - Net Asset Value)** del sistema LEGACY (Python), incluyendo:
+Recrear fielmente en React / TypeScript el motor de calculo de **Valor Cuota (NAV - Net Asset Value)** del sistema LEGACY (Python / generate_cuotas_v25.py), incluyendo:
 
-- Motor matematico identico al de `generate_cuotas_v25.py`
-- Comisiones completas (Admin + Captacion + Miscelaneos) en base 365
-- Reporte PDF transpuesto de alta calidad (equivalente al HTML de LEGACY)
-- UI de control ejecutivo limpia (sin visor denso en pantalla)
+- Motor matematico identico al legacy con comisiones completas (Admin + Captacion + Miscelaneos)
+- Reporte PDF binario oficial servido en caliente por el backend WeasyPrint
+- Encabezados repetidos en TODAS las caras / paginas por mes
+- UI de control ejecutivo limpia (sin visor de tabla densa en pantalla)
+- Export a Excel con el mismo motor de calculo
 
 ---
 
-## 2. Motor de Calculo — `calculateValorCuotaV26`
+## 2. Motor de Calculo -- `calculateValorCuotaV26`
 
 **Archivo:** `src/services/fondosService.ts`
 
-### Formulas implementadas
-
-Para cada dia `d` dentro del periodo seleccionado:
+### Formulas (INTANGIBLES - NO MODIFICAR)
 
 ```
-Ingreso Bruto Diario    = Patrimonio(d-1) * (tasa_activa / 360)
-Gasto Admin Diario      = Patrimonio(d-1) * (comision_admin / 365)
+Ingreso Bruto Diario    = Patrimonio(d-1) * (tasa_activa / 360)     <- BASE 360
+Gasto Admin Diario      = Patrimonio(d-1) * (comision_admin / 365)  <- BASE 365
 Gasto Captacion Diario  = Patrimonio(d-1) * (comision_captacion / 365)
 Gasto Miscel. Diario    = Patrimonio(d-1) * (comision_miscelaneos / 365)
 
 Utilidad Neta Diaria    = Ingreso Bruto - (Admin + Captacion + Misc)
-
 Patrimonio(d)           = Patrimonio(d-1) + Utilidad Neta(d) + Suscripciones(d)
-Cuotas(d)               = Cuotas(d-1) + nuevas_cuotas(d)
+Cuotas(d)               = Cuotas(d-1) + nuevas_cuotas_suscripcion(d)
 Valor Cuota(d)          = Patrimonio(d) / Cuotas(d)
-
-Nuevas Cuotas Suscripcion = Capital_Suscrito / Valor_Cuota(d)
+Nuevas Cuotas           = Capital_Suscrito / Valor_Cuota(d_suscripcion)
 ```
 
-**Bases de dias:**
-- Tasa Activa (ingresos): **Base 360** (convenio financiero peruano)
-- Comisiones (gastos): **Base 365** (calendario real)
+**REGLA CRITICA:** Ingresos en Base 360, Gastos en Base 365. NO intercambiar.
 
-### Filas generadas por el motor
+### Tipos de filas generadas
 
-| Tipo de Fila | Estilo Visual |
-|---|---|
-| Certificado / Inversion | Fila normal con numero de certificado |
-| Aumento / Suscripcion | Fila italic en verde con indentacion |
-| COM. ADMIN (-) | Fila roja pastel (comision-row) |
-| COM. CAPT. (-) | Fila roja pastel |
-| COM. MISC. (-) | Fila roja pastel |
-| TOTAL / PATRIMONIO | Fila amarilla pastel (summary-row) |
-| VAL CUOTA | Fila azul pastel (vc-highlight), 4 decimales |
-| SPACER | Separador visual entre grupos |
+| tipo | Descripcion | Estilo visual |
+|---|---|---|
+| Normal | Certificado / Inversion | Blanco |
+| AUMENTO | Suscripcion adicional | Verde itálica con borde izquierdo |
+| COM. ADMIN | Comision administracion | Rojo pastel `#ffebee` |
+| COM. CAPT. | Comision captacion | Rojo pastel |
+| COM. MISC. | Miscelaneos | Rojo pastel |
+| TOTAL | Patrimonio / Resumen | Amarillo pastel `#fff9c4` |
+| VAL CUOTA | Valor Cuota del dia | Azul pastel `#e3f2fd`, **4 decimales** |
+| SPACER | Separador visual | Gris claro |
 
 ---
 
-## 3. UI — Panel Ejecutivo de Valor Cuota
+## 3. UI -- Panel Ejecutivo de Valor Cuota
 
-**Archivo:** `src/features/fondos/FondosPage.tsx` — `activeSubTab === 'valorCuota'`
+**Archivo:** `FondosPage.tsx` -- `activeSubTab === 'valorCuota'`
 
-### Estructura del Panel
+**Decision de disenio:** NO hay visor de tabla en pantalla (demasiado denso). Solo PDF y Excel.
 
-```
-+-----------------------------------------------------------+
-|  Seguimiento y Simulacion de Valor Cuota v26 (NAV)        |
-|  Titulo + descripcion                                     |
-+-----------------------------------------------------------+
-|  Fondo | Anio | Ciclo | N Periodo                         |
-|  SELECT | SELECT | SELECT | SELECT                        |
-+-----------------------------------------------------------+
-|  Ficha Tecnica en 1 sola linea:                           |
-|  Fondo: ... | Moneda: PEN | TEA: 14% | Admin: 1% ...      |
-+-----------------------------------------------------------+
-|  [Imprimir PDF Oficial v26]  [Exportar Excel v26]         |
-+-----------------------------------------------------------+
-```
+### Controles del panel
 
-**Decision de disenio:** Se elimino el visor de tabla B&N en pantalla (demasiado denso y de poco valor UX). La tabla completa se accede unicamente via PDF o Excel impreso.
-
-### Ciclos disponibles
-
-- **Bimestre:** 6 periodos (Ene-Feb, Mar-Abr, May-Jun, Jul-Ago, Sep-Oct, Nov-Dic)
-- **Trimestre:** 4 periodos (Ene-Mar, Abr-Jun, Jul-Sep, Oct-Dic)
-
----
-
-## 4. Reporte PDF v26 — `handleExportVcPdf`
-
-**Archivo:** `src/features/fondos/FondosPage.tsx`
-
-### Especificaciones del PDF
-
-| Elemento | Detalle |
+| Control | Opciones |
 |---|---|
-| **Tamano** | A4 Landscape (`@page { size: A4 landscape; margin: 0.5cm }`) |
-| **Escala impresion** | `transform: scale(0.72)` — contenido de 270mm escalado a A4 |
-| **Logo izquierda** | `LOGO_EFI_BASE64` — Logo PNG oficial de Geeksoft |
-| **Logo derecha** | `LOGO_INANDES_BASE64` — Logo JPEG oficial de InAndes |
-| **Cabecera central** | INANDES ACTIVOS ALTERNATIVOS S.A.C. |
-| **Subtitulo** | REPORTE MAESTRO DE LIQUIDACION Y VALOR CUOTA v26 (NAV) |
+| Fondo | Selector por id_fondo (agrupados) |
+| Anio | 2024, 2025, 2026... |
+| Ciclo | Bimestre (6 per.) / Trimestre (4 per.) |
+| N Periodo | 1-6 (bimestre) o 1-4 (trimestre) |
 
-### Meta-box (1 sola linea por fondo)
+### Ficha tecnica (1 sola linea)
 
 ```
 Fondo: FDO NSG MIPYME PEN 03 (NSGPEN03) | Moneda: PEN |
-TASA ACTIVA EMPRESA: 14.00% | COMISION ADMIN: 1.00% |
-COM. CAPTACION: 2% | COM. MISC: 0%
+TASA ACTIVA: 14.00% | ADMIN: 1.00% | CAPTACION: 2% | MISC: 0%
 ```
 
-### Cabeceras de tabla (thead) — fondo azul oscuro #01579b, texto blanco
+---
 
-| Columna | Ancho |
+## 4. Reporte PDF v26 -- `handleExportVcPdf`
+
+### Especificaciones definitivas (a fecha 11-Ago-2026)
+
+| Elemento | Valor |
 |---|---|
-| N | 24px |
-| CERTIFICADO / RESUMEN | 160px |
-| CAPITAL / REF. | 70px |
-| N CUOTAS | 65px |
-| Dia 1 ... Dia N | auto |
-| TOTAL ACUM. | 70px |
+| Formato PDF | A4 Landscape servido como binario `%PDF-1.7` por FastAPI |
+| Backend Generator | `https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf` |
+| Encabezados por cara | Repetidos en **TODAS** las paginas (`meta-box` + `block-title`) |
+| Logo izquierda | `LOGO_GEEKSOFT_BASE64` -- PNG de `public/assets/Logo.Geeksoft.png` (68px alto) |
+| Logo derecha | `LOGO_INANDES_BASE64` -- JPEG oficial InAndes (38px alto) |
+| Cabecera central | INANDES ACTIVOS ALTERNATIVOS S.A.C. |
+| Subtitulo | REPORTE MAESTRO DE LIQUIDACION Y VALOR CUOTA v26 (NAV) |
+| Max certificados / pagina | **60** (paginacion automatica con `page-break-before: always`) |
 
-> **Regla clave:** Los `th` usan `!important` para evitar que el CSS del browser sobrescriba el color de fondo azul con texto blanco.
+### Patron de Descarga PDF Server-Side (Igual a Retornos / Inversionistas)
 
-### Paleta de colores de filas
+Se envia el `htmlContent` estilizado al backend FastAPI `/api/inversionistas/generate-pdf`. El servidor lo renderiza en un documento binario PDF real (`%PDF-1.7`) y lo devuelve como `application/pdf`. El browser activa la descarga automatica del archivo `.pdf`, garantizando que abre sin fallas en Acrobat, Chrome o Edge.
 
-| Tipo | Fondo |
-|---|---|
-| Normal / Certificado | blanco |
-| Suscripcion / Aumento | #fafafa con borde verde izquierdo |
-| Comisiones | #ffebee (rosa pastel), texto #c62828 |
-| Totales / Patrimonio | #fff9c4 (amarillo pastel) |
-| Valor Cuota | #e3f2fd (azul pastel), texto #0d47a1, **4 decimales** |
-
----
-
-## 5. Export Excel v26 — `handleExportVcExcel`
-
-Genera un archivo `.xlsx` transpuesto con la misma estructura que el PDF, usando la libreria `xlsx` (SheetJS). Los datos los provee el mismo motor `calculateValorCuotaV26`.
-
----
-
-## 6. Flujo de Datos
-
-```
-Supabase (crm_fondos)
-    -> fondosService.ts -> getFondos()
-         -> FondosPage.tsx -> groupedFondos
-              -> calculateValorCuotaV26(fondo, year, tipoPeriodo, numPeriodo)
-                   -> V26FondoReport { fondo, vars, blocks[] }
-                        -> blocks[].days[]    -> columnas (dias del mes)
-                        -> blocks[].rows[]    -> filas (certificados + resumenes)
-                        -> handleExportVcPdf  -> window.print() A4 landscape
-                        -> handleExportVcExcel -> XLSX download
+```typescript
+const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ html: printHtml, filename })
+});
+const blob = await response.blob();
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = filename;
+document.body.appendChild(a);
+a.click();
 ```
 
+### Repeticion de Encabezados por Cara
+
+En cada fragmento paginado de 60 certificados (`pages.map((pageRows, pageIdx) => ...)`), se renderiza en la parte superior:
+1. `meta-box` (`Fondo: FDO... | Moneda: PEN | TASA ACTIVA: 14%...`)
+2. `block-title` (`📅 Enero 2026 — Devengue Diario y Cálculo de Valor Cuota`)
+3. La tabla con `thead` y hasta 60 filas.
+
 ---
 
-## 7. Historial de Commits relevantes
+## 5. Assets de Logos
+
+**Archivo:** `src/assets/base64Images.ts`
+
+| Variable | Fuente | Tipo | Uso |
+|---|---|---|---|
+| `LOGO_INANDES_BASE64` | Archivo JPEG InAndes | JPEG | Logo derecho en PDFs |
+| `LOGO_GEEKSOFT_BASE64` | `public/assets/Logo.Geeksoft.png` (126K chars b64) | PNG | Logo izquierdo en TODOS los PDFs (68px) |
+
+---
+
+## 6. Historial de Commits
 
 | Commit | Descripcion |
 |---|---|
 | `585c115` | Implementacion inicial NAV v26 con comisiones Captacion y Misc |
-| `089ffb7` | Logo Geeksoft texto, metadata 1 linea, encabezados legibles, eliminacion visor B&N |
-| `9c51028` | Logo Geeksoft PNG real, orientacion A4 landscape con scale(0.72) |
+| `089ffb7` | Logo Geeksoft texto, metadata 1 linea, encabezados, eliminacion visor B&N |
+| `3e24818` | Restaura A2 landscape pantalla, impresion zoom:58%, LOGO_GEEKSOFT_BASE64 |
+| `25f611a` | Logo 68px, paginacion 60 certs/pag, Blob URL, persistencia tab |
+| `ae152c9` | Encabezados repetidos en cada cara + descarga PDF binario server-side via `/api/inversionistas/generate-pdf` |
 
 ---
 
-## 8. Reglas y Restricciones
+## 7. Reglas Intangibles
 
-1. **Base de dias:** Ingresos en Base 360, Gastos en Base 365 — NO intercambiar.
-2. **Valor Cuota:** Siempre con **4 decimales** de precision.
-3. **Nuevas cuotas:** Se calculan usando el VC del dia de suscripcion, no del dia anterior.
-4. **Logo Geeksoft:** Usar `LOGO_EFI_BASE64` (PNG). No reemplazar por texto estilizado.
-5. **Escala PDF:** El `scale(0.72)` es necesario porque la tabla de 31 dias nunca cabe en A4 sin escalar. No aumentar el factor de escala.
-6. **No visor en pantalla:** La tabla densa no se muestra en la UI React. Solo PDF/Excel.
+1. **Base dias:** Ingresos Base 360, Gastos Base 365. NUNCA intercambiar.
+2. **Valor Cuota:** Siempre 4 decimales de precision.
+3. **Nuevas cuotas:** Calcular con VC del dia de suscripcion.
+4. **Logo Geeksoft:** Usar `LOGO_GEEKSOFT_BASE64` (PNG real, 68px).
+5. **Descarga PDF:** Siempre consumir `/api/inversionistas/generate-pdf` server-side para entregar un binario `%PDF-1.7` legitimo.
+6. **Encabezados:** Repetir `meta-box` y `block-title` en cada cara paginada.
+7. **Paginacion:** Maximo 60 certificados por pagina.
 
 ---
 
-*Nota generada por Antigravity — 11 de Agosto de 2026.*
+*Actualizado por Antigravity -- 11 de Agosto de 2026 (Fix final PDF: encabezados repetidos y descarga binaria server-side).*

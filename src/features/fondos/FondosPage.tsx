@@ -73,6 +73,7 @@ export const FondosPage: React.FC = () => {
   const [vcSelNum, setVcSelNum] = useState<number>(1);
   const [vcReportData, setVcReportData] = useState<V26FondoReport[]>([]);
   const [vcLoading, setVcLoading] = useState<boolean>(false);
+  const [vcPdfLoading, setVcPdfLoading] = useState<boolean>(false);
 
   const fetchFondos = async () => {
     setLoading(true);
@@ -186,8 +187,8 @@ export const FondosPage: React.FC = () => {
     }
   };
 
-  // Exportar / Imprimir PDF Oficial de Directorio Maestro de Fondos
-  const handleExportMaestroPdf = () => {
+  // Exportar / Descargar PDF Oficial de Directorio Maestro de Fondos (Servidor FastAPI Binary)
+  const handleExportMaestroPdf = async () => {
     if (fondos.length === 0) return;
 
     const htmlContent = `
@@ -272,16 +273,33 @@ export const FondosPage: React.FC = () => {
       </html>
     `;
 
-    // Blob URL: sin sharing violation al guardar
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const printWindow = window.open(blobUrl, '_blank');
-    if (!printWindow) {
-      URL.revokeObjectURL(blobUrl);
-      alert("Por favor habilita los popups para descargar/imprimir el PDF.");
-      return;
+    try {
+      const bodyContent = htmlContent
+        .replace(/^[\s\S]*?<body[^>]*>/i, '')
+        .replace(/<\/body>[\s\S]*$/i, '');
+      const headStyles = (htmlContent.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
+      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
+      const filename = `Directorio_Maestro_Fondos.pdf`;
+
+      const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: printHtml, filename })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err: any) {
+      alert(`Error descargando PDF: ${err.message}`);
     }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   };
 
   // Agrupar plazos por id_fondo para la vista list con filtrado
@@ -427,159 +445,175 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
   };
 
-  // Imprimir Valor Cuota PDF (Blob URL - sin sharing violation)
-  const handleExportVcPdf = () => {
+  // Descargar PDF Oficial de Valor Cuota v26 (Servidor FastAPI WeasyPrint Binary)
+  const handleExportVcPdf = async () => {
     if (vcReportData.length === 0) {
-      alert("No hay datos de Valor Cuota para imprimir.");
+      alert("No hay datos de Valor Cuota para descargar.");
       return;
     }
 
-    // Persistencia de pestaña: restaurar 'valorCuota' al volver el foco
-    window.addEventListener('focus', () => {
-      setActiveSubTab('valorCuota');
-    }, { once: true });
+    setVcPdfLoading(true);
+    try {
+      const MAX_CERTS_PER_PAGE = 60;
 
-    const MAX_CERTS_PER_PAGE = 60;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html lang="es">
-        <head>
-          <meta charset="UTF-8">
-          <title>REPORTE MAESTRO DE VALOR CUOTA v26 - INANDES</title>
-          <style>
-            @page { size: A2 landscape; margin: 0.8cm; }
-            body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; margin: 15px; }
-            @media print {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="UTF-8">
+            <title>REPORTE MAESTRO DE VALOR CUOTA v26 - INANDES</title>
+            <style>
               @page { size: A4 landscape; margin: 0.5cm; }
-              html { zoom: 58%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-            .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
-            .top-header td { border: none; vertical-align: middle; }
-            .logo-geeksoft { height: 68px; width: auto; }
-            .logo-inandes { height: 38px; width: auto; }
-            .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
-            .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
-            .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; margin-bottom: 12px; font-size: 8.5pt; font-weight: 600; color: #334155; }
-            .block-title { font-size: 9.5pt; font-weight: 800; color: #01579b; margin-top: 12px; margin-bottom: 4px; text-transform: uppercase; }
-            .page-break { page-break-before: always; margin-top: 15px; }
-            table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; page-break-inside: avoid; }
-            th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7.5pt; padding: 5px 3px; text-align: center; border: 1px solid #014378; }
-            td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
-            td.num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
-            td.cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
-            td.cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
-            td.cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
-            .day-col { text-align: right; font-family: monospace; font-size: 6.5pt; }
-            .aumento-row td { background-color: #fafafa; }
-            .aumento-label { padding-left: 10px !important; color: #166534 !important; font-style: italic; font-size: 6.5pt !important; border-left: 3px solid #22c55e; }
-            .summary-row td { font-weight: bold !important; background-color: #fff9c4 !important; color: #000 !important; }
-            .comision-row td { color: #c62828 !important; background-color: #ffebee !important; font-weight: bold; }
-            .vc-highlight { color: #0d47a1 !important; font-weight: bold !important; background-color: #e3f2fd !important; }
-            .spacer-row td { height: 6px; background-color: #f1f5f9; border: none; }
-            .text-right { text-align: right; }
-            .footer { margin-top: 20px; text-align: right; font-size: 7pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 6px; }
-          </style>
-        </head>
-        <body>
-          <table class="top-header">
-            <tr>
-              <td style="width: 20%; text-align: left;">
-                <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
-              </td>
-              <td style="width: 60%; text-align: center;">
-                <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
-                <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
-              </td>
-              <td style="width: 20%; text-align: right;">
-                <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
-              </td>
-            </tr>
-          </table>
+              html, body { margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 8pt; color: #1e293b; background: white; }
+              .top-header { width: 100%; border-collapse: collapse; margin-bottom: 10px; border-bottom: 2px solid #01579b; padding-bottom: 6px; }
+              .top-header td { border: none; vertical-align: middle; }
+              .logo-geeksoft { height: 68px; width: auto; }
+              .logo-inandes { height: 38px; width: auto; }
+              .title { font-size: 14pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
+              .subtitle { font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
+              .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 10px; margin-bottom: 8px; font-size: 8pt; font-weight: 600; color: #334155; }
+              .block-title { font-size: 9pt; font-weight: 800; color: #01579b; margin-top: 8px; margin-bottom: 4px; text-transform: uppercase; }
+              .page-break { page-break-before: always; margin-top: 10px; }
+              table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 12px; page-break-inside: avoid; }
+              th { background-color: #01579b !important; color: #ffffff !important; font-weight: 800; font-size: 7.5pt; padding: 5px 3px; text-align: center; border: 1px solid #014378; }
+              td { border: 1px solid #cbd5e1; padding: 3px 2px; font-size: 7pt; }
+              td.num-col { width: 28px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
+              td.cert-id-col { width: 180px; text-align: left; font-weight: bold; background-color: #f8fafc; font-size: 7pt; }
+              td.cap-col { width: 80px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
+              td.cuotas-col { width: 75px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
+              .day-col { text-align: right; font-family: monospace; font-size: 6.5pt; }
+              .aumento-row td { background-color: #fafafa; }
+              .aumento-label { padding-left: 10px !important; color: #166534 !important; font-style: italic; font-size: 6.5pt !important; border-left: 3px solid #22c55e; }
+              .summary-row td { font-weight: bold !important; background-color: #fff9c4 !important; color: #000 !important; }
+              .comision-row td { color: #c62828 !important; background-color: #ffebee !important; font-weight: bold; }
+              .vc-highlight { color: #0d47a1 !important; font-weight: bold !important; background-color: #e3f2fd !important; }
+              .spacer-row td { height: 6px; background-color: #f1f5f9; border: none; }
+              .text-right { text-align: right; }
+              .footer { margin-top: 20px; text-align: right; font-size: 7pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+            </style>
+          </head>
+          <body>
+            <table class="top-header">
+              <tr>
+                <td style="width: 20%; text-align: left;">
+                  <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+                </td>
+                <td style="width: 60%; text-align: center;">
+                  <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
+                  <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
+                </td>
+                <td style="width: 20%; text-align: right;">
+                  <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                </td>
+              </tr>
+            </table>
 
-          ${vcReportData.map(rep => {
-            // Paginación: separar filas de certificados en chunks de MAX_CERTS_PER_PAGE
-            const blocksHtml = rep.blocks.map(block => {
-              // Separar filas de certificados (AUMENTO) de las filas de resumen
-              const certRows = block.rows.filter(r => r.tipo === 'AUMENTO' || (r.num !== undefined && r.tipo !== 'TOTAL' && !r.id.includes('COM.') && !r.is_vc));
-              const summaryRows = block.rows.filter(r => r.tipo === 'TOTAL' || r.id.includes('COM.') || r.is_vc || r.tipo === 'SPACER');
+            ${vcReportData.map(rep => {
+              const metaBoxHtml = '<div class="meta-box">Fondo: <strong>' + rep.fondo.nombre_fondo + ' (' + rep.fondo.id_fondo + ')</strong> | Moneda: <strong>' + rep.fondo.moneda + '</strong> | TASA ACTIVA EMPRESA: <strong>' + rep.vars.activa + '%</strong> | COMISI\u00d3N ADMIN: <strong>' + rep.vars.admin + '%</strong> | COM. CAPTACI\u00d3N: <strong>' + (rep.fondo.comision_captacion_fondo || 0) + '%</strong> | COM. MISC: <strong>' + (rep.fondo.comision_miscelaneos_fondo || 0) + '%</strong></div>';
 
-              // Crear páginas de máx MAX_CERTS_PER_PAGE certificados
-              const pages: typeof block.rows[] = [];
-              for (let i = 0; i < certRows.length; i += MAX_CERTS_PER_PAGE) {
-                pages.push(certRows.slice(i, i + MAX_CERTS_PER_PAGE));
-              }
-              if (pages.length === 0) pages.push([]);
+              const blocksHtml = rep.blocks.map(block => {
+                const blockTitleHtml = '<div class="block-title">\uD83D\uDCC5 ' + block.monthName + ' — Devengue Diario y Cálculo de Valor Cuota</div>';
+                const certRows = block.rows.filter(r => r.tipo === 'AUMENTO' || (r.num !== undefined && r.tipo !== 'TOTAL' && !r.id.includes('COM.') && !r.is_vc));
+                const summaryRows = block.rows.filter(r => r.tipo === 'TOTAL' || r.id.includes('COM.') || r.is_vc || r.tipo === 'SPACER');
 
-              const theadHtml = `
-                <thead>
-                  <tr>
-                    <th style="width: 28px;">N°</th>
-                    <th style="width: 180px; text-align: left;">CERTIFICADO / RESUMEN</th>
-                    <th style="width: 80px; text-align: right;">CAPITAL / REF.</th>
-                    <th style="width: 75px; text-align: right;">N° CUOTAS</th>
-                    ${block.days.map(d => '<th class="day-col">' + d + '</th>').join('')}
-                    <th style="width: 80px; text-align: right;">TOTAL ACUM.</th>
-                  </tr>
-                </thead>`;
-
-              const renderRows = (rows: typeof block.rows) => rows.map(r => {
-                if (r.tipo === 'SPACER') {
-                  return '<tr class="spacer-row"><td colspan="' + (block.days.length + 5) + '"></td></tr>';
+                const pages: typeof block.rows[] = [];
+                for (let i = 0; i < certRows.length; i += MAX_CERTS_PER_PAGE) {
+                  pages.push(certRows.slice(i, i + MAX_CERTS_PER_PAGE));
                 }
-                const isComision = r.id.includes('COM.');
-                const isSummary = r.tipo === 'TOTAL' && !isComision;
-                const isVc = r.is_vc || r.id.includes('VAL CUOTA');
-                let rowCss = '';
-                if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
-                else if (isComision) rowCss = 'comision-row';
-                else if (isSummary) rowCss = 'summary-row';
-                const displayNum = Boolean(r.num) ? String(r.num) : '';
-                const cells = block.days.map((_, i) => {
-                  const cellVal = r.cells[i]?.val ?? '-';
-                  const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { minimumFractionDigits: isVc ? 4 : 2, maximumFractionDigits: isVc ? 4 : 2 });
-                  return '<td class="day-col ' + (isVc ? 'vc-highlight' : '') + '">' + displayVal + '</td>';
+                if (pages.length === 0) pages.push([]);
+
+                const theadHtml = `
+                  <thead>
+                    <tr>
+                      <th style="width: 28px;">N°</th>
+                      <th style="width: 180px; text-align: left;">CERTIFICADO / RESUMEN</th>
+                      <th style="width: 80px; text-align: right;">CAPITAL / REF.</th>
+                      <th style="width: 75px; text-align: right;">N° CUOTAS</th>
+                      ${block.days.map(d => '<th class="day-col">' + d + '</th>').join('')}
+                      <th style="width: 80px; text-align: right;">TOTAL ACUM.</th>
+                    </tr>
+                  </thead>`;
+
+                const renderRows = (rows: typeof block.rows) => rows.map(r => {
+                  if (r.tipo === 'SPACER') {
+                    return '<tr class="spacer-row"><td colspan="' + (block.days.length + 5) + '"></td></tr>';
+                  }
+                  const isComision = r.id.includes('COM.');
+                  const isSummary = r.tipo === 'TOTAL' && !isComision;
+                  const isVc = r.is_vc || r.id.includes('VAL CUOTA');
+                  let rowCss = '';
+                  if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
+                  else if (isComision) rowCss = 'comision-row';
+                  else if (isSummary) rowCss = 'summary-row';
+                  const displayNum = Boolean(r.num) ? String(r.num) : '';
+                  const cells = block.days.map((_, i) => {
+                    const cellVal = r.cells[i]?.val ?? '-';
+                    const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { minimumFractionDigits: isVc ? 4 : 2, maximumFractionDigits: isVc ? 4 : 2 });
+                    return '<td class="day-col ' + (isVc ? 'vc-highlight' : '') + '">' + displayVal + '</td>';
+                  }).join('');
+                  const capitalCell = r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
+                  const cuotasCell = r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
+                  const totalCell = r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-';
+                  return '<tr class="' + rowCss + '"><td class="num-col">' + displayNum + '</td><td class="cert-id-col ' + (r.tipo === 'AUMENTO' ? 'aumento-label' : '') + '">' + r.id + '</td><td class="cap-col">' + capitalCell + '</td><td class="cuotas-col">' + cuotasCell + '</td>' + cells + '<td class="cap-col" style="font-weight:bold">' + totalCell + '</td></tr>';
                 }).join('');
-                const capitalCell = r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
-                const cuotasCell = r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
-                const totalCell = r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-';
-                return '<tr class="' + rowCss + '"><td class="num-col">' + displayNum + '</td><td class="cert-id-col ' + (r.tipo === 'AUMENTO' ? 'aumento-label' : '') + '">' + r.id + '</td><td class="cap-col">' + capitalCell + '</td><td class="cuotas-col">' + cuotasCell + '</td>' + cells + '<td class="cap-col" style="font-weight:bold">' + totalCell + '</td></tr>';
+
+                return pages.map((pageRows, pageIdx) => {
+                  const isLastPage = pageIdx === pages.length - 1;
+                  const isFirstChunkOfDoc = pageIdx === 0 && block === rep.blocks[0] && rep === vcReportData[0];
+                  return '<div class="' + (!isFirstChunkOfDoc ? 'page-break' : '') + '">' +
+                    metaBoxHtml +
+                    blockTitleHtml +
+                    '<table>' +
+                    theadHtml +
+                    '<tbody>' +
+                    renderRows(pageRows) +
+                    (isLastPage ? renderRows(summaryRows) : '') +
+                    '</tbody></table>' +
+                    '</div>';
+                }).join('');
               }).join('');
 
-              return pages.map((pageRows, pageIdx) => {
-                const isFirstPage = pageIdx === 0;
-                const isLastPage = pageIdx === pages.length - 1;
-                return (isFirstPage ? '<div class="block-title">\uD83D\uDCC5 ' + block.monthName + ' — Devengue Diario y Cálculo de Valor Cuota</div>' : '') +
-                  '<' + (!isFirstPage ? 'div class="page-break"><' : '') + 'table>' +
-                  theadHtml +
-                  '<tbody>' +
-                  renderRows(pageRows) +
-                  (isLastPage ? renderRows(summaryRows) : '') +
-                  '</tbody></table>' +
-                  (!isFirstPage ? '</div>' : '');
-              }).join('');
-            }).join('');
+              return blocksHtml;
+            }).join('')}
 
-            return '<div class="meta-box">Fondo: <strong>' + rep.fondo.nombre_fondo + ' (' + rep.fondo.id_fondo + ')</strong> | Moneda: <strong>' + rep.fondo.moneda + '</strong> | TASA ACTIVA EMPRESA: <strong>' + rep.vars.activa + '%</strong> | COMISI\u00d3N ADMIN: <strong>' + rep.vars.admin + '%</strong> | COM. CAPTACI\u00d3N: <strong>' + (rep.fondo.comision_captacion_fondo || 0) + '%</strong> | COM. MISC: <strong>' + (rep.fondo.comision_miscelaneos_fondo || 0) + '%</strong></div>' + blocksHtml;
-          }).join('')}
+            <div class="footer">
+              INANDES GRUPO FINANCIERO &amp; GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
+            </div>
+          </body>
+        </html>
+      `;
 
-          <div class="footer">
-            INANDES GRUPO FINANCIERO &amp; GEEKSOFT — REPORTE MAESTRO NAV V26 — IMPRESO EL ${new Date().toLocaleDateString('es-PE')}
-          </div>
-        </body>
-      </html>
-    `;
+      // Patron EXACTO de Inversionistas / Retornos: enviar HTML a FastAPI PDF Generator
+      const bodyContent = htmlContent
+        .replace(/^[\s\S]*?<body[^>]*>/i, '')
+        .replace(/<\/body>[\s\S]*$/i, '');
+      const headStyles = (htmlContent.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
 
-    // Blob URL: sin sharing violation al guardar
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const printWindow = window.open(blobUrl, '_blank');
-    if (!printWindow) {
-      URL.revokeObjectURL(blobUrl);
-      alert("Por favor habilita las ventanas emergentes (popups) para imprimir.");
-      return;
+      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
+      const filename = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
+
+      const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: printHtml, filename })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err: any) {
+      alert(`Error descargando PDF: ${err.message}`);
+    } finally {
+      setVcPdfLoading(false);
     }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
   };
 
   return (
@@ -1288,10 +1322,10 @@ export const FondosPage: React.FC = () => {
               <button
                 className="h-11 px-6 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                 onClick={handleExportVcPdf}
-                disabled={vcLoading || vcReportData.length === 0}
+                disabled={vcLoading || vcPdfLoading || vcReportData.length === 0}
               >
-                <FileText size={16} />
-                <span>🖨️ Generar e Imprimir Reporte PDF Oficial v26 (NAV)</span>
+                {vcPdfLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+                <span>{vcPdfLoading ? 'Generando PDF Oficial...' : '📄 Descargar PDF Oficial v26 (NAV)'}</span>
               </button>
 
               <button
