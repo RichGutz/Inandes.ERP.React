@@ -49,6 +49,7 @@ export const DeduccionesPage: React.FC = () => {
   const [resGlosa, setResGlosa] = useState<string>('Devolución de Capital Principal por Retiro');
   const [resArmadasCount, setResArmadasCount] = useState<number>(1);
   const [resTasaWaiver, setResTasaWaiver] = useState<number>(0);
+  const [resEsRescateTotal, setResEsRescateTotal] = useState<boolean>(false);
   const [resArmadasData, setResArmadasData] = useState<Array<{ fecha: string; monto: number; penalidad: number }>>([]);
   const [resSubmitting, setResSubmitting] = useState<boolean>(false);
   const [resSuccess, setResSuccess] = useState<string | null>(null);
@@ -327,13 +328,14 @@ export const DeduccionesPage: React.FC = () => {
           id_certificado: activeCertId,
           id_contrato: selectedContrato.id_contrato,
           tipo_cargo: 'RESCATE_CAPITAL',
-          glosa_descripcion: `${resGlosa} (Armada ${idx + 1}/${totalArm})`,
+          glosa_descripcion: `${resGlosa}${resEsRescateTotal ? ' [RESCATE TOTAL]' : ''} (Armada ${idx + 1}/${totalArm})`,
           moneda: selectedContrato.moneda,
           monto_cobrar: arm.monto,
           fecha_proyectada_cobro: arm.fecha,
           estado: 'PENDIENTE',
           prioridad: 3,
           tasa: resTasaWaiver,
+          es_rescate_total: resEsRescateTotal,
           creado_por: 'Sistema React'
         });
 
@@ -787,6 +789,22 @@ export const DeduccionesPage: React.FC = () => {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Checkbox Rescate Total */}
+                <div className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl p-3.5 flex flex-col gap-2">
+                  <label className="flex items-center gap-2.5 text-xs font-black text-rose-700 dark:text-rose-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 cursor-pointer"
+                      checked={resEsRescateTotal}
+                      onChange={(e) => setResEsRescateTotal(e.target.checked)}
+                    />
+                    <span>☑ Rescate Total (Extinción Completa del Certificado a USD 0.00)</span>
+                  </label>
+                  <p className="text-[10px] text-rose-600/90 dark:text-rose-400/80 leading-relaxed font-semibold pl-6">
+                    Al marcar esta opción, el motor V40 liquidará el 100% de los rendimientos netos acumulados sin recapitalizar, obligando al saldo final del certificado a USD 0.00 para extinguirlo definitivamente en la base de datos.
+                  </p>
                 </div>
 
                 <hr className="border-slate-100 dark:border-slate-850" />

@@ -189,7 +189,7 @@ export const generateRetornosV40 = async (
   // 5. Carga de Cronogramas de deducciones y rescates
   const todoCids = Object.keys(historialMap);
   const cronDedMap: Record<string, any[]> = {};
-  const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number }>> = {};
+  const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number; es_rescate_total?: boolean }>> = {};
 
   for (let i = 0; i < todoCids.length; i += chunkSize) {
     const chunk = todoCids.slice(i, i + chunkSize);
@@ -218,7 +218,8 @@ export const generateRetornosV40 = async (
               id_registro: item.id_cuota,
               fecha: fP,
               monto: Number(item.monto_cobrar),
-              tasa: Number(item.tasa || 0) / 100
+              tasa: Number(item.tasa || 0) / 100,
+              es_rescate_total: Boolean(item.es_rescate_total || (item.glosa_descripcion && item.glosa_descripcion.includes('[RESCATE TOTAL]')))
             });
           } else {
             if (!cronDedMap[cid]) cronDedMap[cid] = [];
@@ -360,8 +361,17 @@ export const generateRetornosV40 = async (
       const bruto = Math.round(r.interes_total_acum * 100) / 100;
       const imp = Math.round(bruto * 0.05 * 100) / 100;
       const neta = Math.round((bruto - imp) * 100) / 100;
-      const cap_z = Math.round(neta * (1 - r.porcentaje_reparto) * 100) / 100;
-      const rep_v = Math.round(neta * r.porcentaje_reparto * 100) / 100;
+      
+      const tieneRescateTotal = r.cron_rescates.some((x: any) => x.es_rescate_total || (x.monto > 0 && x.monto >= r.capital_base));
+
+      let cap_z = Math.round(neta * (1 - r.porcentaje_reparto) * 100) / 100;
+      let rep_v = Math.round(neta * r.porcentaje_reparto * 100) / 100;
+
+      if (tieneRescateTotal) {
+        // En Rescate Total: 0 recapitalización, 100% de la neta a reparto para extinguir el certificado a 0.00
+        cap_z = 0.0;
+        rep_v = neta;
+      }
 
       const ded_ord = r.cron_deducciones
         .filter((x: any) => x.tipo_cargo === 'DEDUCCION_ORDINARIA')
@@ -374,8 +384,11 @@ export const generateRetornosV40 = async (
         .reduce((sum: number, x: any) => sum + Number(x.monto_cobrar), 0);
 
       const aum_v = r.hijos.reduce((sum: number, h: any) => sum + h.monto, 0);
-      const cap_final = Math.round((r.capital_base + aum_v + cap_z - rescate_sum - penalidad_sum) * 100) / 100;
-      const tipo_ev = cap_final <= 0 ? "cierre_fin_contrato" : "cierre_fin_ciclo";
+      let cap_final = Math.round((r.capital_base + aum_v + cap_z - rescate_sum - penalidad_sum) * 100) / 100;
+      if (tieneRescateTotal || cap_final < 0) {
+        cap_final = 0.0;
+      }
+      const tipo_ev = (cap_final <= 0 || tieneRescateTotal) ? "cierre_fin_contrato" : "cierre_fin_ciclo";
 
       // Crear payload de auditoría
       const payloadEnriquecido = {

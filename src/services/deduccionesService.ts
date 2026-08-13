@@ -15,6 +15,7 @@ export interface DeduccionCuota {
   estado: 'PENDIENTE' | 'COBRADO' | 'ANULADO';
   prioridad: number;
   tasa?: number | null;
+  es_rescate_total?: boolean;
   creado_por: string;
   created_at?: string;
 }
@@ -32,20 +33,25 @@ export interface FondoRules {
 }
 
 /**
- * Busca contratos por ID exacto o por coincidencia en inversionista (nombre o documento)
+ * Busca únicamente contratos vivos (activos) por ID exacto o por coincidencia en inversionista
  */
 export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBusqueda[]> => {
   const qStr = busqueda.trim().toUpperCase();
   if (!qStr) return [];
 
+  // Estados excluidos para filtrar contratos cerrados/liquidados
+  const ESTADOS_EXCLUIDOS = ['cerrado', 'liquidado', 'ANULADO', 'RETIRADO'];
+
   // 1. Coincidencia exacta por ID de Contrato
   const { data: exactC } = await supabase
     .from('crm_contratos')
     .select('*')
-    .eq('id_contrato', qStr);
+    .eq('id_contrato', qStr)
+    .not('estado', 'in', `("${ESTADOS_EXCLUIDOS.join('","')}")`);
 
   if (exactC && exactC.length > 0) {
-    return exactC as ContratoBusqueda[];
+    const filtrados = exactC.filter(c => !ESTADOS_EXCLUIDOS.includes(String(c.estado || '').toLowerCase()));
+    if (filtrados.length > 0) return filtrados as ContratoBusqueda[];
   }
 
   // 2. Coincidencia por inversionista
@@ -62,13 +68,16 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
     const { data: contrs } = await supabase
       .from('crm_contratos')
       .select('*')
-      .in('id_inversionista_1', todosCodigos);
+      .in('id_inversionista_1', todosCodigos)
+      .not('estado', 'in', `("${ESTADOS_EXCLUIDOS.join('","')}")`);
 
     if (contrs && contrs.length > 0) {
       const nombresMap = new Map<string, string>();
       invs.forEach(i => nombresMap.set(i.codigo_inversionista, i.nombre_completo));
 
-      return contrs.map(c => {
+      const filtrados = contrs.filter(c => !ESTADOS_EXCLUIDOS.includes(String(c.estado || '').toLowerCase()));
+
+      return filtrados.map(c => {
         const cleanCode = String(c.id_inversionista_1).replace('DNI', '');
         return {
           ...c,
