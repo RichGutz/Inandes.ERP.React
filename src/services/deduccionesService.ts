@@ -33,24 +33,32 @@ export interface FondoRules {
 }
 
 /**
+  * Helper para determinar si un contrato está vivo (activo)
+  */
+ const esContratoVivo = (estado?: string): boolean => {
+   if (!estado) return false;
+   const e = String(estado).toLowerCase().trim();
+   if (e.includes('cerrad') || e.includes('liquid') || e.includes('anulad') || e.includes('retirad') || e.includes('rescate')) {
+     return false;
+   }
+   return e === 'emitido' || e === 'activo' || e === 'vigente';
+ };
+
+/**
  * Busca únicamente contratos vivos (activos) por ID exacto o por coincidencia en inversionista
  */
 export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBusqueda[]> => {
   const qStr = busqueda.trim().toUpperCase();
   if (!qStr) return [];
 
-  // Estados excluidos para filtrar contratos cerrados/liquidados
-  const ESTADOS_EXCLUIDOS = ['cerrado', 'liquidado', 'ANULADO', 'RETIRADO'];
-
   // 1. Coincidencia exacta por ID de Contrato
   const { data: exactC } = await supabase
     .from('crm_contratos')
     .select('*')
-    .eq('id_contrato', qStr)
-    .not('estado', 'in', `("${ESTADOS_EXCLUIDOS.join('","')}")`);
+    .eq('id_contrato', qStr);
 
   if (exactC && exactC.length > 0) {
-    const filtrados = exactC.filter(c => !ESTADOS_EXCLUIDOS.includes(String(c.estado || '').toLowerCase()));
+    const filtrados = exactC.filter(c => esContratoVivo(c.estado));
     if (filtrados.length > 0) return filtrados as ContratoBusqueda[];
   }
 
@@ -69,13 +77,13 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
       .from('crm_contratos')
       .select('*')
       .in('id_inversionista_1', todosCodigos)
-      .not('estado', 'in', `("${ESTADOS_EXCLUIDOS.join('","')}")`);
+      .eq('estado', 'emitido');
 
     if (contrs && contrs.length > 0) {
       const nombresMap = new Map<string, string>();
       invs.forEach(i => nombresMap.set(i.codigo_inversionista, i.nombre_completo));
 
-      const filtrados = contrs.filter(c => !ESTADOS_EXCLUIDOS.includes(String(c.estado || '').toLowerCase()));
+      const filtrados = contrs.filter(c => esContratoVivo(c.estado));
 
       return filtrados.map(c => {
         const cleanCode = String(c.id_inversionista_1).replace('DNI', '');
