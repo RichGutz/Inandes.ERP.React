@@ -89,6 +89,8 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
    - Subir archivos al VPS: `python deploy_vps.py`
    - Sincronizar en Git: `git add .` -> `git commit -m "..."` -> `git push origin main`
 
-
-
-
+## Regla 12 - UBICACION CENTRALIZADA DE CREDENCIALES Y SERVIDORES
+Todo agente DEBE consultar las credenciales del proyecto en estas ubicaciones estandar antes de solicitar accesos:
+1. Hostinger VPS (Produccion Actual): `deploy_vps.py` (Host: 91.108.125.253, User: root).
+2. Supabase Cloud (PostgreSQL): `Obsidian/Inandes.Factoring.React/06. Procedimientos de Despliegue y Base de Datos.md` y `.env` / `.env.production` (Proyecto: egvcinsbyropumybatdf).
+3. Contabo VPS (Mudanza / Coolify): `Obsidian/Mudanza.Contabo/Mudanza.Contabo/02. Infraestructura y Hardening del Server Contabo.md` y respaldo privado en `C:\Users\rguti\.gemini\antigravity-ide\scratch\contabo_credentials.json`.
