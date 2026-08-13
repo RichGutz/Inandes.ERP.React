@@ -23,6 +23,7 @@ En esta bóveda hemos estructurado el plan en **6 notas especializadas** que cub
 | 04 | [[04. Despliegue Backend FastAPI y Motores Python\|04. Despliegue Backend FastAPI y Motores Python]] | Dockerización de FastAPI, Motores V32/V25/V2, Poppler/PDFs y volúmenes. |
 | 05 | [[05. Despliegue Frontend React 19 + Vite\|05. Despliegue Frontend React 19 + Vite]] | Despliegue de React, proxy reverso Traefik, SSL y variables de entorno. |
 | 06 | [[06. Protocolo de Cutover DNS y Plan de Contingencia\|06. Protocolo de Cutover DNS y Plan de Contingencia]] | Pruebas de Staging, cambio de DNS en Cloudflare/Hostinger y Rollback. |
+| 07 | [[07. Arquitectura ERP Contabo (Microservicios Docker)\|07. Arquitectura ERP Contabo (Microservicios Docker)]] | Explicación de microservicios Docker, Traefik, Supabase Self-Hosted y latencia < 1ms. |
 
 ---
 
