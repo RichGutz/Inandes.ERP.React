@@ -96,12 +96,19 @@
   - Ejecución del primer Build y Deploy automático en el VPS de Contabo (`169.58.168.107`).
   - Compilación e inyección de assets estáticos React 19 + Vite.
 
+### ✅ Paso 13 & 14: Asignación de Subdominio HTTPS y Verificación (200 OK)
+- **Fecha:** 13 de Agosto de 2026
+- **Acciones:**
+  - Creación de Registro DNS Tipo A `inandes` ➔ `169.58.168.107` (TTL 300s).
+  - Configuración FQDN en Coolify: `https://inandes.geeksoft.tech`.
+  - Certificado SSL Let's Encrypt generado y emitido automáticamente por Traefik.
+  - **Verificación Exitosa (200 OK):** La aplicación React 19 responde en `https://inandes.geeksoft.tech` con HTML e íconos oficial de Geeksoft.
+
 ---
 
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 12:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
-- [ ] **Paso 13:** Asignación de dominios FQDN (`inandes.react.geeksoft.tech` / `api-factoring.geeksoft.tech`) y certificados SSL Let's Encrypt.
-- [ ] **Paso 14:** Pruebas QA de regresión en Staging y conmutación final de DNS.
+- [ ] **Paso 12:** Configurar e iniciar el contenedor del **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils` y `inandes-api`).
+- [ ] **Paso 15:** Conmutar la variable `VITE_SUPABASE_URL` en React hacia el Supabase local de Contabo tras validación final.
 
 ---
