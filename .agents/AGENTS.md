@@ -78,19 +78,18 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 1. Uso Exclusivo de MAIN: Queda estrictamente PROHIBIDO crear nuevas ramas (branches) en Git. Todo el desarrollo, commits y pushes se realizan UNICAMENTE en la rama `main`.
 2. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o tags asignados directamente por el usuario.
 
-## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO
+## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO (EXCLUSIVO CONTABO)
 1. Lectura Obligatoria de Procedimientos: El agente DEBE consultar y seguir estrictamente lo estipulado en `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md`.
 2. Repositorio Oficial Git: El repositorio oficial y unico de este proyecto es `RichGutz/Inandes.ERP.React` (`origin/main`). Todo push se dirige prioritariamente a `origin main`.
-3. Estructura Unificada de Obsidian: Dentro de `C:\Users\rguti\Inandes.ERP.React\Obsidian\`, conviven las notas de ambos modulos del ERP:
-   - `Inandes.Factoring.React` (Modulo Factoring)
-   - `Inandes.Inversionistas.React` (Modulo Inversionistas)
-4. Procedimiento de Despliegue:
-   - Compilar frontend: `npm run build`
-   - Subir archivos al VPS: `python deploy_vps.py`
+3. PROHIBICION DE DESPLIEGUE A HOSTINGER: El servidor antiguo de Hostinger (91.108.125.253 / `deploy_vps.py`) esta OBSOLETO Y DEBAJA. Queda estrictamente PROHIBIDO ejecutar `deploy_vps.py` o realizar despliegues hacia Hostinger.
+4. Procedimiento Unico de Despliegue (Contabo Coolify):
+   - Probar y compilar localmente: `npm run build`
    - Sincronizar en Git: `git add .` -> `git commit -m "..."` -> `git push origin main`
+   - El Webhook de Coolify en el VPS Contabo (`169.58.168.107`) se encarga del auto-despliegue automatico en caliente sin downtime.
 
 ## Regla 12 - UBICACION CENTRALIZADA DE CREDENCIALES Y SERVIDORES
 Todo agente DEBE consultar las credenciales del proyecto en estas ubicaciones estandar antes de solicitar accesos:
-1. Hostinger VPS (Produccion Actual): `deploy_vps.py` (Host: 91.108.125.253, User: root).
+1. Contabo VPS (Produccion Principal Coolify): `Obsidian/Mudanza.Contabo/Mudanza.Contabo/02. Infraestructura y Hardening del Server Contabo.md` y respaldo privado en `C:\Users\rguti\.gemini\antigravity-ide\scratch\contabo_credentials.json` (Host IP: 169.58.168.107, Domain: `inandes.geeksoft.tech`).
 2. Supabase Cloud (PostgreSQL): `Obsidian/Inandes.Factoring.React/06. Procedimientos de Despliegue y Base de Datos.md` y `.env` / `.env.production` (Proyecto: egvcinsbyropumybatdf).
-3. Contabo VPS (Mudanza / Coolify): `Obsidian/Mudanza.Contabo/Mudanza.Contabo/02. Infraestructura y Hardening del Server Contabo.md` y respaldo privado en `C:\Users\rguti\.gemini\antigravity-ide\scratch\contabo_credentials.json`.
+3. Hostinger VPS (DESACTIVADO / OBSOLETO): No utilizar.
+
