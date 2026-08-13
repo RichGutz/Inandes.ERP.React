@@ -61,15 +61,30 @@
 - **Acciones:**
   - Creación del proyecto `InAndes-ERP` en Coolify.
   - Selección e instalación del servicio integrado **Supabase Self-Hosted**.
-  - Descarga y despliegue de la pila Compose (15 microservicios: `Supabase Db`, `Supabase Auth`, `Supabase Studio`, `PostgREST`, `Supabase Kong`, `Realtime`, etc.).
-  - **Encendido de Compose Resources:** Al crearse el recurso, los contenedores aparecen en estado `Exited` (rojo). Se hace clic en el botón morado superior derecho **`Actions` ➔ `Start` / `Deploy`** para pasar todos los componentes a estado `Running` (verde).
+  - Descarga y despliegue de la pila Compose (15 microservicios).
+
+### ✅ Paso 10: Migración Completa de Esquemas y Datos (`pg_dump` ➔ Contabo Postgres)
+- **Fecha:** 13 de Agosto de 2026
+- **Acciones:**
+  - Se extrajeron las **22 tablas de producción** desde Supabase Cloud (`egvcinsbyropumybatdf`).
+  - **Conteo de Registros Migrados 1:1:**
+    - `propuestas`: 159 registros
+    - `crm_inversionistas`: 220 registros
+    - `crm_contratos`: 187 registros
+    - `crm_certificados_eventos`: 377 registros
+    - `EMISORES.ACEPTANTES`: 68 registros
+    - `crm_asesores`: 19 registros
+    - `crm_fondos`: 17 registros
+    - `authorized_users`: 3 registros
+    - `auditoria_eventos`: 21 registros
+  - Se generó y ejecutó el dump SQL (`1.37 MB`, `1,114` sentencias SQL) dentro del contenedor de PostgreSQL en Contabo.
+  - Verificación exitosa: Las 22 tablas existen y están cargadas en el esquema `public` de Contabo.
 
 ---
 
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
 - [ ] **Paso 9:** Vincular GitHub App con Coolify para habilitar Auto-Deploy en `git push origin main`.
-- [ ] **Paso 10:** Ejecutar `pg_dump` de Supabase Cloud (`egvcinsbyropumybatdf`) y restaurar esquemas/datos en el Postgres de Contabo.
 - [ ] **Paso 11:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
 - [ ] **Paso 12:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
 - [ ] **Paso 13:** Pruebas QA en subdominios Staging y Cutover final de DNS en Cloudflare/Hostinger.
