@@ -14,7 +14,7 @@ legacy_path = r"C:\Users\rguti\mini_erp_v2_antigravity"
 if legacy_path not in sys.path:
     sys.path.insert(0, legacy_path)
 
-from backend.data.supabase_repository import (
+from data.supabase_repository import (
     get_proposal_details_by_id,
     get_all_disbursed_proposals,
     get_or_create_liquidacion_resumen,
@@ -22,13 +22,18 @@ from backend.data.supabase_repository import (
     update_proposal_status,
     get_liquidacion_eventos
 )
-from backend.data.invoice_tracking_helpers import create_or_update_invoice_status, add_timeline_event
+from data.invoice_tracking_helpers import create_or_update_invoice_status, add_timeline_event
 
-from testing_audit_liquidation.tabla_maestra_auditoria import generar_tabla_maestra_auditoria
-from testing_audit_liquidation.generar_pdfs_liquidacion import generate_preview_html, calcular_costos_totales_a_fecha
+try:
+    from testing_audit_liquidation.tabla_maestra_auditoria import generar_tabla_maestra_auditoria
+    from testing_audit_liquidation.generar_pdfs_liquidacion import generate_preview_html, calcular_costos_totales_a_fecha
+except ImportError:
+    generar_tabla_maestra_auditoria = None
+    generate_preview_html = None
+    calcular_costos_totales_a_fecha = None
 from weasyprint import HTML
 
-from src.utils.google_integration import upload_file_with_sa, get_sa_credentials_dict
+from utils.google_integration import upload_file_with_sa, get_sa_credentials_dict
 
 router = APIRouter()
 
