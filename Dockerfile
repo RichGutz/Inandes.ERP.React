@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     ghostscript \
     tesseract-ocr \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libffi-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
