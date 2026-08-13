@@ -106,18 +106,31 @@
 
 ---
 
-### 🔄 Paso 12: Dockerización del Backend FastAPI (`inandes-api`)
+### ✅ Paso 12 (Fase Preparatoria & Código): Dockerización del Backend FastAPI (`inandes-api`)
 - **Fecha:** 13 de Agosto de 2026
-- **Acciones:**
-  - Creación de `backend/Dockerfile` y `Dockerfile.backend` con `python:3.11-slim`, `poppler-utils`, `ghostscript`, `tesseract-ocr`, `libpq-dev` y Uvicorn en puerto `8010`.
-  - Actualización de CORS en `backend/main.py` registrando `https://inandes.geeksoft.tech` y `https://api.geeksoft.tech`.
-  - Compilación y sincronización en Git (`origin/main` commit `3ee8850`).
+- **Acciones Realizadas:**
+  1. **Dockerfiles:** Creación de `Dockerfile` en raíz y `backend/Dockerfile` con Python 3.11-slim, dependencias de sistema (`poppler-utils`, `ghostscript`, `tesseract-ocr`, `libpango-1.0-0`, `libpangoft2-1.0-0`, `libffi-dev`, `libpq-dev`).
+  2. **Protección de Archivos Legacy:** Creación de `.dockerignore` para garantizar que carpetas como `Files.Legacy`, `Exceles.Ricardo.Gallo`, `CRM-INANDES`, `backups`, etc., queden excluidas de la imagen Docker.
+  3. **Limpieza de Dependencias:** Incorporación de `jinja2`, `weasyprint` y `gspread` a `backend/requirements.txt`.
+  4. **Resiliencia de Imports:** Envolver importaciones de `streamlit` en `try...except ImportError` en `utils/latency.py`, `google_integration.py`, `email_integration.py` e `invoice_tracking_helpers.py`.
+  5. **Codificación Windows/ASCII:** Limpieza de caracteres emojis no-ASCII en `google_integration.py` (evitando `UnicodeEncodeError`).
+  6. **Importación de Routers:** Corrección de la estructura de imports en `backend/main.py` y `backend/routers/liquidaciones.py`.
+  7. **Base de Datos Coolify:** Configuración de `ports_exposes = '8010'` y FQDN en la tabla de aplicaciones de Coolify.
+  8. **Git Sync:** Todo guardado, probado y sincronizado en `origin/main` (commit `a5fb319`).
 
 ---
 
-## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
+## ⏳ Tareas Pendientes para la Próxima Sesión
 
-- [ ] **Paso 12 (Continuación):** Activar el recurso de aplicación `inandes-api` en el Dashboard de Coolify (`http://169.58.168.107:8000`).
-- [ ] **Paso 15:** Conmutar la variable `VITE_SUPABASE_URL` en React hacia el Supabase local de Contabo tras validación final.
+- [ ] **Tarea 1 (Paso 12 - Verificación Backend):**
+  - Hacer clic en **Re-deploy** en la aplicación del backend dentro del panel Coolify (`http://169.58.168.107:8000`).
+  - Ejecutar verificación por SSH/terminal (`python scratch/check_backend_response.py`) para confirmar la respuesta `{"status":"online"}` en el puerto `8010`.
+
+- [ ] **Tarea 2 (Paso 15 - Conmutación de Variables Frontend):**
+  - Actualizar `VITE_SUPABASE_URL` y `VITE_API_FACTORING_URL` en React apuntando al backend local de Contabo tras validación final.
+
+- [ ] **Tarea 3 (Paso 16 - Cutover DNS Final & Desactivación Hostinger):**
+  - Apuntar el registro DNS `api-factoring.geeksoft.tech` a la IP `169.58.168.107` (Contabo).
+  - Dar de baja / cancelar el servidor antiguo VPS en Hostinger (`91.108.125.253`).
 
 ---
