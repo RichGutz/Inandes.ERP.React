@@ -18,7 +18,9 @@ app = FastAPI(
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://inandes.react.geeksoft.tech"
+    "https://inandes.react.geeksoft.tech",
+    "https://inandes.geeksoft.tech",
+    "https://api.geeksoft.tech"
 ]
 
 app.add_middleware(
