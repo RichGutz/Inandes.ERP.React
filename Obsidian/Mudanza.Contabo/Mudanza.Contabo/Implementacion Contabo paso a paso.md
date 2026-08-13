@@ -106,9 +106,18 @@
 
 ---
 
+### 🔄 Paso 12: Dockerización del Backend FastAPI (`inandes-api`)
+- **Fecha:** 13 de Agosto de 2026
+- **Acciones:**
+  - Creación de `backend/Dockerfile` y `Dockerfile.backend` con `python:3.11-slim`, `poppler-utils`, `ghostscript`, `tesseract-ocr`, `libpq-dev` y Uvicorn en puerto `8010`.
+  - Actualización de CORS en `backend/main.py` registrando `https://inandes.geeksoft.tech` y `https://api.geeksoft.tech`.
+  - Compilación y sincronización en Git (`origin/main` commit `3ee8850`).
+
+---
+
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 12:** Configurar e iniciar el contenedor del **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils` y `inandes-api`).
+- [ ] **Paso 12 (Continuación):** Activar el recurso de aplicación `inandes-api` en el Dashboard de Coolify (`http://169.58.168.107:8000`).
 - [ ] **Paso 15:** Conmutar la variable `VITE_SUPABASE_URL` en React hacia el Supabase local de Contabo tras validación final.
 
 ---
