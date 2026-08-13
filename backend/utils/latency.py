@@ -2,7 +2,10 @@ import time
 import functools
 import datetime
 import pandas as pd
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 from typing import Optional, List, Dict, Any
 
 class LatencyMonitor:

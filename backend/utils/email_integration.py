@@ -2,7 +2,10 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 import os
 
 def send_email_with_attachments(to_email: str, subject: str, body: str, attachments: list = None, cc_email: str = ""):

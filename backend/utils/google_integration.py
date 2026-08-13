@@ -1,4 +1,7 @@
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 import requests
 import json
 import os

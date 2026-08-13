@@ -24,11 +24,15 @@ def get_current_user_email() -> str:
     Obtiene el email del usuario logueado desde session_state.
     Fallback a 'sistema' si no hay usuario.
     """
-    import streamlit as st
-    if 'user_info' in st.session_state:
-        user_info = st.session_state.user_info
-        if isinstance(user_info, dict):
-            return user_info.get('email', 'sistema')
+    try:
+        import streamlit as st
+        if 'user_info' in st.session_state:
+            user_info = st.session_state.user_info
+            if isinstance(user_info, dict):
+                return user_info.get('email', 'sistema')
+            return str(user_info)
+    except Exception:
+        pass
     return 'sistema'
 
 def create_or_update_invoice_status(proposal_id: str, proposal_data: Dict[str, Any], stage: str = None) -> Optional[Dict[str, Any]]:
