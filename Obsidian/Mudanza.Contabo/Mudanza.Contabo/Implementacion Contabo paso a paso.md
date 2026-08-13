@@ -55,17 +55,22 @@
 ### ✅ Paso 6: Registro de Cuenta Administrador en Coolify
 - **Acciones:**
   - Creación de cuenta de Administrador Principal en `http://169.58.168.107:8000`.
-  - Servidor local vinculado como host principal en Coolify.
+  - Configuración del servidor local (`This machine`) como host principal de despliegue.
+
+### ✅ Paso 7 & 8: Inicio de Despliegue de Supabase Self-Hosted (1-Click)
+- **Acciones:**
+  - Creación del proyecto `InAndes-ERP` en Coolify.
+  - Selección e instalación del servicio integrado **Supabase Self-Hosted**.
+  - Descarga y despliegue de contenedores Docker (PostgreSQL, GoTrue Auth, PostgREST, Studio UI).
 
 ---
 
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 7:** Vincular GitHub App con Coolify para habilitar Auto-Deploy en `git push origin main`.
-- [ ] **Paso 8:** Desplegar el servicio de **Supabase Self-Hosted (1-Click)** en Coolify.
-- [ ] **Paso 9:** Ejecutar `pg_dump` de Supabase Cloud (`egvcinsbyropumybatdf`) y restaurar esquemas/datos en la BD de Contabo.
-- [ ] **Paso 10:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
-- [ ] **Paso 11:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
-- [ ] **Paso 12:** Pruebas QA en subdominios Staging y Cutover final de DNS en Cloudflare/Hostinger.
+- [ ] **Paso 9:** Vincular GitHub App con Coolify para habilitar Auto-Deploy en `git push origin main`.
+- [ ] **Paso 10:** Ejecutar `pg_dump` de Supabase Cloud (`egvcinsbyropumybatdf`) y restaurar esquemas/datos en el Postgres de Contabo.
+- [ ] **Paso 11:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
+- [ ] **Paso 12:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
+- [ ] **Paso 13:** Pruebas QA en subdominios Staging y Cutover final de DNS en Cloudflare/Hostinger.
 
 ---
