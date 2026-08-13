@@ -61,7 +61,8 @@
 - **Acciones:**
   - Creación del proyecto `InAndes-ERP` en Coolify.
   - Selección e instalación del servicio integrado **Supabase Self-Hosted**.
-  - Descarga y despliegue de contenedores Docker (PostgreSQL, GoTrue Auth, PostgREST, Studio UI).
+  - Descarga y despliegue de la pila Compose (15 microservicios: `Supabase Db`, `Supabase Auth`, `Supabase Studio`, `PostgREST`, `Supabase Kong`, `Realtime`, etc.).
+  - **Encendido de Compose Resources:** Al crearse el recurso, los contenedores aparecen en estado `Exited` (rojo). Se hace clic en el botón morado superior derecho **`Actions` ➔ `Start` / `Deploy`** para pasar todos los componentes a estado `Running` (verde).
 
 ---
 
