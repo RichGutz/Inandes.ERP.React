@@ -89,10 +89,19 @@
 
 ---
 
+### ✅ Paso 11: Inicio del Despliegue de React 19 en Coolify (CI/CD Auto-Deploy)
+- **Fecha:** 13 de Agosto de 2026
+- **Acciones:**
+  - Creación del recurso de aplicación en Coolify vinculado a `RichGutz/Inandes.ERP.React` (Rama `main`).
+  - Ejecución del primer Build y Deploy automático en el VPS de Contabo (`169.58.168.107`).
+  - Compilación e inyección de assets estáticos React 19 + Vite.
+
+---
+
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 11:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
-- [ ] **Paso 12:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
-- [ ] **Paso 13:** Pruebas QA en subdominios Staging y Cutover final de DNS en Cloudflare/Hostinger.
+- [ ] **Paso 12:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
+- [ ] **Paso 13:** Asignación de dominios FQDN (`inandes.react.geeksoft.tech` / `api-factoring.geeksoft.tech`) y certificados SSL Let's Encrypt.
+- [ ] **Paso 14:** Pruebas QA de regresión en Staging y conmutación final de DNS.
 
 ---
