@@ -52,13 +52,17 @@
   - Despliegue y salud de la suite **Coolify v4.3.2**.
   - Dashboard web activo y escuchando en `http://169.58.168.107:8000`.
 
+### ✅ Paso 6: Registro de Cuenta Administrador en Coolify
+- **Acciones:**
+  - Creación de cuenta de Administrador Principal en `http://169.58.168.107:8000`.
+  - Servidor local vinculado como host principal en Coolify.
+
 ---
 
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 6:** Ingreso inicial al Dashboard de Coolify (`http://169.58.168.107:8000`) y registro de la cuenta de Administrador Principal.
 - [ ] **Paso 7:** Vincular GitHub App con Coolify para habilitar Auto-Deploy en `git push origin main`.
-- [ ] **Paso 8:** Desplegar el servicio de **Supabase Self-Hosted (1-Click)** o PostgreSQL en Coolify.
+- [ ] **Paso 8:** Desplegar el servicio de **Supabase Self-Hosted (1-Click)** en Coolify.
 - [ ] **Paso 9:** Ejecutar `pg_dump` de Supabase Cloud (`egvcinsbyropumybatdf`) y restaurar esquemas/datos en la BD de Contabo.
 - [ ] **Paso 10:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
 - [ ] **Paso 11:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
