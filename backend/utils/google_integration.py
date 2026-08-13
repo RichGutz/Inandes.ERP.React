@@ -14,19 +14,18 @@ import io
 # --- HELPER FUNCTION FOR SA CREDENTIALS ---
 def get_sa_credentials_dict():
     """
-    Get Google Service Account credentials from file or environment variables (Railway).
+    Get Google Service Account credentials from file or environment variables.
     Priority: 
-    1. Read from sa_credentials.json file (recommended for Railway)
+    1. Read from sa_credentials.json file
     2. Fallback to GOOGLE_SA_CREDENTIALS environment variable
-    Returns dict with SA credentials.
+    Returns dict with SA credentials or None.
     """
     import sys
     
-    # Try to read from file first (Railway deployment)
     file_paths = [
-        '/app/sa_credentials.json',  # Railway deployment path
-        'sa_credentials.json',        # Local development path
-        os.path.join(os.path.dirname(__file__), '..', '..', 'sa_credentials.json')  # Relative path
+        '/app/sa_credentials.json',
+        'sa_credentials.json',
+        os.path.join(os.path.dirname(__file__), '..', '..', 'sa_credentials.json')
     ]
     
     for file_path in file_paths:
@@ -34,20 +33,21 @@ def get_sa_credentials_dict():
             try:
                 with open(file_path, 'r') as f:
                     creds_dict = json.load(f)
-                sys.stderr.write(f"✅ SA credentials loaded from file: {file_path}\n")
+                sys.stderr.write(f"[OK] SA credentials loaded from file: {file_path}\n")
                 sys.stderr.flush()
                 return creds_dict
             except Exception as e:
-                sys.stderr.write(f"⚠️ Failed to read {file_path}: {e}\n")
+                sys.stderr.write(f"[WARNING] Failed to read {file_path}: {e}\n")
                 sys.stderr.flush()
                 continue
     
-    # Fallback to environment variable (legacy method)
     sa_json = os.getenv('GOOGLE_SA_CREDENTIALS')
     if not sa_json:
-        raise ValueError("❌ Service Account credentials not found. Neither sa_credentials.json file nor GOOGLE_SA_CREDENTIALS environment variable found.")
+        sys.stderr.write("[WARNING] Service Account credentials not found.\n")
+        sys.stderr.flush()
+        return None
     
-    sys.stderr.write("⚠️ Using environment variable (legacy method)\n")
+    sys.stderr.write("[WARNING] Using environment variable (legacy method)\n")
     sys.stderr.flush()
     
     # Fix: Railway sometimes adds malformed quote wrapping
