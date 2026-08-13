@@ -63,6 +63,13 @@
   - Selección e instalación del servicio integrado **Supabase Self-Hosted**.
   - Descarga y despliegue de la pila Compose (15 microservicios).
 
+### ✅ Paso 9: Vinculación Exitosa de GitHub App
+- **Fecha:** 13 de Agosto de 2026
+- **Acciones:**
+  - Creación y autorización de la GitHub App en Coolify.
+  - Permisos otorgados al repositorio oficial `RichGutz/Inandes.ERP.React`.
+  - Auto-Deploy por Webhook en `git push origin main` 100% configurado.
+
 ### ✅ Paso 10: Migración Completa de Esquemas y Datos (`pg_dump` ➔ Contabo Postgres)
 - **Fecha:** 13 de Agosto de 2026
 - **Acciones:**
@@ -84,7 +91,6 @@
 
 ## ⏳ Próximos Pasos Pendientes (Fases Siguientes)
 
-- [ ] **Paso 9:** Vincular GitHub App con Coolify para habilitar Auto-Deploy en `git push origin main`.
 - [ ] **Paso 11:** Configurar e iniciar el contenedor de **FastAPI Backend** (`Dockerfile` Python 3.11 con `poppler-utils`).
 - [ ] **Paso 12:** Configurar e iniciar el contenedor del **Frontend React 19** con Nginx SPA Fallback.
 - [ ] **Paso 13:** Pruebas QA en subdominios Staging y Cutover final de DNS en Cloudflare/Hostinger.
