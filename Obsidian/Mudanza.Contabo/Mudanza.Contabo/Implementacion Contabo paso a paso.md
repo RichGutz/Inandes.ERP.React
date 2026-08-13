@@ -120,6 +120,40 @@
 
 ---
 
+### ✅ Paso 17: Diagnóstico y Corrección de Pantalla en Blanco en URL Contabo (`inandes.geeksoft.tech`)
+- **Fecha:** 13 de Agosto de 2026
+- **Problema Reportado:** La URL `https://inandes.geeksoft.tech` cargaba una página en blanco.
+- **Diagnóstico Realizado:**
+  - El servidor web respondía HTTP 200 OK y entregaba `index.html` y los paquetes JS.
+  - Al revisar el paquete JS compilado por Nixpacks/Coolify (`index-BxssXJVt.js`), las variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` no habían sido inyectadas durante la compilación (`import.meta.env`).
+  - En `src/services/supabaseClient.ts`, una instrucción `if (!supabaseUrl) throw new Error(...)` provocaba que la aplicación React colapsara en la fase de arranque del navegador antes de renderizar el árbol DOM en `<div id="root"></div>`.
+- **Acciones Realizadas:**
+  - Se configuraron valores por defecto (fallback) con las credenciales públicas de Supabase en `src/services/supabaseClient.ts`.
+  - Se recompiló localmente con `npm run build` (0 errores).
+  - Se realizó `git commit` y `git push origin main` (commit `71e7b85`), disparando el webhook de auto-despliegue en Coolify.
+  - Se desplegó en paralelo al VPS Hostinger actual mediante `deploy_vps.py`.
+- **Resultado:**
+  - Coolify recompiló automáticamente el bundle (`index-CltHXj6o.js`).
+  - **Verificación Exitosa (200 OK):** La URL `https://inandes.geeksoft.tech` carga la interfaz React 19 sin errores y mostrando la UI de forma fluida.
+
+---
+
+## 🚩 Red Flags & Lecciones Aprendidas (Mudanza Contabo)
+
+1. **🚩 RED FLAG 1: Variables de Entorno de Vite en TIEMPO DE COMPILACIÓN (*Build Variables*)**
+   - **Causa:** Vite evalúa e inyecta las variables de entorno `VITE_*` durante el comando de compilación (`vite build`). Si un servicio de CI/CD como Coolify, Docker o Nixpacks ejecuta `npm run build` sin que las variables estén explícitamente marcadas como **"Build Variables"** (o "Is Build Variable?"), `import.meta.env.VITE_*` resulta `undefined`.
+   - **Consecuencia:** Al invocar `createClient(undefined, undefined)` de Supabase, la app colapsa y muestra una pantalla en blanco.
+   - **Regla Intangible de Prevención:** `src/services/supabaseClient.ts` DEBE contar SIEMPRE con credenciales fallback por defecto para que la UI jamás sufra un crash blanco por omisión de variables de build.
+
+2. **🚩 RED FLAG 2: Prohibición de `throw Error` síncronos en la carga inicial de módulos React**
+   - **Causa:** Lanzar excepciones no capturadas (`throw new Error(...)`) fuera del ciclo de vida de componentes (fuera de `React.Component` o `ErrorBoundary`) detiene de forma irrecuperable el bundle JS.
+   - **Regla Intangible de Prevención:** Todo cliente o servicio global (`supabaseClient.ts`, `factoringService.ts`) debe usar fallbacks o degradación elegante para no detener el renderizado del DOM principal.
+
+3. **🚩 RED FLAG 3: Mantener Sincronizados Ambos Entornos Durante el Cutover**
+   - Mientras dure la migración a Contabo, todo cambio de código en `main` debe probarse localmente, pushearse a `origin/main` (para auto-deploy en Contabo) y actualizarse en Hostinger con `deploy_vps.py` para evitar divergencias de versión.
+
+---
+
 ## ⏳ Tareas Pendientes para la Próxima Sesión
 
 - [ ] **Tarea 1 (Paso 12 - Verificación Backend):**
@@ -134,3 +168,4 @@
   - Dar de baja / cancelar el servidor antiguo VPS en Hostinger (`91.108.125.253`).
 
 ---
+
