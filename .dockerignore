@@ -1,0 +1,22 @@
+# .dockerignore para InAndes ERP Backend
+# Ignorar carpetas legacy y archivos temporales
+Files.Legacy/
+Exceles.Ricardo.Gallo/
+CRM-INANDES/
+Files.Legacy/
+node_modules/
+dist/
+backups/
+backups.supabase/
+scratch/
+audio_transcrip/
+Reportes_Auditoria_2026-02-28/
+FLOW_CHARTS/
+*.xlsx
+*.csv
+*.pdf
+*.zip
+*.tar.gz
+.git/
+.env*
+!.env.example
