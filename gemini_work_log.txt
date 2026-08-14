@@ -157,3 +157,5 @@
 [2026-08-14 15:38:00-05:00] ESTADO: Completado con exito. Agregadas variables exportingExcel y exportingPdf, banners de notificacion con feedback explícito para el motor WeasyPrint y badges checkmark al completar descargas.
 [2026-08-14 16:15:00-05:00] TAREA: Rediseñar cabecera de Seguimiento de Valor Cuota v26 en FondosPage.tsx (eliminar redundancias de texto, angostar ficha tecnica y apilar botones de PDF/Excel centrados simetricamente con descargas directas y banners de progreso).
 [2026-08-14 16:15:00-05:00] ESTADO: Completado con exito. Actualizado FondosPage.tsx, verificado npm run build limpia (0 errores) y listo para despliegue en main.
+[2026-08-14 16:40:00-05:00] TAREA: Eliminar todos los ribbons de fondos individuales y colocar los 2 botones de exportacion (PDF y Excel) lado a lado debajo del panel de filtros.
+[2026-08-14 16:40:00-05:00] ESTADO: Completado con exito. Simplificado FondosPage.tsx guiado 100% por el selector de fondos. Compilacion Vite limpia (0 errores).

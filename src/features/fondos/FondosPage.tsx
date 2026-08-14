@@ -1324,92 +1324,63 @@ export const FondosPage: React.FC = () => {
               </div>
             )}
 
-            {/* Ficha Técnica Angostada a la Izquierda + Botones Apilados Simétricamente Centrados en la Columna Derecha */}
-            {vcLoading ? (
-              <div className="flex items-center justify-center py-6 gap-2">
-                <Loader2 className="animate-spin text-emerald-600" size={20} />
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cargando metadata de simulación...</span>
-              </div>
-            ) : (
-              vcReportData.map(rep => (
-                <div key={rep.fondo.id_fondo} className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                  {/* Ficha Técnica Angostada (Sin las palabras redundantes 'Fondo:' ni 'Moneda:') */}
-                  <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-700 dark:text-slate-350 font-medium">
-                    <span className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs font-bold text-slate-900 dark:text-white">
-                      🏢 {rep.fondo.nombre_fondo} ({rep.fondo.id_fondo})
-                    </span>
-                    <span className={`px-2 py-1 rounded-lg font-black text-[11px] ${rep.fondo.moneda === 'USD' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
-                      {rep.fondo.moneda}
-                    </span>
-                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>TASA ACTIVA: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.vars.activa}%</strong></span>
-                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>ADMIN: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.vars.admin}%</strong></span>
-                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>CAPTACIÓN: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.fondo.comision_captacion_fondo || 0}%</strong></span>
-                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>MISC: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.fondo.comision_miscelaneos_fondo || 0}%</strong></span>
-                  </div>
+            {/* Dos Botones Principales Lado a Lado Debajo de los Filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <button
+                className={`h-11 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
+                  vcPdfDownloaded
+                    ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
+                onClick={handleExportVcPdf}
+                disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
+              >
+                {vcExportingPdf ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Procesando PDF v26...</span>
+                  </>
+                ) : vcPdfDownloaded ? (
+                  <>
+                    <CheckCircle size={16} className="text-indigo-200" />
+                    <span>✓ PDF v26 Descargado (Clic para Re-descargar)</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={16} />
+                    <span>📄 Descargar PDF Oficial v26 (NAV)</span>
+                  </>
+                )}
+              </button>
 
-                  {/* Botones Apilados Simétricamente Centrados en la Columna Derecha */}
-                  <div className="flex flex-col items-center justify-center gap-2 shrink-0 min-w-[240px]">
-                    <button
-                      className={`w-full h-10 px-4 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
-                        vcPdfDownloaded
-                          ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      }`}
-                      onClick={handleExportVcPdf}
-                      disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
-                    >
-                      {vcExportingPdf ? (
-                        <>
-                          <Loader2 size={15} className="animate-spin" />
-                          <span>Procesando PDF v26...</span>
-                        </>
-                      ) : vcPdfDownloaded ? (
-                        <>
-                          <CheckCircle size={15} className="text-indigo-200" />
-                          <span>✓ PDF v26 Descargado</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileText size={15} />
-                          <span>📄 Descargar PDF Oficial v26 (NAV)</span>
-                        </>
-                      )}
-                    </button>
+              <button
+                className={`h-11 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
+                  vcExcelDownloaded
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+                onClick={handleExportVcExcel}
+                disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
+              >
+                {vcExportingExcel ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Procesando Excel v26...</span>
+                  </>
+                ) : vcExcelDownloaded ? (
+                  <>
+                    <CheckCircle size={16} className="text-emerald-200" />
+                    <span>✓ Excel v26 Descargado (Clic para Re-descargar)</span>
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet size={16} />
+                    <span>📊 Exportar Matriz a Excel v26</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-                    <button
-                      className={`w-full h-10 px-4 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
-                        vcExcelDownloaded
-                          ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
-                      onClick={handleExportVcExcel}
-                      disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
-                    >
-                      {vcExportingExcel ? (
-                        <>
-                          <Loader2 size={15} className="animate-spin" />
-                          <span>Procesando Excel v26...</span>
-                        </>
-                      ) : vcExcelDownloaded ? (
-                        <>
-                          <CheckCircle size={15} className="text-emerald-200" />
-                          <span>✓ Excel v26 Descargado</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileSpreadsheet size={15} />
-                          <span>📊 Exportar Matriz a Excel v26</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
 
           </div>
 
