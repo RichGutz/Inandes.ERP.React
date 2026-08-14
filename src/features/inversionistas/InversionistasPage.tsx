@@ -76,6 +76,8 @@ export const InversionistasPage: React.FC = () => {
   const [collisionCount, setCollisionCount] = useState<number>(0);
   const [excelDownloaded, setExcelDownloaded] = useState<boolean>(false);
   const [pdfDownloaded, setPdfDownloaded] = useState<boolean>(false);
+  const [exportingExcel, setExportingExcel] = useState<boolean>(false);
+  const [exportingPdf, setExportingPdf] = useState<boolean>(false);
   const [officialRegisterLoading, setOfficialRegisterLoading] = useState<boolean>(false);
   const [registerSuccessMsg, setRegisterSuccessMsg] = useState<string | null>(null);
 
@@ -844,28 +846,56 @@ export const InversionistasPage: React.FC = () => {
     setExcelDownloaded(true);
   };
 
-  // Exportar PDF Condensado Bello Oficial (Universal: TODOS y Fondo Individual) via descarga directa
-  const handleExportPDFV40 = async () => {
-    let currentResult = calcResult;
-    if (!currentResult) {
-      currentResult = await handleRunV40Calculation();
+  // Exportar Excel Maestro v40 con indicador de carga
+  const handleExportExcelV40WithProgress = async () => {
+    setExportingExcel(true);
+    try {
+      let currentResult = calcResult;
+      if (!currentResult) {
+        currentResult = await handleRunV40Calculation();
+      }
+      if (!currentResult) {
+        alert("No hay datos calculados para exportar en Excel.");
+        return;
+      }
+      await handleExportExcelV40();
+    } catch (err: any) {
+      alert(`Error generando Excel: ${err.message}`);
+    } finally {
+      setExportingExcel(false);
     }
-    if (!currentResult || currentResult.pdfData.length === 0) {
-      alert("No hay datos calculados para exportar en PDF.");
-      return;
-    }
-
-    const htmlContent = generatePdfBelloConDesglose({
-      pdfData: currentResult.pdfData,
-      fStart,
-      fEnd,
-      selFondo: v40SelFondo
-    });
-
-    const filename = `REPORTE_OFICIAL_SISTEMA_${fEnd}.pdf`;
-    await handleDownloadFastPdf(htmlContent, filename);
-    setPdfDownloaded(true);
   };
+
+  // Exportar PDF Condensado Bello Oficial (Universal: TODOS y Fondo Individual) via descarga directa con progreso
+  const handleExportPDFV40 = async () => {
+    setExportingPdf(true);
+    try {
+      let currentResult = calcResult;
+      if (!currentResult) {
+        currentResult = await handleRunV40Calculation();
+      }
+      if (!currentResult || currentResult.pdfData.length === 0) {
+        alert("No hay datos calculados para exportar en PDF.");
+        return;
+      }
+
+      const htmlContent = generatePdfBelloConDesglose({
+        pdfData: currentResult.pdfData,
+        fStart,
+        fEnd,
+        selFondo: v40SelFondo
+      });
+
+      const filename = `REPORTE_OFICIAL_SISTEMA_${fEnd}.pdf`;
+      await handleDownloadFastPdf(htmlContent, filename);
+      setPdfDownloaded(true);
+    } catch (err: any) {
+      alert(`Error generando PDF: ${err.message}`);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
 
 
   // Guardar permanente en base de datos
@@ -1634,30 +1664,96 @@ export const InversionistasPage: React.FC = () => {
                 📄 Paso 1: Generar y Revisar Reportes de Auditoría ({fEnd})
               </h4>
 
+              {/* Banners de Progreso / Artefactos de Notificación en Vivo */}
+              {exportingExcel && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
+                  <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                      📊 Procesando y Compilando Libro Excel Maestro...
+                    </span>
+                    <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                      Generando hojas de auditoría contable diaria. La descarga iniciará automáticamente en breve.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {exportingPdf && (
+                <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
+                  <Loader2 size={20} className="animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
+                      📄 Generando y Convirtiendo Reporte PDF Oficial (WeasyPrint Backend)...
+                    </span>
+                    <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
+                      El servidor está compilando las tablas y estilos. Por favor espere unos segundos mientras se procesa la descarga directa.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
-                  className="h-12 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={calcLoading}
+                  className={`h-12 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                    excelDownloaded
+                      ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+                  disabled={calcLoading || exportingExcel || exportingPdf}
                   onClick={async () => {
-                    await handleExportExcelV40();
+                    await handleExportExcelV40WithProgress();
                   }}
                 >
-                  {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={18} />}
-                  <span>Descargar / Consultar Excel Maestro (Formato #,##0.00)</span>
+                  {exportingExcel ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Procesando Excel Maestro...</span>
+                    </>
+                  ) : excelDownloaded ? (
+                    <>
+                      <CheckCircle size={18} className="text-emerald-200" />
+                      <span>✓ Excel Maestro Descargado (Clic para Re-descargar)</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet size={18} />
+                      <span>Descargar / Consultar Excel Maestro (Formato #,##0.00)</span>
+                    </>
+                  )}
                 </button>
 
                 <button
-                  className="h-12 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={calcLoading}
+                  className={`h-12 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                    pdfDownloaded
+                      ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                  disabled={calcLoading || exportingExcel || exportingPdf}
                   onClick={async () => {
                     await handleExportPDFV40();
                   }}
                 >
-                  {calcLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={18} />}
-                  <span>Ver / Generar Reporte PDF Oficial (Geeksoft + InAndes)</span>
+                  {exportingPdf ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Procesando y Convirtiendo PDF...</span>
+                    </>
+                  ) : pdfDownloaded ? (
+                    <>
+                      <CheckCircle size={18} className="text-indigo-200" />
+                      <span>✓ Reporte PDF Descargado (Clic para Re-descargar)</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={18} />
+                      <span>Descargar Reporte PDF Oficial (Geeksoft + InAndes)</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
+
 
             {/* FASE 2: EJECUCIÓN OFICIAL EN BD */}
             <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
