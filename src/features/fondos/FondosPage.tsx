@@ -457,7 +457,7 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
   };
 
-  // Descargar PDF Oficial de Valor Cuota v26 (Servidor FastAPI WeasyPrint / Fallback Nativo)
+  // Descargar PDF Oficial de Valor Cuota v26 (Réplica Literal 1:1 de reporte_cuotas_transpuesto_v26.html)
   const handleExportVcPdf = async () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para descargar.");
@@ -468,104 +468,245 @@ export const FondosPage: React.FC = () => {
     try {
       const filename = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
 
+      const formatNumVal = (v: any, decimals: number = 2) => {
+        if (v === null || v === undefined || v === '') return '';
+        const fv = Number(v);
+        if (isNaN(fv)) return String(v);
+        if (fv === 0) return '-';
+        return fv.toLocaleString('es-PE', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        });
+      };
+
       const htmlPrint = `
         <!DOCTYPE html>
         <html lang="es">
-          <head>
+        <head>
             <meta charset="UTF-8">
-            <title>REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26</title>
+            <title>Reporte Maestro de Cuotas - V26 (NAV Focused)</title>
             <style>
-              @page {
-                size: A4 landscape;
-                margin: 8mm;
-              }
-              body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 7.5pt; color: #1e293b; margin: 0; padding: 0; }
-              .top-header { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 2px solid #01579b; padding-bottom: 4px; }
-              .top-header td { border: none; vertical-align: middle; }
-              .logo-geeksoft { height: 42px; width: auto; }
-              .logo-inandes { height: 28px; width: auto; }
-              .title { font-size: 11pt; font-weight: 900; color: #01579b; text-align: center; text-transform: uppercase; margin: 0; }
-              .subtitle { font-size: 7.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 2px; }
-              .meta-box { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px; margin-bottom: 6px; font-size: 7.5pt; font-weight: 600; color: #334155; }
-              .block-title { font-size: 8.5pt; font-weight: 800; color: #01579b; margin-top: 10px; margin-bottom: 4px; text-transform: uppercase; }
-              .page-break { page-break-before: always; }
-              table.vc-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 6.5pt; table-layout: fixed; }
-              table.vc-table th { background-color: #01579b; color: #ffffff; font-weight: 800; font-size: 7pt; padding: 3px 2px; text-align: center; border: 1px solid #014378; }
-              table.vc-table td { border: 1px solid #cbd5e1; padding: 2px 2px; font-size: 6.5pt; word-wrap: break-word; }
-              td.num-col { width: 20px; text-align: center; font-weight: bold; background-color: #f1f5f9; }
-              td.cert-id-col { width: 150px; text-align: left; font-weight: bold; background-color: #f8fafc; }
-              td.cap-col { width: 65px; text-align: right; background-color: #e3f2fd; font-weight: 600; }
-              td.cuotas-col { width: 60px; text-align: right; background-color: #f1f8e9; font-weight: 600; }
-              .day-col { text-align: right; font-family: monospace; font-size: 6pt; }
-              .aumento-row td { background-color: #fafafa; }
-              .aumento-label { padding-left: 6px; color: #166534; font-style: italic; border-left: 2px solid #22c55e; }
-              .summary-row td { font-weight: bold; background-color: #fff9c4; color: #000; }
-              .comision-row td { color: #c62828; background-color: #ffebee; font-weight: bold; }
-              .vc-highlight { color: #0d47a1; font-weight: bold; background-color: #e3f2fd; }
-              .spacer-row td { height: 4px; background-color: #f1f5f9; border: none; }
-              .footer { margin-top: 15px; text-align: right; font-size: 6.5pt; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+                @page {
+                    size: A3 landscape;
+                    margin: 0.8cm;
+                }
+                body {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 8pt;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 8px;
+                    border-bottom: 2px solid #01579b;
+                    padding-bottom: 4px;
+                }
+                .header-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    border: none;
+                    margin-bottom: 4px;
+                }
+                .header-table td {
+                    border: none;
+                    vertical-align: middle;
+                    padding: 0;
+                }
+                .logo-geeksoft { height: 42px; width: auto; }
+                .logo-inandes { height: 28px; width: auto; }
+                .header h1 {
+                    margin: 0;
+                    font-size: 13pt;
+                    color: #01579b;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                .repo-subtitle {
+                    font-size: 8.5pt;
+                    font-weight: bold;
+                    color: #333;
+                    margin-top: 3px;
+                }
+                .repo-subtext {
+                    font-size: 7.5pt;
+                    color: #555;
+                    margin-top: 2px;
+                }
+                table.data-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    margin-bottom: 10px;
+                }
+                table.data-table th,
+                table.data-table td {
+                    border: 1px solid #ccc;
+                    padding: 2px;
+                    text-align: right;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    font-size: 6.5pt;
+                }
+                table.data-table th {
+                    background-color: #0288d1;
+                    color: white;
+                    font-weight: bold;
+                    text-align: center;
+                    font-size: 7pt;
+                }
+                .num-col {
+                    width: 25px;
+                    text-align: center;
+                    background-color: #f5f5f5;
+                    color: #000 !important;
+                    font-weight: bold;
+                }
+                .cert-id-col {
+                    width: 160px;
+                    text-align: left;
+                    font-weight: bold;
+                    background-color: #f5f5f5;
+                    color: #333 !important;
+                    font-size: 6.5pt;
+                }
+                .cap-col {
+                    width: 70px;
+                    background-color: #e3f2fd;
+                    color: #333 !important;
+                    font-size: 7pt;
+                }
+                .cuotas-col {
+                    width: 65px;
+                    background-color: #f1f8e9;
+                    color: #000 !important;
+                    font-size: 6.5pt;
+                }
+                .day-col {
+                    font-size: 6pt;
+                }
+                .aumento-row td {
+                    background-color: #fafafa;
+                }
+                .aumento-label {
+                    padding-left: 10px !important;
+                    color: #2e7d32 !important;
+                    font-style: italic;
+                    font-size: 6pt !important;
+                    border-left: 3px solid #43a047;
+                }
+                .summary-row td {
+                    font-weight: bold !important;
+                    background-color: #fff9c4 !important;
+                    color: #000 !important;
+                }
+                .comision-row td {
+                    color: #c62828 !important;
+                    background-color: #ffebee !important;
+                }
+                .spacer-row td {
+                    height: 8px;
+                    background-color: #f5f5f5;
+                    border: none;
+                }
+                .page-break {
+                    page-break-before: always;
+                }
+                .vc-highlight {
+                    color: #0d47a1 !important;
+                    font-weight: bold !important;
+                    background-color: #e3f2fd !important;
+                }
+                .footer {
+                    text-align: right;
+                    color: #999;
+                    font-size: 6.5pt;
+                    margin-top: 10px;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 4px;
+                }
             </style>
-          </head>
-          <body>
-            <table class="top-header">
-              <tr>
-                <td style="width: 20%; text-align: left;">
-                  <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
-                </td>
-                <td style="width: 60%; text-align: center;">
-                  <div class="title">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
-                  <div class="subtitle">REPORTE MAESTRO DE LIQUIDACIÓN Y VALOR CUOTA v26 (NAV)</div>
-                </td>
-                <td style="width: 20%; text-align: right;">
-                  <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
-                </td>
-              </tr>
-            </table>
-
+        </head>
+        <body>
             ${vcReportData.map((rep, rIdx) => {
-              const metaBoxHtml = `<div class="meta-box">Fondo: <strong>${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo})</strong> | Moneda: <strong>${rep.fondo.moneda}</strong> | TASA ACTIVA EMPRESA: <strong>${rep.vars.activa}%</strong> | COMISIÓ N ADMIN: <strong>${rep.vars.admin}%</strong> | COM. CAPTACIÓN: <strong>${rep.fondo.comision_captacion_fondo || 0}%</strong> | COM. MISC: <strong>${rep.fondo.comision_miscelaneos_fondo || 0}%</strong></div>`;
-
               return rep.blocks.map((block, bIdx) => {
                 const isFirstPage = rIdx === 0 && bIdx === 0;
                 return `
                   <div class="${isFirstPage ? '' : 'page-break'}">
-                    ${metaBoxHtml}
-                    <div class="block-title">📅 ${block.monthName} — Devengue Diario y Cálculo de Valor Cuota</div>
-                    <table class="vc-table">
-                      <thead>
-                        <tr>
-                          <th style="width: 20px;">N°</th>
-                          <th style="width: 150px; text-align: left;">CERTIFICADO / RESUMEN</th>
-                          <th style="width: 65px; text-align: right;">CAPITAL / REF.</th>
-                          <th style="width: 60px; text-align: right;">N° CUOTAS</th>
-                          ${block.days.map(d => `<th class="day-col">${d}</th>`).join('')}
-                          <th style="width: 65px; text-align: right;">TOTAL ACUM.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${block.rows.map(r => {
-                          if (r.tipo === 'SPACER') {
-                            return `<tr class="spacer-row"><td colspan="${block.days.length + 5}"></td></tr>`;
-                          }
-                          const isComision = r.id.includes('COM.');
-                          const isSummary = r.tipo === 'TOTAL' && !isComision;
-                          const isVc = r.is_vc || r.id.includes('VAL CUOTA');
-                          let rowCss = '';
-                          if (r.tipo === 'AUMENTO') rowCss = 'aumento-row';
-                          else if (isComision) rowCss = 'comision-row';
-                          else if (isSummary) rowCss = 'summary-row';
-                          const displayNum = Boolean(r.num) ? String(r.num) : '';
-                          const cells = block.days.map((_, i) => {
-                            const cellVal = r.cells[i]?.val ?? '-';
-                            const displayVal = cellVal === '-' ? '-' : Number(cellVal).toLocaleString('es-PE', { minimumFractionDigits: isVc ? 4 : 2, maximumFractionDigits: isVc ? 4 : 2 });
-                            return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${displayVal}</td>`;
-                          }).join('');
-                          const capitalCell = r.capital !== undefined && r.capital !== null ? Number(r.capital).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
-                          const cuotasCell = r.cuotas !== undefined && r.cuotas !== null ? Number(r.cuotas).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '';
-                          const totalCell = r.interes_acum !== undefined && r.interes_acum !== null ? Number(r.interes_acum).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '-';
-                          return `<tr class="${rowCss}"><td class="num-col">${displayNum}</td><td class="cert-id-col ${r.tipo === 'AUMENTO' ? 'aumento-label' : ''}">${r.id}</td><td class="cap-col">${capitalCell}</td><td class="cuotas-col">${cuotasCell}</td>${cells}<td class="cap-col" style="font-weight:bold">${totalCell}</td></tr>`;
-                        }).join('')}
-                      </tbody>
+                    <div class="header">
+                        <table class="header-table">
+                          <tr>
+                            <td style="width: 20%; text-align: left;">
+                              <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+                            </td>
+                            <td style="width: 60%; text-align: center;">
+                              <h1>REPORTE MAESTRO DE LIQUIDACIÓN V26 (ENFOQUE NAV)</h1>
+                              <div class="repo-subtitle">
+                                  FONDO: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | MONEDA: ${rep.fondo.moneda} |
+                                  TASA ACTIVA: ${rep.vars.activa}% | ADMIN: ${rep.vars.admin}%
+                              </div>
+                              <div class="repo-subtext">
+                                  ${block.monthName} | <b>Devengue Diario y Cálculo de Valor Cuota</b>
+                              </div>
+                            </td>
+                            <td style="width: 20%; text-align: right;">
+                              <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                            </td>
+                          </tr>
+                        </table>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="num-col">N°</th>
+                                <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
+                                <th class="cap-col">CAPITAL / REF.</th>
+                                <th class="cuotas-col">N° CUOTAS</th>
+                                ${block.days.map(day => `<th class="day-col">${day}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${block.rows.map(row => {
+                              if (row.tipo === 'SPACER') {
+                                return `<tr class="spacer-row"><td colspan="${4 + block.days.length}"></td></tr>`;
+                              }
+
+                              const isComision = row.id.includes('COM.');
+                              const isSummary = row.tipo === 'TOTAL' && !isComision;
+                              const isVc = row.is_vc || row.id.includes('VAL CUOTA');
+                              let rowClass = '';
+                              if (row.tipo === 'AUMENTO') rowClass = 'aumento-row';
+                              else if (isComision) rowClass = 'comision-row';
+                              else if (isSummary) rowClass = 'summary-row';
+
+                              const numCell = row.tipo === 'CERT' && row.num !== undefined ? String(row.num) : '';
+                              const certLabelClass = row.tipo === 'AUMENTO' ? 'aumento-label' : '';
+
+                              const capDisplay = row.capital !== undefined && row.capital !== null ? formatNumVal(row.capital, 2) : '';
+                              const cuotasDecimals = (isVc || row.id.includes('CUOTA')) ? 6 : 2;
+                              const cuotasDisplay = row.cuotas !== undefined && row.cuotas !== null ? formatNumVal(row.cuotas, cuotasDecimals) : '';
+
+                              const cellsHtml = block.days.map((_, idx) => {
+                                const val = row.cells[idx]?.val;
+                                const valDecimals = isVc ? 6 : 2;
+                                const formattedVal = formatNumVal(val, valDecimals);
+                                const vcClass = isVc ? 'vc-highlight' : '';
+                                return `<td class="day-col ${vcClass}">${formattedVal}</td>`;
+                              }).join('');
+
+                              return `
+                                <tr class="${rowClass}">
+                                  <td class="num-col">${numCell}</td>
+                                  <td class="cert-id-col ${certLabelClass}">${row.id}</td>
+                                  <td class="cap-col">${capDisplay}</td>
+                                  <td class="cuotas-col">${cuotasDisplay}</td>
+                                  ${cellsHtml}
+                                </tr>
+                              `;
+                            }).join('')}
+                        </tbody>
                     </table>
                   </div>
                 `;
@@ -573,9 +714,9 @@ export const FondosPage: React.FC = () => {
             }).join('')}
 
             <div class="footer">
-              INANDES GRUPO FINANCIERO &amp; GEEKSOFT — REPORTE MAESTRO NAV V26 — GENERADO EL ${new Date().toLocaleDateString('es-PE')}
+                Generado por Motor V26 (Optimizado NAV - Replica 1:1 Legacy) - ${new Date().toLocaleDateString('es-PE')}
             </div>
-          </body>
+        </body>
         </html>
       `;
 
