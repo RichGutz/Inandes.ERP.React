@@ -14,8 +14,9 @@ interface OmniBuscadorCertificadosProps {
   filterOnlyVigentes?: boolean;
 }
 
-const normalizeText = (text: string = ''): string => {
-  return text
+const normalizeText = (text: any = ''): string => {
+  if (text === null || text === undefined) return '';
+  return String(text)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -23,8 +24,8 @@ const normalizeText = (text: string = ''): string => {
 };
 
 export const OmniBuscadorCertificados: React.FC<OmniBuscadorCertificadosProps> = ({
-  certificados,
-  selectedCertId,
+  certificados = [],
+  selectedCertId = '',
   onSelectCert,
   placeholder = "Escriba DNI, RUC, Nombre del titular o ID del certificado...",
   labelPaso1 = "1. FILTRAR INVERSIONISTA / CERTIFICADO DESTINO",
@@ -36,10 +37,13 @@ export const OmniBuscadorCertificados: React.FC<OmniBuscadorCertificadosProps> =
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Filtrar vigentes si aplica
-  const availableCerts = filterOnlyVigentes 
-    ? certificados.filter(c => c.estado === 'VIGENTE')
-    : certificados;
+  // Filtrar vigentes si aplica con lista protegida contra nulos
+  const availableCerts = React.useMemo(() => {
+    const safeList = Array.isArray(certificados) ? certificados : [];
+    return filterOnlyVigentes 
+      ? safeList.filter(c => c && c.estado === 'VIGENTE')
+      : safeList.filter(Boolean);
+  }, [certificados, filterOnlyVigentes]);
 
   // Algoritmo Multicriterio OmniBuscador
   const filteredCerts = React.useMemo(() => {
@@ -47,9 +51,11 @@ export const OmniBuscadorCertificados: React.FC<OmniBuscadorCertificadosProps> =
 
     const normQuery = normalizeText(searchTerm);
     return availableCerts.filter(c => {
+      if (!c) return false;
+
       // 1. ID Certificado e ID Contrato
-      if (normalizeText(c.id_certificado).includes(normQuery)) return true;
-      if (normalizeText(c.id_contrato).includes(normQuery)) return true;
+      if (c.id_certificado && normalizeText(c.id_certificado).includes(normQuery)) return true;
+      if (c.id_contrato && normalizeText(c.id_contrato).includes(normQuery)) return true;
 
       // 2. Fondo
       if (c.id_fondo && normalizeText(c.id_fondo).includes(normQuery)) return true;
@@ -63,6 +69,7 @@ export const OmniBuscadorCertificados: React.FC<OmniBuscadorCertificadosProps> =
       // 4. Titulares Resumen (Nombres y Documentos DNI/RUC/CE)
       if (c.titulares_resumen && Array.isArray(c.titulares_resumen)) {
         for (const t of c.titulares_resumen) {
+          if (!t) continue;
           if (t.nombre && normalizeText(t.nombre).includes(normQuery)) return true;
           if (t.documento && normalizeText(t.documento).includes(normQuery)) return true;
         }
@@ -71,6 +78,7 @@ export const OmniBuscadorCertificados: React.FC<OmniBuscadorCertificadosProps> =
       return false;
     });
   }, [availableCerts, searchTerm]);
+
 
   // Auto-selección si solo hay 1 coincidencia
   useEffect(() => {

@@ -5,7 +5,7 @@ import {
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
-  Search, Loader2, CheckCircle
+  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle 
 } from 'lucide-react';
 
 export const DeduccionesPage: React.FC = () => {
@@ -14,6 +14,8 @@ export const DeduccionesPage: React.FC = () => {
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [searchResults, setSearchResults] = useState<ContratoBusqueda[]>([]);
   const [selectedContrato, setSelectedContrato] = useState<ContratoBusqueda | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const omniContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Datos del contrato y certificado activo
   const [activeCertId, setActiveCertId] = useState<string>('');
@@ -76,16 +78,49 @@ export const DeduccionesPage: React.FC = () => {
     return result;
   };
 
-  // Buscar contrato
+  // Búsqueda en tiempo real con Debounce (Omnibuscador)
+  useEffect(() => {
+    if (!searchTerm.trim() || searchTerm.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await buscarContratosPadre(searchTerm);
+        setSearchResults(res);
+        if (res.length === 1 && !selectedContrato) {
+          setSelectedContrato(res[0]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Cerrar burbujón al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (omniContainerRef.current && !omniContainerRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Buscar contrato al presionar ENTER
   const handleBuscarContrato = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
     setSearchLoading(true);
-    setSelectedContrato(null);
-    setSearchResults([]);
     try {
       const res = await buscarContratosPadre(searchTerm);
       setSearchResults(res);
+      setIsDropdownOpen(true);
       if (res.length === 1) {
         setSelectedContrato(res[0]);
       }
@@ -96,6 +131,7 @@ export const DeduccionesPage: React.FC = () => {
       setSearchLoading(false);
     }
   };
+
 
   // Cargar datos al seleccionar contrato
   useEffect(() => {
@@ -383,50 +419,127 @@ export const DeduccionesPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       
-      {/* Buscador de Contrato */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-        <h3 className="text-xs font-black text-slate-855 dark:text-slate-100 uppercase tracking-tight">🔍 Buscar Contrato Padre</h3>
-        <p className="text-[10px] text-slate-450 dark:text-slate-400">Ingrese ID de Contrato, RUC, DNI o Nombre del Inversionista para configurar deducciones.</p>
-        
-        <form onSubmit={handleBuscarContrato} className="flex gap-3 max-w-xl">
+      {/* Buscador OMNI de Contrato Padre con Bello Burbujón de Hallazgos */}
+      <div ref={omniContainerRef} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-3 relative">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight flex items-center gap-1.5">
+            🔍 Buscar Contrato Padre (Omnibuscador)
+          </h3>
+          {searchResults.length > 0 && (
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+              {searchResults.length} contrato(s) encontrado(s)
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-slate-450 dark:text-slate-400">
+          Ingrese ID de Contrato, RUC, DNI o Nombre del Inversionista para configurar deducciones.
+        </p>
+
+        <form onSubmit={handleBuscarContrato} className="relative max-w-2xl w-full">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <Search size={15} />
+          </span>
+
           <input
             type="text"
-            className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg p-2 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
-            placeholder="Ej: NSGPEN... o 12345678 o Gallo"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-9 pr-9 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 shadow-2xs transition-all"
+            placeholder="Ej: NSGPEN... o DNI 45678912 o Gallo"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            required
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchTerm(val);
+              setIsDropdownOpen(true);
+            }}
+            onFocus={() => {
+              if (searchTerm.trim()) setIsDropdownOpen(true);
+            }}
           />
-          <button
-            type="submit"
-            className="h-9 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-            disabled={searchLoading}
-          >
-            {searchLoading ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
-            <span>Buscar Contrato</span>
-          </button>
-        </form>
 
-        {/* Múltiples Resultados */}
-        {searchResults.length > 1 && !selectedContrato && (
-          <div className="flex flex-col gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Se encontraron {searchResults.length} contratos. Seleccione:</span>
-            <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto">
-              {searchResults.map(c => (
-                <button
-                  key={c.id_contrato}
-                  type="button"
-                  className="w-full text-left p-2 rounded-lg text-xs font-bold border border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-850 cursor-pointer flex justify-between"
-                  onClick={() => setSelectedContrato(c)}
-                >
-                  <span>{c.id_contrato} 👤 {c.nombre_inversionista_temp || c.id_inversionista_1}</span>
-                  <span className="text-[9px] text-emerald-600 font-black">{c.moneda} {c.monto_inversion.toLocaleString('es-PE')}</span>
-                </button>
-              ))}
+          {searchLoading ? (
+            <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-600">
+              <Loader2 size={15} className="animate-spin" />
+            </span>
+          ) : searchTerm ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSearchResults([]);
+                setSelectedContrato(null);
+                setIsDropdownOpen(false);
+              }}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X size={15} />
+            </button>
+          ) : null}
+
+          {/* BELLO BURBUJÓN DE HALLAZGOS (OVERLAY DE SELECCIÓN RÁPIDA A 1-CLIC) */}
+          {isDropdownOpen && searchTerm.trim().length >= 2 && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-h-80 overflow-y-auto p-2 flex flex-col gap-1.5 animate-fadeIn border-t-2 border-t-blue-600">
+              {searchLoading ? (
+                <div className="p-4 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin text-blue-600" />
+                  <span>Buscando coincidencias en el ledger de contratos...</span>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-2">
+                  <AlertCircle size={15} className="text-amber-500" />
+                  <span>No se encontraron contratos para "{searchTerm}". Intente por DNI, RUC o Apellido.</span>
+                </div>
+              ) : (
+                searchResults.map((c) => {
+                  const isSelected = selectedContrato?.id_contrato === c.id_contrato;
+                  const inversionistaNombre = c.nombre_inversionista_temp || c.id_inversionista_1 || 'Inversionista';
+
+                  return (
+
+                    <button
+                      key={c.id_contrato}
+                      type="button"
+                      onClick={() => {
+                        setSelectedContrato(c);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`p-3 rounded-xl text-left transition-all cursor-pointer border flex flex-col gap-1 ${
+                        isSelected
+                          ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 dark:border-blue-700 shadow-xs'
+                          : 'bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-850 border-slate-150 dark:border-slate-800/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                          <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                            {c.id_contrato}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {c.id_fondo} ({c.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})
+                          </span>
+                        </div>
+                        <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                          {c.moneda} {c.monto_inversion?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                        <span className="flex items-center gap-1">
+                          <User size={12} className="text-slate-400" />
+                          <strong className="text-slate-800 dark:text-slate-200">{inversionistaNombre}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>Inversionista / DNI: <strong className="font-mono text-slate-800 dark:text-slate-200">{c.id_inversionista_1}</strong></span>
+                      </div>
+
+                    </button>
+                  );
+                })
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </form>
       </div>
+
 
       {/* Contrato Seleccionado */}
       {selectedContrato && (
