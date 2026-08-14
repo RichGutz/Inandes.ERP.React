@@ -14,6 +14,29 @@
 
 ---
 
+## ⚡ PROTOCOLO OFICIAL DE DESPLIEGUE ULTRARRÁPIDO ("A LA VELOCIDAD DE LA LUZ")
+
+> ⚠️ **INSTRUCCIÓN PERMANENTE Y OBLIGATORIA PARA TODOS LOS AGENTES DE IA:**
+> Queda estrictamente PROHIBIDO ejecutar scripts legacy (`deploy_vps.py`) o realizar copias manuales SSH/SCP a Hostinger/VPS. 
+> TODO despliegue a producción en Contabo (`169.58.168.107`) se ejecuta en **3 pasos simples que toman 2 segundos**:
+
+1. **Verificar compilación local:**
+   ```powershell
+   npm run build
+   ```
+2. **Sincronizar y hacer push a Git (Rama `main` exclusiva, Regla 9):**
+   ```powershell
+   git add .
+   git commit -m "tipo(componente): descripción del cambio"
+   git push origin main
+   ```
+3. **Auto-Deploy por Webhook CI/CD (Coolify Contabo VPS):**
+   - Al ejecutar `git push origin main`, GitHub envía de inmediato un Webhook a Coolify en el VPS Contabo (`169.58.168.107`).
+   - Coolify aprovecha la caché de Nixpacks/Docker y compila los cambios incrementales en **2 a 3 segundos** sin caídas (*Zero-Downtime Deployment*).
+   - **URL Oficial:** `https://inandes.geeksoft.tech`
+
+---
+
 ## 🗓️ Bitácora de Pasos Ejecutados
 
 ### ✅ Paso 1: Configuración de Reglas y Almacén de Credenciales
