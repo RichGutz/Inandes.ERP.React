@@ -33,7 +33,21 @@
 3. **Auto-Deploy por Webhook CI/CD (Coolify Contabo VPS):**
    - Al ejecutar `git push origin main`, GitHub envía de inmediato un Webhook a Coolify en el VPS Contabo (`169.58.168.107`).
    - Coolify aprovecha la caché de Nixpacks/Docker y compila los cambios incrementales en **2 a 3 segundos** sin caídas (*Zero-Downtime Deployment*).
-   - **URL Oficial:** `https://inandes.geeksoft.tech`
+---
+
+## 🚩 BANDERAS ROJAS Y LECCIONES CRÍTICAS APRENDIDAS (OBLIGATORIO PARA AGENTES DE IA)
+
+> [!CAUTION]
+> **1. PROHIBICIÓN DE `*.py` EN `.gitignore`:**
+> NUNCA incluir `*.py` en el `.gitignore` del repositorio. Esa regla provoca que Git omita los routers y módulos Python del backend (`backend/routers/aprobacion.py`, etc.), impidiendo su sincronización en GitHub y produciendo errores de `ImportError` y `Failed to fetch` al compilar en Docker/Coolify Contabo.
+
+> [!WARNING]
+> **2. PUERTO 8000 OBLIGATORIO PARA FASTAPI EN COOLIFY:**
+> El backend FastAPI en Docker DEBE estar configurado con `ENV PORT 8000`, `EXPOSE 8000` y `uvicorn --port 8000`. El proxy Traefik en Coolify redirige el tráfico por defecto al puerto `8000`. Escuchar en un puerto distinto (como 8010) provoca errores HTTP `502 Bad Gateway`.
+
+> [!IMPORTANT]
+> **3. CLONACIÓN 1:1 INTANGIBLE DE REPORTES EXCEL Y PDF:**
+> Toda generación de reportes (NAV, Valor Cuota, Excel, EECC) debe replicar literalmente 1:1 las plantillas HTML Jinja2 y scripts legacy originales (`export_valor_cuota_v25_to_excel.py` y `reporte_cuotas_transpuesto_v26.html`). Queda estrictamente PROHIBIDO modificar la estructura de celdas o aplicar rediseños creativos no solicitados.
 
 ---
 
