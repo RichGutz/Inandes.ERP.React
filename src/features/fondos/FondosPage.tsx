@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
-import { getApiBaseUrl } from '../../config/apiConfig';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
@@ -76,9 +75,7 @@ export const FondosPage: React.FC = () => {
   const [vcSelNum, setVcSelNum] = useState<number>(1);
   const [vcReportData, setVcReportData] = useState<V26FondoReport[]>([]);
   const [vcLoading, setVcLoading] = useState<boolean>(false);
-  const [vcExportingPdf, setVcExportingPdf] = useState<boolean>(false);
   const [vcExportingExcel, setVcExportingExcel] = useState<boolean>(false);
-  const [vcPdfDownloaded, setVcPdfDownloaded] = useState<boolean>(false);
   const [vcExcelDownloaded, setVcExcelDownloaded] = useState<boolean>(false);
 
   const fetchFondos = async () => {
@@ -420,6 +417,7 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, 'fondos_crm.xlsx');
   };
 
+  // Exportar Matriz Completa de Valor Cuota a Excel v26 (Réplica 1:1 Legacy export_valor_cuota_v25_to_excel.py)
   const handleExportVcExcel = async () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para exportar.");
@@ -431,36 +429,63 @@ export const FondosPage: React.FC = () => {
       const wb = XLSX.utils.book_new();
 
       for (const report of vcReportData) {
-        const sheetName = `${report.fondo.id_fondo}_${vcSelYear}`;
-        const excelRows: any[] = [];
+        const sheetName = (report.fondo.id_fondo || 'FONDO').slice(0, 31);
 
+        // 1. Recopilar todos los dias del periodo continuo (sin duplicados, en orden de fecha)
+        const allDays: string[] = [];
         for (const block of report.blocks) {
-          const headerRow: Record<string, any> = { "Certificado / Item": `PERÍODO: ${block.monthName}` };
-          block.days.forEach((dayStr) => {
-            headerRow[dayStr] = dayStr;
-          });
-          excelRows.push(headerRow);
-
-          for (const row of block.rows) {
-            if (row.tipo === 'SPACER') {
-              excelRows.push({});
-              continue;
+          for (const dayStr of block.days) {
+            if (!allDays.includes(dayStr)) {
+              allDays.push(dayStr);
             }
-
-            const excelRow: Record<string, any> = {
-              "Certificado / Item": row.id
-            };
-
-            block.days.forEach((dayStr, idx) => {
-              const val = row.cells[idx]?.val;
-              excelRow[dayStr] = val !== undefined && val !== null ? val : "";
-            });
-
-            excelRows.push(excelRow);
           }
         }
 
+        if (allDays.length === 0) continue;
+
+        // 2. Construir matriz continua iniciando en Fila 1 (Sin encabezados de texto ni filas en blanco)
+        const excelRows: Record<string, any>[] = [];
+
+        const sampleBlock = report.blocks[0];
+        if (!sampleBlock) continue;
+
+        for (let rIdx = 0; rIdx < sampleBlock.rows.length; rIdx++) {
+          const rowMeta = sampleBlock.rows[rIdx];
+          
+          // Omitir filas SPACER para no interrumpir el rango de formulas del usuario
+          if (rowMeta.tipo === 'SPACER') continue;
+
+          // Etiqueta de ITEM idéntica al legacy (sangria de 3 espacios para aumentos)
+          const itemLabel = rowMeta.tipo === 'AUMENTO' ? `   ${rowMeta.id}` : rowMeta.id;
+          const excelRow: Record<string, any> = { "ITEM": itemLabel };
+
+          // Recorrer de izquierda a derecha todos los dias continuos a traves de los bloques
+          let globalDayIdx = 0;
+          for (const block of report.blocks) {
+            const blockRow = block.rows[rIdx];
+            for (let dIdx = 0; dIdx < block.days.length; dIdx++) {
+              const dayStr = allDays[globalDayIdx];
+              const cellVal = blockRow?.cells[dIdx]?.val;
+              
+              if (dayStr) {
+                // Formato numérico real (number) o vacio para no ensuciar la matriz
+                const numericVal = (cellVal === '-' || cellVal === undefined || cellVal === null) ? "" : Number(cellVal);
+                excelRow[dayStr] = numericVal;
+              }
+              globalDayIdx++;
+            }
+          }
+
+          excelRows.push(excelRow);
+        }
+
         const ws = XLSX.utils.json_to_sheet(excelRows);
+
+        // Ajuste automatico de ancho de columnas
+        const colWidths = [{ wch: 32 }]; // Columna ITEM
+        allDays.forEach(() => colWidths.push({ wch: 12 })); // Columnas de Dias
+        ws['!cols'] = colWidths;
+
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
       }
 
@@ -473,150 +498,6 @@ export const FondosPage: React.FC = () => {
     }
   };
 
-  const handleExportVcPdf = async () => {
-    if (vcReportData.length === 0) {
-      alert("No hay datos de Valor Cuota para descargar.");
-      return;
-    }
-
-    setVcExportingPdf(true);
-    try {
-      const filename = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
-
-      const formatNumVal = (v: any, decimals: number = 2) => {
-        if (v === null || v === undefined || v === '') return '';
-        const fv = Number(v);
-        if (isNaN(fv)) return String(v);
-        if (fv === 0) return '-';
-        return fv.toLocaleString('es-PE', {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals
-        });
-      };
-
-      const htmlPrint = `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                @page { size: A3 landscape; margin: 0.8cm; }
-                body { font-family: 'Arial', sans-serif; font-size: 8pt; color: #333; }
-                .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-                .logo-geeksoft { height: 40px; }
-                .logo-inandes { height: 25px; }
-                .header h1 { margin: 0; font-size: 14pt; color: #01579b; text-transform: uppercase; }
-                .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 8px; }
-                .data-table th, .data-table td { border: 1px solid #ccc; padding: 2px; text-align: right; font-size: 6.5pt; }
-                .data-table th { background-color: #0288d1; color: white; font-weight: bold; text-align: center; font-size: 7pt; }
-                .day-header { width: auto; }
-                .num-col { width: 22px; text-align: center; background-color: #e1f5fe; font-weight: bold; }
-                .cert-id-col { width: 140px; text-align: left; font-weight: bold; background-color: #fafafa; }
-                .cap-col { width: 65px; background-color: #fafafa; }
-                .cuotas-col { width: 65px; background-color: #fafafa; }
-                .spacer-row td { background-color: #eceff1; height: 4px; padding: 0; border: none; }
-                .comision-row td { background-color: #fff9c4; font-weight: bold; }
-                .summary-row td { background-color: #bbdefb; font-weight: bold; }
-                .aumento-row td { background-color: #e8f5e9; }
-                .aumento-label { color: #2e7d32; font-weight: bold; }
-                .day-col { font-family: 'Courier New', monospace; font-size: 6.2pt; }
-                .vc-highlight { font-weight: bold; color: #0d47a1; background-color: #e3f2fd; }
-                .footer { text-align: center; font-size: 7pt; color: #777; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 4px; }
-            </style>
-        </head>
-        <body>
-            <table class="header-table">
-                <tr>
-                    <td style="width: 25%; text-align: left;">
-                        <img src="${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft Logo" />
-                    </td>
-                    <td style="width: 50%; text-align: center;">
-                        <div class="header">
-                            <h1>REPORTE DE VALOR CUOTA Y PATRIMONIO DE LOS FONDOS</h1>
-                            <div class="repo-subtitle">MOTOR DE CÁLCULO FINANCIERO V26 (TRANSPUESTO NAV)</div>
-                            <div class="repo-subtext">VIGENCIA CONTABLE: FEBRERO 2026 — EXPRESADO EN MONEDA ORIGEN</div>
-                        </div>
-                    </td>
-                    <td style="width: 25%; text-align: right;">
-                        <img src="${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes Logo" />
-                    </td>
-                </tr>
-            </table>
-
-            ${vcReportData.map(rep => {
-              return rep.blocks.map(block => {
-                return `
-                  <div style="page-break-inside: avoid;">
-                    <div style="font-size: 8.5pt; font-weight: bold; color: #01579b; margin-top: 8px; margin-bottom: 4px;">
-                        FONDO: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | MONEDA: ${rep.fondo.moneda} | PERÍODO: ${block.monthName}
-                    </div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th class="num-col">#</th>
-                                <th class="cert-id-col">CERTIFICADO / CONCEPTO</th>
-                                <th class="cap-col">CAPITAL</th>
-                                <th class="cuotas-col">CUOTAS</th>
-                                ${block.days.map(d => `<th class="day-header">${d}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${block.rows.map(row => {
-                              if (row.tipo === 'SPACER') {
-                                return `<tr class="spacer-row"><td colspan="${4 + block.days.length}"></td></tr>`;
-                              }
-                              const isVc = row.is_vc || row.id.includes('VAL CUOTA');
-                              const rowClass = row.tipo === 'AUMENTO' ? 'aumento-row' : (row.id.includes('COM.') ? 'comision-row' : (row.tipo === 'TOTAL' ? 'summary-row' : ''));
-                              const cellsHtml = block.days.map((_, idx) => {
-                                const val = row.cells[idx]?.val;
-                                return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${formatNumVal(val, isVc ? 6 : 2)}</td>`;
-                              }).join('');
-                              return `<tr class="${rowClass}">
-                                <td class="num-col">${row.num || ''}</td>
-                                <td class="cert-id-col ${row.tipo === 'AUMENTO' ? 'aumento-label' : ''}">${row.id}</td>
-                                <td class="cap-col">${formatNumVal(row.capital)}</td>
-                                <td class="cuotas-col">${formatNumVal(row.cuotas, 6)}</td>
-                                ${cellsHtml}
-                              </tr>`;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                  </div>
-                `;
-              }).join('');
-            }).join('')}
-            <div class="footer">Generado por Motor V26 (Optimizado NAV) - ${new Date().toLocaleDateString()}</div>
-        </body>
-        </html>
-      `;
-
-      const apiBase = getApiBaseUrl();
-      const response = await fetch(`${apiBase}/api/inversionistas/generate-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlPrint, filename })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-      setVcPdfDownloaded(true);
-    } catch (err: any) {
-      alert(`Error generando PDF: ${err.message}`);
-    } finally {
-      setVcExportingPdf(false);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
@@ -1295,91 +1176,51 @@ export const FondosPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Banners de Progreso / Artefactos de Notificación en Vivo (Valor Cuota) */}
-            {vcExportingPdf && (
-              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
-                <Loader2 size={20} className="animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
-                    📄 Generando y Convirtiendo Reporte PDF Oficial v26 (WeasyPrint Backend)...
-                  </span>
-                  <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
-                    El servidor está procesando la matriz transpuesta NAV. Por favor espere unos segundos mientras se inicia la descarga directa.
-                  </span>
-                </div>
-              </div>
-            )}
-
+            {/* Banner de Progreso de Exportación a Excel */}
             {vcExportingExcel && (
               <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
                 <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
-                    📊 Exportando Matriz Completa Valor Cuota a Excel v26...
+                    📊 Exportando Matriz Completa Valor Cuota a Excel v26 (Pestaña por Fondo)...
                   </span>
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-                    Compilando pestañas y formato de auditoría. La descarga iniciará automáticamente en breve.
+                    Generando matriz continua horizontal (Fila 1) para auditoría y fórmulas avanzadas. La descarga iniciará en breve.
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Dos Botones Principales Lado a Lado Debajo de los Filtros */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            {/* Único Botón de Exportación a Excel Prominente a Ancho Completo */}
+            <div className="flex items-center justify-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
               <button
-                className={`h-11 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
-                  vcPdfDownloaded
-                    ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
-                onClick={handleExportVcPdf}
-                disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
-              >
-                {vcExportingPdf ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Procesando PDF v26...</span>
-                  </>
-                ) : vcPdfDownloaded ? (
-                  <>
-                    <CheckCircle size={16} className="text-indigo-200" />
-                    <span>✓ PDF v26 Descargado (Clic para Re-descargar)</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText size={16} />
-                    <span>📄 Descargar PDF Oficial v26 (NAV)</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                className={`h-11 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
+                className={`w-full h-12 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
                   vcExcelDownloaded
                     ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
                     : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 }`}
                 onClick={handleExportVcExcel}
-                disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
+                disabled={vcLoading || vcExportingExcel || vcReportData.length === 0}
               >
                 {vcExportingExcel ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Procesando Excel v26...</span>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Compilando Matriz Pura a Excel v26...</span>
                   </>
                 ) : vcExcelDownloaded ? (
                   <>
-                    <CheckCircle size={16} className="text-emerald-200" />
+                    <CheckCircle size={18} className="text-emerald-200" />
                     <span>✓ Excel v26 Descargado (Clic para Re-descargar)</span>
                   </>
                 ) : (
                   <>
-                    <FileSpreadsheet size={16} />
-                    <span>📊 Exportar Matriz a Excel v26</span>
+                    <FileSpreadsheet size={18} />
+                    <span>📊 Exportar Matriz Completa a Excel v26 (Un Tab por Fondo - Continuidad Diaria)</span>
                   </>
                 )}
               </button>
             </div>
+
 
 
           </div>
