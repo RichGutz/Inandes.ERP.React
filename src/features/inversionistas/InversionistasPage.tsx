@@ -844,7 +844,7 @@ export const InversionistasPage: React.FC = () => {
     setExcelDownloaded(true);
   };
 
-  // Exportar / Imprimir PDF Condensado Bello Oficial (Universal: TODOS y Fondo Individual)
+  // Exportar PDF Condensado Bello Oficial (Universal: TODOS y Fondo Individual) via descarga directa
   const handleExportPDFV40 = async () => {
     let currentResult = calcResult;
     if (!currentResult) {
@@ -862,21 +862,11 @@ export const InversionistasPage: React.FC = () => {
       selFondo: v40SelFondo
     });
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes (popups) para ver el reporte PDF.");
-      return;
-    }
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-
+    const filename = `REPORTE_OFICIAL_SISTEMA_${fEnd}.pdf`;
+    await handleDownloadFastPdf(htmlContent, filename);
     setPdfDownloaded(true);
   };
+
 
   // Guardar permanente en base de datos
   const handleRegisterPermanent = async () => {
