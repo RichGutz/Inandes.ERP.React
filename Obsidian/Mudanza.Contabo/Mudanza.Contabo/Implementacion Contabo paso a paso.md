@@ -134,7 +134,15 @@
   - Se desplegó en paralelo al VPS Hostinger actual mediante `deploy_vps.py`.
 - **Resultado:**
   - Coolify recompiló automáticamente el bundle (`index-CltHXj6o.js`).
-  - **Verificación Exitosa (200 OK):** La URL `https://inandes.geeksoft.tech` carga la interfaz React 19 sin errores y mostrando la UI de forma fluida.
+### ✅ Paso 18: Corrección Definitiva de Pantalla en Blanco (ErrorBoundary + URL HTTPS en Producción)
+- **Fecha:** 13 de Agosto de 2026
+- **Diagnóstico:**
+  1. En `apiConfig.ts` y `factoringService.ts`, el método `getApiBaseUrl()` devolvía `''` (cadena vacía) en producción. En el VPS Contabo (`inandes.geeksoft.tech`), Nginx servía la SPA React sin proxy directo de `/api/...`, devolviendo `index.html` (HTML 200 OK) para peticiones a `/api`. Al intentar parsear HTML como JSON, lanzaba un `SyntaxError` que dejaba la pantalla en blanco.
+  2. Falta de un `ErrorBoundary` global en React para capturar fallos síncronos de inicialización.
+- **Acciones Realizadas:**
+  1. Se creó el componente global `ErrorBoundary.tsx` ([`src/components/common/ErrorBoundary.tsx`](file:///C:/Users/rguti/Inandes.ERP.React/src/components/common/ErrorBoundary.tsx)) para interceptar cualquier excepción de renderizado y mostrar una pantalla elegante con botón de recarga en lugar de un colapso en blanco.
+  2. Se configuró `getApiBaseUrl()` en `apiConfig.ts` y `factoringService.ts` para retornar la URL oficial HTTPS en producción (`https://api-factoring.geeksoft.tech`).
+  3. Se recompiló localmente (`npm run build` 0 errores) y se pusheó a `origin/main` (commit `bb3e657`).
 
 ---
 
