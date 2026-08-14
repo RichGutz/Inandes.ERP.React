@@ -106,10 +106,12 @@ export const calculateValorCuotaV26 = async (
   startDate: Date,
   endDate: Date
 ): Promise<V26FondoReport[]> => {
-  // 1. Cargar Fondos
+  // 1. Cargar Fondos en el mismo orden que la pestaña Fondos (Variables)
   const { data: fondosData, error: fondosErr } = await supabase
     .from('crm_fondos')
-    .select('*');
+    .select('*')
+    .order('vigencia_tasa', { ascending: false })
+    .order('nombre_fondo', { ascending: true });
     
   if (fondosErr) throw new Error(`Error en fondos: ${fondosErr.message}`);
   if (!fondosData) return [];
