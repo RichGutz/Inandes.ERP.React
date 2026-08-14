@@ -7,23 +7,22 @@ export const sanitizeText = (str?: string | null): string => {
   if (!str) return '';
   let res = String(str);
 
-  const map: Record<string, string> = {
-    '\u00a2': 'ó',
-    '¢': 'ó',
-    '\u0082': 'é',
-    '\u00a0': 'á',
-    '\u00a1': 'í',
-    '\u00a3': 'ú',
-    '\u00a4': 'ñ',
-    '\u00a5': 'Ñ',
-    '\u008f': 'Á',
-    '\u0090': 'É',
-    '\u0097': 'Ó',
-    'Â': '',
-    'Ã': ''
-  };
+  const replacements: Array<[string, string]> = [
+    ['\u00a2', 'ó'],
+    ['\u0082', 'é'],
+    ['\u00a0', 'á'],
+    ['\u00a1', 'í'],
+    ['\u00a3', 'ú'],
+    ['\u00a4', 'ñ'],
+    ['\u00a5', 'Ñ'],
+    ['\u008f', 'Á'],
+    ['\u0090', 'É'],
+    ['\u0097', 'Ó'],
+    ['Â', ''],
+    ['Ã', '']
+  ];
 
-  for (const [k, v] of Object.entries(map)) {
+  for (const [k, v] of replacements) {
     res = res.replaceAll(k, v);
   }
 
