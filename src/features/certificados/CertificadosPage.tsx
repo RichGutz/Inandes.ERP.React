@@ -12,6 +12,8 @@ import {
   Loader2, AlertCircle, FileSpreadsheet, FileText, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers
 } from 'lucide-react';
 
+const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
 export const CertificadosPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'vigentes' | 'aumento' | 'visor'>('vigentes');
   
@@ -20,7 +22,8 @@ export const CertificadosPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filtros
+  // Filtros Rolodex y Omni
+  const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFondos, setSelectedFondos] = useState<string[]>([]);
   const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({});
@@ -84,35 +87,50 @@ export const CertificadosPage: React.FC = () => {
   const loadVisorData = async (certId: string) => {
     setVisorLoading(true);
     try {
-      // 1. Obtener certificado base
-      const certMetaRes = await supabase
+      // 1. Buscar en certificados master cargados previamente
+      const masterCert = certificados.find(c => c.id_certificado === certId);
+
+      // 2. Intentar obtener datos de crm_certificados o crm_contratos
+      const { data: certData } = await supabase
         .from('crm_certificados')
         .select('*')
         .eq('id_certificado', certId)
-        .single();
-      
-      if (certMetaRes.error) throw certMetaRes.error;
-      const certMeta = certMetaRes.data;
+        .maybeSingle();
 
-      // 2. Obtener contrato
-      const contractRes = await supabase
+      const targetContractId = certData?.id_contrato || masterCert?.id_contrato || certId;
+
+      const { data: contractData } = await supabase
         .from('crm_contratos')
         .select('*')
-        .eq('id_contrato', certMeta.id_contrato)
-        .single();
-      
-      if (contractRes.error) throw contractRes.error;
-      const contract = contractRes.data;
+        .eq('id_contrato', targetContractId)
+        .maybeSingle();
+
+      const contract = contractData || {
+        monto_inversion: masterCert?.monto_inversion || 0,
+        plazo_meses: masterCert?.plazo_meses || '12',
+        porcentaje_reparto: 100,
+        fecha_inicio: masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
+        fecha_fin: new Date().toISOString().split('T')[0],
+        moneda: masterCert?.moneda || 'USD',
+        id_fondo: masterCert?.id_fondo || '',
+        id_inversionista_1: ''
+      };
 
       // 3. Obtener fondo
-      const fundRes = await supabase
-        .from('crm_fondos')
-        .select('*')
-        .eq('id_fondo', contract.id_fondo)
-        .single();
-      
-      if (fundRes.error) throw fundRes.error;
-      const fund = fundRes.data;
+      let fundName = masterCert?.nombre_fondo || 'FONDO DE INVERSIÓN';
+      let fundRuc = 'PENDIENTE';
+
+      if (contract.id_fondo) {
+        const { data: fundData } = await supabase
+          .from('crm_fondos')
+          .select('*')
+          .eq('id_fondo', contract.id_fondo)
+          .maybeSingle();
+        if (fundData) {
+          fundName = fundData.nombre_fondo || fundName;
+          fundRuc = fundData.ruc_fondo || fundRuc;
+        }
+      }
 
       // 4. Obtener eventos e historial
       const events = await getEventosDeCertificado(certId);
@@ -120,51 +138,66 @@ export const CertificadosPage: React.FC = () => {
       const latestEvent = events[0] || {};
 
       // 5. Mapear inversionistas
-      const investorIds = [
-        contract.id_inversionista_1,
-        contract.id_inversionista_2,
-        contract.id_inversionista_3,
-        contract.id_inversionista_4
-      ].filter(Boolean);
+      let invList: Array<{ name: string; dni: string }> = [];
 
-      const { data: invRows } = await supabase
-        .from('crm_inversionistas')
-        .select('*')
-        .in('codigo_inversionista', investorIds);
+      if (masterCert?.titulares_resumen && masterCert.titulares_resumen.length > 0) {
+        invList = masterCert.titulares_resumen.map(t => ({
+          name: t.nombre || 'S/N',
+          dni: t.documento || 'S/N'
+        }));
+      } else {
+        const investorIds = [
+          contract.id_inversionista_1,
+          contract.id_inversionista_2,
+          contract.id_inversionista_3,
+          contract.id_inversionista_4
+        ].filter(Boolean);
 
-      const invList = (invRows || []).map(r => ({
-        name: r.nombre_completo || r.nombre_completo_P1 || 'S/N',
-        dni: r.documento_identidad || r.documento_identidad_P1 || 'S/N'
-      }));
+        if (investorIds.length > 0) {
+          const { data: invRows } = await supabase
+            .from('crm_inversionistas')
+            .select('*')
+            .in('codigo_inversionista', investorIds);
+
+          invList = (invRows || []).map(r => ({
+            name: r.nombre_completo || r.nombre_1 || 'S/N',
+            dni: r.documento_identidad || 'S/N'
+          }));
+        }
+      }
+
+      if (invList.length === 0) {
+        invList = [{ name: masterCert?.titular_1 || 'INVERSIONISTA', dni: 'S/N' }];
+      }
 
       // 6. Generar HTML final
       const html = generateCertificateHtml({
         investors: invList,
         fund: {
-          nombre_fondo: fund.nombre_fondo,
-          ruc_fondo: fund.ruc_fondo,
-          moneda: contract.moneda
+          nombre_fondo: fundName,
+          ruc_fondo: fundRuc,
+          moneda: contract.moneda || masterCert?.moneda || 'USD'
         },
         contract: {
-          monto_inversion: contract.monto_inversion,
-          plazo_meses: contract.plazo_meses,
-          porcentaje_reparto: contract.porcentaje_reparto,
-          fecha_inicio: contract.fecha_inicio,
-          fecha_fin: contract.fecha_fin
+          monto_inversion: contract.monto_inversion || masterCert?.monto_inversion || 0,
+          plazo_meses: contract.plazo_meses || masterCert?.plazo_meses || '12',
+          porcentaje_reparto: contract.porcentaje_reparto ?? 100,
+          fecha_inicio: contract.fecha_inicio || new Date().toISOString().split('T')[0],
+          fecha_fin: contract.fecha_fin || new Date().toISOString().split('T')[0]
         },
         logo_efi_path: '/logo.EFI.png',
         firma_path: '/Firma.Ricardo.GALLO.png',
         cert_meta: {
-          fecha_emision: certMeta.fecha_emision,
+          fecha_emision: certData?.fecha_emision || contract.fecha_inicio || new Date().toISOString().split('T')[0],
           id_certificado: certId,
-          monto_actual: latestEvent.capital_final_saldo ?? certMeta.monto_inversion,
-          cuotas_actual: latestEvent.capital_final_saldo ?? certMeta.monto_inversion
+          monto_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? certData?.monto_inversion ?? 0,
+          cuotas_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? certData?.monto_inversion ?? 0
         }
       });
 
       setVisorHtml(html);
     } catch (err: any) {
-      console.error(err);
+      console.error('Error al cargar visor:', err);
       setVisorHtml(`<h3>Error al cargar visor: ${err.message}</h3>`);
     } finally {
       setVisorLoading(false);
@@ -187,27 +220,56 @@ export const CertificadosPage: React.FC = () => {
   };
 
   // ==========================================
-  // --- METRICAS GLOBALES Y FILTRADOS --------
+  // --- METRICAS GLOBALES, ROLODEX Y FILTROS -
   // ==========================================
   const uniqueFondos = Array.from(new Set(certificados.map(c => c.nombre_fondo).filter(Boolean))) as string[];
 
+  const getLetterInitial = (name?: string) => {
+    if (!name) return '#';
+    const clean = name.trim().toUpperCase();
+    const first = clean.charAt(0);
+    if (first >= 'A' && first <= 'Z') return first;
+    if (first === 'Ñ') return 'Ñ';
+    return '#';
+  };
+
+  const getLetterCount = (char: string) => {
+    const vigentsOnly = certificados.filter(c => c.estado === 'VIGENTE');
+    if (char === 'TODOS') return vigentsOnly.length;
+    if (char === '#') {
+      return vigentsOnly.filter(c => getLetterInitial(c.titular_1) === '#').length;
+    }
+    return vigentsOnly.filter(c => getLetterInitial(c.titular_1) === char).length;
+  };
+
   const filterCertificados = (list: CertificadoMaster[]) => {
     return list.filter(c => {
-      // Filtro de fondos
+      // 1. Filtro Rolodex A-Z por Titular 1
+      if (selectedLetter !== 'TODOS') {
+        const initial = getLetterInitial(c.titular_1);
+        if (selectedLetter === '#') {
+          if (initial !== '#') return false;
+        } else if (initial !== selectedLetter) {
+          return false;
+        }
+      }
+
+      // 2. Filtro de fondos
       if (selectedFondos.length > 0 && c.nombre_fondo) {
         if (!selectedFondos.includes(c.nombre_fondo)) return false;
       }
 
-      // Filtro OMNI de buscador
+      // 3. Filtro OMNI de buscador
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesCertId = c.id_certificado.toLowerCase().includes(q);
+        const matchesContratoId = c.id_contrato.toLowerCase().includes(q);
         const matchesTitular = [c.titular_1, c.titular_2, c.titular_3, c.titular_4].some(
           name => name?.toLowerCase().includes(q)
         );
-        const matchesDoc = c.titulares_resumen.some(t => t.documento.includes(q));
+        const matchesDoc = (c.titulares_resumen || []).some(t => t.documento?.toLowerCase().includes(q));
         
-        if (!matchesCertId && !matchesTitular && !matchesDoc) return false;
+        if (!matchesCertId && !matchesContratoId && !matchesTitular && !matchesDoc) return false;
       }
       return true;
     });
@@ -257,7 +319,6 @@ export const CertificadosPage: React.FC = () => {
       'Fecha Último Evento': c.fecha_ultimo_evento
     }));
 
-    // Agregar Fila de Totales
     const sumInic = vigentesList.reduce((acc, c) => acc + c.monto_inversion, 0);
     const sumAct = vigentesList.reduce((acc, c) => acc + (c.capital_actual || 0), 0);
 
@@ -419,10 +480,9 @@ export const CertificadosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Selector de pestañas principales */}
       <div className="flex flex-col gap-4">
         
-        {/* Selector de pestañas */}
         <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-0.5">
           {[
             { id: 'vigentes', label: '✅ Vigentes' },
@@ -447,19 +507,55 @@ export const CertificadosPage: React.FC = () => {
         {activeTab === 'vigentes' && (
           <div className="flex flex-col gap-6 w-full animate-fadeIn">
             
+            {/* Alphabetical Filter Bar (Rolodex Oficial A-Z) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+              <div className="flex flex-wrap gap-2.5 items-center">
+                {ALPHABET.map((char) => {
+                  const count = getLetterCount(char);
+                  const isSelected = selectedLetter === char;
+                  const hasData = count > 0;
+
+                  return (
+                    <button
+                      key={char}
+                      onClick={() => setSelectedLetter(char)}
+                      className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105'
+                          : hasData
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
+                            : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
+                      }`}
+                    >
+                      <span>{char}</span>
+                      {count > 0 && (
+                        <span
+                          className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                            isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Filtros e Hojas Excel */}
             <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3 w-full md:w-auto">
                 
                 {/* Omni Buscador */}
-                <div className="relative w-64">
+                <div className="relative w-72">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400">
                     <Search size={13} />
                   </span>
                   <input
                     type="text"
                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-8 pr-3 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
-                    placeholder="Buscar por Nombre, DNI o Certificado..."
+                    placeholder="Buscar por Nombre, DNI, Certificado o Contrato..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -508,7 +604,7 @@ export const CertificadosPage: React.FC = () => {
                 disabled={vigentesList.length === 0}
               >
                 <FileSpreadsheet size={14} className="text-emerald-600" />
-                <span>Descargar Excel Consolidado Multipesatañas</span>
+                <span>Descargar Excel Consolidado Multipe staña</span>
               </button>
             </div>
 
@@ -524,8 +620,20 @@ export const CertificadosPage: React.FC = () => {
                 <p className="text-xs text-slate-450 dark:text-slate-400">{error}</p>
               </div>
             ) : vigentesList.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl">
-                No hay certificados vigentes.
+              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl flex flex-col items-center justify-center gap-2">
+                <span>No se encontraron certificados para el filtro seleccionado.</span>
+                {(selectedLetter !== 'TODOS' || searchQuery || selectedFondos.length > 0) && (
+                  <button
+                    className="text-xs text-indigo-600 hover:underline font-black cursor-pointer"
+                    onClick={() => {
+                      setSelectedLetter('TODOS');
+                      setSearchQuery('');
+                      setSelectedFondos([]);
+                    }}
+                  >
+                    Resetear Filtros
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-4">
@@ -758,11 +866,11 @@ export const CertificadosPage: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-wrap items-center gap-3">
               <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Seleccionar Certificado</label>
               <select
-                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none w-64"
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none w-80"
                 value={selectedVisorCertId}
                 onChange={(e) => setSelectedVisorCertId(e.target.value)}
               >
-                <option value="">-- Seleccionar --</option>
+                <option value="">-- Seleccionar Certificado --</option>
                 {certificados.map(c => (
                   <option key={c.id_certificado} value={c.id_certificado}>
                     {c.id_certificado} - {c.titular_1}
