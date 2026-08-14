@@ -76,6 +76,10 @@ export const FondosPage: React.FC = () => {
   const [vcSelNum, setVcSelNum] = useState<number>(1);
   const [vcReportData, setVcReportData] = useState<V26FondoReport[]>([]);
   const [vcLoading, setVcLoading] = useState<boolean>(false);
+  const [vcExportingPdf, setVcExportingPdf] = useState<boolean>(false);
+  const [vcExportingExcel, setVcExportingExcel] = useState<boolean>(false);
+  const [vcPdfDownloaded, setVcPdfDownloaded] = useState<boolean>(false);
+  const [vcExcelDownloaded, setVcExcelDownloaded] = useState<boolean>(false);
 
   const fetchFondos = async () => {
     setLoading(true);
@@ -416,32 +420,40 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, 'fondos_crm.xlsx');
   };
 
-  // Exportar Valor Cuota v26 a Excel (Réplica Literal 1:1 de export_valor_cuota_v25_to_excel.py del Legacy)
-  const handleExportVcExcel = () => {
+  const handleExportVcExcel = async () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para exportar.");
       return;
     }
 
+    setVcExportingExcel(true);
     try {
       const wb = XLSX.utils.book_new();
 
       for (const report of vcReportData) {
-        const sheetName = report.fondo.id_fondo.slice(0, 31);
+        const sheetName = `${report.fondo.id_fondo}_${vcSelYear}`;
         const excelRows: any[] = [];
 
         for (const block of report.blocks) {
-          for (const r of block.rows) {
-            if (r.tipo === 'SPACER') continue;
+          const headerRow: Record<string, any> = { "Certificado / Item": `PERÍODO: ${block.monthName}` };
+          block.days.forEach((dayStr) => {
+            headerRow[dayStr] = dayStr;
+          });
+          excelRows.push(headerRow);
 
-            // Formato de ITEM exacto al script legacy
-            const itemLabel = r.tipo === 'AUMENTO' ? `   ${r.id}` : r.id;
-            const excelRow: Record<string, any> = { ITEM: itemLabel };
+          for (const row of block.rows) {
+            if (row.tipo === 'SPACER') {
+              excelRows.push({});
+              continue;
+            }
 
-            block.days.forEach((day, idx) => {
-              const val = r.cells[idx]?.val;
-              const numericVal = (val === '-' || val === undefined || val === null) ? 0 : Number(val);
-              excelRow[day] = numericVal;
+            const excelRow: Record<string, any> = {
+              "Certificado / Item": row.id
+            };
+
+            block.days.forEach((dayStr, idx) => {
+              const val = row.cells[idx]?.val;
+              excelRow[dayStr] = val !== undefined && val !== null ? val : "";
             });
 
             excelRows.push(excelRow);
@@ -449,30 +461,25 @@ export const FondosPage: React.FC = () => {
         }
 
         const ws = XLSX.utils.json_to_sheet(excelRows);
-        
-        // Ajuste de ancho de columnas
-        const colWidths = [{ wch: 30 }];
-        if (report.blocks[0]?.days) {
-          report.blocks[0].days.forEach(() => colWidths.push({ wch: 10 }));
-        }
-        ws['!cols'] = colWidths;
-
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
       }
 
       XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
+      setVcExcelDownloaded(true);
     } catch (err: any) {
       alert(`Error exportando Excel: ${err.message}`);
+    } finally {
+      setVcExportingExcel(false);
     }
   };
 
-  // Descargar PDF Oficial de Valor Cuota v26 (Réplica Literal 1:1 de reporte_cuotas_transpuesto_v26.html)
   const handleExportVcPdf = async () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para descargar.");
       return;
     }
 
+    setVcExportingPdf(true);
     try {
       const filename = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
 
@@ -492,191 +499,65 @@ export const FondosPage: React.FC = () => {
         <html lang="es">
         <head>
             <meta charset="UTF-8">
-            <title>Reporte Maestro de Cuotas - V26 (NAV Focused)</title>
             <style>
-                @page {
-                    size: A3 landscape;
-                    margin: 0.8cm;
-                }
-                body {
-                    font-family: 'Arial', sans-serif;
-                    font-size: 8pt;
-                    color: #333;
-                    margin: 0;
-                    padding: 0;
-                }
-                .header {
-                    text-align: center;
-                    margin-bottom: 8px;
-                    border-bottom: 2px solid #01579b;
-                    padding-bottom: 4px;
-                }
-                .header-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    border: none;
-                    margin-bottom: 4px;
-                }
-                .header-table td {
-                    border: none;
-                    vertical-align: middle;
-                    padding: 0;
-                }
-                .logo-geeksoft { height: 42px; width: auto; }
-                .logo-inandes { height: 28px; width: auto; }
-                .header h1 {
-                    margin: 0;
-                    font-size: 13pt;
-                    color: #01579b;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                }
-                .repo-subtitle {
-                    font-size: 8.5pt;
-                    font-weight: bold;
-                    color: #333;
-                    margin-top: 3px;
-                }
-                .repo-subtext {
-                    font-size: 7.5pt;
-                    color: #555;
-                    margin-top: 2px;
-                }
-                table.data-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    table-layout: fixed;
-                    margin-bottom: 10px;
-                    page-break-inside: avoid;
-                }
-                tr {
-                    page-break-inside: avoid;
-                }
-                table.data-table th,
-                table.data-table td {
-                    border: 1px solid #ccc;
-                    padding: 2px;
-                    text-align: right;
-                    overflow: hidden;
-                    white-space: nowrap;
-                    font-size: 6.5pt;
-                }
-                table.data-table th {
-                    background-color: #0288d1;
-                    color: white;
-                    font-weight: bold;
-                    text-align: center;
-                    font-size: 7pt;
-                }
-                .num-col {
-                    width: 25px;
-                    text-align: center;
-                    background-color: #f5f5f5;
-                    color: #000 !important;
-                    font-weight: bold;
-                }
-                .cert-id-col {
-                    width: 160px;
-                    text-align: left;
-                    font-weight: bold;
-                    background-color: #f5f5f5;
-                    color: #333 !important;
-                    font-size: 6.5pt;
-                }
-                .cap-col {
-                    width: 70px;
-                    background-color: #e3f2fd;
-                    color: #333 !important;
-                    font-size: 7pt;
-                }
-                .cuotas-col {
-                    width: 65px;
-                    background-color: #f1f8e9;
-                    color: #000 !important;
-                    font-size: 6.5pt;
-                }
-                .day-col {
-                    font-size: 6pt;
-                }
-                .aumento-row td {
-                    background-color: #fafafa;
-                }
-                .aumento-label {
-                    padding-left: 10px !important;
-                    color: #2e7d32 !important;
-                    font-style: italic;
-                    font-size: 6pt !important;
-                    border-left: 3px solid #43a047;
-                }
-                .summary-row td {
-                    font-weight: bold !important;
-                    background-color: #fff9c4 !important;
-                    color: #000 !important;
-                }
-                .comision-row td {
-                    color: #c62828 !important;
-                    background-color: #ffebee !important;
-                }
-                .spacer-row td {
-                    height: 8px;
-                    background-color: #f5f5f5;
-                    border: none;
-                }
-                .page-break {
-                    page-break-before: always;
-                }
-                .vc-highlight {
-                    color: #0d47a1 !important;
-                    font-weight: bold !important;
-                    background-color: #e3f2fd !important;
-                }
-                .footer {
-                    text-align: right;
-                    color: #999;
-                    font-size: 6.5pt;
-                    margin-top: 10px;
-                    border-top: 1px solid #e2e8f0;
-                    padding-top: 4px;
-                }
+                @page { size: A3 landscape; margin: 0.8cm; }
+                body { font-family: 'Arial', sans-serif; font-size: 8pt; color: #333; }
+                .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+                .logo-geeksoft { height: 40px; }
+                .logo-inandes { height: 25px; }
+                .header h1 { margin: 0; font-size: 14pt; color: #01579b; text-transform: uppercase; }
+                .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 8px; }
+                .data-table th, .data-table td { border: 1px solid #ccc; padding: 2px; text-align: right; font-size: 6.5pt; }
+                .data-table th { background-color: #0288d1; color: white; font-weight: bold; text-align: center; font-size: 7pt; }
+                .day-header { width: auto; }
+                .num-col { width: 22px; text-align: center; background-color: #e1f5fe; font-weight: bold; }
+                .cert-id-col { width: 140px; text-align: left; font-weight: bold; background-color: #fafafa; }
+                .cap-col { width: 65px; background-color: #fafafa; }
+                .cuotas-col { width: 65px; background-color: #fafafa; }
+                .spacer-row td { background-color: #eceff1; height: 4px; padding: 0; border: none; }
+                .comision-row td { background-color: #fff9c4; font-weight: bold; }
+                .summary-row td { background-color: #bbdefb; font-weight: bold; }
+                .aumento-row td { background-color: #e8f5e9; }
+                .aumento-label { color: #2e7d32; font-weight: bold; }
+                .day-col { font-family: 'Courier New', monospace; font-size: 6.2pt; }
+                .vc-highlight { font-weight: bold; color: #0d47a1; background-color: #e3f2fd; }
+                .footer { text-align: center; font-size: 7pt; color: #777; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 4px; }
             </style>
         </head>
         <body>
-            ${vcReportData.map((rep, rIdx) => {
-              return rep.blocks.map((block, bIdx) => {
-                const isFirstPage = rIdx === 0 && bIdx === 0;
-                return `
-                  <div class="${isFirstPage ? '' : 'page-break'}">
-                    <div class="header">
-                        <table class="header-table">
-                          <tr>
-                            <td style="width: 20%; text-align: left;">
-                              <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
-                            </td>
-                            <td style="width: 60%; text-align: center;">
-                              <h1>REPORTE MAESTRO DE LIQUIDACIÓN V26 (ENFOQUE NAV)</h1>
-                              <div class="repo-subtitle">
-                                  FONDO: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | MONEDA: ${rep.fondo.moneda} |
-                                  TASA ACTIVA: ${rep.vars.activa}% | ADMIN: ${rep.vars.admin}%
-                              </div>
-                              <div class="repo-subtext">
-                                  ${block.monthName} | <b>Devengue Diario y Cálculo de Valor Cuota</b>
-                              </div>
-                            </td>
-                            <td style="width: 20%; text-align: right;">
-                              <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
-                            </td>
-                          </tr>
-                        </table>
-                    </div>
+            <table class="header-table">
+                <tr>
+                    <td style="width: 25%; text-align: left;">
+                        <img src="${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft Logo" />
+                    </td>
+                    <td style="width: 50%; text-align: center;">
+                        <div class="header">
+                            <h1>REPORTE DE VALOR CUOTA Y PATRIMONIO DE LOS FONDOS</h1>
+                            <div class="repo-subtitle">MOTOR DE CÁLCULO FINANCIERO V26 (TRANSPUESTO NAV)</div>
+                            <div class="repo-subtext">VIGENCIA CONTABLE: FEBRERO 2026 — EXPRESADO EN MONEDA ORIGEN</div>
+                        </div>
+                    </td>
+                    <td style="width: 25%; text-align: right;">
+                        <img src="${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes Logo" />
+                    </td>
+                </tr>
+            </table>
 
+            ${vcReportData.map(rep => {
+              return rep.blocks.map(block => {
+                return `
+                  <div style="page-break-inside: avoid;">
+                    <div style="font-size: 8.5pt; font-weight: bold; color: #01579b; margin-top: 8px; margin-bottom: 4px;">
+                        FONDO: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | MONEDA: ${rep.fondo.moneda} | PERÍODO: ${block.monthName}
+                    </div>
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th class="num-col">N°</th>
-                                <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
-                                <th class="cap-col">CAPITAL / REF.</th>
-                                <th class="cuotas-col">N° CUOTAS</th>
-                                ${block.days.map(day => `<th class="day-col">${day}</th>`).join('')}
+                                <th class="num-col">#</th>
+                                <th class="cert-id-col">CERTIFICADO / CONCEPTO</th>
+                                <th class="cap-col">CAPITAL</th>
+                                <th class="cuotas-col">CUOTAS</th>
+                                ${block.days.map(d => `<th class="day-header">${d}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
@@ -684,29 +565,19 @@ export const FondosPage: React.FC = () => {
                               if (row.tipo === 'SPACER') {
                                 return `<tr class="spacer-row"><td colspan="${4 + block.days.length}"></td></tr>`;
                               }
-
-                              const isComision = row.id.includes('COM.');
-                              const isSummary = row.tipo === 'TOTAL' && !isComision;
                               const isVc = row.is_vc || row.id.includes('VAL CUOTA');
-                              let rowClass = '';
-                              if (row.tipo === 'AUMENTO') rowClass = 'aumento-row';
-                              else if (isComision) rowClass = 'comision-row';
-                              else if (isSummary) rowClass = 'summary-row';
-
-                              const numCell = row.tipo === 'CERT' && row.num !== undefined ? String(row.num) : '';
-                              const certLabelClass = row.tipo === 'AUMENTO' ? 'aumento-label' : '';
-
-                              const capDisplay = row.capital !== undefined && row.capital !== null ? formatNumVal(row.capital, 2) : '';
-                              const cuotasDecimals = (isVc || row.id.includes('CUOTA')) ? 6 : 2;
-                              const cuotasDisplay = row.cuotas !== undefined && row.cuotas !== null ? formatNumVal(row.cuotas, cuotasDecimals) : '';
-
+                              const rowClass = row.tipo === 'AUMENTO' ? 'aumento-row' : (row.id.includes('COM.') ? 'comision-row' : (row.tipo === 'TOTAL' ? 'summary-row' : ''));
                               const cellsHtml = block.days.map((_, idx) => {
                                 const val = row.cells[idx]?.val;
-                                const formattedVal = formatNumVal(val, isVc ? 6 : 2);
-                                return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${formattedVal}</td>`;
+                                return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${formatNumVal(val, isVc ? 6 : 2)}</td>`;
                               }).join('');
-
-                              return `<tr class="${rowClass}"><td class="num-col">${numCell}</td><td class="cert-id-col ${certLabelClass}">${row.id}</td><td class="cap-col">${capDisplay}</td><td class="cuotas-col">${cuotasDisplay}</td>${cellsHtml}</tr>`;
+                              return `<tr class="${rowClass}">
+                                <td class="num-col">${row.num || ''}</td>
+                                <td class="cert-id-col ${row.tipo === 'AUMENTO' ? 'aumento-label' : ''}">${row.id}</td>
+                                <td class="cap-col">${formatNumVal(row.capital)}</td>
+                                <td class="cuotas-col">${formatNumVal(row.cuotas, 6)}</td>
+                                ${cellsHtml}
+                              </tr>`;
                             }).join('')}
                         </tbody>
                     </table>
@@ -714,10 +585,7 @@ export const FondosPage: React.FC = () => {
                 `;
               }).join('');
             }).join('')}
-
-            <div class="footer">
-                Generado por Motor V26 (Optimizado NAV - Replica 1:1 Legacy) - ${new Date().toLocaleDateString('es-PE')}
-            </div>
+            <div class="footer">Generado por Motor V26 (Optimizado NAV) - ${new Date().toLocaleDateString()}</div>
         </body>
         </html>
       `;
@@ -729,31 +597,24 @@ export const FondosPage: React.FC = () => {
         body: JSON.stringify({ html: htmlPrint, filename })
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      } else {
-        const printWin = window.open('', '_blank');
-        if (printWin) {
-          printWin.document.write(htmlPrint);
-          printWin.document.close();
-          printWin.focus();
-          setTimeout(() => {
-            printWin.print();
-          }, 500);
-        } else {
-          throw new Error(`HTTP Error ${response.status}`);
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}`);
       }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setVcPdfDownloaded(true);
     } catch (err: any) {
       alert(`Error generando PDF: ${err.message}`);
+    } finally {
+      setVcExportingPdf(false);
     }
   };
 
@@ -1434,7 +1295,36 @@ export const FondosPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Ficha Técnica Metadata en 1 sola línea */}
+            {/* Banners de Progreso / Artefactos de Notificación en Vivo (Valor Cuota) */}
+            {vcExportingPdf && (
+              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
+                <Loader2 size={20} className="animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
+                    📄 Generando y Convirtiendo Reporte PDF Oficial v26 (WeasyPrint Backend)...
+                  </span>
+                  <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
+                    El servidor está procesando la matriz transpuesta NAV. Por favor espere unos segundos mientras se inicia la descarga directa.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {vcExportingExcel && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
+                <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                    📊 Exportando Matriz Completa Valor Cuota a Excel v26...
+                  </span>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                    Compilando pestañas y formato de auditoría. La descarga iniciará automáticamente en breve.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Ficha Técnica Angostada a la Izquierda + Botones Apilados Simétricamente Centrados en la Columna Derecha */}
             {vcLoading ? (
               <div className="flex items-center justify-center py-6 gap-2">
                 <Loader2 className="animate-spin text-emerald-600" size={20} />
@@ -1442,44 +1332,85 @@ export const FondosPage: React.FC = () => {
               </div>
             ) : (
               vcReportData.map(rep => (
-                <div key={rep.fondo.id_fondo} className="bg-slate-50 dark:bg-slate-950/70 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 overflow-x-auto">
-                  <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-350 font-medium whitespace-nowrap">
-                    <span>Fondo: <strong className="text-slate-900 dark:text-white font-bold">{rep.fondo.nombre_fondo} ({rep.fondo.id_fondo})</strong></span>
+                <div key={rep.fondo.id_fondo} className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                  {/* Ficha Técnica Angostada (Sin las palabras redundantes 'Fondo:' ni 'Moneda:') */}
+                  <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-700 dark:text-slate-350 font-medium">
+                    <span className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs font-bold text-slate-900 dark:text-white">
+                      🏢 {rep.fondo.nombre_fondo} ({rep.fondo.id_fondo})
+                    </span>
+                    <span className={`px-2 py-1 rounded-lg font-black text-[11px] ${rep.fondo.moneda === 'USD' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'}`}>
+                      {rep.fondo.moneda}
+                    </span>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>Moneda: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{rep.fondo.moneda}</strong></span>
+                    <span>TASA ACTIVA: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.vars.activa}%</strong></span>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>TASA ACTIVA EMPRESA: <strong className="font-bold">{rep.vars.activa}%</strong></span>
+                    <span>ADMIN: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.vars.admin}%</strong></span>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>COMISIÓN ADMIN: <strong className="font-bold">{rep.vars.admin}%</strong></span>
+                    <span>CAPTACIÓN: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.fondo.comision_captacion_fondo || 0}%</strong></span>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>COM. CAPTACIÓN: <strong className="font-bold">{rep.fondo.comision_captacion_fondo || 0}%</strong></span>
-                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                    <span>COM. MISC: <strong className="font-bold">{rep.fondo.comision_miscelaneos_fondo || 0}%</strong></span>
+                    <span>MISC: <strong className="font-bold text-slate-900 dark:text-slate-100">{rep.fondo.comision_miscelaneos_fondo || 0}%</strong></span>
+                  </div>
+
+                  {/* Botones Apilados Simétricamente Centrados en la Columna Derecha */}
+                  <div className="flex flex-col items-center justify-center gap-2 shrink-0 min-w-[240px]">
+                    <button
+                      className={`w-full h-10 px-4 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
+                        vcPdfDownloaded
+                          ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      }`}
+                      onClick={handleExportVcPdf}
+                      disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
+                    >
+                      {vcExportingPdf ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          <span>Procesando PDF v26...</span>
+                        </>
+                      ) : vcPdfDownloaded ? (
+                        <>
+                          <CheckCircle size={15} className="text-indigo-200" />
+                          <span>✓ PDF v26 Descargado</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={15} />
+                          <span>📄 Descargar PDF Oficial v26 (NAV)</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      className={`w-full h-10 px-4 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all disabled:opacity-50 ${
+                        vcExcelDownloaded
+                          ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                      onClick={handleExportVcExcel}
+                      disabled={vcLoading || vcExportingPdf || vcExportingExcel || vcReportData.length === 0}
+                    >
+                      {vcExportingExcel ? (
+                        <>
+                          <Loader2 size={15} className="animate-spin" />
+                          <span>Procesando Excel v26...</span>
+                        </>
+                      ) : vcExcelDownloaded ? (
+                        <>
+                          <CheckCircle size={15} className="text-emerald-200" />
+                          <span>✓ Excel v26 Descargado</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileSpreadsheet size={15} />
+                          <span>📊 Exportar Matriz a Excel v26</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))
             )}
 
-            {/* Botones Oficiales de Exportación e Impresión */}
-            <div className="flex flex-wrap items-center justify-end gap-4 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-              <button
-                className="h-11 px-6 text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                onClick={handleExportVcPdf}
-                disabled={vcLoading || vcReportData.length === 0}
-              >
-                <FileText size={16} />
-                <span>📄 Descargar PDF Oficial v26 (NAV)</span>
-              </button>
-
-              <button
-                className="h-11 px-6 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                onClick={handleExportVcExcel}
-                disabled={vcLoading || vcReportData.length === 0}
-              >
-                <FileSpreadsheet size={16} />
-                <span>📊 Exportar Matriz a Excel v26</span>
-              </button>
-            </div>
           </div>
 
         </div>

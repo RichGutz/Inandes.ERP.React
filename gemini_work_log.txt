@@ -155,3 +155,5 @@
 [2026-08-14 15:33:00-05:00] ESTADO: Completado con exito. Actualizado handleExportPDFV40 usando handleDownloadFastPdf para descarga silenciosa y habilitacion dinamica del boton Registrar Asientos en Base de Datos tras descargar Excel y PDF. Compilacion Vite limpia (0 errores).
 [2026-08-14 15:38:00-05:00] TAREA: Agregar artefactos visuales de progreso (spinners, banners animados y checkmarks de confirmacion) en botones de exportacion Excel y PDF.
 [2026-08-14 15:38:00-05:00] ESTADO: Completado con exito. Agregadas variables exportingExcel y exportingPdf, banners de notificacion con feedback explícito para el motor WeasyPrint y badges checkmark al completar descargas.
+[2026-08-14 16:15:00-05:00] TAREA: Rediseñar cabecera de Seguimiento de Valor Cuota v26 en FondosPage.tsx (eliminar redundancias de texto, angostar ficha tecnica y apilar botones de PDF/Excel centrados simetricamente con descargas directas y banners de progreso).
+[2026-08-14 16:15:00-05:00] ESTADO: Completado con exito. Actualizado FondosPage.tsx, verificado npm run build limpia (0 errores) y listo para despliegue en main.
