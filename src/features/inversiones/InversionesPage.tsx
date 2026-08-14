@@ -274,7 +274,8 @@ export const InversionesPage: React.FC = () => {
         fecha_fin: calculatedEnd,
         nd_calculated_months: calculatedNdMonths,
         domicilio_contractual: cleanAddress,
-        numero_certificado: 'XXXX',
+        id_contrato: editingContractId || `${formFondoSel || 'CONTRATO'}-PROV.${calculatedStart.replaceAll('-', '')}`,
+        numero_certificado: editingContractId || `${formFondoSel || 'CERT'}-PROV.${calculatedStart.replaceAll('-', '')}`,
         fecha_contrato: formFechaContrato
       },
       percentages: formPercentages,
@@ -485,7 +486,9 @@ export const InversionesPage: React.FC = () => {
         fecha_inicio: approveDate,
         fecha_fin: calculatedEndStr,
         domicilio_contractual: selectedContract.domicilio_contractual,
-        numero_certificado: 'XXXX',
+        id_contrato: selectedContract.id_contrato,
+        id_certificado: selectedContract.id_certificado,
+        numero_certificado: selectedContract.id_certificado || selectedContract.id_contrato,
         fecha_contrato: selectedContract.fecha_inicio // original contract date
       },
       percentages: percs,

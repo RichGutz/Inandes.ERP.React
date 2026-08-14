@@ -30,6 +30,8 @@ export interface Contrato {
   domicilio_contractual?: string | null;
   voucher_deposito_url?: string | null;
   contrato_firmado_url?: string | null;
+  id_certificado?: string | null;
+  numero_certificado?: string | null;
   estado: 'borrador' | 'propuesto' | 'pendiente_aprobacion' | 'emitido' | 'cerrado_fin_contrato' | 'cerrado_por_rescate';
 
   // Enriquecidos en cliente

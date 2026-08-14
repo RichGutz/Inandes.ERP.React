@@ -1,6 +1,7 @@
 // src/utils/contractPreviewGenerator.ts
 import { CONTRATO_HTML_TEMPLATE, CERTIFICADO_HTML_TEMPLATE } from './contractTemplates';
 import { numberToWordsEs } from './numberToWordsEs';
+import { sanitizeText } from './textSanitizer';
 
 export interface InvestorContext {
   name: string;
@@ -19,6 +20,8 @@ export interface FundContext {
 }
 
 export interface ContractContext {
+  id_contrato?: string | null;
+  id_certificado?: string | null;
   monto_inversion: number;
   plazo_meses: string; // '12', '24', '36', '60', 'ND'
   porcentaje_reparto: number;
@@ -189,7 +192,9 @@ export const generateContractHtml = (context: GeneratorContext): string => {
       "{{DEPOSITO_TABLE}}": htmlTable47,
       "{{DISTRIBUCION_GANANCIAS_TEXT}}": distText,
       "{{FECHA_INICIO_VALIDEZ_VENTA}}": fechaValidezStr,
-      "{{NUMERO_CERTIFICADO}}": contract.numero_certificado || 'XXXX'
+      "{{NUMERO_CERTIFICADO}}": (contract.numero_certificado && contract.numero_certificado !== 'XXXX')
+        ? contract.numero_certificado
+        : (contract.id_certificado || contract.id_contrato || 'BORRADOR')
     };
 
     let resultHtml = CONTRATO_HTML_TEMPLATE;
@@ -197,7 +202,7 @@ export const generateContractHtml = (context: GeneratorContext): string => {
       resultHtml = resultHtml.replaceAll(key, val);
     }
 
-    return resultHtml;
+    return sanitizeText(resultHtml);
   } catch (err: any) {
     console.error(err);
     return `<h1>Error al generar contrato: ${err.message}</h1>`;
@@ -252,7 +257,7 @@ export const generateCertificateHtml = (context: {
       resultHtml = resultHtml.replaceAll(key, val);
     }
 
-    return resultHtml;
+    return sanitizeText(resultHtml);
   } catch (err: any) {
     console.error(err);
     return `<h1>Error al generar certificado: ${err.message}</h1>`;

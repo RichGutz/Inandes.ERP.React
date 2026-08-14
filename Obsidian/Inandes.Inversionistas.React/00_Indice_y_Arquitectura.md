@@ -13,6 +13,7 @@
 - 📜 [00.D.INVERSIONES.md](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.D.INVERSIONES.md) — Contratos, Vouchers y Emisión.
 - 🏅 [00.E.CERTIFICADOS.md](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.E.CERTIFICADOS.md) — Certificados de Participación y Ledger de Eventos.
 - ✂️ [00.F.DEDUCCIONES.md](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.F.DEDUCCIONES.md) — Deducciones, Penalidades y Rescates.
+- 📜 [00.G.CONTRATOS.md](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/00.G.CONTRATOS.md) — Contratos, Plantillas Dinámicas y Rescates Totales.
 
 ---
 
