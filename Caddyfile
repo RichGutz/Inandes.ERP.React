@@ -5,10 +5,10 @@
 :80, :3000 {
     # Reverse Proxy para enrutar todas las peticiones /api/ directamente al contenedor FastAPI en la red Docker
     handle /api/* {
-        reverse_proxy http://3g5kcala3ypqzlsrhyelxyev:8000
+        reverse_proxy http://3g5kcala3ypqzlsrhyelxyev:8010
     }
     handle /inversionistas/* {
-        reverse_proxy http://3g5kcala3ypqzlsrhyelxyev:8000
+        reverse_proxy http://3g5kcala3ypqzlsrhyelxyev:8010
     }
 
     # Servir archivos estaticos compilados de React SPA

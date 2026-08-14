@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PORT 8000
+ENV PORT 8010
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -24,6 +24,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-EXPOSE 8000
+EXPOSE 8010
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8010", "--workers", "4"]
