@@ -12,7 +12,7 @@ export const getApiBaseUrl = (): string => {
     return import.meta.env.VITE_API_FACTORING_URL;
   }
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'http://3g5kcala3ypqzlsrhyelxyev.169.58.168.107.sslip.io';
+    return 'https://api-factoring.geeksoft.tech';
   }
   return 'http://localhost:8000';
 };

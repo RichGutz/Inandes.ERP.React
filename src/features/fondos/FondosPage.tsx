@@ -466,28 +466,294 @@ export const FondosPage: React.FC = () => {
     }
   };
 
-  // Descargar PDF Oficial de Valor Cuota v26 (Consumiendo FastAPI Backend con Descarga Directa)
+  // Descargar PDF Oficial de Valor Cuota v26 (Réplica Literal 1:1 de reporte_cuotas_transpuesto_v26.html)
   const handleExportVcPdf = async () => {
-    try {
-      const apiBase = getApiBaseUrl();
-      const url = `${apiBase}/api/inversionistas/valor-cuota-pdf/${vcSelFondo}?year=${vcSelYear}&tipo=${vcSelTipo}&num=${vcSelNum}`;
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Error en el servidor API (${response.status})`);
-      }
+    if (vcReportData.length === 0) {
+      alert("No hay datos de Valor Cuota para descargar.");
+      return;
+    }
 
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+    try {
+      const filename = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
+
+      const formatNumVal = (v: any, decimals: number = 2) => {
+        if (v === null || v === undefined || v === '') return '';
+        const fv = Number(v);
+        if (isNaN(fv)) return String(v);
+        if (fv === 0) return '-';
+        return fv.toLocaleString('es-PE', {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        });
+      };
+
+      const htmlPrint = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Reporte Maestro de Cuotas - V26 (NAV Focused)</title>
+            <style>
+                @page {
+                    size: A3 landscape;
+                    margin: 0.8cm;
+                }
+                body {
+                    font-family: 'Arial', sans-serif;
+                    font-size: 8pt;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 8px;
+                    border-bottom: 2px solid #01579b;
+                    padding-bottom: 4px;
+                }
+                .header-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    border: none;
+                    margin-bottom: 4px;
+                }
+                .header-table td {
+                    border: none;
+                    vertical-align: middle;
+                    padding: 0;
+                }
+                .logo-geeksoft { height: 42px; width: auto; }
+                .logo-inandes { height: 28px; width: auto; }
+                .header h1 {
+                    margin: 0;
+                    font-size: 13pt;
+                    color: #01579b;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                .repo-subtitle {
+                    font-size: 8.5pt;
+                    font-weight: bold;
+                    color: #333;
+                    margin-top: 3px;
+                }
+                .repo-subtext {
+                    font-size: 7.5pt;
+                    color: #555;
+                    margin-top: 2px;
+                }
+                table.data-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    margin-bottom: 10px;
+                    page-break-inside: avoid;
+                }
+                tr {
+                    page-break-inside: avoid;
+                }
+                table.data-table th,
+                table.data-table td {
+                    border: 1px solid #ccc;
+                    padding: 2px;
+                    text-align: right;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    font-size: 6.5pt;
+                }
+                table.data-table th {
+                    background-color: #0288d1;
+                    color: white;
+                    font-weight: bold;
+                    text-align: center;
+                    font-size: 7pt;
+                }
+                .num-col {
+                    width: 25px;
+                    text-align: center;
+                    background-color: #f5f5f5;
+                    color: #000 !important;
+                    font-weight: bold;
+                }
+                .cert-id-col {
+                    width: 160px;
+                    text-align: left;
+                    font-weight: bold;
+                    background-color: #f5f5f5;
+                    color: #333 !important;
+                    font-size: 6.5pt;
+                }
+                .cap-col {
+                    width: 70px;
+                    background-color: #e3f2fd;
+                    color: #333 !important;
+                    font-size: 7pt;
+                }
+                .cuotas-col {
+                    width: 65px;
+                    background-color: #f1f8e9;
+                    color: #000 !important;
+                    font-size: 6.5pt;
+                }
+                .day-col {
+                    font-size: 6pt;
+                }
+                .aumento-row td {
+                    background-color: #fafafa;
+                }
+                .aumento-label {
+                    padding-left: 10px !important;
+                    color: #2e7d32 !important;
+                    font-style: italic;
+                    font-size: 6pt !important;
+                    border-left: 3px solid #43a047;
+                }
+                .summary-row td {
+                    font-weight: bold !important;
+                    background-color: #fff9c4 !important;
+                    color: #000 !important;
+                }
+                .comision-row td {
+                    color: #c62828 !important;
+                    background-color: #ffebee !important;
+                }
+                .spacer-row td {
+                    height: 8px;
+                    background-color: #f5f5f5;
+                    border: none;
+                }
+                .page-break {
+                    page-break-before: always;
+                }
+                .vc-highlight {
+                    color: #0d47a1 !important;
+                    font-weight: bold !important;
+                    background-color: #e3f2fd !important;
+                }
+                .footer {
+                    text-align: right;
+                    color: #999;
+                    font-size: 6.5pt;
+                    margin-top: 10px;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 4px;
+                }
+            </style>
+        </head>
+        <body>
+            ${vcReportData.map((rep, rIdx) => {
+              return rep.blocks.map((block, bIdx) => {
+                const isFirstPage = rIdx === 0 && bIdx === 0;
+                return `
+                  <div class="${isFirstPage ? '' : 'page-break'}">
+                    <div class="header">
+                        <table class="header-table">
+                          <tr>
+                            <td style="width: 20%; text-align: left;">
+                              <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
+                            </td>
+                            <td style="width: 60%; text-align: center;">
+                              <h1>REPORTE MAESTRO DE LIQUIDACIÓN V26 (ENFOQUE NAV)</h1>
+                              <div class="repo-subtitle">
+                                  FONDO: ${rep.fondo.nombre_fondo} (${rep.fondo.id_fondo}) | MONEDA: ${rep.fondo.moneda} |
+                                  TASA ACTIVA: ${rep.vars.activa}% | ADMIN: ${rep.vars.admin}%
+                              </div>
+                              <div class="repo-subtext">
+                                  ${block.monthName} | <b>Devengue Diario y Cálculo de Valor Cuota</b>
+                              </div>
+                            </td>
+                            <td style="width: 20%; text-align: right;">
+                              <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                            </td>
+                          </tr>
+                        </table>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="num-col">N°</th>
+                                <th class="cert-id-col">CERTIFICADO / RESUMEN</th>
+                                <th class="cap-col">CAPITAL / REF.</th>
+                                <th class="cuotas-col">N° CUOTAS</th>
+                                ${block.days.map(day => `<th class="day-col">${day}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${block.rows.map(row => {
+                              if (row.tipo === 'SPACER') {
+                                return `<tr class="spacer-row"><td colspan="${4 + block.days.length}"></td></tr>`;
+                              }
+
+                              const isComision = row.id.includes('COM.');
+                              const isSummary = row.tipo === 'TOTAL' && !isComision;
+                              const isVc = row.is_vc || row.id.includes('VAL CUOTA');
+                              let rowClass = '';
+                              if (row.tipo === 'AUMENTO') rowClass = 'aumento-row';
+                              else if (isComision) rowClass = 'comision-row';
+                              else if (isSummary) rowClass = 'summary-row';
+
+                              const numCell = row.tipo === 'CERT' && row.num !== undefined ? String(row.num) : '';
+                              const certLabelClass = row.tipo === 'AUMENTO' ? 'aumento-label' : '';
+
+                              const capDisplay = row.capital !== undefined && row.capital !== null ? formatNumVal(row.capital, 2) : '';
+                              const cuotasDecimals = (isVc || row.id.includes('CUOTA')) ? 6 : 2;
+                              const cuotasDisplay = row.cuotas !== undefined && row.cuotas !== null ? formatNumVal(row.cuotas, cuotasDecimals) : '';
+
+                              const cellsHtml = block.days.map((_, idx) => {
+                                const val = row.cells[idx]?.val;
+                                const formattedVal = formatNumVal(val, isVc ? 6 : 2);
+                                return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${formattedVal}</td>`;
+                              }).join('');
+
+                              return `<tr class="${rowClass}"><td class="num-col">${numCell}</td><td class="cert-id-col ${certLabelClass}">${row.id}</td><td class="cap-col">${capDisplay}</td><td class="cuotas-col">${cuotasDisplay}</td>${cellsHtml}</tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                  </div>
+                `;
+              }).join('');
+            }).join('')}
+
+            <div class="footer">
+                Generado por Motor V26 (Optimizado NAV - Replica 1:1 Legacy) - ${new Date().toLocaleDateString('es-PE')}
+            </div>
+        </body>
+        </html>
+      `;
+
+      const apiBase = getApiBaseUrl();
+      const response = await fetch(`${apiBase}/api/inversionistas/generate-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: htmlPrint, filename })
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      } else {
+        const printWin = window.open('', '_blank');
+        if (printWin) {
+          printWin.document.write(htmlPrint);
+          printWin.document.close();
+          printWin.focus();
+          setTimeout(() => {
+            printWin.print();
+          }, 500);
+        } else {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
+      }
     } catch (err: any) {
-      alert(`Error al descargar PDF: ${err.message}`);
+      alert(`Error generando PDF: ${err.message}`);
     }
   };
 
