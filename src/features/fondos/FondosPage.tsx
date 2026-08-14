@@ -416,45 +416,54 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, 'fondos_crm.xlsx');
   };
 
-  // Exportar Valor Cuota v26 a Excel
+  // Exportar Valor Cuota v26 a Excel (Réplica Literal 1:1 de export_valor_cuota_v25_to_excel.py del Legacy)
   const handleExportVcExcel = () => {
     if (vcReportData.length === 0) {
       alert("No hay datos de Valor Cuota para exportar.");
       return;
     }
 
-    const wb = XLSX.utils.book_new();
-    for (const report of vcReportData) {
-      const sheetName = report.fondo.id_fondo.slice(0, 31);
-      const flatRows: any[] = [];
+    try {
+      const wb = XLSX.utils.book_new();
 
-      for (const block of report.blocks) {
-        flatRows.push({ ITEM: `--- ${block.monthName.toUpperCase()} ---` });
+      for (const report of vcReportData) {
+        const sheetName = report.fondo.id_fondo.slice(0, 31);
+        const excelRows: any[] = [];
 
-        for (const r of block.rows) {
-          if (r.tipo === 'SPACER') continue;
-          
-          const label = r.num !== undefined ? `(${r.num}) ${r.id}` : r.id;
-          const excelRow: Record<string, any> = { ITEM: label };
+        for (const block of report.blocks) {
+          for (const r of block.rows) {
+            if (r.tipo === 'SPACER') continue;
 
-          block.days.forEach((day, idx) => {
-            excelRow[day] = r.cells[idx]?.val ?? '-';
-          });
+            // Formato de ITEM exacto al script legacy
+            const itemLabel = r.tipo === 'AUMENTO' ? `   ${r.id}` : r.id;
+            const excelRow: Record<string, any> = { ITEM: itemLabel };
 
-          if (r.interes_acum !== undefined) {
-            excelRow.TOTAL = r.interes_acum;
+            block.days.forEach((day, idx) => {
+              const val = r.cells[idx]?.val;
+              const numericVal = (val === '-' || val === undefined || val === null) ? 0 : Number(val);
+              excelRow[day] = numericVal;
+            });
+
+            excelRows.push(excelRow);
           }
-
-          flatRows.push(excelRow);
         }
-        flatRows.push({}); // Línea vacía entre bloques mensuales
+
+        const ws = XLSX.utils.json_to_sheet(excelRows);
+        
+        // Ajuste de ancho de columnas
+        const colWidths = [{ wch: 30 }];
+        if (report.blocks[0]?.days) {
+          report.blocks[0].days.forEach(() => colWidths.push({ wch: 10 }));
+        }
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
       }
 
-      const ws = XLSX.utils.json_to_sheet(flatRows);
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
+    } catch (err: any) {
+      alert(`Error exportando Excel: ${err.message}`);
     }
-
-    XLSX.writeFile(wb, `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`);
   };
 
   // Descargar PDF Oficial de Valor Cuota v26 (Réplica Literal 1:1 de reporte_cuotas_transpuesto_v26.html)
