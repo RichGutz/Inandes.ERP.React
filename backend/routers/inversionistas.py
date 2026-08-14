@@ -264,6 +264,15 @@ def get_valor_cuota_pdf(
 
             fondos_reportes.append({"fondo": fondo, "blocks": blocks, "vars": {"activa": f"{t_activa*100:.2f}", "admin": f"{p_admin*100:.2f}"}})
 
+        def format_num(v, p=2):
+            if v is None or v == "":
+                return ""
+            try:
+                fv = float(v)
+                return "-" if fv == 0.0 else ("{:,.%df}" % p).format(fv)
+            except:
+                return str(v)
+
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.globals['format_num'] = format_num
         template = env.get_template('reporte_cuotas_transpuesto_v26.html')
@@ -284,6 +293,28 @@ def get_valor_cuota_pdf(
 
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Error generando PDF Valor Cuota: {str(err)}")
+
+@router.post("/generate-pdf")
+def generate_pdf_from_html(request: PdfGenerateRequest):
+    """
+    Convierte HTML a PDF usando WeasyPrint.
+    """
+    try:
+        html_clean = request.html
+        if '@import' in html_clean:
+            html_clean = re.sub(r'@import\s+url\([^)]+\);?', '', html_clean)
+
+        pdf_bytes = HTML(string=html_clean).write_pdf()
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{request.filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar PDF: {str(e)}")
 
 firma_path = "/opt/erp_inandes/backend/templates/firma_ricardo_gallo.png"
 
