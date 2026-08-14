@@ -89,10 +89,13 @@ const generateProposalId = (): string => {
 };
 
 const getApiBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return '';
+  if (import.meta.env.VITE_API_FACTORING_URL) {
+    return import.meta.env.VITE_API_FACTORING_URL;
   }
-  return import.meta.env.VITE_API_FACTORING_URL || 'http://localhost:8000';
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://api-factoring.geeksoft.tech';
+  }
+  return 'http://localhost:8000';
 };
 
 export const factoringService = {
