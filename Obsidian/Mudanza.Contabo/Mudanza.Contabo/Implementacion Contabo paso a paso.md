@@ -162,6 +162,24 @@
 
 ---
 
+### ✅ Paso 18: Instalación y Configuración del Monitor de Rendimiento Netdata en Contabo
+- **Fecha:** 13 de Agosto de 2026
+- **Propósito:** Diagnóstico y monitoreo en tiempo real del rendimiento interno del VPS Contabo (`169.58.168.107`).
+- **Procedimiento Realizado:**
+  1. Conexión automatizada vía SSH al VPS de Contabo (`169.58.168.107`).
+  2. Ejecución del script oficial de instalación en modo no interactivo:
+     ```bash
+     wget -O /tmp/netdata-kickstart.sh https://get.netdata.cloud/kickstart.sh && sh /tmp/netdata-kickstart.sh --non-interactive
+     ```
+  3. Configuración de reglas en el firewall UFW para habilitar el puerto de monitoreo `19999/tcp`:
+     ```bash
+     sudo ufw allow 19999/tcp
+     ```
+  4. Verificación del estado del servicio (`systemctl is-active netdata` -> `active`).
+  5. **Panel Web de Monitoreo:** Operativo y accesible en `http://169.58.168.107:19999` (Panel en tiempo real con métricas de CPU, RAM, I/O Disco, Red y contenedores Docker/Coolify).
+
+---
+
 ## ⏳ Tareas Pendientes para la Próxima Sesión
 
 - [ ] **Tarea 1 (Paso 12 - Verificación Backend):**
