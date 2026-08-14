@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
+import { getApiBaseUrl } from '../../config/apiConfig';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
@@ -465,10 +466,29 @@ export const FondosPage: React.FC = () => {
     }
   };
 
-  // Descargar PDF Oficial de Valor Cuota v26 (Clonación Literal 1:1 Legacy en Python + Chrome Native Viewer)
-  const handleExportVcPdf = () => {
-    const url = `https://inandes.geeksoft.tech/api/inversionistas/valor-cuota-pdf/${vcSelFondo}?year=${vcSelYear}&tipo=${vcSelTipo}&num=${vcSelNum}`;
-    window.open(url, '_blank');
+  // Descargar PDF Oficial de Valor Cuota v26 (Consumiendo FastAPI Backend con Descarga Directa)
+  const handleExportVcPdf = async () => {
+    try {
+      const apiBase = getApiBaseUrl();
+      const url = `${apiBase}/api/inversionistas/valor-cuota-pdf/${vcSelFondo}?year=${vcSelYear}&tipo=${vcSelTipo}&num=${vcSelNum}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error en el servidor API (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `Reporte_NAV_V26_${vcSelFondo}_${vcSelYear}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10000);
+    } catch (err: any) {
+      alert(`Error al descargar PDF: ${err.message}`);
+    }
   };
 
   return (
