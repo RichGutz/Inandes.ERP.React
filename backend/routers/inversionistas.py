@@ -47,21 +47,48 @@ class PdfGenerateRequest(BaseModel):
 
 import time
 import re
+import hashlib
 
 @router.post("/generate-pdf")
 def generate_pdf_from_html(request: PdfGenerateRequest):
     """
-    Convierte HTML a PDF usando weasyprint (identico al endpoint de Forecast utils.py).
-    Las imagenes vienen como data URLs desde el frontend - sin fetches externos.
+    Convierte HTML a PDF usando WeasyPrint con Cache-First en disco NVMe para respuesta ultrarrápida (velocidad de la luz).
     """
     t0 = time.time()
     try:
-        # Descartar fuentes externas por HTTP en el CSS para evitar timeouts de red en WeasyPrint
         html_clean = request.html
         if '@import' in html_clean:
             html_clean = re.sub(r'@import\s+url\([^)]+\);?', '', html_clean)
 
+        # Generar hash único del contenido para la cache en disco
+        content_hash = hashlib.md5((request.filename + html_clean).encode('utf-8')).hexdigest()
+        cache_dir = os.path.join(backend_root, 'cache_reports')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, f"NAV_{content_hash}.pdf")
+
+        if os.path.exists(cache_file):
+            elapsed_ms = (time.time() - t0) * 1000
+            print(f"[CACHE HIT] Sirviendo '{request.filename}' ({os.path.getsize(cache_file)} bytes) en {elapsed_ms:.2f} ms")
+            return FileResponse(
+                cache_file,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{request.filename}"',
+                    "X-PDF-Cache-Hit": "true",
+                    "X-PDF-Generation-Time-MS": f"{elapsed_ms:.2f}",
+                }
+            )
+
+        # Generación en vivo con Weasyprint
         pdf_bytes = HTML(string=html_clean).write_pdf()
+
+        # Guardar en cache de disco NVMe
+        try:
+            with open(cache_file, "wb") as f:
+                f.write(pdf_bytes)
+        except Exception as ce:
+            print(f"[CACHE WARN] No se pudo escribir cache: {ce}")
+
         elapsed_ms = (time.time() - t0) * 1000
         print(f"[PDF BENCHMARK] Generado '{request.filename}' ({len(pdf_bytes)} bytes) en {elapsed_ms:.2f} ms")
         return Response(

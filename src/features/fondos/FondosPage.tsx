@@ -539,6 +539,10 @@ export const FondosPage: React.FC = () => {
                     border-collapse: collapse;
                     table-layout: fixed;
                     margin-bottom: 10px;
+                    page-break-inside: avoid;
+                }
+                tr {
+                    page-break-inside: avoid;
                 }
                 table.data-table th,
                 table.data-table td {
