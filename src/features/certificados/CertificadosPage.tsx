@@ -7,6 +7,7 @@ import type { CertificadoMaster } from '../../services/certificadosService';
 import { supabase } from '../../services/supabaseClient';
 import { generateCertificateHtml } from '../../utils/contractPreviewGenerator';
 import type { CertificadoEvento } from '../../services/contratosService';
+import { OmniBuscadorCertificados } from '../../components/common/OmniBuscadorCertificados';
 import * as XLSX from 'xlsx';
 import { 
   Loader2, AlertCircle, FileSpreadsheet, FileText, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers
@@ -31,8 +32,8 @@ export const CertificadosPage: React.FC = () => {
   // ==========================================
   // --- FORMULARIO DE AUMENTO DE CAPITAL -----
   // ==========================================
-  const [aumentoOmniSearch, setAumentoOmniSearch] = useState<string>('');
   const [selectedAumentoCert, setSelectedAumentoCert] = useState<string>('');
+
   const [aumentoMonto, setAumentoMonto] = useState<number>(5000);
   const [aumentoFecha, setAumentoFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [aumentoVoucherName, setAumentoVoucherName] = useState<string>('');
@@ -398,18 +399,7 @@ export const CertificadosPage: React.FC = () => {
   // ==========================================
   // --- PROCESAR AUMENTO DE CAPITAL ----------
   // ==========================================
-  const getAumentoOptions = () => {
-    const vigentsOnly = certificados.filter(c => c.estado === 'VIGENTE');
-    if (!aumentoOmniSearch.trim()) return vigentsOnly;
 
-    const q = aumentoOmniSearch.toLowerCase();
-    return vigentsOnly.filter(c => 
-      c.id_certificado.toLowerCase().includes(q) ||
-      [c.titular_1, c.titular_2, c.titular_3, c.titular_4].some(n => n?.toLowerCase().includes(q))
-    );
-  };
-
-  const aumentoOptions = getAumentoOptions();
 
   const handleProcesarAumento = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -448,7 +438,7 @@ export const CertificadosPage: React.FC = () => {
       setAumentoMonto(5000);
       setAumentoVoucherName('');
       setSelectedAumentoCert('');
-      setAumentoOmniSearch('');
+
 
       setTimeout(() => {
         setAumentoSuccess(false);
@@ -739,42 +729,20 @@ export const CertificadosPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Buscador OMNI local */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">1. Filtrar Inversionista / Certificado Destino</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-450">
-                    <Search size={13} />
-                  </span>
-                  <input
-                    type="text"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-2 pl-8 pr-3 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
-                    placeholder="Escriba DNI, Nombre o ID del certificado..."
-                    value={aumentoOmniSearch}
-                    onChange={(e) => setAumentoOmniSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <form onSubmit={handleProcesarAumento} className="flex flex-col gap-4">
                 
-                {/* Selector Dropdown */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">2. Seleccione Certificado Destino</label>
-                  <select
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 text-xs font-semibold focus:outline-none"
-                    value={selectedAumentoCert}
-                    onChange={(e) => setSelectedAumentoCert(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Seleccionar Certificado --</option>
-                    {aumentoOptions.map(c => (
-                      <option key={c.id_certificado} value={c.id_certificado}>
-                        {c.id_certificado} - {c.titular_1} ({c.moneda} {c.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* ARTEFACTO OMNIBUSCADOR MULTICRITERIO (PASO 1 + PASO 2) */}
+                <OmniBuscadorCertificados
+                  certificados={certificados}
+                  selectedCertId={selectedAumentoCert}
+                  onSelectCert={(certId) => setSelectedAumentoCert(certId)}
+                  placeholder="Escriba DNI, RUC, Nombre del titular o ID del certificado..."
+                  labelPaso1="1. FILTRAR INVERSIONISTA / CERTIFICADO DESTINO (BUSCADOR OMNI)"
+                  labelPaso2="2. SELECCIONE CERTIFICADO DESTINO"
+                  autoSelectIfSingle={true}
+                  filterOnlyVigentes={true}
+                />
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
