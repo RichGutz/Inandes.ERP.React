@@ -694,21 +694,11 @@ export const FondosPage: React.FC = () => {
 
                               const cellsHtml = block.days.map((_, idx) => {
                                 const val = row.cells[idx]?.val;
-                                const valDecimals = isVc ? 6 : 2;
-                                const formattedVal = formatNumVal(val, valDecimals);
-                                const vcClass = isVc ? 'vc-highlight' : '';
-                                return `<td class="day-col ${vcClass}">${formattedVal}</td>`;
+                                const formattedVal = formatNumVal(val, isVc ? 6 : 2);
+                                return `<td class="day-col ${isVc ? 'vc-highlight' : ''}">${formattedVal}</td>`;
                               }).join('');
 
-                              return `
-                                <tr class="${rowClass}">
-                                  <td class="num-col">${numCell}</td>
-                                  <td class="cert-id-col ${certLabelClass}">${row.id}</td>
-                                  <td class="cap-col">${capDisplay}</td>
-                                  <td class="cuotas-col">${cuotasDisplay}</td>
-                                  ${cellsHtml}
-                                </tr>
-                              `;
+                              return `<tr class="${rowClass}"><td class="num-col">${numCell}</td><td class="cert-id-col ${certLabelClass}">${row.id}</td><td class="cap-col">${capDisplay}</td><td class="cuotas-col">${cuotasDisplay}</td>${cellsHtml}</tr>`;
                             }).join('')}
                         </tbody>
                     </table>
