@@ -24,7 +24,11 @@ dist-ssr
 *.sw?
 
 # Temporary python scripts
-# Track all backend and src python files
+*.py
+!deploy_vps.py
+!.agents/**/*.py
+!backend/**/*.py
+!src/**/*.py
 backups.supabase/
 facturas_inandes/
 backend/sa_credentials.json
