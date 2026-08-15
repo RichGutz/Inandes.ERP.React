@@ -8,7 +8,7 @@ import { supabase } from '../../services/supabaseClient';
 import * as XLSX from 'xlsx';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
-  FileSpreadsheet, FileText, CheckCircle, AlertTriangle, 
+  FileSpreadsheet, FileText, CheckCircle, 
   ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
@@ -28,6 +28,10 @@ export const InversionistasPage: React.FC = () => {
   const [rollbackModalOpen, setRollbackModalOpen] = useState<boolean>(false);
   const [rollbackConfirmText, setRollbackConfirmText] = useState<string>('');
   const [rollbackLoading, setRollbackLoading] = useState<boolean>(false);
+
+  // Modal de confirmacion de Registro Oficial
+  const [registerModalOpen, setRegisterModalOpen] = useState<boolean>(false);
+  const [registerConfirmText, setRegisterConfirmText] = useState<string>('');
 
 
   // Estado común de partícipes
@@ -902,12 +906,7 @@ export const InversionistasPage: React.FC = () => {
 
   // Guardar permanente en base de datos
   const handleRegisterPermanent = async () => {
-    if (!excelDownloaded || !pdfDownloaded) return;
     if (collisionCount > 0) return;
-
-    if (!confirm("¿Está seguro de registrar permanentemente estos asientos en el Ledger oficial? Esta operación escribirá eventos y actualizará contratos en Supabase.")) {
-      return;
-    }
 
     setOfficialRegisterLoading(true);
     setRegisterSuccessMsg(null);
@@ -999,12 +998,14 @@ export const InversionistasPage: React.FC = () => {
 
       setRegisterSuccessMsg(`Se registraron con éxito ${inserted} asientos contables. Se cerraron ${contratosCerrarFin.length + contratosCerrarRescate.length} contratos y se procesaron ${idsCronograma.length} cuotas de amortización.`);
       
-      // Actualizar dashboard y colisiones
+      // Actualizar dashboard, colisiones y cerrar modal
       verificarColision(fEnd);
       fetchCycleDashboard(v40SelYear);
       setExcelDownloaded(false);
       setPdfDownloaded(false);
       setCalcResult(null);
+      setRegisterModalOpen(false);
+      setRegisterConfirmText('');
     } catch (err: any) {
       alert(`Error al registrar en base de datos: ${err.message}`);
     } finally {
@@ -1782,25 +1783,18 @@ export const InversionistasPage: React.FC = () => {
                     Protección contra duplicados activa
                   </span>
                 </div>
-              ) : (!excelDownloaded || !pdfDownloaded) ? (
-                <div className="bg-amber-50 dark:bg-amber-950/15 border border-amber-250 dark:border-amber-900 rounded-xl p-4 flex items-start gap-3">
-                  <AlertTriangle className="text-amber-600 dark:text-amber-450 shrink-0 mt-0.5" size={16} />
-                  <div className="flex flex-col gap-0.5">
-                    <h4 className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tight">Bloqueo de Auditoría</h4>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-450 font-medium">
-                      🔒 Para habilitar el registro oficial en Supabase, primero debes descargar y revisar el **Excel Maestro** y el **PDF Oficial** del período.
-                    </p>
-                  </div>
-                </div>
               ) : (
-                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
                     <CheckCircle size={18} />
-                    <span>Revisión completada: Tienes habilitado el registro contable en la base de datos.</span>
+                    <span>Período abierto ({fEnd}): Listo para registrar los asientos oficiales en la base de datos.</span>
                   </div>
                   <button
                     className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl cursor-pointer shadow transition-all flex items-center gap-2"
-                    onClick={handleRegisterPermanent}
+                    onClick={() => {
+                      setRegisterConfirmText('');
+                      setRegisterModalOpen(true);
+                    }}
                     disabled={officialRegisterLoading}
                   >
                     {officialRegisterLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
@@ -2677,6 +2671,62 @@ export const InversionistasPage: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmacion Registro Oficial: requiere escribir EJECUTAR */}
+      {registerModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="bg-emerald-600 px-6 py-4 flex items-center gap-3">
+              <ShieldCheck size={20} className="text-white" />
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">Confirmación de Registro Oficial</h3>
+                <p className="text-[10px] text-emerald-100 font-semibold">Persistencia irreversible en Ledger Oficial</p>
+              </div>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-4 text-xs text-emerald-900 dark:text-emerald-300 leading-relaxed font-medium">
+                Esta acción escribirá <strong>oficialmente los asientos contables</strong> del período <code className="bg-emerald-100 dark:bg-emerald-900 px-1 py-0.5 rounded font-black">{fEnd}</code> en Supabase, cerrará contratos extinguidos y actualizará el cronograma.
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Para confirmar, escribe <span className="text-emerald-600 font-black">EJECUTAR</span> en el campo:
+                </label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-700 focus:border-emerald-500 dark:focus:border-emerald-500 rounded-xl py-2.5 px-4 text-sm font-black text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none transition-colors tracking-widest uppercase"
+                  placeholder="Escribe EJECUTAR aquí..."
+                  value={registerConfirmText}
+                  onChange={(e) => setRegisterConfirmText(e.target.value.toUpperCase())}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="px-6 pb-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="h-9 text-xs font-bold px-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer transition-colors"
+                onClick={() => { setRegisterModalOpen(false); setRegisterConfirmText(''); }}
+                disabled={officialRegisterLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={`h-9 text-xs font-black uppercase tracking-wider px-6 rounded-xl text-white shadow transition-all flex items-center gap-2 ${
+                  registerConfirmText === 'EJECUTAR' && !officialRegisterLoading
+                    ? 'bg-emerald-600 hover:bg-emerald-700 cursor-pointer'
+                    : 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-60'
+                }`}
+                onClick={handleRegisterPermanent}
+                disabled={registerConfirmText !== 'EJECUTAR' || officialRegisterLoading}
+              >
+                {officialRegisterLoading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                <span>Ejecutar Registro Oficial</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
