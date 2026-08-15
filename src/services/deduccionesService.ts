@@ -166,9 +166,12 @@ export const getCronogramaDeducciones = async (idCertificado: string): Promise<D
  * Inserta múltiples cuotas del cronograma
  */
 export const insertCronogramaDeducciones = async (cuotas: DeduccionCuota[]): Promise<void> => {
+  // Filtrar campos de UI (como es_rescate_total) que no son columnas físicas en Postgres
+  const cleanPayload = cuotas.map(({ es_rescate_total, ...rest }) => rest);
+
   const { error } = await supabase
     .from('crm_cronograma_deducciones_rescates')
-    .insert(cuotas);
+    .insert(cleanPayload);
 
   if (error) throw new Error(`Error al registrar cronograma: ${error.message}`);
 };
