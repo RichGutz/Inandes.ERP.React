@@ -129,8 +129,8 @@ export const generateRetornosV40 = async (
   }
   const cidsActivos = contratosMaster.map(c => c.id_contrato);
 
-  // 4. Historial Ledger (Eventos previos)
-  const tempHistorialMap: Record<string, any[]> = {};
+  // 4. Historial Ledger (Eventos previos) y Arrastre de Saldo de Cierre
+  const eventsByContrato: Record<string, any[]> = {};
 
   const chunkSize = 100;
   for (let i = 0; i < cidsActivos.length; i += chunkSize) {
@@ -146,53 +146,19 @@ export const generateRetornosV40 = async (
     if (events) {
       for (const e of events) {
         const cid = e.id_contrato || e.id_certificado;
-        if (!tempHistorialMap[cid]) tempHistorialMap[cid] = [];
-        tempHistorialMap[cid].push(e);
-      }
-    }
-  }
-
-  // Filtrar para desduplicar: solo conservar versiones de certificado válidas al inicio del periodo
-  const historialMap: Record<string, any[]> = {};
-  const aumMap: Record<string, Array<{ fecha: Date; monto: number }>> = {};
-  const balPrevMap: Record<string, number> = {};
-
-  for (const [cid, events] of Object.entries(tempHistorialMap)) {
-    events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
-    const firstEv = events[0];
-    const rawFin = firstEv.fecha_periodo_fin || '2000-01-01';
-    const fFin = new Date(rawFin.split('T')[0] + 'T00:00:00');
-    const isEmision = firstEv.tipo_evento === 'emision_inicial';
-
-    // Si el certificado inició antes del periodo o es la emisión inicial del contrato en este periodo, se procesa
-    if (fFin < fStart || isEmision) {
-      historialMap[cid] = events;
-      for (const e of events) {
-        const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
-        const fEv = new Date(rawF.split('T')[0] + 'T00:00:00');
-
-        if (['aumento_capital', 'reinvierte_interes'].includes(e.tipo_evento)) {
-          const monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
-          if (monto > 0) {
-            if (!aumMap[cid]) aumMap[cid] = [];
-            aumMap[cid].push({ fecha: fEv, monto });
-          }
-        } else if (fEv < fStart && ['rescate_capital', 'rescate'].includes(e.tipo_evento)) {
-          const monto = Number(e.capital_base || 0) - Number(e.capital_final_saldo || 0);
-          if (!balPrevMap[cid]) balPrevMap[cid] = 0;
-          balPrevMap[cid] -= Math.abs(monto);
-        }
+        if (!eventsByContrato[cid]) eventsByContrato[cid] = [];
+        eventsByContrato[cid].push(e);
       }
     }
   }
 
   // 5. Carga de Cronogramas de deducciones y rescates
-  const todoCids = Object.keys(historialMap);
   const cronDedMap: Record<string, any[]> = {};
   const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number; es_rescate_total?: boolean }>> = {};
+  const cronBalPrevMap: Record<string, number> = {};
 
-  for (let i = 0; i < todoCids.length; i += chunkSize) {
-    const chunk = todoCids.slice(i, i + chunkSize);
+  for (let i = 0; i < cidsActivos.length; i += chunkSize) {
+    const chunk = cidsActivos.slice(i, i + chunkSize);
     const { data: items, error: itemsErr } = await supabase
       .from('crm_cronograma_deducciones_rescates')
       .select('*')
@@ -208,8 +174,8 @@ export const generateRetornosV40 = async (
 
         if (fP < fStart) {
           if (tipo === 'RESCATE_CAPITAL') {
-            if (!balPrevMap[cid]) balPrevMap[cid] = 0;
-            balPrevMap[cid] -= Number(item.monto_cobrar);
+            if (!cronBalPrevMap[cid]) cronBalPrevMap[cid] = 0;
+            cronBalPrevMap[cid] -= Number(item.monto_cobrar);
           }
         } else if (fP <= fechaFin) {
           if (tipo === 'RESCATE_CAPITAL') {
@@ -230,13 +196,61 @@ export const generateRetornosV40 = async (
     }
   }
 
-  // 6. Preparación de Filas de Cálculo
+  // 6. Preparación de Filas de Cálculo con Arrastre del Cierre Anterior
   const certRowsData: any[] = [];
-  for (const certId of Object.keys(historialMap)) {
-    const events = historialMap[certId];
-    const mid = events.length > 0 ? (events[events.length - 1].id_contrato || certId) : certId;
+  for (const mid of cidsActivos) {
     const c = contratosMap[mid];
     if (!c) continue;
+
+    const events = eventsByContrato[mid] || [];
+    events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
+
+    // Buscar el último evento de cierre oficializado previo al inicio de este periodo
+    const closingEvents = events.filter(e => 
+      ['cierre_fin_ciclo', 'cierre_fin_contrato'].includes(e.tipo_evento) &&
+      e.fecha_periodo_fin &&
+      new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') <= fStart
+    );
+
+    let lastClosureDate: Date | null = null;
+    let capBaseInicio = 0;
+    let idCertOrigen = mid;
+
+    if (closingEvents.length > 0) {
+      closingEvents.sort((a, b) => String(a.fecha_periodo_fin).localeCompare(String(b.fecha_periodo_fin)));
+      const lastClosure = closingEvents[closingEvents.length - 1];
+      capBaseInicio = Number(lastClosure.capital_final_saldo || 0);
+      lastClosureDate = new Date(lastClosure.fecha_periodo_fin.split('T')[0] + 'T00:00:00');
+      idCertOrigen = lastClosure.id_certificado || mid;
+    } else {
+      capBaseInicio = Number(c.monto_inversion || 0) + (cronBalPrevMap[mid] || 0.0);
+      idCertOrigen = mid;
+    }
+
+    // Filtrar aumentos de capital/hijos: solo incluir los ocurridos DESPUÉS de la fecha del último cierre
+    const hijos: any[] = [];
+    for (const e of events) {
+      if (['aumento_capital', 'reinvierte_interes'].includes(e.tipo_evento)) {
+        const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
+        const fEv = new Date(rawF.split('T')[0] + 'T00:00:00');
+
+        if (lastClosureDate && fEv <= lastClosureDate) {
+          continue;
+        }
+        if (fEv <= fechaFin) {
+          const monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
+          if (monto > 0) {
+            hijos.push({
+              id: `Aumento (${formatDate(fEv)})`,
+              fecha: fEv,
+              monto,
+              interes_acum: 0.0,
+              v_dias: []
+            });
+          }
+        }
+      }
+    }
 
     const tasaRaw = c.tasa_pactada;
     let tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
@@ -245,32 +259,21 @@ export const generateRetornosV40 = async (
     }
     const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
 
-    const hijos: any[] = [];
-    const aums = aumMap[certId] || [];
-    for (const a of aums) {
-      hijos.push({
-        id: `Aumento (${formatDate(a.fecha)})`,
-        fecha: a.fecha,
-        monto: a.monto,
-        interes_acum: 0.0,
-        v_dias: []
-      });
-    }
-
     certRowsData.push({
-      id: certId,
+      id: mid,
+      id_certificado_origen: idCertOrigen,
       id_contrato: mid,
       id_fondo: c.id_fondo,
       moneda: c.moneda,
       inversionista: getInvName(c, invMap),
-      capital_base: Number(c.monto_inversion || 0) + (balPrevMap[certId] || 0.0),
+      capital_base: capBaseInicio,
       emision: new Date(c.fecha_inicio.split('T')[0] + 'T00:00:00'),
       tasa_pactada: tasaP,
       porcentaje_reparto: repartoPct,
       hijos,
       interes_total_acum: 0.0,
-      cron_deducciones: cronDedMap[certId] || [],
-      cron_rescates: cronRescMap[certId] || [],
+      cron_deducciones: cronDedMap[mid] || [],
+      cron_rescates: cronRescMap[mid] || [],
       valores_dia_padre: []
     });
   }
@@ -417,7 +420,7 @@ export const generateRetornosV40 = async (
 
       asientos.push({
         id_certificado: nuevoIdCertificado,
-        id_certificado_origen: r.id,
+        id_certificado_origen: r.id_certificado_origen || r.id_contrato,
         id_contrato: r.id_contrato,
         tipo_evento: tipo_ev,
         fecha_periodo_origen: fStart.toISOString().split('T')[0],

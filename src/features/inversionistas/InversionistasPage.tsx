@@ -166,7 +166,8 @@ export const InversionistasPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('crm_certificados_eventos')
-        .select('id_certificado, fecha_periodo_fin')
+        .select('id_certificado, fecha_periodo_fin, tipo_evento')
+        .in('tipo_evento', ['cierre_fin_ciclo', 'cierre_fin_contrato'])
         .gte('fecha_periodo_fin', `${year}-01-01`)
         .lte('fecha_periodo_fin', `${year}-12-31`);
 
@@ -265,6 +266,7 @@ export const InversionistasPage: React.FC = () => {
       const { count, error } = await supabase
         .from('crm_certificados_eventos')
         .select('id_evento', { count: 'exact', head: true })
+        .in('tipo_evento', ['cierre_fin_ciclo', 'cierre_fin_contrato'])
         .eq('fecha_periodo_fin', endDate);
       
       if (error) throw error;
