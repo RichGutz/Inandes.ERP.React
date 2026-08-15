@@ -524,23 +524,31 @@ export const InversionesPage: React.FC = () => {
     setApproveError(null);
 
     try {
-      // 1. Obtener último correlativo para el ID definitivo
+      // 1. Obtener correlativos de contratos VIGENTES para reciclar el menor disponible ("muerto libre")
       const fCode = selectedContract.id_fondo;
-      const { data: lastContracts } = await supabase
+      const { data: activeContracts } = await supabase
         .from('crm_contratos')
         .select('id_contrato')
         .eq('id_fondo', fCode)
-        .like('id_contrato', `${fCode}-%`)
-        .order('id_contrato', { ascending: false })
-        .limit(1);
+        .in('estado', ['emitido', 'pendiente_aprobacion', 'propuesto'])
+        .like('id_contrato', `${fCode}-%`);
 
-      let nextCorrelative = 1;
-      if (lastContracts && lastContracts.length > 0 && lastContracts[0].id_contrato) {
-        const lastStr = lastContracts[0].id_contrato;
-        const match = lastStr.match(/-(\d+)/);
-        if (match) {
-          nextCorrelative = parseInt(match[1], 10) + 1;
+      const activeCorrelatives = new Set<number>();
+      if (activeContracts) {
+        for (const row of activeContracts) {
+          if (row.id_contrato) {
+            const match = row.id_contrato.match(/-(\d+)/);
+            if (match) {
+              activeCorrelatives.add(parseInt(match[1], 10));
+            }
+          }
         }
+      }
+
+      // Encontrar el menor número entero disponible (1, 2, 3...)
+      let nextCorrelative = 1;
+      while (activeCorrelatives.has(nextCorrelative)) {
+        nextCorrelative++;
       }
 
       const formattedDate = approveDate.replaceAll('-', '');
