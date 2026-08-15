@@ -370,23 +370,26 @@ export const generateRetornosV40 = async (
       let cap_z = Math.round(neta * (1 - r.porcentaje_reparto) * 100) / 100;
       let rep_v = Math.round(neta * r.porcentaje_reparto * 100) / 100;
 
+      const aum_v = r.hijos.reduce((sum: number, h: any) => sum + h.monto, 0);
+
+      let rescate_sum = 0;
       if (tieneRescateTotal) {
-        // En Rescate Total: 0 recapitalización, 100% de la neta a reparto para extinguir el certificado a 0.00
+        // En Rescate Total: 0 recapitalización, 100% de la neta a reparto, y devolución del 100% del capital base activo
         cap_z = 0.0;
         rep_v = neta;
+        rescate_sum = Math.round((r.capital_base + aum_v) * 100) / 100;
+      } else {
+        rescate_sum = r.cron_rescates.reduce((sum: number, x: any) => sum + x.monto, 0);
       }
 
       const ded_ord = r.cron_deducciones
         .filter((x: any) => x.tipo_cargo === 'DEDUCCION_ORDINARIA')
         .reduce((sum: number, x: any) => sum + Number(x.monto_cobrar), 0);
 
-      const rescate_sum = r.cron_rescates.reduce((sum: number, x: any) => sum + x.monto, 0);
-
       const penalidad_sum = r.cron_deducciones
         .filter((x: any) => x.tipo_cargo === 'PENALIDAD_RESCATE')
         .reduce((sum: number, x: any) => sum + Number(x.monto_cobrar), 0);
 
-      const aum_v = r.hijos.reduce((sum: number, h: any) => sum + h.monto, 0);
       let cap_final = Math.round((r.capital_base + aum_v + cap_z - rescate_sum - penalidad_sum) * 100) / 100;
       if (tieneRescateTotal || cap_final < 0) {
         cap_final = 0.0;

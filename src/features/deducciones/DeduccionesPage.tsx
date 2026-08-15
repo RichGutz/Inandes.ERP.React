@@ -194,11 +194,14 @@ export const DeduccionesPage: React.FC = () => {
     if (validDates.length > 0) {
       const newArmadas = [];
       const penaltyPct = fondoRules.penalidad_rescate || 0;
+      const baseMonto = (resEsRescateTotal && selectedContrato) 
+        ? Math.round((selectedContrato.monto_inversion / resArmadasCount) * 100) / 100 
+        : 1000;
 
       for (let i = 0; i < resArmadasCount; i++) {
         const matchDate = validDates[i] || validDates[0];
         const dateStr = matchDate.toISOString().split('T')[0];
-        const monto = 1000;
+        const monto = baseMonto;
         const penalidad = monto * (penaltyPct / 100);
 
         newArmadas.push({
@@ -209,7 +212,7 @@ export const DeduccionesPage: React.FC = () => {
       }
       setResArmadasData(newArmadas);
     }
-  }, [resArmadasCount, validDates, fondoRules, selectedContrato]);
+  }, [resArmadasCount, validDates, fondoRules, selectedContrato, resEsRescateTotal]);
 
   // Llaves naturales
   const generateNaturalKeys = (
