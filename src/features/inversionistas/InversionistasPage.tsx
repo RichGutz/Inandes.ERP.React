@@ -1070,9 +1070,7 @@ export const InversionistasPage: React.FC = () => {
       const idsCronRevertir = new Set<string>();
 
       for (const reg of eventosPeriodo) {
-        if (reg.tipo_evento === 'cierre_fin_contrato') {
-          contratosRevertir.add(reg.id_contrato);
-        }
+        contratosRevertir.add(reg.id_contrato);
         const payload = reg.payload_asiento || {};
         if (payload.detalle_rescates) {
           for (const r of payload.detalle_rescates) {
