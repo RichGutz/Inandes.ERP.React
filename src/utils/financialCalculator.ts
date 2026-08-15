@@ -111,8 +111,11 @@ export const generateRetornosV40 = async (
     fondosMap[fId] = data[0];
   }
 
-  // 3. Cargar contratos maestros (filtrando solo por estado 'emitido')
-  let queryContratos = supabase.from('crm_contratos').select('*').eq('estado', 'emitido');
+  // 3. Cargar contratos maestros (incluyendo emitidos y cerrados para auditoría y rescates)
+  let queryContratos = supabase
+    .from('crm_contratos')
+    .select('*')
+    .in('estado', ['emitido', 'cerrado_fin_contrato', 'cerrado_por_rescate']);
   if (codigoFondo && codigoFondo !== 'TODOS') {
     queryContratos = queryContratos.eq('id_fondo', codigoFondo);
   }
@@ -258,6 +261,13 @@ export const generateRetornosV40 = async (
       tasaP = Number(fondosMap[c.id_fondo]?.tasa || 0) / 100;
     }
     const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
+    const cDeds = cronDedMap[mid] || [];
+    const cRescs = cronRescMap[mid] || [];
+
+    // Omitir contratos extinguidos en periodos anteriores que no tengan saldo ni actividad en este periodo
+    if (capBaseInicio <= 0 && hijos.length === 0 && cDeds.length === 0 && cRescs.length === 0) {
+      continue;
+    }
 
     certRowsData.push({
       id: mid,
