@@ -856,10 +856,8 @@ export const InversionistasPage: React.FC = () => {
   const handleExportExcelV40WithProgress = async () => {
     setExportingExcel(true);
     try {
-      let currentResult = calcResult;
-      if (!currentResult) {
-        currentResult = await handleRunV40Calculation();
-      }
+      // Forzar siempre cálculo fresco en vivo
+      const currentResult = await handleRunV40Calculation();
       if (!currentResult) {
         alert("No hay datos calculados para exportar en Excel.");
         return;
@@ -876,10 +874,8 @@ export const InversionistasPage: React.FC = () => {
   const handleExportPDFV40 = async () => {
     setExportingPdf(true);
     try {
-      let currentResult = calcResult;
-      if (!currentResult) {
-        currentResult = await handleRunV40Calculation();
-      }
+      // Forzar siempre cálculo fresco en vivo
+      const currentResult = await handleRunV40Calculation();
       if (!currentResult || currentResult.pdfData.length === 0) {
         alert("No hay datos calculados para exportar en PDF.");
         return;
