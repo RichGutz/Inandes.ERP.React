@@ -151,14 +151,18 @@ export const generateRetornosV40 = async (
     }
   }
 
+  const fStartStr = fStart.toISOString().split('T')[0];
+
   // Filtrar solo los contratos vigentes durante el periodo evaluado
   const contratosMaster = rawContratosMaster.filter(c => {
     if (c.estado === 'emitido') return true;
-    if (c.fecha_fin && c.fecha_fin >= fStart) return true;
+    const fFinStr = c.fecha_fin ? c.fecha_fin.split('T')[0] : '2099-12-31';
+    if (fFinStr >= fStartStr) return true;
     const evs = eventsByContrato[c.id_contrato] || [];
     const cierreEv = evs.find(e => e.tipo_evento === 'cierre_fin_contrato' || e.tipo_evento === 'cierre_por_rescate');
     if (!cierreEv) return true;
-    return cierreEv.fecha_periodo_fin >= fStart;
+    const cFinStr = cierreEv.fecha_periodo_fin ? cierreEv.fecha_periodo_fin.split('T')[0] : '2000-01-01';
+    return cFinStr >= fStartStr;
   });
 
   const contratosMap: Record<string, any> = {};
