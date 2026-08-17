@@ -1080,6 +1080,19 @@ export const InversionistasPage: React.FC = () => {
         }
       }
 
+      // Revertir cualquier cuota de cronograma del periodo o anterior que haya quedado en PROCESADO
+      const { data: cuotasProcesadas } = await supabase
+        .from('crm_cronograma_deducciones_rescates')
+        .select('id_cuota')
+        .lte('fecha_proyectada_cobro', fEnd)
+        .eq('estado', 'PROCESADO');
+
+      if (cuotasProcesadas) {
+        for (const cp of cuotasProcesadas) {
+          idsCronRevertir.add(cp.id_cuota);
+        }
+      }
+
       const chunk_size = 50;
 
       // Revertir contratos a emitido
