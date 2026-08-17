@@ -314,7 +314,7 @@ export const generateRetornosV40 = async (
         }
       }
 
-      const t_hoy = r_a ? r_a.tasa : row.tasa_pactada;
+      const t_hoy = row.tasa_pactada;
       const base_hoy = r_a ? row.capital_base : Math.max(0.0, cap_rem);
 
       const isEmittedOrAfter = dTime >= row.emision.getTime();
