@@ -756,10 +756,8 @@ export const InversionistasPage: React.FC = () => {
 
   // Exportar Excel Detallado Oficial y Auditoría (SheetJS)
   const handleExportExcelV40 = async () => {
-    let currentResult = calcResult;
-    if (!currentResult) {
-      currentResult = await handleRunV40Calculation();
-    }
+    // Forzar cálculo fresco para asegurar que el Excel refleje siempre los últimos datos de la BD
+    const currentResult = await handleRunV40Calculation();
     if (!currentResult || !currentResult.pdfData || currentResult.pdfData.length === 0) {
       alert("No hay datos calculados para exportar en Excel.");
       return;
