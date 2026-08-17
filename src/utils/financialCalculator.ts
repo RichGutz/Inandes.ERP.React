@@ -267,14 +267,9 @@ export const generateRetornosV40 = async (
       }
     }
 
+    // REGULA STRICTA DE AUDITORÍA: Sin fallbacks silenciosos. Se usa únicamente la tasa pactada del contrato.
     const tasaRaw = c.tasa_pactada;
-    let tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
-    if (tasaP === 0) {
-      const fPlazoMeta = (c.id_fondo_plazo && fondosPlazoMap[c.id_fondo_plazo])
-        || fondosPlazoMap[`${c.id_fondo}-${c.plazo_meses}`]
-        || fondosMap[c.id_fondo];
-      tasaP = Number(fPlazoMeta?.tasa || 0) / 100;
-    }
+    const tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
     const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
 
     certRowsData.push({
