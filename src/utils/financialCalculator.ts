@@ -96,19 +96,15 @@ export const generateRetornosV40 = async (
 
   if (fondosErr) throw new Error(`Error en crm_fondos: ${fondosErr.message}`);
 
-  const fondosRaw: Record<string, any[]> = {};
+  const fondosPlazoMap: Record<string, any> = {};
+  const fondosMap: Record<string, any> = {};
+
   if (fondosData) {
     for (const f of fondosData) {
-      if (!fondosRaw[f.id_fondo]) fondosRaw[f.id_fondo] = [];
-      fondosRaw[f.id_fondo].push(f);
+      if (f.id_fondo_plazo) fondosPlazoMap[f.id_fondo_plazo] = f;
+      fondosPlazoMap[`${f.id_fondo}-${f.plazo_inversion}`] = f;
+      if (!fondosMap[f.id_fondo]) fondosMap[f.id_fondo] = f;
     }
-  }
-
-  const fondosMap: Record<string, any> = {};
-  for (const fId of Object.keys(fondosRaw)) {
-    const data = fondosRaw[fId];
-    data.sort((a, b) => String(b.periodo_vigente || '2000').localeCompare(String(a.periodo_vigente || '2000')));
-    fondosMap[fId] = data[0];
   }
 
   // 3. Cargar contratos maestros (vigentes o cerrados en el periodo actual/futuros)
@@ -274,7 +270,10 @@ export const generateRetornosV40 = async (
     const tasaRaw = c.tasa_pactada;
     let tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
     if (tasaP === 0) {
-      tasaP = Number(fondosMap[c.id_fondo]?.tasa || 0) / 100;
+      const fPlazoMeta = (c.id_fondo_plazo && fondosPlazoMap[c.id_fondo_plazo])
+        || fondosPlazoMap[`${c.id_fondo}-${c.plazo_meses}`]
+        || fondosMap[c.id_fondo];
+      tasaP = Number(fPlazoMeta?.tasa || 0) / 100;
     }
     const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
 
