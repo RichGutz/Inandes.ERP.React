@@ -224,7 +224,7 @@ export const generateRetornosV40 = async (
     const closingEvents = events.filter(e => 
       ['cierre_fin_ciclo', 'cierre_fin_contrato'].includes(e.tipo_evento) &&
       e.fecha_periodo_fin &&
-      new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') <= fStart
+      new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') < fStart
     );
 
     let lastClosureDate: Date | null = null;
