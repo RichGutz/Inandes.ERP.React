@@ -1091,6 +1091,20 @@ export const InversionistasPage: React.FC = () => {
         }
       }
 
+      // Revertir cualquier contrato que tenga fecha_fin del periodo y no esté en emitido
+      const { data: contratosCerradosPeriodo } = await supabase
+        .from('crm_contratos')
+        .select('id_contrato')
+        .gte('fecha_fin', fStart)
+        .lte('fecha_fin', fEnd)
+        .neq('estado', 'emitido');
+
+      if (contratosCerradosPeriodo) {
+        for (const cc of contratosCerradosPeriodo) {
+          contratosRevertir.add(cc.id_contrato);
+        }
+      }
+
       const chunk_size = 50;
 
       // Revertir contratos a emitido

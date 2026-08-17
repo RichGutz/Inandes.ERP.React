@@ -154,6 +154,7 @@ export const generateRetornosV40 = async (
   // Filtrar solo los contratos vigentes durante el periodo evaluado
   const contratosMaster = rawContratosMaster.filter(c => {
     if (c.estado === 'emitido') return true;
+    if (c.fecha_fin && c.fecha_fin >= fStart) return true;
     const evs = eventsByContrato[c.id_contrato] || [];
     const cierreEv = evs.find(e => e.tipo_evento === 'cierre_fin_contrato' || e.tipo_evento === 'cierre_por_rescate');
     if (!cierreEv) return true;
