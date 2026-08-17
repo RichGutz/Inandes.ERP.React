@@ -5,7 +5,7 @@ import {
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
-  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle 
+  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign 
 } from 'lucide-react';
 
 export const DeduccionesPage: React.FC = () => {
@@ -609,84 +609,119 @@ export const DeduccionesPage: React.FC = () => {
                   No hay cronogramas monetarios cargados en el sistema.
                 </div>
               ) : (
-                Object.entries(
-                  cronograma.reduce((acc, c) => {
-                    const fId = (c.id_contrato || c.id_certificado || 'OTROS').split('-')[0];
-                    if (!acc[fId]) acc[fId] = [];
-                    acc[fId].push(c);
-                    return acc;
-                  }, {} as Record<string, DeduccionCuota[]>)
-                ).sort(([a], [b]) => a.localeCompare(b)).map(([fondoId, cuotas]) => {
-                  const totalMonto = cuotas.reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
-                  const moneda = cuotas[0]?.moneda || 'PEN';
-                  return (
-                    <div key={`grupo-fondo-${fondoId}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-indigo-600 text-white font-mono text-[11px] font-black px-2.5 py-1 rounded-lg">
-                            🏛️ FONDO: {fondoId}
-                          </span>
-                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            ({cuotas.length} {cuotas.length === 1 ? 'registro' : 'registros'})
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-450 uppercase">Total Programado:</span>
-                          <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
-                            {moneda} {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      </div>
+                <div className="flex flex-col gap-6 w-full">
+                  {/* Tarjeta Resumen de Provisión de Cash */}
+                  {(() => {
+                    const rescatesOnly = cronograma.filter(c => c.tipo_cargo === 'RESCATE_CAPITAL');
+                    const cashPEN = rescatesOnly.filter(c => c.moneda === 'PEN').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
+                    const cashUSD = rescatesOnly.filter(c => c.moneda === 'USD').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
 
-                      <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                        <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
-                          <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">ID Cuota / Asiento</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Contrato</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Tipo Cargo</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Glosa / Descripción</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Monto</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Corte Cobro</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Estado</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Prioridad</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {cuotas.map(c => (
-                              <tr key={c.id_cuota} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30">
-                                <td className="px-4 py-2 font-mono font-bold text-slate-655 dark:text-slate-350">{c.id_cuota}</td>
-                                <td className="px-4 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">{c.id_contrato || '-'}</td>
-                                <td className="px-4 py-2 font-semibold">
-                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                                    c.tipo_cargo === 'RESCATE_CAPITAL' 
-                                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' 
-                                      : c.tipo_cargo === 'PENALIDAD_RESCATE'
-                                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
-                                        : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
-                                  }`}>
-                                    {c.tipo_cargo.replaceAll('_', ' ')}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2 text-slate-700 dark:text-slate-400">{c.glosa_descripcion}</td>
-                                <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-455 font-bold">{c.moneda}</td>
-                                <td className="px-4 py-2 text-right font-mono font-bold text-slate-755 dark:text-slate-300">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                <td className="px-4 py-2 text-slate-600 dark:text-slate-455">{c.fecha_proyectada_cobro}</td>
-                                <td className="px-4 py-2">
-                                  <span className={`font-black text-[8px] uppercase ${c.estado === 'PENDIENTE' ? 'text-amber-500' : 'text-emerald-600'}`}>
-                                    ● {c.estado}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2 text-center font-bold text-slate-500">{c.prioridad}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    return (
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-white shadow-md">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-blue-600/20 text-blue-400 rounded-lg">
+                            <DollarSign size={20} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">💰 Provisión Total de Cash para Rescates de Capital</span>
+                            <span className="text-xs font-semibold text-slate-300">Flujo de tesorería requerido para atender devoluciones al cierre</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="flex flex-col text-right">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Provisión Soles (PEN)</span>
+                            <span className="font-mono text-sm font-black text-emerald-400">S/ {cashPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          {cashUSD > 0 && (
+                            <div className="flex flex-col text-right border-l border-slate-800 pl-6">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">Provisión Dólares (USD)</span>
+                              <span className="font-mono text-sm font-black text-sky-400">$ {cashUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })()}
+
+                  {Object.entries(
+                    cronograma.reduce((acc, c) => {
+                      const fId = (c.id_contrato || c.id_certificado || 'OTROS').split('-')[0];
+                      if (!acc[fId]) acc[fId] = [];
+                      acc[fId].push(c);
+                      return acc;
+                    }, {} as Record<string, DeduccionCuota[]>)
+                  ).sort(([a], [b]) => a.localeCompare(b)).map(([fondoId, cuotas]) => {
+                    const totalMonto = cuotas.reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
+                    const moneda = cuotas[0]?.moneda || 'PEN';
+                    return (
+                      <div key={`grupo-fondo-${fondoId}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-indigo-600 text-white font-mono text-[11px] font-black px-2.5 py-1 rounded-lg">
+                              🏛️ FONDO: {fondoId}
+                            </span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                              ({cuotas.length} {cuotas.length === 1 ? 'registro' : 'registros'})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-slate-450 uppercase">Total Programado:</span>
+                            <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
+                              {moneda} {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
+                          <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                            <thead>
+                              <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
+                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">ID Cuota / Asiento</th>
+                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Contrato</th>
+                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Tipo Cargo</th>
+                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Glosa / Descripción</th>
+                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
+                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Monto</th>
+                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Corte Cobro</th>
+                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Estado</th>
+                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Prioridad</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {cuotas.map(c => (
+                                <tr key={c.id_cuota} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30">
+                                  <td className="px-4 py-2 font-mono font-bold text-slate-655 dark:text-slate-350">{c.id_cuota}</td>
+                                  <td className="px-4 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">{c.id_contrato || '-'}</td>
+                                  <td className="px-4 py-2 font-semibold">
+                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                                      c.tipo_cargo === 'RESCATE_CAPITAL' 
+                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' 
+                                        : c.tipo_cargo === 'PENALIDAD_RESCATE'
+                                          ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
+                                          : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
+                                    }`}>
+                                      {c.tipo_cargo.replaceAll('_', ' ')}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-slate-700 dark:text-slate-400">{c.glosa_descripcion}</td>
+                                  <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-455 font-bold">{c.moneda}</td>
+                                  <td className="px-4 py-2 text-right font-mono font-bold text-slate-755 dark:text-slate-300">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-2 text-slate-600 dark:text-slate-455">{c.fecha_proyectada_cobro}</td>
+                                  <td className="px-4 py-2">
+                                    <span className={`font-black text-[8px] uppercase ${c.estado === 'PENDIENTE' ? 'text-amber-500' : 'text-emerald-600'}`}>
+                                      ● {c.estado}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center font-bold text-slate-500">{c.prioridad}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
