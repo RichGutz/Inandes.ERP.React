@@ -595,64 +595,97 @@ export const DeduccionesPage: React.FC = () => {
             ))}
           </div>
 
-          {/* TAB 1: CRONOGRAMA GENERAL */}
+          {/* TAB 1: CRONOGRAMA GENERAL ORGANIZADO POR FONDO */}
           {activeSubTab === 'cronograma' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn">
-              <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">📋 Cargos Programados y Amortizaciones</h3>
-              
+            <div className="flex flex-col gap-6 animate-fadeIn">
               {cronoLoading ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2">
                   <Loader2 className="animate-spin text-blue-600" size={24} />
+                  <span className="text-xs font-bold text-slate-500">Cargando cronogramas por fondo...</span>
                 </div>
               ) : cronograma.length === 0 ? (
-                <div className="py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                  No hay cronogramas monetarios cargados para este certificado.
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border-dashed">
+                  No hay cronogramas monetarios cargados en el sistema.
                 </div>
               ) : (
-                <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                  <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
-                    <thead>
-                      <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                        <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">ID Cuota / Asiento</th>
-                        <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Tipo Cargo</th>
-                        <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Glosa / Descripción</th>
-                        <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
-                        <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Monto</th>
-                        <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Corte Cobro</th>
-                        <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Estado</th>
-                        <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Prioridad</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cronograma.map(c => (
-                        <tr key={c.id_cuota} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30">
-                          <td className="px-4 py-2 font-mono font-bold text-slate-655 dark:text-slate-350">{c.id_cuota}</td>
-                          <td className="px-4 py-2 font-semibold">
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                              c.tipo_cargo === 'RESCATE_CAPITAL' 
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' 
-                                : c.tipo_cargo === 'PENALIDAD_RESCATE'
-                                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
-                                  : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
-                            }`}>
-                              {c.tipo_cargo.replaceAll('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-slate-700 dark:text-slate-400">{c.glosa_descripcion}</td>
-                          <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-455 font-bold">{c.moneda}</td>
-                          <td className="px-4 py-2 text-right font-mono font-bold text-slate-755 dark:text-slate-300">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                          <td className="px-4 py-2 text-slate-600 dark:text-slate-455">{c.fecha_proyectada_cobro}</td>
-                          <td className="px-4 py-2">
-                            <span className={`font-black text-[8px] uppercase ${c.estado === 'PENDIENTE' ? 'text-amber-500' : 'text-emerald-600'}`}>
-                              ● {c.estado}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-center font-bold text-slate-500">{c.prioridad}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                Object.entries(
+                  cronograma.reduce((acc, c) => {
+                    const fId = (c.id_contrato || c.id_certificado || 'OTROS').split('-')[0];
+                    if (!acc[fId]) acc[fId] = [];
+                    acc[fId].push(c);
+                    return acc;
+                  }, {} as Record<string, DeduccionCuota[]>)
+                ).sort(([a], [b]) => a.localeCompare(b)).map(([fondoId, cuotas]) => {
+                  const totalMonto = cuotas.reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
+                  const moneda = cuotas[0]?.moneda || 'PEN';
+                  return (
+                    <div key={`grupo-fondo-${fondoId}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-indigo-600 text-white font-mono text-[11px] font-black px-2.5 py-1 rounded-lg">
+                            🏛️ FONDO: {fondoId}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            ({cuotas.length} {cuotas.length === 1 ? 'registro' : 'registros'})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-450 uppercase">Total Programado:</span>
+                          <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
+                            {moneda} {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
+                        <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                          <thead>
+                            <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
+                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">ID Cuota / Asiento</th>
+                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Contrato</th>
+                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Tipo Cargo</th>
+                              <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Glosa / Descripción</th>
+                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
+                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Monto</th>
+                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Corte Cobro</th>
+                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Estado</th>
+                              <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Prioridad</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cuotas.map(c => (
+                              <tr key={c.id_cuota} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30">
+                                <td className="px-4 py-2 font-mono font-bold text-slate-655 dark:text-slate-350">{c.id_cuota}</td>
+                                <td className="px-4 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">{c.id_contrato || '-'}</td>
+                                <td className="px-4 py-2 font-semibold">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                                    c.tipo_cargo === 'RESCATE_CAPITAL' 
+                                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' 
+                                      : c.tipo_cargo === 'PENALIDAD_RESCATE'
+                                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
+                                        : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
+                                  }`}>
+                                    {c.tipo_cargo.replaceAll('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-slate-700 dark:text-slate-400">{c.glosa_descripcion}</td>
+                                <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-455 font-bold">{c.moneda}</td>
+                                <td className="px-4 py-2 text-right font-mono font-bold text-slate-755 dark:text-slate-300">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                <td className="px-4 py-2 text-slate-600 dark:text-slate-455">{c.fecha_proyectada_cobro}</td>
+                                <td className="px-4 py-2">
+                                  <span className={`font-black text-[8px] uppercase ${c.estado === 'PENDIENTE' ? 'text-amber-500' : 'text-emerald-600'}`}>
+                                    ● {c.estado}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-center font-bold text-slate-500">{c.prioridad}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
