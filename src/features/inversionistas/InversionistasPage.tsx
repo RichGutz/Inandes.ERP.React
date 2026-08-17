@@ -842,7 +842,8 @@ export const InversionistasPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `AUDITORIA_OFICIAL_SISTEMA_${fEnd}.xlsx`;
+    const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+    a.download = `AUDITORIA_OFICIAL_SISTEMA_${fEnd}_${nowStamp}.xlsx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
