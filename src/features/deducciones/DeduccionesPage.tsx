@@ -556,23 +556,24 @@ export const DeduccionesPage: React.FC = () => {
       </div>
 
 
-      {/* Contrato Seleccionado */}
+      {/* Card Resumen de Ficha (Si hay contrato seleccionado) */}
       {selectedContrato && (
-        <div className="flex flex-col gap-6 w-full animate-fadeIn">
-          
-          {/* Card Resumen de Ficha */}
-          <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-950/20 rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-            <div className="flex flex-col gap-1">
-              <span>📜 Contrato: <strong className="text-blue-600 dark:text-blue-400 font-bold">{selectedContrato.id_contrato}</strong></span>
-              <span>👤 Inversionista: <strong>{selectedContrato.nombre_inversionista_temp || selectedContrato.id_inversionista_1}</strong></span>
-              <span>🏦 Fondo: <strong>{selectedContrato.id_fondo} ({selectedContrato.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})</strong></span>
-            </div>
-            <div className="flex flex-col gap-1 md:text-right">
-              <span>🎟️ Certificado Activo: <strong className="text-rose-600 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
-              <span>💰 Inversión Original: <strong>{selectedContrato.moneda} {selectedContrato.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
-              <span>📅 Fecha Vencimiento: <strong>{selectedContrato.fecha_fin}</strong></span>
-            </div>
+        <div className="bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-950/20 rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 text-[11px] font-semibold text-slate-700 dark:text-slate-300 animate-fadeIn">
+          <div className="flex flex-col gap-1">
+            <span>📜 Contrato: <strong className="text-blue-600 dark:text-blue-400 font-bold">{selectedContrato.id_contrato}</strong></span>
+            <span>👤 Inversionista: <strong>{selectedContrato.nombre_inversionista_temp || selectedContrato.id_inversionista_1}</strong></span>
+            <span>🏦 Fondo: <strong>{selectedContrato.id_fondo} ({selectedContrato.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})</strong></span>
           </div>
+          <div className="flex flex-col gap-1 md:text-right">
+            <span>🎟️ Certificado Activo: <strong className="text-rose-600 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
+            <span>💰 Inversión Original: <strong>{selectedContrato.moneda} {selectedContrato.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
+            <span>📅 Fecha Vencimiento: <strong>{selectedContrato.fecha_fin}</strong></span>
+          </div>
+        </div>
+      )}
+
+      {/* Contenedor Principal de Pestañas */}
+      <div className="flex flex-col gap-6 w-full animate-fadeIn">
 
           {/* Sub Pestañas */}
           <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800 pb-0.5">
@@ -692,13 +693,18 @@ export const DeduccionesPage: React.FC = () => {
 
           {/* TAB 2: PROGRAMAR DEDUCCIÓN */}
           {activeSubTab === 'deduccion' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn max-w-3xl">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-xs font-black text-slate-805 dark:text-slate-200 uppercase tracking-tight">➕ Programar Deducción Múltiple o Fija</h3>
-                <p className="text-[10px] text-slate-450 dark:text-slate-400">
-                  Las deducciones amortizan intereses u otros cobros ordinarios asociados al certificado y se descuentan de forma prioritaria en los cortes.
-                </p>
+            !selectedContrato ? (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl p-8 text-center text-xs font-bold text-amber-700 dark:text-amber-400">
+                ⚠️ Por favor, busca y selecciona un contrato activo en el buscador de la parte superior para programar una deducción.
               </div>
+            ) : (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn max-w-3xl">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xs font-black text-slate-805 dark:text-slate-200 uppercase tracking-tight">➕ Programar Deducción Múltiple o Fija</h3>
+                  <p className="text-[10px] text-slate-450 dark:text-slate-400">
+                    Las deducciones amortizan intereses u otros cobros ordinarios asociados al certificado y se descuentan de forma prioritaria en los cortes.
+                  </p>
+                </div>
 
               <form onSubmit={handlePlanDeduccion} className="flex flex-col gap-4 mt-2">
                 <div className="flex flex-col gap-1.5">
@@ -880,17 +886,23 @@ export const DeduccionesPage: React.FC = () => {
 
               </form>
             </div>
+            )
           )}
 
           {/* TAB 3: PROGRAMAR RESCATE */}
           {activeSubTab === 'rescate' && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn max-w-3xl">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-xs font-black text-slate-805 dark:text-slate-200 uppercase tracking-tight">💸 Programar Rescate de Capital (RES)</h3>
-                <p className="text-[10px] text-slate-450 dark:text-slate-400">
-                  Un rescate amortiza de forma anticipada el capital base del inversionista y recalcula la base imponible y el devengue.
-                </p>
+            !selectedContrato ? (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl p-8 text-center text-xs font-bold text-amber-700 dark:text-amber-400">
+                ⚠️ Por favor, busca y selecciona un contrato activo en el buscador de la parte superior para programar un rescate.
               </div>
+            ) : (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn max-w-3xl">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xs font-black text-slate-805 dark:text-slate-200 uppercase tracking-tight">💸 Programar Rescate de Capital (RES)</h3>
+                  <p className="text-[10px] text-slate-450 dark:text-slate-400">
+                    Un rescate amortiza de forma anticipada el capital base del inversionista y recalcula la base imponible y el devengue.
+                  </p>
+                </div>
 
               {/* Reglas del Fondo */}
               {fondoRules && (
@@ -1063,10 +1075,10 @@ export const DeduccionesPage: React.FC = () => {
 
               </form>
             </div>
+            )
           )}
 
         </div>
-      )}
 
     </div>
   );
