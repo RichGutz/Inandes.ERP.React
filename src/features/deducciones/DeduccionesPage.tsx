@@ -1,7 +1,7 @@
 // src/features/deducciones/DeduccionesPage.tsx
 import React, { useEffect, useState } from 'react';
 import { 
-  buscarContratosPadre, getActiveCertificadoByContrato, getFondoRules, getCronogramaDeducciones, insertCronogramaDeducciones
+  buscarContratosPadre, getActiveCertificadoByContrato, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
@@ -133,15 +133,27 @@ export const DeduccionesPage: React.FC = () => {
   };
 
 
-  // Cargar datos al seleccionar contrato
+  const loadGlobalCronograma = async () => {
+    setCronoLoading(true);
+    try {
+      const crono = await getCronogramaDeduccionesGlobal();
+      setCronograma(crono);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCronoLoading(false);
+    }
+  };
+
+  // Cargar datos al seleccionar contrato (o cargar global si no hay selección)
   useEffect(() => {
     if (selectedContrato) {
       loadContratoData(selectedContrato);
     } else {
       setActiveCertId('');
       setFondoRules({});
-      setCronograma([]);
       setValidDates([]);
+      loadGlobalCronograma();
     }
   }, [selectedContrato]);
 
@@ -169,7 +181,7 @@ export const DeduccionesPage: React.FC = () => {
       }
 
       // 4. Cargar cronograma
-      const crono = await getCronogramaDeducciones(certId);
+      const crono = await getCronogramaDeducciones(certId, c.id_contrato);
       setCronograma(crono);
     } catch (err) {
       console.error(err);
@@ -318,7 +330,7 @@ export const DeduccionesPage: React.FC = () => {
       setDedGlosa('');
       
       // Recargar
-      const crono = await getCronogramaDeducciones(activeCertId);
+      const crono = await getCronogramaDeducciones(activeCertId, selectedContrato?.id_contrato);
       setCronograma(crono);
     } catch (err: any) {
       setDedError(err.message || 'Error al programar deducciones.');
@@ -410,7 +422,7 @@ export const DeduccionesPage: React.FC = () => {
       setResSuccess(`Se crearon ${todo.length} asientos financieros de Rescate (+ Penalidades). Agrupador: ${todo[0].id_agrupador}`);
       
       // Recargar
-      const crono = await getCronogramaDeducciones(activeCertId);
+      const crono = await getCronogramaDeducciones(activeCertId, selectedContrato?.id_contrato);
       setCronograma(crono);
     } catch (err: any) {
       setResError(err.message || 'Error al programar rescate.');

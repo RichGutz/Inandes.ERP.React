@@ -149,16 +149,35 @@ export const getFondoRules = async (idFondo: string): Promise<{ rules: FondoRule
 };
 
 /**
- * Obtiene las deducciones y rescates registrados para un certificado
+ * Obtiene las deducciones y rescates registrados para un certificado o contrato
  */
-export const getCronogramaDeducciones = async (idCertificado: string): Promise<DeduccionCuota[]> => {
+export const getCronogramaDeducciones = async (idCertificado: string, idContrato?: string): Promise<DeduccionCuota[]> => {
+  let query = supabase
+    .from('crm_cronograma_deducciones_rescates')
+    .select('*');
+
+  const targetId = idContrato || idCertificado;
+  if (targetId) {
+    const cidOnly = targetId.split('.')[0];
+    query = query.or(`id_certificado.eq.${idCertificado},id_contrato.eq.${targetId},id_contrato.eq.${cidOnly},id_certificado.ilike.%${cidOnly}%`);
+  }
+
+  const { data, error } = await query.order('fecha_proyectada_cobro', { ascending: true });
+
+  if (error) throw new Error(`Error al obtener cronograma: ${error.message}`);
+  return data || [];
+};
+
+/**
+ * Obtiene todos los cronogramas registrados a nivel global
+ */
+export const getCronogramaDeduccionesGlobal = async (): Promise<DeduccionCuota[]> => {
   const { data, error } = await supabase
     .from('crm_cronograma_deducciones_rescates')
     .select('*')
-    .eq('id_certificado', idCertificado)
     .order('fecha_proyectada_cobro', { ascending: true });
 
-  if (error) throw new Error(`Error al obtener cronograma: ${error.message}`);
+  if (error) throw new Error(`Error al obtener cronogramas globales: ${error.message}`);
   return data || [];
 };
 
