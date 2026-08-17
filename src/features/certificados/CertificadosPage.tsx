@@ -417,6 +417,7 @@ export const CertificadosPage: React.FC = () => {
 
       const eventPayload: CertificadoEvento = {
         id_certificado: targetCert.id_certificado,
+        id_certificado_origen: targetCert.id_certificado,
         id_contrato: targetCert.id_contrato,
         tipo_evento: 'aumento_capital',
         fecha_periodo_origen: aumentoFecha,

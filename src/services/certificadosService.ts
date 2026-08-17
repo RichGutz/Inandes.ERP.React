@@ -189,14 +189,27 @@ export const getCertificadosMaster = async (): Promise<CertificadoMaster[]> => {
 };
 
 /**
- * Registra un evento de aumento de capital en crm_certificados_eventos
+ * Registra un evento de aumento de capital en crm_certificados_eventos y actualiza el saldo del contrato
  */
 export const registrarAumentoCapital = async (event: CertificadoEvento): Promise<void> => {
-  const { error } = await supabase
-    .from('crm_certificados_eventos')
-    .insert([event]);
+  const payload = {
+    ...event,
+    id_certificado_origen: event.id_certificado_origen || event.id_certificado || event.id_contrato
+  };
 
-  if (error) throw new Error(`Error al registrar aumento de capital: ${error.message}`);
+  const { error: evtErr } = await supabase
+    .from('crm_certificados_eventos')
+    .insert([payload]);
+
+  if (evtErr) throw new Error(`Error al registrar aumento de capital: ${evtErr.message}`);
+
+  // Actualizar el saldo de inversión en crm_contratos para reflejar el nuevo capital base
+  if (event.id_contrato && event.capital_final_saldo) {
+    await supabase
+      .from('crm_contratos')
+      .update({ monto_inversion: event.capital_final_saldo })
+      .eq('id_contrato', event.id_contrato);
+  }
 };
 
 /**

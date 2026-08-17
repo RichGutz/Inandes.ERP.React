@@ -53,6 +53,7 @@ export interface Certificado {
 
 export interface CertificadoEvento {
   id_certificado: string;
+  id_certificado_origen?: string;
   id_contrato: string;
   tipo_evento: string;
   fecha_periodo_origen: string;
