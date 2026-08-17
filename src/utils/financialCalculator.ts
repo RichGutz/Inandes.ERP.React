@@ -111,30 +111,29 @@ export const generateRetornosV40 = async (
     fondosMap[fId] = data[0];
   }
 
-  // 3. Cargar contratos maestros vigentes (estado 'emitido')
-  let queryContratos = supabase.from('crm_contratos').select('*').eq('estado', 'emitido');
+  // 3. Cargar contratos maestros (vigentes o cerrados en el periodo actual/futuros)
+  let queryContratos = supabase
+    .from('crm_contratos')
+    .select('*')
+    .in('estado', ['emitido', 'cerrado_por_rescate', 'cerrado_fin_contrato']);
   if (codigoFondo && codigoFondo !== 'TODOS') {
     queryContratos = queryContratos.eq('id_fondo', codigoFondo);
   }
-  const { data: contratosMaster, error: contratosErr } = await queryContratos;
+  const { data: rawContratosMaster, error: contratosErr } = await queryContratos;
   if (contratosErr) throw new Error(`Error en crm_contratos: ${contratosErr.message}`);
 
-  if (!contratosMaster || contratosMaster.length === 0) {
+  if (!rawContratosMaster || rawContratosMaster.length === 0) {
     return { asientos: [], xlsDict: {}, pdfData: [] };
   }
 
-  const contratosMap: Record<string, any> = {};
-  for (const c of contratosMaster) {
-    contratosMap[c.id_contrato] = c;
-  }
-  const cidsActivos = contratosMaster.map(c => c.id_contrato);
+  const allCids = rawContratosMaster.map(c => c.id_contrato);
 
   // 4. Historial Ledger (Eventos previos) y Arrastre de Saldo de Cierre
   const eventsByContrato: Record<string, any[]> = {};
 
   const chunkSize = 100;
-  for (let i = 0; i < cidsActivos.length; i += chunkSize) {
-    const chunk = cidsActivos.slice(i, i + chunkSize);
+  for (let i = 0; i < allCids.length; i += chunkSize) {
+    const chunk = allCids.slice(i, i + chunkSize);
     const { data: events, error: eventsErr } = await supabase
       .from('crm_certificados_eventos')
       .select('*')
@@ -151,6 +150,21 @@ export const generateRetornosV40 = async (
       }
     }
   }
+
+  // Filtrar solo los contratos vigentes durante el periodo evaluado
+  const contratosMaster = rawContratosMaster.filter(c => {
+    if (c.estado === 'emitido') return true;
+    const evs = eventsByContrato[c.id_contrato] || [];
+    const cierreEv = evs.find(e => e.tipo_evento === 'cierre_fin_contrato' || e.tipo_evento === 'cierre_por_rescate');
+    if (!cierreEv) return true;
+    return cierreEv.fecha_periodo_fin >= fStart;
+  });
+
+  const contratosMap: Record<string, any> = {};
+  for (const c of contratosMaster) {
+    contratosMap[c.id_contrato] = c;
+  }
+  const cidsActivos = contratosMaster.map(c => c.id_contrato);
 
   // 5. Carga de Cronogramas de deducciones y rescates
   const cronDedMap: Record<string, any[]> = {};
