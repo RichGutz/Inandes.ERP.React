@@ -1,11 +1,11 @@
 // src/features/deducciones/DeduccionesPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   buscarContratosPadre, getActiveCertificadoByContrato, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
-  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign 
+  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign, Calendar 
 } from 'lucide-react';
 
 export const DeduccionesPage: React.FC = () => {
@@ -26,8 +26,25 @@ export const DeduccionesPage: React.FC = () => {
   // Pestañas internas
   const [activeSubTab, setActiveSubTab] = useState<'cronograma' | 'deduccion' | 'rescate'>('cronograma');
 
+  // Filtros temporales por Año y Período de Cierre
+  const [selYearFilter, setSelYearFilter] = useState<number>(2026);
+  const [selCorteFilter, setSelCorteFilter] = useState<string>('2026-02-28');
+
   // Fechas de corte disponibles (fín de mes alineado)
   const [validDates, setValidDates] = useState<Date[]>([]);
+
+  // Cronograma filtrado por año y por período de cierre
+  const filteredCronograma = useMemo(() => {
+    return cronograma.filter(c => {
+      if (!c.fecha_proyectada_cobro) return true;
+      const fechaStr = c.fecha_proyectada_cobro.split('T')[0];
+      const year = new Date(fechaStr + 'T00:00:00').getFullYear();
+
+      if (selYearFilter && year !== selYearFilter) return false;
+      if (selCorteFilter !== 'TODOS' && fechaStr !== selCorteFilter) return false;
+      return true;
+    });
+  }, [cronograma, selYearFilter, selCorteFilter]);
 
   // ==========================================
   // --- FORMULARIO PROGRAMAR DEDUCCIÓN -------
@@ -599,20 +616,107 @@ export const DeduccionesPage: React.FC = () => {
           {/* TAB 1: CRONOGRAMA GENERAL ORGANIZADO POR FONDO */}
           {activeSubTab === 'cronograma' && (
             <div className="flex flex-col gap-6 animate-fadeIn">
+              
+              {/* BARRA DE FILTROS TEMPORALES: AÑO Y PERÍODOS DE CIERRE */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-blue-600" />
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Filtro por Año y Período de Cierre Contable</span>
+                  </div>
+
+                  {/* Selector de Año */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase">Año de Ejercicio:</span>
+                    <div className="flex gap-1">
+                      {[2025, 2026, 2027].map(y => (
+                        <button
+                          key={y}
+                          type="button"
+                          onClick={() => {
+                            setSelYearFilter(y);
+                            setSelCorteFilter(`${y}-02-28`);
+                          }}
+                          className={`px-3 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-colors ${
+                            selYearFilter === y
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                          }`}
+                        >
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabs por Período de Cierre (Cortes Bimestrales / Trimestrales) */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[10px]">
+                  {[
+                    { id: 'TODOS', label: '🌐 Todos los Cortes' },
+                    { id: `${selYearFilter}-02-28`, label: '📅 28 Feb (B1)' },
+                    { id: `${selYearFilter}-03-31`, label: '📅 31 Mar (Q1)' },
+                    { id: `${selYearFilter}-04-30`, label: '📅 30 Abr (B2)' },
+                    { id: `${selYearFilter}-06-30`, label: '📅 30 Jun (B3/Q2)' },
+                    { id: `${selYearFilter}-08-31`, label: '📅 31 Ago (B4)' },
+                    { id: `${selYearFilter}-09-30`, label: '📅 30 Set (Q3)' },
+                    { id: `${selYearFilter}-10-31`, label: '📅 31 Oct (B5)' },
+                    { id: `${selYearFilter}-12-31`, label: '📅 31 Dic (B6/Q4)' },
+                  ].map(p => {
+                    const count = cronograma.filter(c => {
+                      if (!c.fecha_proyectada_cobro) return false;
+                      const fStr = c.fecha_proyectada_cobro.split('T')[0];
+                      const yr = new Date(fStr + 'T00:00:00').getFullYear();
+                      if (yr !== selYearFilter) return false;
+                      return p.id === 'TODOS' ? true : fStr === p.id;
+                    }).length;
+
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelCorteFilter(p.id)}
+                        className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${
+                          selCorteFilter === p.id
+                            ? 'bg-indigo-600 text-white font-black shadow'
+                            : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <span>{p.label}</span>
+                        {count > 0 && (
+                          <span className={`px-1.5 py-0.2 rounded-full text-[8px] font-black ${
+                            selCorteFilter === p.id ? 'bg-white text-indigo-700' : 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600'
+                          }`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {cronoLoading ? (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2">
                   <Loader2 className="animate-spin text-blue-600" size={24} />
                   <span className="text-xs font-bold text-slate-500">Cargando cronogramas por fondo...</span>
                 </div>
-              ) : cronograma.length === 0 ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border-dashed">
-                  No hay cronogramas monetarios cargados en el sistema.
+              ) : filteredCronograma.length === 0 ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border-dashed flex flex-col items-center justify-center gap-1">
+                  <span>No hay cronogramas ni rescates programados para el período seleccionado ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : selCorteFilter}).</span>
+                  <button 
+                    type="button" 
+                    onClick={() => setSelCorteFilter('TODOS')}
+                    className="text-blue-600 hover:underline cursor-pointer font-black text-[9px] uppercase mt-1"
+                  >
+                    Ver todos los cortes del año {selYearFilter}
+                  </button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-6 w-full">
                   {/* Tarjeta Resumen de Provisión de Cash */}
                   {(() => {
-                    const rescatesOnly = cronograma.filter(c => c.tipo_cargo === 'RESCATE_CAPITAL');
+                    const rescatesOnly = filteredCronograma.filter(c => c.tipo_cargo === 'RESCATE_CAPITAL');
                     const cashPEN = rescatesOnly.filter(c => c.moneda === 'PEN').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
                     const cashUSD = rescatesOnly.filter(c => c.moneda === 'USD').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
 
@@ -623,8 +727,8 @@ export const DeduccionesPage: React.FC = () => {
                             <DollarSign size={20} />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">💰 Provisión Total de Cash para Rescates de Capital</span>
-                            <span className="text-xs font-semibold text-slate-300">Flujo de tesorería requerido para atender devoluciones al cierre</span>
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">💰 Provisión Total de Cash para Rescates ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})</span>
+                            <span className="text-xs font-semibold text-slate-300">Flujo de tesorería requerido para atender devoluciones en el período filtrado</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
@@ -644,7 +748,7 @@ export const DeduccionesPage: React.FC = () => {
                   })()}
 
                   {Object.entries(
-                    cronograma.reduce((acc, c) => {
+                    filteredCronograma.reduce((acc, c) => {
                       const fId = (c.id_contrato || c.id_certificado || 'OTROS').split('-')[0];
                       if (!acc[fId]) acc[fId] = [];
                       acc[fId].push(c);
