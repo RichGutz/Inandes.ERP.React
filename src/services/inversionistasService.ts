@@ -106,6 +106,11 @@ export const upsertInversionista = async (inversionista: Partial<Inversionista>)
   delete payload.updated_at;
   delete payload.created_at;
   delete payload.id;
+  // Auto-generar codigo_inversionista si no viene o viene nulo/vacío
+  if (!payload.codigo_inversionista && payload.documento_identidad) {
+    const prefix = (payload.tipo_doc || 'DNI').toUpperCase().trim();
+    payload.codigo_inversionista = `${prefix}${payload.documento_identidad.trim()}`;
+  }
 
   // Recalcular siempre el nombre_completo actualizado
   const ap1 = payload.apellido_1 || '';
