@@ -157,5 +157,7 @@
 [2026-08-18 15:24:00-05:00] DEPURACIÓN EN BASE DE DATOS (Fouscas Elera Víctor Hugo - NSGPEN03-058.20240923): Eliminado el evento de `aumento_capital` (id_evento 3040) del 2026-03-01 en `crm_certificados_eventos`. Actualizada exitosamente la `fecha_fin` del contrato a `2026-02-28` en `crm_contratos`.
 [2026-08-18 15:32:00-05:00] RESTAURACIÓN EN BASE DE DATOS (Fouscas Elera Víctor Hugo - NSGPEN03-058.20240923): Restaurada la `fecha_fin` del contrato a su valor original `2031-12-31` (plazo no determinado 'NSGPEN03-ND' hasta el cierre del fondo).
 [2026-08-18 15:47:00-05:00] CORRECCIÓN DE SALDOS BASE DEL LEDGER (financialCalculator.ts): Corregido el filtro `closingEvents` incorporando los tipos de evento `emision_inicial` y `emision` previos a `fStart`. Esto garantiza que el motor de Retornos y Rendimientos tome exactamente los saldos contables del Ledger al 31/12/2025 en lugar del monto estático de la cabecera de contratos. Base de datos verificada limpia (preservando saldos al 31/12/2025, 3 aumentos de enero 2026 y 14 cuotas de rescates/deducciones del cronograma pendientes). Compilación limpia de producción `npm run build` (0 errores).
+[2026-08-18 15:50:00-05:00] DESPLIEGUE A PRODUCCIÓN CONTABO COOLIFY: Sincronizados cambios en rama `main` (commit `eb9f919`), incluyendo motor `contractCycleEngine.ts`, `financialCalculator.ts`, especificación `00.G.CONTRATOS.md` y PDF oficial. Despliegue automático en caliente ejecutado por webhook de Coolify en VPS Contabo (`https://inandes.geeksoft.tech`).
+
 
 
