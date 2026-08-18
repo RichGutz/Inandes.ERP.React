@@ -220,9 +220,9 @@ export const generateRetornosV40 = async (
     const events = eventsByContrato[mid] || [];
     events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
 
-    // Buscar el último evento de cierre oficializado previo al inicio de este periodo
+    // Buscar el último evento previo al inicio de este periodo (cierres anteriores o emisión inicial al 31/12/2025)
     const closingEvents = events.filter(e => 
-      ['cierre_fin_ciclo', 'cierre_fin_contrato'].includes(e.tipo_evento) &&
+      ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'emision'].includes(e.tipo_evento) &&
       e.fecha_periodo_fin &&
       new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') < fStart
     );
@@ -234,7 +234,7 @@ export const generateRetornosV40 = async (
     if (closingEvents.length > 0) {
       closingEvents.sort((a, b) => String(a.fecha_periodo_fin).localeCompare(String(b.fecha_periodo_fin)));
       const lastClosure = closingEvents[closingEvents.length - 1];
-      capBaseInicio = Number(lastClosure.capital_final_saldo || 0);
+      capBaseInicio = Number(lastClosure.capital_final_saldo || lastClosure.capital_base || 0);
       lastClosureDate = new Date(lastClosure.fecha_periodo_fin.split('T')[0] + 'T00:00:00');
       idCertOrigen = lastClosure.id_certificado || mid;
     } else {

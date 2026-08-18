@@ -8,6 +8,7 @@ import { getFondos } from '../../services/fondosService';
 import type { Fondo } from '../../services/fondosService';
 import { supabase } from '../../services/supabaseClient';
 import { generateContractHtml, generateCertificateHtml } from '../../utils/contractPreviewGenerator';
+import { calculateContractCycleDates } from '../../utils/contractCycleEngine';
 import * as XLSX from 'xlsx';
 import { 
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check
@@ -117,50 +118,19 @@ export const InversionesPage: React.FC = () => {
   // ========================================================
   // --- CÁLCULO DE FECHAS REACTIVAS PARA NUEVO CONTRATO ---
   // ========================================================
-  const calculateDates = () => {
-    if (!selectedPlazoRow) return { start: '', end: '', ndMonths: 0 };
+  const cycleResult = selectedPlazoRow
+    ? calculateContractCycleDates({
+        fechaInicioContrato: formFechaContrato,
+        frecuenciaMeses: selectedPlazoRow.frecuencia_cupones_meses || 1,
+        plazoMeses: formPlazo || '12',
+        fechaCierreFondo: selectedPlazoRow.fecha_cierre_fondo
+      })
+    : null;
 
-    const dateHoy = new Date(formFechaContrato + 'T00:00:00');
-    const freqAuto = selectedPlazoRow.frecuencia_cupones_meses || 1;
-
-    // Alinear al siguiente límite de ciclo contable
-    const currentYear = dateHoy.getFullYear();
-    let windowStart = new Date(currentYear, 0, 1, 0, 0, 0, 0);
-    let foundWindow = false;
-
-    for (let i = 0; i < 24; i++) {
-      if (windowStart > dateHoy) {
-        foundWindow = true;
-        break;
-      }
-      windowStart.setMonth(windowStart.getMonth() + freqAuto);
-    }
-
-    const start = foundWindow ? windowStart : dateHoy;
-    const startStr = start.toISOString().split('T')[0];
-    let endStr = startStr;
-    let ndMonths = 0;
-
-    if (formPlazo === 'ND') {
-      const extinctionDate = selectedPlazoRow.fecha_cierre_fondo;
-      if (extinctionDate) {
-        endStr = extinctionDate.split('T')[0];
-        const endD = new Date(endStr + 'T00:00:00');
-        ndMonths = (endD.getFullYear() - start.getFullYear()) * 12 + (endD.getMonth() - start.getMonth());
-      }
-    } else {
-      const pMeses = Number(formPlazo || 0);
-      const endD = new Date(start.getFullYear(), start.getMonth() + pMeses, start.getDate());
-      if (endD.getDate() !== start.getDate()) {
-        endD.setDate(0);
-      }
-      endStr = endD.toISOString().split('T')[0];
-    }
-
-    return { start: startStr, end: endStr, ndMonths };
-  };
-
-  const { start: calculatedStart, end: calculatedEnd, ndMonths: calculatedNdMonths } = calculateDates();
+  const calculatedStart = cycleResult ? cycleResult.fechaInicioContrato : formFechaContrato;
+  const calculatedStartCiclo = cycleResult ? cycleResult.fechaInicioCiclo : formFechaContrato;
+  const calculatedEnd = cycleResult ? cycleResult.fechaFinContrato : formFechaContrato;
+  const calculatedNdMonths = cycleResult ? cycleResult.ndCalculatedMonths : 0;
 
   // ========================================================
   // --- DIRECCIONES DISPONIBLES SEGÚN PARTICIPES SELECC ---
@@ -448,14 +418,16 @@ export const InversionesPage: React.FC = () => {
       }
     });
 
-    // Calcular cambio de fechas reactivo por voucher
-    const oldStart = new Date(selectedContract.fecha_inicio + 'T00:00:00');
-    const newStart = new Date(approveDate + 'T00:00:00');
-    const delta = newStart.getTime() - oldStart.getTime();
+    // Calcular cambio de fechas reactivo por voucher usando el motor de ciclos
+    const freq = fundRow?.frecuencia_cupones_meses || selectedContract.frecuencia_cupones_meses || 1;
+    const approveCycleResult = calculateContractCycleDates({
+      fechaInicioContrato: approveDate,
+      frecuenciaMeses: freq,
+      plazoMeses: selectedContract.plazo_meses,
+      fechaCierreFondo: fundRow?.fecha_cierre_fondo
+    });
 
-    const oldEnd = new Date(selectedContract.fecha_fin + 'T00:00:00');
-    const newEnd = new Date(oldEnd.getTime() + delta);
-    const calculatedEndStr = newEnd.toISOString().split('T')[0];
+    const calculatedEndStr = approveCycleResult.fechaFinContrato;
 
     const percs = [
       selectedContract.porcentaje_participacion_1,
@@ -491,6 +463,7 @@ export const InversionesPage: React.FC = () => {
         numero_certificado: selectedContract.id_certificado || selectedContract.id_contrato,
         fecha_contrato: selectedContract.fecha_inicio // original contract date
       },
+      cycleResult: approveCycleResult,
       percentages: percs,
       deposits: deps,
       logo_path: '/logo_inandes.png'
@@ -1365,10 +1338,17 @@ export const InversionesPage: React.FC = () => {
                 </div>
               </div>
 
-              {selectedPlazoRow && (
-                <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-950/20 rounded-lg flex flex-wrap gap-4 items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-400">
-                  <span>🗓️ Fecha de Inicio: <strong>{calculatedStart.split('-').reverse().join('/')}</strong></span>
-                  <span>📅 Vencimiento: <strong>{calculatedEnd.split('-').reverse().join('/')}</strong> {formPlazo === 'ND' ? `(${calculatedNdMonths} meses)` : ''}</span>
+              {selectedPlazoRow && cycleResult && (
+                <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-xl flex flex-col gap-2 text-xs shadow-sm">
+                  <div className="flex flex-wrap gap-4 items-center justify-between font-bold text-emerald-850 dark:text-emerald-350">
+                    <span>🗓️ Inicio Contrato (Abono): <strong>{calculatedStart.split('-').reverse().join('/')}</strong></span>
+                    <span>🔄 Inicio del Ciclo: <strong>{calculatedStartCiclo.split('-').reverse().join('/')}</strong> {cycleResult.esPrimerDiaCiclo ? '(Día 1 del Ciclo)' : `(+${cycleResult.diasFraccionCicloPrevio}d previas)`}</span>
+                    <span>📅 Vencimiento: <strong>{calculatedEnd.split('-').reverse().join('/')}</strong></span>
+                  </div>
+                  <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold border-t border-emerald-200/60 dark:border-emerald-900/40 pt-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <span>⏱️ Vigencia Total: <strong>{cycleResult.duracionTotalMesesTexto}</strong></span>
+                    <span className="font-mono bg-emerald-100/70 dark:bg-emerald-900/40 px-2 py-0.5 rounded text-[9px]">({cycleResult.duracionTotalDias} días totales de devengue)</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -1661,6 +1641,15 @@ export const InversionesPage: React.FC = () => {
             {approveSuccess && (
               <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1.5">
                 <CheckCircle size={12} /> Contrato aprobado y Certificado emitido exitosamente. Redireccionando...
+              </div>
+            )}
+
+            {approveContext.cycleResult && (
+              <div className="p-3 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-xl flex flex-wrap gap-3 items-center justify-between text-xs font-semibold text-blue-900 dark:text-blue-300">
+                <span>🗓️ Inicio Contrato (Voucher): <strong>{approveContext.contract.fecha_inicio.split('-').reverse().join('/')}</strong></span>
+                <span>🔄 Inicio de Ciclo: <strong>{approveContext.cycleResult.fechaInicioCiclo.split('-').reverse().join('/')}</strong> {approveContext.cycleResult.esPrimerDiaCiclo ? '(Día 1)' : `(+${approveContext.cycleResult.diasFraccionCicloPrevio}d)`}</span>
+                <span>📅 Vencimiento Contractual: <strong>{approveContext.contract.fecha_fin.split('-').reverse().join('/')}</strong></span>
+                <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold bg-blue-100/60 dark:bg-blue-900/40 px-2.5 py-0.5 rounded-full">{approveContext.cycleResult.duracionTotalMesesTexto}</span>
               </div>
             )}
 
