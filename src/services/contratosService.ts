@@ -177,9 +177,13 @@ export const approveContrato = async (
   if (certErr) throw new Error(`Error al emitir certificado: ${certErr.message}`);
 
   // 4. Insertar el evento inicial de emisión
+  const safeEvent = {
+    ...event,
+    id_certificado_origen: event.id_certificado_origen || event.id_certificado || newContract.id_contrato
+  };
   const { error: evtErr } = await supabase
     .from('crm_certificados_eventos')
-    .insert(event);
+    .insert(safeEvent);
   if (evtErr) throw new Error(`Error al registrar evento inicial: ${evtErr.message}`);
 };
 

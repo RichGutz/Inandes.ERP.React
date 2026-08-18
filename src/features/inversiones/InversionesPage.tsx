@@ -564,6 +564,7 @@ export const InversionesPage: React.FC = () => {
       // 4. Evento
       const eventPayload: CertificadoEvento = {
         id_certificado: newCertificateId,
+        id_certificado_origen: newCertificateId,
         id_contrato: newContractId,
         tipo_evento: 'emision_inicial',
         fecha_periodo_origen: approveDate,
