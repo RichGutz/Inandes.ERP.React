@@ -192,12 +192,39 @@ export const InversionesPage: React.FC = () => {
       if (depPct > 0) {
         const inv = investors.find(invRow => invRow.codigo_inversionista === code);
         if (inv) {
-          const acc = inv[`numero_cuenta_${cur}`];
-          if (!acc || acc === 'PENDIENTE') {
+          const bank = (inv[`banco_nombre_${cur}`] || '').trim();
+          const acc = (inv[`numero_cuenta_${cur}`] || '').trim();
+          const cci = (inv[`cci_${cur}`] || '').trim();
+
+          if (!bank || bank === 'PENDIENTE') {
             return {
               valid: false,
-              error: `El partícipe ${inv.nombre_completo} requiere cuenta bancaria registrada en ${cur.toUpperCase()} para recibir depósitos.`
+              error: `El partícipe ${inv.nombre_completo} requiere registrar entidad bancaria en ${cur.toUpperCase()} para recibir depósitos.`
             };
+          }
+
+          const isBcp = bank.toUpperCase().includes('BCP') || bank.toUpperCase().includes('CREDITO');
+
+          if (isBcp) {
+            // Regla BCP: Basta con número de cuenta (o CCI)
+            const hasAcc = acc && acc !== 'PENDIENTE';
+            const hasCci = cci && cci !== 'PENDIENTE';
+            if (!hasAcc && !hasCci) {
+              return {
+                valid: false,
+                error: `El partícipe ${inv.nombre_completo} (BCP) requiere número de cuenta o CCI en ${cur.toUpperCase()} para recibir depósitos.`
+              };
+            }
+          } else {
+            // Regla Otros Bancos: Requiere CCI (o número de cuenta)
+            const hasCci = cci && cci !== 'PENDIENTE';
+            const hasAcc = acc && acc !== 'PENDIENTE';
+            if (!hasCci && !hasAcc) {
+              return {
+                valid: false,
+                error: `El partícipe ${inv.nombre_completo} (${bank}) requiere registrar CCI en ${cur.toUpperCase()} para transferencias interbancarias.`
+              };
+            }
           }
         }
       }
@@ -1418,19 +1445,24 @@ export const InversionesPage: React.FC = () => {
                         <thead>
                           <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
                             <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Partícipe</th>
-                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center w-[120px]">% Part</th>
-                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center w-[120px]">% Dep</th>
+                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center w-[110px]">% Part</th>
+                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center w-[110px]">% Dep</th>
                             <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center">Moneda</th>
                             <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Banco</th>
-                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Cuenta</th>
+                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">N° Cuenta</th>
+                            <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">CCI</th>
                           </tr>
                         </thead>
                         <tbody>
                           {formSelectedInvestors.map((code, idx) => {
                             const inv = investors.find(i => i.codigo_inversionista === code);
                             const cur = selectedPlazoRow?.moneda || 'PEN';
-                            const bank = inv?.[`banco_nombre_${cur.toLowerCase()}`] || '';
-                            const acc = inv?.[`numero_cuenta_${cur.toLowerCase()}`] || '';
+                            const curLower = cur.toLowerCase();
+                            const bank = inv?.[`banco_nombre_${curLower}`] || '';
+                            const acc = inv?.[`numero_cuenta_${curLower}`] || '';
+                            const cci = inv?.[`cci_${curLower}`] || '';
+
+                            const isBcp = bank.toUpperCase().includes('BCP') || bank.toUpperCase().includes('CREDITO');
 
                             return (
                               <tr key={code} className="border-b border-slate-150 dark:border-slate-800/50">
@@ -1474,9 +1506,14 @@ export const InversionesPage: React.FC = () => {
                                   />
                                 </td>
 
-                                <td className="px-3 py-2 text-center text-slate-600 dark:text-slate-400">{cur}</td>
-                                <td className="px-3 py-2 text-slate-700 dark:text-slate-400">{bank || '⚠️ N/A'}</td>
-                                <td className="px-3 py-2 text-slate-700 dark:text-slate-400">{acc || '⚠️ PENDIENTE'}</td>
+                                <td className="px-3 py-2 text-center font-bold text-slate-600 dark:text-slate-400">{cur}</td>
+                                <td className="px-3 py-2 font-semibold text-slate-700 dark:text-slate-300">{bank || <span className="text-rose-500 font-bold text-[11px]">⚠️ N/A</span>}</td>
+                                <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300">
+                                  {acc || (isBcp ? <span className="text-rose-500 font-bold text-[11px]">⚠️ PENDIENTE</span> : <span className="text-slate-400 text-[11px]">-</span>)}
+                                </td>
+                                <td className="px-3 py-2 font-mono text-slate-700 dark:text-slate-300">
+                                  {cci || (!isBcp && bank ? <span className="text-rose-500 font-bold text-[11px]">⚠️ PENDIENTE (CCI)</span> : <span className="text-slate-400 text-[11px]">-</span>)}
+                                </td>
                               </tr>
                             );
                           })}
