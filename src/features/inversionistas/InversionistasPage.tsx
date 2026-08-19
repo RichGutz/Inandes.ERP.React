@@ -1244,24 +1244,24 @@ export const InversionistasPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full">
       
-      {/* Selector de sub-pestañas superior */}
-      <div className="border-b border-slate-200 dark:border-slate-800 w-full flex items-center justify-between">
-        <div className="flex gap-6">
+      {/* Selector de sub-pestañas superior Estilo APEFAC */}
+      <div className="border-b border-[#e2e8f0] dark:border-[#334155] w-full flex items-center justify-between">
+        <div className="flex gap-4">
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'datos' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('datos')}
           >
             👥 Datos Inversionistas
           </button>
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'retornos_react' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('retornos_react')}
           >
@@ -1269,14 +1269,14 @@ export const InversionistasPage: React.FC = () => {
           </button>
 
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'documentos' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('documentos')}
           >
-            📄 EECC / RETENCIONES / 2 VISORES
+            📄 EECC / Retenciones
           </button>
 
         </div>
@@ -1287,12 +1287,12 @@ export const InversionistasPage: React.FC = () => {
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
           {/* Barra de Búsqueda y Botones de Acción */}
-          <div className="flex flex-wrap items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-4 w-full glass-card p-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
               <input
                 type="text"
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all shadow-sm"
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder-slate-400 focus:outline-none focus:border-[#0284c7] transition-all shadow-xs"
                 placeholder="Buscar por DNI, RUC o Apellidos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -1301,7 +1301,7 @@ export const InversionistasPage: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm hover:shadow transition-all"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
                 onClick={() => handleOpenEditModal(null)}
               >
                 <UserPlus size={14} />
@@ -1309,7 +1309,7 @@ export const InversionistasPage: React.FC = () => {
               </button>
               
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
                 onClick={fetchDatos}
                 disabled={loading}
               >
@@ -1320,7 +1320,7 @@ export const InversionistasPage: React.FC = () => {
           </div>
 
           {/* Rolodex Abecedario A-Z Oficial */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+          <div className="glass-card p-4">
             <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start">
               {ALPHABET_AZ.map((char) => {
                 const count = getLetterCount(char);
@@ -1333,16 +1333,16 @@ export const InversionistasPage: React.FC = () => {
                     onClick={() => setSelectedLetter(char)}
                     className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none scale-105'
+                        ? 'bg-[#0284c7] text-white shadow-md shadow-[#0284c7]/30 scale-105 ring-2 ring-[#38bdf8]'
                         : hasData
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 hover:text-emerald-600 border border-slate-200 dark:border-slate-800'
-                          : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700 opacity-60'
+                          ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/40 font-bold hover:bg-[#e0f2fe]'
+                          : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <span>{char}</span>
                     {count > 0 && (
                       <span className={`absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                        isSelected ? 'bg-amber-400 text-slate-900' : 'bg-emerald-600 text-white'
+                        isSelected ? 'bg-[#059669] text-white' : 'bg-[#0284c7] text-white'
                       }`}>
                         {count}
                       </span>

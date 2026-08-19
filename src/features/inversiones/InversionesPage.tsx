@@ -923,25 +923,24 @@ export const InversionesPage: React.FC = () => {
       {/* VISTA 1: LISTAS POR PESTAÑAS (LIST) */}
       {view === 'list' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
-          
-          {/* Header Superior y Barra de Herramientas */}
-          <div className="flex items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          {/* Header Superior y Barra de Herramientas Estilo APEFAC */}
+          <div className="flex items-center justify-between gap-4 w-full glass-card p-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-slate-700 dark:text-slate-350 uppercase tracking-tight">Directorio Contratos</span>
+              <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">Directorio de Contratos</span>
             </div>
             
             <div className="flex items-center gap-2">
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#ecfdf5] text-[#475569] dark:text-[#cbd5e1] hover:text-[#059669] cursor-pointer shadow-xs transition-colors"
                 onClick={handleExportExcel}
                 disabled={contratos.length === 0}
               >
-                <FileSpreadsheet size={13} className="text-emerald-600" />
+                <FileSpreadsheet size={13} className="text-[#059669]" />
                 <span>Exportar Excel</span>
               </button>
 
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-colors"
                 onClick={handleOpenCreateNew}
               >
                 <Plus size={13} />
@@ -949,11 +948,11 @@ export const InversionesPage: React.FC = () => {
               </button>
 
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer shadow-xs transition-colors"
                 onClick={fetchContratosData}
                 disabled={loading}
               >
-                <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={13} className={loading ? 'animate-spin text-[#0284c7]' : ''} />
               </button>
             </div>
           </div>
@@ -965,7 +964,7 @@ export const InversionesPage: React.FC = () => {
             <div className="max-w-md w-full">
               <input
                 type="text"
-                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-2 px-3 text-xs font-semibold focus:outline-none focus:border-[#0284c7] text-[#0f172a] dark:text-[#f8fafc] placeholder:text-slate-400"
                 placeholder="🔍 Omni buscador rápido (DNI, Nombre o ID de contrato)..."
                 value={omniSearch}
                 onChange={(e) => setOmniSearch(e.target.value)}
@@ -973,7 +972,7 @@ export const InversionesPage: React.FC = () => {
             </div>
 
             {/* Pestañas de estado */}
-            <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-0.5">
+            <div className="flex gap-4 border-b border-[#e2e8f0] dark:border-[#334155] pb-0.5">
               {[
                 { id: 'borradores', label: `Borradores (${draftsList.length})` },
                 { id: 'porAprobar', label: `Por Aprobar (${pendingList.length})` },
@@ -982,10 +981,10 @@ export const InversionesPage: React.FC = () => {
               ].map(tab => (
                 <button
                   key={tab.id}
-                  className={`py-2 text-[10px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
+                  className={`py-2 px-1 text-xs font-black uppercase tracking-wider border-b-[3px] cursor-pointer transition-colors ${
                     activeTab === tab.id 
-                      ? 'border-emerald-600 text-emerald-600 dark:text-emerald-450' 
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'
+                      ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                      : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
                   }`}
                   onClick={() => setActiveTab(tab.id as any)}
                 >

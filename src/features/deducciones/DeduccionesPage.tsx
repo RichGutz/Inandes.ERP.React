@@ -457,19 +457,19 @@ export const DeduccionesPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       
-      {/* Buscador OMNI de Contrato Padre con Bello Burbujón de Hallazgos */}
-      <div ref={omniContainerRef} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-3 relative">
+      {/* Buscador OMNI de Contrato Padre con Estilo APEFAC */}
+      <div ref={omniContainerRef} className="glass-card p-5 flex flex-col gap-3 relative">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight flex items-center gap-1.5">
+          <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-1.5">
             🔍 Buscar Contrato Padre (Omnibuscador)
           </h3>
           {searchResults.length > 0 && (
-            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+            <span className="text-[10px] font-bold text-[#0284c7] dark:text-[#38bdf8]">
               {searchResults.length} contrato(s) encontrado(s)
             </span>
           )}
         </div>
-        <p className="text-[10px] text-slate-450 dark:text-slate-400">
+        <p className="text-[10.5px] text-[#64748b] dark:text-[#94a3b8] font-semibold">
           Ingrese ID de Contrato, RUC, DNI o Nombre del Inversionista para configurar deducciones.
         </p>
 
@@ -480,7 +480,7 @@ export const DeduccionesPage: React.FC = () => {
 
           <input
             type="text"
-            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-9 pr-9 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 shadow-2xs transition-all"
+            className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2.5 pl-9 pr-9 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder:text-slate-400 focus:outline-none focus:border-[#0284c7] shadow-xs transition-all"
             placeholder="Ej: NSGPEN... o DNI 45678912 o Gallo"
             value={searchTerm}
             onChange={(e) => {

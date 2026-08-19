@@ -313,24 +313,24 @@ export const AsesoresPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       
-      {/* Selector de sub-pestañas superior */}
-      <div className="border-b border-slate-200 dark:border-slate-800 w-full flex items-center justify-between">
-        <div className="flex gap-6">
+      {/* Selector de sub-pestañas superior Estilo APEFAC */}
+      <div className="border-b border-[#e2e8f0] dark:border-[#334155] w-full flex items-center justify-between">
+        <div className="flex gap-4">
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'datos' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('datos')}
           >
             📋 Datos Asesores
           </button>
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'comisiones' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('comisiones')}
           >
@@ -345,24 +345,24 @@ export const AsesoresPage: React.FC = () => {
           
           {/* Métricas e Indicador */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex items-center gap-4">
-              <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center shrink-0">
+            <div className="glass-card p-5 flex items-center gap-4">
+              <div className="h-10 w-10 bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 text-[#0284c7] dark:text-[#38bdf8] rounded-xl flex items-center justify-center shrink-0">
                 <Briefcase size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Fuerza de Ventas</span>
-                <span className="text-xl font-black text-slate-800 dark:text-slate-100">{asesores.length} Asesores</span>
+                <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fuerza de Ventas</span>
+                <span className="text-xl font-mono font-black text-[#0f172a] dark:text-[#f8fafc] tabular-nums">{asesores.length} Asesores</span>
               </div>
             </div>
           </div>
 
           {/* Buscador y Botones */}
-          <div className="flex flex-wrap items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-4 w-full glass-card p-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
               <input
                 type="text"
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all shadow-sm"
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder-slate-400 focus:outline-none focus:border-[#0284c7] shadow-xs"
                 placeholder="Buscar por Nombre o Código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -371,7 +371,7 @@ export const AsesoresPage: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm hover:shadow transition-all"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
                 onClick={() => handleOpenEditModal(null)}
               >
                 <UserPlus size={14} />
@@ -379,20 +379,20 @@ export const AsesoresPage: React.FC = () => {
               </button>
               
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#ecfdf5] text-[#475569] dark:text-[#cbd5e1] hover:text-[#059669] cursor-pointer transition-colors shadow-xs"
                 onClick={handleExportAsesoresExcel}
                 disabled={asesores.length === 0}
               >
-                <FileSpreadsheet size={13} className="text-emerald-600" />
-                <span>Exportar Excel</span>
+                <FileSpreadsheet size={13} className="text-[#059669]" />
+                <span>Excel</span>
               </button>
 
               <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
                 onClick={fetchAsesores}
                 disabled={loading}
               >
-                <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={13} className={loading ? 'animate-spin text-[#0284c7]' : ''} />
               </button>
             </div>
           </div>

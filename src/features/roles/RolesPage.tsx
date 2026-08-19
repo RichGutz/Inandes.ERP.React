@@ -137,15 +137,15 @@ export const RolesPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      {/* Header Estilo APEFAC */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full glass-card p-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center shrink-0">
+          <div className="h-10 w-10 bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 text-[#0284c7] dark:text-[#38bdf8] rounded-xl flex items-center justify-center shrink-0">
             <Shield size={20} />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Matriz de Roles (PETRAL)</h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Control de Acceso por Módulo</p>
+            <h1 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">Matriz de Roles (PETRAL)</h1>
+            <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-bold uppercase tracking-wider">Control de Acceso por Módulo</p>
           </div>
         </div>
 
@@ -154,25 +154,25 @@ export const RolesPage: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={14} />
             <input
               type="text"
-              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-9 pr-4 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-all shadow-sm"
+              className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 pl-9 pr-4 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder-slate-400 focus:outline-none focus:border-[#0284c7] shadow-xs"
               placeholder="Buscar por usuario o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button 
-            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-sm transition-all"
+            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
             onClick={handleOpenAddUser}
           >
             <UserPlus size={13} />
             <span className="hidden sm:inline">Nuevo Usuario</span>
           </button>
           <button 
-            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 cursor-pointer transition-colors shadow-sm"
+            className="h-8 text-[10px] font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
             onClick={fetchAccesses}
             disabled={loading}
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-[#0284c7]' : ''} />
           </button>
         </div>
       </div>
@@ -180,23 +180,23 @@ export const RolesPage: React.FC = () => {
       {/* Matriz */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-          <Loader2 className="animate-spin text-indigo-600" size={40} />
+          <Loader2 className="animate-spin text-[#0284c7]" size={40} />
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando matriz de accesos...</p>
         </div>
       ) : error ? (
-        <div className="max-w-md mx-auto my-12 bg-white border border-rose-200 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
+        <div className="max-w-md mx-auto my-12 bg-white dark:bg-[#1e293b] border border-rose-200 dark:border-rose-900/50 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
           <AlertCircle className="text-rose-600" size={40} />
           <p className="text-xs text-slate-500">{error}</p>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-[11px]">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                  <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-3 uppercase tracking-wider w-1/3">Usuario</th>
+                <tr className="bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155]">
+                  <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider w-1/3">Usuario</th>
                   {MODULES.map(mod => (
-                    <th key={mod} className="font-bold text-slate-400 dark:text-slate-500 px-4 py-3 uppercase tracking-wider text-center w-1/3 border-l border-slate-100 dark:border-slate-800">
+                    <th key={mod} className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-center w-1/3 border-l border-[#e2e8f0] dark:border-[#334155]">
                       Módulo {mod}
                     </th>
                   ))}
@@ -205,30 +205,30 @@ export const RolesPage: React.FC = () => {
               <tbody>
                 {filteredMatrix.length > 0 ? (
                   filteredMatrix.map((u, idx) => (
-                    <tr key={idx} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-850/20 transition-colors">
+                    <tr key={idx} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
                       {/* Celda Usuario */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-800 dark:text-slate-200">{u.email}</span>
-                          <span className="text-[10px] text-slate-500">{u.nombre_completo || 'Sin nombre'}</span>
+                          <span className="font-mono font-bold text-[#0f172a] dark:text-[#f8fafc]">{u.email}</span>
+                          <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-medium">{u.nombre_completo || 'Sin nombre'}</span>
                         </div>
                       </td>
                       {/* Celdas Módulos */}
                       {MODULES.map(mod => {
                         const rol = u.accesses[mod];
                         return (
-                          <td key={mod} className="px-4 py-3 text-center border-l border-slate-100 dark:border-slate-800/50">
+                          <td key={mod} className="px-4 py-3 text-center border-l border-[#e2e8f0]/60 dark:border-[#334155]/60">
                             {rol ? (
                               <button
                                 onClick={() => handleOpenCellModal(u.email, u.nombre_completo, mod, rol)}
-                                className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all shadow-sm hover:shadow cursor-pointer ${rol === 'ADMIN' ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
+                                className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all shadow-xs cursor-pointer ${rol === 'ADMIN' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] hover:bg-[#e0f2fe] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'}`}
                               >
                                 {rol}
                               </button>
                             ) : (
                               <button
                                 onClick={() => handleOpenCellModal(u.email, u.nombre_completo, mod, null)}
-                                className="px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-transparent text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 border border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-300 transition-all cursor-pointer flex items-center gap-1 mx-auto"
+                                className="px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-transparent text-slate-400 hover:text-[#0284c7] hover:bg-[#f0f9ff] border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#bae6fd] transition-all cursor-pointer flex items-center gap-1 mx-auto"
                               >
                                 <Plus size={10} /> Añadir
                               </button>

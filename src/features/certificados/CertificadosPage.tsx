@@ -545,18 +545,18 @@ export const CertificadosPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       
-      {/* Top Header Metrics */}
+      {/* Top Header Metrics Estilo APEFAC */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col justify-center border-l-4 border-l-emerald-600">
-          <small className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-wider">Certificados Vigentes</small>
-          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-450 mt-1">
+        <div className="glass-card p-5 flex flex-col justify-center">
+          <small className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Certificados Vigentes</small>
+          <span className="text-2xl font-mono font-black text-[#0f172a] dark:text-[#f8fafc] mt-1 tabular-nums">
             {vigentesList.length}
           </span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col justify-center border-l-4 border-l-blue-600 md:col-span-2">
-          <small className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-wider">Capital Total Gestionado (AUM)</small>
-          <span className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
+        <div className="glass-card p-5 flex flex-col justify-center md:col-span-2">
+          <small className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Capital Total Gestionado (AUM)</small>
+          <span className="text-lg font-mono font-black text-[#0284c7] dark:text-[#38bdf8] mt-1 tabular-nums">
             USD {totalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })} <span className="text-slate-300 dark:text-slate-600">|</span> PEN {totalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
           </span>
         </div>
@@ -565,7 +565,7 @@ export const CertificadosPage: React.FC = () => {
       {/* Selector de pestañas principales */}
       <div className="flex flex-col gap-4">
         
-        <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-0.5">
+        <div className="flex gap-4 border-b border-[#e2e8f0] dark:border-[#334155] pb-0.5">
           {[
             { id: 'vigentes', label: '✅ Vigentes' },
             { id: 'aumento', label: '💰 Aumento de Capital' },
@@ -573,10 +573,10 @@ export const CertificadosPage: React.FC = () => {
           ].map(tab => (
             <button
               key={tab.id}
-              className={`py-2 text-[10px] font-black uppercase tracking-wider border-b-2 cursor-pointer transition-colors ${
+              className={`py-2 px-1 text-xs font-black uppercase tracking-wider border-b-[3px] cursor-pointer transition-colors ${
                 activeTab === tab.id 
-                  ? 'border-emerald-600 text-emerald-600' 
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-400'
+                  ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                  : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
               }`}
               onClick={() => setActiveTab(tab.id as any)}
             >
@@ -590,7 +590,7 @@ export const CertificadosPage: React.FC = () => {
           <div className="flex flex-col gap-6 w-full animate-fadeIn">
             
             {/* Alphabetical Filter Bar (Rolodex Oficial A-Z) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+            <div className="glass-card p-4">
               <div className="flex flex-wrap gap-2.5 items-center">
                 {ALPHABET.map((char) => {
                   const count = getLetterCount(char);
@@ -603,17 +603,17 @@ export const CertificadosPage: React.FC = () => {
                       onClick={() => setSelectedLetter(char)}
                       className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105'
+                          ? 'bg-[#0284c7] text-white shadow-md shadow-[#0284c7]/30 scale-105 ring-2 ring-[#38bdf8]'
                           : hasData
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
-                            : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
+                            ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/40 font-bold hover:bg-[#e0f2fe]'
+                            : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
                       }`}
                     >
                       <span>{char}</span>
                       {count > 0 && (
                         <span
                           className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                            isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                            isSelected ? 'bg-[#059669] text-white' : 'bg-[#0284c7] text-white'
                           }`}
                         >
                           {count}
@@ -626,7 +626,7 @@ export const CertificadosPage: React.FC = () => {
             </div>
 
             {/* Filtros e Hojas Excel */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4">
               <div className="flex items-center gap-3 w-full md:w-auto">
                 
                 {/* Omni Buscador */}

@@ -175,23 +175,23 @@ export const RepositorioTab: React.FC = () => {
         </div>
       </div>
 
-      {/* --- PANEL ÚNICO UNIFICADO DE FILTROS (ROLODEX + AUTOCOMPLETAR + RUC + ESTADO + FECHAS) --- */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+      {/* --- PANEL ÚNICO UNIFICADO DE FILTROS --- */}
+      <div className="glass-card p-5 space-y-5">
+        <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-3">
           <div className="flex items-center gap-2">
-            <Filter size={18} className="text-indigo-600 dark:text-indigo-400" />
-            <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+            <Filter size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
+            <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
               Panel Único de Filtros del Repositorio
             </h3>
           </div>
-          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900">
+          <span className="text-[10px] font-black text-[#0284c7] dark:text-[#38bdf8] bg-[#f0f9ff] dark:bg-[#0284c7]/15 px-2.5 py-1 rounded-md border border-[#bae6fd] dark:border-[#0284c7]/30 uppercase tracking-wider">
             🔤 Orden Alfabético Automático (A-Z)
           </span>
         </div>
 
         {/* 1. SECCIÓN ROLODEX DE INICIALES A-Z */}
         <div className="space-y-2">
-          <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+          <span className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider block">
             Inicial Empresa Emisora (Rolodex)
           </span>
           <div className="flex flex-wrap gap-2 items-center">
@@ -206,16 +206,16 @@ export const RepositorioTab: React.FC = () => {
                   onClick={() => setSelectedLetter(char)}
                   className={`relative px-3 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
                     isSelected 
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105' 
+                      ? 'bg-[#0284c7] text-white shadow-md shadow-[#0284c7]/30 scale-105 ring-2 ring-[#38bdf8]' 
                       : hasData
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-600'
-                        : 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-700'
+                        ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/40 font-bold hover:bg-[#e0f2fe]'
+                        : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <span>{char}</span>
                   {count > 0 && (
                     <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                      isSelected ? 'bg-amber-400 text-slate-900' : 'bg-indigo-500 text-white'
+                      isSelected ? 'bg-[#059669] text-white' : 'bg-[#0284c7] text-white'
                     }`}>
                       {count}
                     </span>

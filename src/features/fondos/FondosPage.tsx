@@ -502,14 +502,14 @@ export const FondosPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
       
-      {/* Selector de sub-pestañas superior */}
-      <div className="border-b border-slate-200 dark:border-slate-800 w-full flex items-center justify-between">
-        <div className="flex gap-6">
+      {/* Selector de sub-pestañas superior Estilo APEFAC */}
+      <div className="border-b border-[#e2e8f0] dark:border-[#334155] w-full flex items-center justify-between">
+        <div className="flex gap-4">
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'variables' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => {
               setActiveSubTab('variables');
@@ -519,10 +519,10 @@ export const FondosPage: React.FC = () => {
             🏦 Variables Fondos
           </button>
           <button
-            className={`py-3 text-xs font-black tracking-wider uppercase border-b-2 cursor-pointer transition-colors ${
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'valorCuota' 
-                ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
             }`}
             onClick={() => setActiveSubTab('valorCuota')}
           >
@@ -541,14 +541,14 @@ export const FondosPage: React.FC = () => {
             <div className="flex flex-col gap-6 w-full animate-fadeIn">
               
               {/* Botones de acción general y barra de búsqueda */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full bg-slate-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full glass-card p-4">
                 <div className="flex flex-wrap items-center gap-3 flex-1 w-full sm:w-auto">
                   {/* Búsqueda */}
                   <div className="relative flex-1 max-w-xs">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                     <input
                       type="text"
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-8 pr-3 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-600 shadow-sm"
+                      className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 pl-8 pr-3 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder-slate-400 focus:outline-none focus:border-[#0284c7] shadow-xs"
                       placeholder="Buscar por Nombre, Código o RUC..."
                       value={searchFondosTerm}
                       onChange={(e) => setSearchFondosTerm(e.target.value)}
@@ -557,7 +557,7 @@ export const FondosPage: React.FC = () => {
 
                   {/* Filtro Moneda */}
                   <select
-                    className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-sm"
+                    className="bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 px-3 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                     value={filterMoneda}
                     onChange={(e) => setFilterMoneda(e.target.value as any)}
                   >
@@ -569,7 +569,7 @@ export const FondosPage: React.FC = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm hover:shadow transition-all"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
                     onClick={() => setIsCreateModalOpen(true)}
                   >
                     <Plus size={14} />
@@ -577,29 +577,29 @@ export const FondosPage: React.FC = () => {
                   </button>
 
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
                     onClick={handleExportMaestroPdf}
                     disabled={fondos.length === 0}
                   >
-                    <FileText size={13} className="text-indigo-600" />
-                    <span>Exportar PDF</span>
+                    <FileText size={13} className="text-[#e11d48]" />
+                    <span>PDF</span>
                   </button>
 
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#ecfdf5] text-[#475569] dark:text-[#cbd5e1] hover:text-[#059669] cursor-pointer transition-colors shadow-xs"
                     onClick={handleExportMaestroExcel}
                     disabled={fondos.length === 0}
                   >
-                    <FileSpreadsheet size={13} className="text-emerald-600" />
-                    <span>Exportar Excel</span>
+                    <FileSpreadsheet size={13} className="text-[#059669]" />
+                    <span>Excel</span>
                   </button>
 
                   <button 
-                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors shadow-sm"
+                    className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
                     onClick={fetchFondos}
                     disabled={loading}
                   >
-                    <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+                    <RefreshCw size={13} className={loading ? 'animate-spin text-[#0284c7]' : ''} />
                   </button>
                 </div>
               </div>
