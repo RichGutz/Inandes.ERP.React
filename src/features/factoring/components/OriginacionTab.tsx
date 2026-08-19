@@ -860,11 +860,11 @@ export const OriginacionTab: React.FC = () => {
           ))}
         </div>
 
-        {/* Botón Rojo Ancho PROCESAR TODO EL LOTE */}
+        {/* Botón Principal PROCESAR TODO EL LOTE Estilo APEFAC */}
         <button
           onClick={handleParseBatch}
           disabled={loadingStep || getTotalFiles() === 0}
-          className="w-full py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          className="w-full py-3.5 bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
         >
           {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <FileText size={16} />}
           PROCESAR TODO EL LOTE ({getTotalFiles()} archivos)
@@ -872,28 +872,28 @@ export const OriginacionTab: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. CONFIGURACIÓN GLOBAL (STREAMLIT PARITY)                                */}
+      {/* 2. CONFIGURACIÓN GLOBAL                                                   */}
       {/* ========================================================================= */}
       {invoices.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+        <div className="glass-card p-5 space-y-6">
+          <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
             2. Configuración Global
           </h3>
 
           <div className="space-y-2 text-xs">
             {/* Fila 1: 2.1 Comisión de Estructuración */}
-            <div className="bg-slate-50/70 dark:bg-slate-950/60 p-2 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
-              <span className="font-bold text-slate-800 dark:text-slate-200 text-xs shrink-0">
+            <div className="bg-[#f8fafc] dark:bg-[#151e2e] p-2.5 border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+              <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] text-xs shrink-0">
                 2.1 Comisión de Estructuración
               </span>
 
               <div className="flex items-center gap-4 text-xs shrink-0">
-                <label className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                <label className="flex items-center gap-1.5 font-semibold text-[#64748b] dark:text-[#94a3b8] text-[11px]">
                   <input
                     type="checkbox"
                     checked={aplicarComisionEstructuracion}
                     onChange={(e) => setAplicarComisionEstructuracion(e.target.checked)}
-                    className="rounded text-red-600 focus:ring-red-500"
+                    className="rounded text-[#0284c7] focus:ring-[#0284c7]"
                   />
                   Aplicar
                 </label>
@@ -1547,12 +1547,12 @@ export const OriginacionTab: React.FC = () => {
             </div>
           )}
 
-          {/* Botones de Acción Final SIEMPRE VISIBLES en Paso 4 (Ubicados antes de los PDFs) */}
+          {/* Botones de Acción Final Estilo APEFAC */}
           <div className="pt-4 flex justify-between gap-4 mt-2 mb-6">
             <button
               onClick={handleSimulate}
               disabled={loadingStep}
-              className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="flex-1 py-3.5 bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               {loadingStep ? <RefreshCw className="animate-spin h-4 w-4" /> : <Calculator size={16} />}
               CALCULAR DESEMBOLSO Y GENERAR PDFs
@@ -1561,7 +1561,7 @@ export const OriginacionTab: React.FC = () => {
             <button
               onClick={handleConfirmFormalize}
               disabled={formalizing || !folderId || !simulacionResult}
-              className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="flex-1 py-3.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               {formalizing ? <RefreshCw className="animate-spin h-4 w-4" /> : <Send size={16} />}
               💾 GUARDAR Y SUBIR A GOOGLE DRIVE

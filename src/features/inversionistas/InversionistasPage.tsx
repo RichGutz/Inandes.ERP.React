@@ -1381,28 +1381,31 @@ export const InversionistasPage: React.FC = () => {
                   return (
                     <div 
                       key={inv.id}
-                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between gap-4"
+                      className="glass-card p-5 hover:scale-[1.01] transition-all flex flex-col justify-between gap-4"
                     >
                       <div className="flex items-start gap-4">
-                        {/* Avatar */}
-                        <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-250 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-black text-xs flex items-center justify-center shrink-0">
+                        {/* Avatar con Gradiente APEFAC */}
+                        <div 
+                          className="h-10 w-10 rounded-xl text-white font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-xs"
+                          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #4f46e5 100%)' }}
+                        >
                           {initials}
                         </div>
 
                         {/* Detalle */}
                         <div className="flex flex-col min-w-0">
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-150 truncate leading-snug" title={cleanName}>
+                          <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider truncate leading-snug" title={cleanName}>
                             {cleanName}
                           </h4>
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider mt-0.5">
+                          <span className="text-[10px] font-bold text-[#0284c7] dark:text-[#38bdf8] font-mono tracking-wider mt-0.5">
                             🆔 {inv.documento_identidad} ({inv.tipo_doc})
                           </span>
                         </div>
                       </div>
 
                       {/* Contacto & Cuentas */}
-                      <div className="flex flex-col gap-2 py-1 border-t border-slate-100 dark:border-slate-800/60 mt-1">
-                        <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-col gap-2 py-1 border-t border-[#e2e8f0] dark:border-[#334155] mt-1">
+                        <div className="flex justify-between items-center text-[10px] text-[#64748b] dark:text-[#94a3b8]">
                           <span className="font-semibold truncate max-w-[180px]">{inv.email || 'Sin correo'}</span>
                           <span className="font-mono">{inv.telefono || 'Sin telf'}</span>
                         </div>
@@ -1410,16 +1413,16 @@ export const InversionistasPage: React.FC = () => {
                         <div className="flex items-center gap-4 mt-1">
                           {/* Cuentas Soles */}
                           <div className="flex flex-col">
-                            <span className="text-[8px] uppercase font-bold text-slate-400 dark:text-slate-500">PEN</span>
-                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 truncate max-w-[100px]">
+                            <span className="text-[8px] uppercase font-bold text-[#64748b] dark:text-[#94a3b8]">PEN</span>
+                            <span className="text-[10px] font-bold text-[#0f172a] dark:text-[#f8fafc] font-mono truncate max-w-[100px]">
                               {inv.banco_nombre_pen ? inv.banco_nombre_pen : <span className="text-slate-300 dark:text-slate-700">-</span>}
                             </span>
                           </div>
 
                           {/* Cuentas Dólares */}
                           <div className="flex flex-col">
-                            <span className="text-[8px] uppercase font-bold text-slate-400 dark:text-slate-500">USD</span>
-                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350 truncate max-w-[100px]">
+                            <span className="text-[8px] uppercase font-bold text-[#64748b] dark:text-[#94a3b8]">USD</span>
+                            <span className="text-[10px] font-bold text-[#0f172a] dark:text-[#f8fafc] font-mono truncate max-w-[100px]">
                               {inv.banco_nombre_usd ? inv.banco_nombre_usd : <span className="text-slate-300 dark:text-slate-700">-</span>}
                             </span>
                           </div>
@@ -1427,22 +1430,22 @@ export const InversionistasPage: React.FC = () => {
                       </div>
 
                       {/* Compliance & Acciones */}
-                      <div className="flex items-center justify-between border-t border-slate-150 dark:border-slate-800/80 pt-3 mt-1">
+                      <div className="flex items-center justify-between border-t border-[#e2e8f0] dark:border-[#334155] pt-3 mt-1">
                         <div>
                           {(() => {
                             const state = inv.estado_compliance || 'borrador';
                             let style = '';
                             if (state === 'aprobado') {
-                              style = 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-450 border-emerald-200 dark:border-emerald-900/60';
+                              style = 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30';
                             } else if (state === 'solicitado') {
-                              style = 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 border-amber-200 dark:border-amber-900/60';
+                              style = 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30';
                             } else if (state === 'rechazado') {
-                              style = 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 border-rose-200 dark:border-rose-900/60';
+                              style = 'bg-[#fef2f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30';
                             } else {
-                              style = 'bg-slate-50 dark:bg-slate-800 text-slate-450 dark:text-slate-450 border-slate-200';
+                              style = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
                             }
                             return (
-                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[8px] font-black tracking-wider uppercase border ${style}`}>
+                              <span className={`inline-flex px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase border ${style}`}>
                                 {state}
                               </span>
                             );
@@ -1450,7 +1453,7 @@ export const InversionistasPage: React.FC = () => {
                         </div>
 
                         <button
-                          className="h-7 text-[10px] font-bold flex items-center gap-1 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-250 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 dark:hover:border-emerald-900 transition-colors cursor-pointer text-slate-600 dark:text-slate-350"
+                          className="h-7 text-[10px] font-bold flex items-center gap-1 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] hover:text-[#0284c7] hover:border-[#bae6fd] text-[#475569] dark:text-[#cbd5e1] transition-colors cursor-pointer shadow-xs"
                           onClick={() => handleOpenEditModal(inv)}
                         >
                           <Edit2 size={10} />
@@ -1475,21 +1478,21 @@ export const InversionistasPage: React.FC = () => {
       {activeSubTab === 'retornos_react' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (VISIÓN DE ESTADO GLOBAL) */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (VISIÓN DE ESTADO GLOBAL) Estilo APEFAC */}
+          <div className="glass-card p-5">
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                <Calendar size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
+                <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
                   📅 Tablero Anual de Cierres ({v40SelYear})
                 </h3>
               </div>
 
               {/* Selector de Año */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año:</span>
+                <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Año:</span>
                 <select
-                  className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1 px-3 text-xs font-black text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
+                  className="bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                   value={v40SelYear}
                   onChange={(e) => setV40SelYear(Number(e.target.value))}
                 >
@@ -1541,19 +1544,19 @@ export const InversionistasPage: React.FC = () => {
                     }}
                     className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[110px] ${
                       item.funds.length === 0
-                        ? 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-850 opacity-60'
+                        ? 'bg-slate-50/60 dark:bg-slate-950/40 border-[#e2e8f0] dark:border-[#334155] opacity-60'
                         : isSelected
-                        ? 'bg-white dark:bg-slate-900 border-indigo-500 shadow-md ring-2 ring-indigo-500/20'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer'
+                        ? 'bg-white dark:bg-[#1e293b] border-[#0284c7] shadow-md ring-2 ring-[#0284c7]/30'
+                        : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-800 dark:text-slate-100">{item.name}</span>
+                      <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc]">{item.name}</span>
                       {item.funds.length > 0 && (
                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
                           isClosedInDb
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                            : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                            ? 'bg-[#ecfdf5] text-[#059669] dark:bg-[#059669]/20 dark:text-[#34d399] border border-[#a7f3d0] dark:border-[#059669]/40'
+                            : 'bg-[#fef2f2] text-[#e11d48] dark:bg-[#e11d48]/20 dark:text-[#fb7185] border border-[#fecdd3] dark:border-[#e11d48]/40'
                         }`}>
                           {isClosedInDb ? '🟢 CERRADO' : '🔴 PENDIENTE'}
                         </span>
@@ -1565,7 +1568,7 @@ export const InversionistasPage: React.FC = () => {
                         <div className="flex flex-wrap gap-1">
                           {item.funds.map(f => (
                             <span key={f} className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
-                              isClosedInDb ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                              isClosedInDb ? 'bg-[#059669] text-white' : 'bg-[#e11d48] text-white'
                             }`}>
                               {f.slice(3, 6)}
                             </span>
@@ -1576,7 +1579,7 @@ export const InversionistasPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="mt-2 border-t border-slate-100 dark:border-slate-800/60 pt-1.5 flex justify-between items-center text-[9px] text-slate-400 font-bold">
+                    <div className="mt-2 border-t border-[#e2e8f0] dark:border-[#334155] pt-1.5 flex justify-between items-center text-[9px] text-[#64748b] dark:text-[#94a3b8] font-bold">
                       <span>{item.label}</span>
                       {item.funds.length > 0 && <span>{item.funds.length} fond.</span>}
                     </div>
@@ -1586,18 +1589,18 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA (MODO DUAL) */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-5">
+          {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA Estilo APEFAC */}
+          <div className="glass-card p-5 flex flex-col gap-5">
             
             {/* Header del Panel y Modo Activo */}
-            <div className="flex items-center justify-between gap-4 flex-wrap border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#e2e8f0] dark:border-[#334155] pb-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
                     ⚙️ Panel Operativo de Liquidación ({fStart} al {fEnd})
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold">
                   {collisionCount > 0 
                     ? '🟢 MODO CONSULTA Y LECTURA RETROACTIVA: Los datos están oficializados en la base de datos.'
                     : '🟡 MODO PRE-CIERRE Y SIMULACIÓN: Genere borradores, revise y oficialice los asientos.'}
@@ -1605,20 +1608,20 @@ export const InversionistasPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`px-4 py-2 rounded-xl text-xs font-black tracking-wide uppercase border flex items-center gap-2 shadow-sm ${
+                <span className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase border flex items-center gap-2 shadow-xs ${
                   collisionCount > 0 
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' 
-                    : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                    ? 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30' 
+                    : 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30'
                 }`}>
                   {collisionCount > 0 ? (
                     <>
-                      <CheckCircle size={16} />
-                      <span>🟢 PERÍODO CERRADO Y OFICIALIZADO ({collisionCount} Registros)</span>
+                      <CheckCircle size={14} />
+                      <span>🟢 PERÍODO CERRADO ({collisionCount} Registros)</span>
                     </>
                   ) : (
                     <>
-                      <AlertCircle size={16} />
-                      <span>🟡 MODO BORRADOR / PENDIENTE DE REGISTRO</span>
+                      <AlertCircle size={14} />
+                      <span>🟡 MODO BORRADOR</span>
                     </>
                   )}
                 </span>
@@ -1626,7 +1629,7 @@ export const InversionistasPage: React.FC = () => {
             </div>
 
             {/* Filtros Finitos de Selección */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Auditar / Liquidar</label>
                 <select
