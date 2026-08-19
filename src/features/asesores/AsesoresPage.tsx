@@ -4,8 +4,8 @@ import { getAsesores, upsertAsesor, calculateComisionesProyeccion } from '../../
 import type { Asesor } from '../../services/asesoresService';
 import * as XLSX from 'xlsx';
 import { 
-  Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
-  FileSpreadsheet, FileText, CheckCircle, X, Briefcase
+  Search, Loader2, AlertCircle, Edit2, UserPlus, 
+  FileSpreadsheet, FileText, CheckCircle, X
 } from 'lucide-react';
 
 export const AsesoresPage: React.FC = () => {
@@ -343,56 +343,36 @@ export const AsesoresPage: React.FC = () => {
       {activeSubTab === 'datos' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* Métricas e Indicador */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="h-10 w-10 bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 text-[#0284c7] dark:text-[#38bdf8] rounded-xl flex items-center justify-center shrink-0">
-                <Briefcase size={20} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fuerza de Ventas</span>
-                <span className="text-xl font-mono font-black text-[#0f172a] dark:text-[#f8fafc] tabular-nums">{asesores.length} Asesores</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Buscador y Botones */}
-          <div className="flex flex-wrap items-center justify-between gap-4 w-full glass-card p-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={15} />
+          {/* Top Bar: Buscar + Rango + Acciones */}
+          <div className="glass-card p-5 flex flex-wrap gap-4 items-center justify-between">
+            <div className="relative flex-1 min-w-[260px]">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <Search size={15} />
+              </span>
               <input
                 type="text"
-                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-2 pl-9 pr-4 text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc] placeholder-slate-400 focus:outline-none focus:border-[#0284c7] shadow-xs"
-                placeholder="Buscar por Nombre o Código..."
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 pl-9 pr-3 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
+                placeholder="Buscar por Nombre, DNI o Código de Asesor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
+            <div className="flex gap-2">
+              <button
+                className="h-9 text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                 onClick={() => handleOpenEditModal(null)}
               >
                 <UserPlus size={14} />
-                <span>Registrar Nuevo</span>
-              </button>
-              
-              <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#ecfdf5] text-[#475569] dark:text-[#cbd5e1] hover:text-[#059669] cursor-pointer transition-colors shadow-xs"
-                onClick={handleExportAsesoresExcel}
-                disabled={asesores.length === 0}
-              >
-                <FileSpreadsheet size={13} className="text-[#059669]" />
-                <span>Excel</span>
+                <span>Nuevo Asesor</span>
               </button>
 
-              <button 
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] cursor-pointer transition-colors shadow-xs"
-                onClick={fetchAsesores}
-                disabled={loading}
+              <button
+                className="h-9 text-xs font-bold bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] px-4 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs hover:bg-[#d1fae5] transition-colors"
+                onClick={handleExportAsesoresExcel}
               >
-                <RefreshCw size={13} className={loading ? 'animate-spin text-[#0284c7]' : ''} />
+                <FileSpreadsheet size={14} />
+                <span>Exportar</span>
               </button>
             </div>
           </div>
@@ -403,10 +383,10 @@ export const AsesoresPage: React.FC = () => {
               <button
                 key={rango}
                 onClick={() => setSelectedRange(rango)}
-                className={`px-4 py-1.5 rounded-full text-[11px] font-bold tracking-wide transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wide transition-all cursor-pointer ${
                   selectedRange === rango 
-                    ? 'bg-slate-800 text-white shadow-md dark:bg-emerald-600 border border-transparent' 
-                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-400 hover:text-slate-700 dark:hover:border-emerald-500 dark:hover:text-emerald-400'
+                    ? 'bg-[#0284c7] text-white shadow-xs' 
+                    : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
                 }`}
               >
                 {rango}
@@ -417,14 +397,14 @@ export const AsesoresPage: React.FC = () => {
           {/* Cards Directory */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-              <Loader2 className="animate-spin text-emerald-600" size={40} />
+              <Loader2 className="animate-spin text-[#0284c7]" size={40} />
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando fuerza de ventas...</p>
             </div>
           ) : error ? (
-            <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-950 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
+            <div className="max-w-md mx-auto my-12 bg-white dark:bg-[#1e293b] border border-rose-200 dark:border-rose-900/50 p-6 rounded-2xl shadow-sm text-center flex flex-col items-center gap-3">
               <AlertCircle className="text-rose-600" size={40} />
-              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Error de Conexión</h3>
-              <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">Error de Conexión</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">{error}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
@@ -442,37 +422,40 @@ export const AsesoresPage: React.FC = () => {
                   return (
                     <div 
                       key={a.id}
-                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between gap-4"
+                      className="glass-card p-5 hover:scale-[1.01] transition-all flex flex-col justify-between gap-4"
                     >
                       <div className="flex items-start gap-4">
-                        {/* Avatar */}
-                        <div className="h-10 w-10 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-blue-600 dark:text-blue-400 font-black text-xs flex items-center justify-center shrink-0">
+                        {/* Avatar con Gradiente APEFAC */}
+                        <div 
+                          className="h-10 w-10 rounded-xl text-white font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-xs"
+                          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #4f46e5 100%)' }}
+                        >
                           {initials || 'AS'}
                         </div>
 
                         {/* Detalle */}
                         <div className="flex flex-col min-w-0">
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-150 truncate leading-snug" title={displayName}>
+                          <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider truncate leading-snug" title={displayName}>
                             {displayName}
                           </h4>
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-mono tracking-wider mt-0.5">
+                          <span className="text-[10px] font-bold text-[#0284c7] dark:text-[#38bdf8] font-mono tracking-wider mt-0.5">
                             🆔 {a.codigo || 'PENDING'}
                           </span>
                         </div>
                       </div>
 
                       {/* Contacto */}
-                      <div className="flex flex-col gap-1 py-1 border-t border-slate-100 dark:border-slate-800/60 mt-1">
-                        <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-col gap-1 py-1 border-t border-[#e2e8f0] dark:border-[#334155] mt-1">
+                        <div className="flex justify-between items-center text-[10px] text-[#64748b] dark:text-[#94a3b8]">
                           <span className="font-semibold truncate max-w-[170px]">{a.email || 'N/A'}</span>
                           <span className="font-mono">{a.telefono || 'N/A'}</span>
                         </div>
                       </div>
 
                       {/* Botón Editar */}
-                      <div className="flex items-center justify-end border-t border-slate-150 dark:border-slate-800/80 pt-3 mt-1">
+                      <div className="flex items-center justify-end border-t border-[#e2e8f0] dark:border-[#334155] pt-3 mt-1">
                         <button
-                          className="h-7 text-[10px] font-bold flex items-center gap-1 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-250 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 dark:hover:border-emerald-900 transition-colors cursor-pointer text-slate-600 dark:text-slate-350"
+                          className="h-7 text-[10px] font-bold flex items-center gap-1 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] hover:text-[#0284c7] hover:border-[#bae6fd] text-[#475569] dark:text-[#cbd5e1] transition-colors cursor-pointer shadow-xs"
                           onClick={() => handleOpenEditModal(a)}
                         >
                           <Edit2 size={10} />
@@ -483,7 +466,7 @@ export const AsesoresPage: React.FC = () => {
                   );
                 })
               ) : (
-                <div className="col-span-full py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
+                <div className="col-span-full py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1e293b]">
                   No se encontraron asesores registrados.
                 </div>
               )}
@@ -492,16 +475,16 @@ export const AsesoresPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- PESTAÑA B: CÁLCULO DE COMISIONES --- */}
+      {/* --- PESTAÑA B: CÁLCULO DE COMISIONES Estilo APEFAC --- */}
       {activeSubTab === 'comisiones' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* Selectores de Proyección */}
-          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-wrap gap-4 items-end shadow-sm">
+          {/* Selectores de Proyección Estilo APEFAC */}
+          <div className="glass-card p-5 flex flex-wrap gap-4 items-end">
             <div className="flex flex-col gap-1.5 min-w-[250px] flex-1">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Seleccione el asesor para auditar comisiones</label>
+              <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Seleccione el asesor para auditar comisiones</label>
               <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                 value={selectedAsesor}
                 onChange={(e) => setSelectedAsesor(e.target.value)}
               >
@@ -513,9 +496,9 @@ export const AsesoresPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1.5 w-[120px]">
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
+              <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Año</label>
               <select
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none"
+                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
               >
@@ -527,48 +510,48 @@ export const AsesoresPage: React.FC = () => {
             
             <div className="flex gap-2">
               <button
-                className="h-8.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-9 text-xs font-bold bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
                 onClick={handleExportComisionesExcel}
                 disabled={projectionLoading || projectionData.length === 0}
               >
-                <FileSpreadsheet size={13} />
+                <FileSpreadsheet size={14} />
                 <span>Descargar Excel</span>
               </button>
 
               <button
-                className="h-8.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow transition-colors disabled:opacity-50"
+                className="h-9 text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
                 onClick={handleExportComisionesPDF}
                 disabled={projectionLoading || projectionData.length === 0}
               >
-                <FileText size={13} />
+                <FileText size={14} />
                 <span>PDF Liquidación</span>
               </button>
             </div>
           </div>
 
-          {/* Tabla de Resultados Proyectados */}
-          <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          {/* Tabla de Resultados Proyectados Estilo APEFAC */}
+          <div className="glass-card overflow-hidden">
             {projectionLoading ? (
               <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-                <Loader2 className="animate-spin text-emerald-600" size={30} />
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">Proyectando comisiones del periodo...</p>
+                <Loader2 className="animate-spin text-[#0284c7]" size={32} />
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Proyectando comisiones del periodo...</p>
               </div>
             ) : projectionData.length > 0 ? (
               <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse text-[10px]">
+                <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-850/60 border-b border-slate-250 dark:border-slate-800">
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Asesor</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Fondo</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Certificado</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider text-right">Capital</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Capt.</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Mant.</th>
-                      <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider">Unica</th>
+                    <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Asesor</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Fondo</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Certificado</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-right">Capital</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Capt.</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Mant.</th>
+                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Unica</th>
                       
                       {/* Columnas Mensuales */}
                       {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => (
-                        <th key={m} className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2.5 uppercase tracking-wider text-right">
+                        <th key={m} className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-right font-mono">
                           {m}-{String(selectedYear).slice(-2)}
                         </th>
                       ))}
@@ -576,23 +559,23 @@ export const AsesoresPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {projectionData.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 border-b border-slate-150 dark:border-slate-800/50 transition-colors">
-                        <td className="px-3 py-2 font-bold text-slate-700 dark:text-slate-300">{r.Asesor}</td>
-                        <td className="px-3 py-2 font-bold text-slate-800 dark:text-slate-100">{r.Fondo}</td>
-                        <td className="px-3 py-2 font-mono text-slate-500 dark:text-slate-450">{r.ID_Certificado}</td>
-                        <td className="px-3 py-2 font-bold text-slate-800 dark:text-slate-200 text-right">
+                      <tr key={idx} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                        <td className="px-3.5 py-3 font-semibold text-[#0f172a] dark:text-[#f8fafc]">{r.Asesor}</td>
+                        <td className="px-3.5 py-3 font-bold text-[#0284c7] dark:text-[#38bdf8]">{r.Fondo}</td>
+                        <td className="px-3.5 py-3 font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{r.ID_Certificado}</td>
+                        <td className="px-3.5 py-3 font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] text-right tabular-nums">
                           {r.Capital.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                         </td>
-                        <td className="px-3 py-2 font-semibold text-slate-500 dark:text-slate-450">{r.Captacion}</td>
-                        <td className="px-3 py-2 font-semibold text-slate-500 dark:text-slate-450">{r.Mantenimiento}</td>
-                        <td className="px-3 py-2 font-semibold text-slate-500 dark:text-slate-450">{r.Unica}</td>
+                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Captacion || '-'}</td>
+                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Mantenimiento || '-'}</td>
+                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Unica || '-'}</td>
                         
                         {/* Meses Proyectados */}
                         {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => {
                           const key = `${m}-${String(selectedYear).slice(-2)}`;
                           const val = r[key];
                           return (
-                            <td key={m} className={`px-3 py-2 text-right font-mono ${val !== '-' ? 'font-black text-emerald-600 dark:text-emerald-450' : 'text-slate-300 dark:text-slate-700'}`}>
+                            <td key={m} className={`px-3.5 py-3 text-right font-mono tabular-nums ${val !== '-' ? 'font-black text-[#059669] dark:text-[#34d399]' : 'text-slate-300 dark:text-slate-700'}`}>
                               {val === '-' ? '-' : val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </td>
                           );
@@ -604,11 +587,10 @@ export const AsesoresPage: React.FC = () => {
               </div>
             ) : (
               <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider">
-                No se encontraron certificados activos para proyectar en este periodo.
+                No hay comisiones calculadas para el asesor y año seleccionados.
               </div>
             )}
           </div>
-
         </div>
       )}
 

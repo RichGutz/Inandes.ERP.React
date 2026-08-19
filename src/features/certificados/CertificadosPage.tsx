@@ -1112,32 +1112,34 @@ export const CertificadosPage: React.FC = () => {
           </div>
         )}
 
-        {/* CONTENIDO TAB 3: VISOR & LEDGER */}
+        {/* CONTENIDO TAB 3: VISOR & LEDGER Estilo APEFAC */}
         {activeTab === 'visor' && (
           <div className="flex flex-col gap-6 w-full animate-fadeIn">
             
-            {/* Buscador de Certificado */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-wrap items-center gap-3">
-              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Seleccionar Certificado</label>
-              <select
-                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none w-80"
-                value={selectedVisorCertId}
-                onChange={(e) => setSelectedVisorCertId(e.target.value)}
-              >
-                <option value="">-- Seleccionar Certificado --</option>
-                {certificados.map(c => (
-                  <option key={c.id_certificado} value={c.id_certificado}>
-                    {c.id_certificado} - {c.titular_1}
-                  </option>
-                ))}
-              </select>
+            {/* Buscador de Certificado Estilo APEFAC */}
+            <div className="glass-card p-5 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Seleccionar Certificado</label>
+                <select
+                  className="bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-2.5 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none w-80 shadow-xs"
+                  value={selectedVisorCertId}
+                  onChange={(e) => setSelectedVisorCertId(e.target.value)}
+                >
+                  <option value="">-- Seleccionar Certificado --</option>
+                  {certificados.map(c => (
+                    <option key={c.id_certificado} value={c.id_certificado}>
+                      {c.id_certificado} - {c.titular_1}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {selectedVisorCertId && visorHtml && (
                 <button
-                  className="h-8 text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow ml-auto transition-colors"
+                  className="h-9 text-xs font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all ml-auto"
                   onClick={handlePrintPdf}
                 >
-                  <FileText size={11} />
+                  <FileText size={14} />
                   <span>Imprimir Certificado PDF</span>
                 </button>
               )}
@@ -1147,66 +1149,66 @@ export const CertificadosPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full items-start">
                 
                 {/* Visualizador del Certificado */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-3">
-                  <h3 className="text-xs font-black text-slate-805 dark:text-slate-150 uppercase tracking-tight border-b border-slate-100 dark:border-slate-800 pb-2">
+                <div className="lg:col-span-2 glass-card p-6 flex flex-col gap-4">
+                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider border-b border-[#e2e8f0] dark:border-[#334155] pb-3 flex items-center gap-2">
                     📜 Documento de Certificación Oficial
                   </h3>
                   
                   {visorLoading ? (
                     <div className="flex flex-col items-center justify-center py-32 text-center gap-3">
-                      <Loader2 className="animate-spin text-emerald-600" size={30} />
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Generando vista previa del documento...</p>
+                      <Loader2 className="animate-spin text-[#0284c7]" size={35} />
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Generando vista previa del documento...</p>
                     </div>
                   ) : visorHtml ? (
-                    <div className="border border-slate-150 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-100 p-2">
+                    <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden bg-slate-100 p-2 shadow-inner">
                       <iframe
                         srcDoc={visorHtml}
-                        className="w-full h-[550px] bg-white border-0"
+                        className="w-full h-[580px] bg-white border-0 rounded-lg"
                         title="Documento Certificado Visor"
                       />
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-slate-400">Error al cargar la plantilla.</div>
+                    <div className="py-12 text-center text-slate-400 font-bold">Error al cargar la plantilla.</div>
                   )}
                 </div>
 
-                {/* Ledger de Eventos / Timeline */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-805 dark:text-slate-155 uppercase tracking-tight border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center gap-1.5">
-                    <Layers size={14} className="text-emerald-600" />
+                {/* Ledger de Eventos / Timeline Estilo APEFAC */}
+                <div className="glass-card p-6 flex flex-col gap-4">
+                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider border-b border-[#e2e8f0] dark:border-[#334155] pb-3 flex items-center gap-2">
+                    <Layers size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
                     <span>Ledger Financiero (Eventos)</span>
                   </h3>
 
                   {visorLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-2">
-                      <Loader2 className="animate-spin text-emerald-600" size={24} />
+                      <Loader2 className="animate-spin text-[#0284c7]" size={24} />
                     </div>
                   ) : visorEvents.length === 0 ? (
-                    <div className="py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="py-8 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
                       Sin eventos registrados en la base de datos.
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-4 pl-3 relative border-l-2 border-emerald-600/30">
+                    <div className="flex flex-col gap-4 pl-3 relative border-l-2 border-[#0284c7]/40">
                       {visorEvents.map((evt, idx) => (
-                        <div key={idx} className="relative flex flex-col gap-1 text-[10px] pb-4 border-b border-slate-100 dark:border-slate-850 last:border-b-0">
+                        <div key={idx} className="relative flex flex-col gap-1.5 text-xs pb-4 border-b border-[#e2e8f0] dark:border-[#334155]/60 last:border-b-0">
                           
                           {/* Indicator dot */}
-                          <div className="absolute -left-[18px] top-1.5 h-2 w-2 rounded-full bg-emerald-600 shadow-sm border border-white dark:border-slate-900" />
+                          <div className="absolute -left-[18px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#0284c7] shadow-xs border-2 border-white dark:border-[#111827]" />
 
                           <div className="flex items-center justify-between w-full">
-                            <span className="font-black text-slate-800 dark:text-slate-200 uppercase text-[9px] bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-150 dark:border-slate-800">
+                            <span className="font-mono font-bold text-[9.5px] uppercase bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] px-2 py-0.5 rounded border border-[#bae6fd] dark:border-[#0284c7]/30">
                               {evt.tipo_evento}
                             </span>
-                            <span className="font-mono text-slate-400 font-bold">{evt.fecha_periodo_fin.split('T')[0]}</span>
+                            <span className="font-mono text-slate-400 text-[10px] font-bold">{evt.fecha_periodo_fin.split('T')[0]}</span>
                           </div>
 
-                          <div className="flex justify-between items-center text-[9px] mt-1 font-semibold text-slate-500">
-                            <span>Base: {evt.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-                            <span className="font-bold text-slate-700 dark:text-slate-300">Saldo: {evt.capital_final_saldo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                          <div className="flex justify-between items-center text-[10.5px] mt-1 font-semibold text-[#64748b] dark:text-[#94a3b8]">
+                            <span>Base: <strong className="font-mono tabular-nums">{evt.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
+                            <span className="font-bold text-[#059669] dark:text-[#34d399] font-mono tabular-nums">Saldo: {evt.capital_final_saldo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                           </div>
 
                           {evt.notas && (
-                            <p className="text-[9px] text-slate-400 leading-relaxed italic bg-slate-50/50 dark:bg-slate-950/20 p-2 rounded border border-slate-100 dark:border-slate-850 mt-1">
+                            <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] leading-relaxed italic bg-[#f8fafc] dark:bg-[#151e2e] p-2 rounded-lg border border-[#e2e8f0] dark:border-[#334155] mt-1">
                               "{evt.notas}"
                             </p>
                           )}
@@ -1220,7 +1222,7 @@ export const CertificadosPage: React.FC = () => {
 
               </div>
             ) : (
-              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl">
+              <div className="glass-card py-16 text-center text-slate-400 font-bold uppercase tracking-wider border-dashed rounded-2xl">
                 Seleccione un código de certificado arriba para visualizar sus detalles.
               </div>
             )}
