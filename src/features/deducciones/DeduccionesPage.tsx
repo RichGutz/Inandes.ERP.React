@@ -598,8 +598,8 @@ export const DeduccionesPage: React.FC = () => {
       {/* Contenedor Principal de Pestañas */}
       <div className="flex flex-col gap-6 w-full animate-fadeIn">
 
-          {/* Sub Pestañas */}
-          <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800 pb-0.5">
+          {/* Sub Pestañas Ribbon Estilo APEFAC */}
+          <div className="flex gap-2 border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
             {[
               { id: 'cronograma', label: '📋 Cronograma General (Activo)' },
               { id: 'deduccion', label: '➕ Programar Deducción (DED)' },
@@ -607,10 +607,10 @@ export const DeduccionesPage: React.FC = () => {
             ].map(tab => (
               <button
                 key={tab.id}
-                className={`py-1.5 text-[10px] font-black uppercase border-b-2 cursor-pointer transition-colors ${
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase cursor-pointer transition-all ${
                   activeSubTab === tab.id 
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400' 
-                    : 'border-transparent text-slate-450 hover:text-slate-600'
+                    ? 'bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] shadow-xs' 
+                    : 'text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc] hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
                 onClick={() => setActiveSubTab(tab.id as any)}
               >
@@ -623,17 +623,17 @@ export const DeduccionesPage: React.FC = () => {
           {activeSubTab === 'cronograma' && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               
-              {/* BARRA DE FILTROS TEMPORALES: AÑO Y PERÍODOS DE CIERRE */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              {/* BARRA DE FILTROS TEMPORALES: AÑO Y PERÍODOS DE CIERRE Estilo APEFAC */}
+              <div className="glass-card p-5 flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#e2e8f0] dark:border-[#334155] pb-3">
                   <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-blue-600" />
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Filtro por Año y Período de Cierre Contable</span>
+                    <Calendar size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
+                    <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">Filtro por Año y Período de Cierre Contable</span>
                   </div>
 
                   {/* Selector de Año */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-450 uppercase">Año de Ejercicio:</span>
+                    <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Año de Ejercicio:</span>
                     <div className="flex gap-1">
                       {[2025, 2026, 2027].map(y => (
                         <button
@@ -643,10 +643,10 @@ export const DeduccionesPage: React.FC = () => {
                             setSelYearFilter(y);
                             setSelCorteFilter(`${y}-02-28`);
                           }}
-                          className={`px-3 py-1 rounded-lg text-[10px] font-black cursor-pointer transition-colors ${
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer transition-all ${
                             selYearFilter === y
-                              ? 'bg-blue-600 text-white shadow-sm'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                              ? 'bg-[#0284c7] text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1] hover:bg-slate-200 dark:hover:bg-slate-700'
                           }`}
                         >
                           {y}
@@ -657,7 +657,7 @@ export const DeduccionesPage: React.FC = () => {
                 </div>
 
                 {/* Tabs por Período de Cierre (Cortes Bimestrales / Trimestrales) */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[10px]">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
                   {[
                     { id: 'TODOS', label: '🌐 Todos los Cortes' },
                     { id: `${selYearFilter}-02-28`, label: '📅 28 Feb (B1)' },
@@ -682,16 +682,16 @@ export const DeduccionesPage: React.FC = () => {
                         key={p.id}
                         type="button"
                         onClick={() => setSelCorteFilter(p.id)}
-                        className={`px-3 py-1.5 rounded-lg font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${
+                        className={`h-8 px-3 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${
                           selCorteFilter === p.id
-                            ? 'bg-indigo-600 text-white font-black shadow'
-                            : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+                            ? 'bg-[#0284c7] text-white font-black shadow-xs'
+                            : 'bg-[#f8fafc] hover:bg-[#f0f9ff] text-[#475569] hover:text-[#0284c7] border border-[#e2e8f0] dark:bg-[#151e2e] dark:border-[#334155] dark:text-[#cbd5e1]'
                         }`}
                       >
                         <span>{p.label}</span>
                         {count > 0 && (
-                          <span className={`px-1.5 py-0.2 rounded-full text-[8px] font-black ${
-                            selCorteFilter === p.id ? 'bg-white text-indigo-700' : 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600'
+                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
+                            selCorteFilter === p.id ? 'bg-white text-[#0284c7]' : 'bg-[#e0f2fe] text-[#0284c7] dark:bg-[#0284c7]/20 dark:text-[#38bdf8]'
                           }`}>
                             {count}
                           </span>
@@ -703,49 +703,49 @@ export const DeduccionesPage: React.FC = () => {
               </div>
 
               {cronoLoading ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-2">
-                  <Loader2 className="animate-spin text-blue-600" size={24} />
-                  <span className="text-xs font-bold text-slate-500">Cargando cronogramas por fondo...</span>
+                <div className="glass-card p-12 flex flex-col items-center justify-center text-center gap-2">
+                  <Loader2 className="animate-spin text-[#0284c7]" size={28} />
+                  <span className="text-xs font-bold text-slate-400">Cargando cronogramas por fondo...</span>
                 </div>
               ) : filteredCronograma.length === 0 ? (
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-12 text-center text-[10px] font-bold text-slate-450 uppercase tracking-wider border-dashed flex flex-col items-center justify-center gap-1">
+                <div className="glass-card py-16 text-center text-xs font-bold text-slate-400 uppercase tracking-wider border-dashed flex flex-col items-center justify-center gap-2">
                   <span>No hay cronogramas ni rescates programados para el período seleccionado ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : selCorteFilter}).</span>
                   <button 
                     type="button" 
                     onClick={() => setSelCorteFilter('TODOS')}
-                    className="text-blue-600 hover:underline cursor-pointer font-black text-[9px] uppercase mt-1"
+                    className="text-[#0284c7] hover:underline cursor-pointer font-black text-xs uppercase"
                   >
                     Ver todos los cortes del año {selYearFilter}
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-6 w-full">
-                  {/* Tarjeta Resumen de Provisión de Cash */}
+                  {/* Tarjeta Resumen de Provisión de Cash Estilo APEFAC */}
                   {(() => {
                     const rescatesOnly = filteredCronograma.filter(c => c.tipo_cargo === 'RESCATE_CAPITAL');
                     const cashPEN = rescatesOnly.filter(c => c.moneda === 'PEN').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
                     const cashUSD = rescatesOnly.filter(c => c.moneda === 'USD').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
 
                     return (
-                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-white shadow-md">
+                      <div className="glass-card p-5 flex flex-col md:flex-row items-center justify-between gap-4 border-l-4 border-l-[#0284c7]">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-blue-600/20 text-blue-400 rounded-lg">
-                            <DollarSign size={20} />
+                          <div className="p-3 bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] rounded-xl">
+                            <DollarSign size={22} />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">💰 Provisión Total de Cash para Rescates ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})</span>
-                            <span className="text-xs font-semibold text-slate-300">Flujo de tesorería requerido para atender devoluciones en el período filtrado</span>
+                            <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc] tracking-wider">💰 Provisión Total de Cash para Rescates ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})</span>
+                            <span className="text-[11px] font-semibold text-[#64748b] dark:text-[#94a3b8]">Flujo de tesorería requerido para atender devoluciones en el período filtrado</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="flex flex-col text-right">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Provisión Soles (PEN)</span>
-                            <span className="font-mono text-sm font-black text-emerald-400">S/ {cashPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Provisión Soles (PEN)</span>
+                            <span className="font-mono text-base font-black text-[#059669] dark:text-[#34d399] tabular-nums">S/ {cashPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                           </div>
                           {cashUSD > 0 && (
-                            <div className="flex flex-col text-right border-l border-slate-800 pl-6">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Provisión Dólares (USD)</span>
-                              <span className="font-mono text-sm font-black text-sky-400">$ {cashUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                            <div className="flex flex-col text-right border-l border-[#e2e8f0] dark:border-[#334155] pl-6">
+                              <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Provisión Dólares (USD)</span>
+                              <span className="font-mono text-base font-black text-[#0284c7] dark:text-[#38bdf8] tabular-nums">$ {cashUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                             </div>
                           )}
                         </div>
@@ -764,65 +764,73 @@ export const DeduccionesPage: React.FC = () => {
                     const totalMonto = cuotas.reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
                     const moneda = cuotas[0]?.moneda || 'PEN';
                     return (
-                      <div key={`grupo-fondo-${fondoId}`} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div key={`grupo-fondo-${fondoId}`} className="glass-card overflow-hidden">
+                        <div className="py-3.5 px-5 bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="bg-indigo-600 text-white font-mono text-[11px] font-black px-2.5 py-1 rounded-lg">
+                            <span className="bg-[#0284c7] text-white font-mono text-xs font-black px-2.5 py-1 rounded-lg">
                               🏛️ FONDO: {fondoId}
                             </span>
-                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            <span className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8]">
                               ({cuotas.length} {cuotas.length === 1 ? 'registro' : 'registros'})
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-450 uppercase">Total Programado:</span>
-                            <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
+                            <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Total Programado:</span>
+                            <span className="font-mono text-xs font-black text-[#059669] dark:text-[#34d399] tabular-nums">
                               {moneda} {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                         </div>
 
-                        <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                          <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                        <div className="overflow-x-auto w-full">
+                          <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead>
-                              <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">ID Cuota / Asiento</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Contrato</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Tipo Cargo</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Glosa / Descripción</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Monto</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Corte Cobro</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Estado</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Prioridad</th>
+                              <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">ID Cuota / Asiento</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Contrato</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Tipo Cargo</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Glosa / Descripción</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Monto</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Corte Cobro</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Estado</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Prioridad</th>
                               </tr>
                             </thead>
                             <tbody>
                               {cuotas.map(c => (
-                                <tr key={c.id_cuota} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30">
-                                  <td className="px-4 py-2 font-mono font-bold text-slate-655 dark:text-slate-350">{c.id_cuota}</td>
-                                  <td className="px-4 py-2 font-mono font-bold text-indigo-600 dark:text-indigo-400">{c.id_contrato || '-'}</td>
-                                  <td className="px-4 py-2 font-semibold">
-                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                                <tr key={c.id_cuota} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_cuota}</td>
+                                  <td className="px-4 py-3 font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.id_contrato || '-'}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2.5 py-1 rounded-md text-[9.5px] font-mono font-bold uppercase ${
                                       c.tipo_cargo === 'RESCATE_CAPITAL' 
-                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' 
+                                        ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/30' 
                                         : c.tipo_cargo === 'PENALIDAD_RESCATE'
-                                          ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
-                                          : 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
+                                          ? 'bg-[#fef2f2] text-[#e11d48] border border-[#fecdd3] dark:bg-[#e11d48]/15 dark:text-[#fb7185] dark:border-[#e11d48]/30'
+                                          : 'bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-[#d97706]/15 dark:text-[#fbbf24] dark:border-[#d97706]/30'
                                     }`}>
                                       {c.tipo_cargo.replaceAll('_', ' ')}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-2 text-slate-700 dark:text-slate-400">{c.glosa_descripcion}</td>
-                                  <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-455 font-bold">{c.moneda}</td>
-                                  <td className="px-4 py-2 text-right font-mono font-bold text-slate-755 dark:text-slate-300">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-4 py-2 text-slate-600 dark:text-slate-455">{c.fecha_proyectada_cobro}</td>
-                                  <td className="px-4 py-2">
-                                    <span className={`font-black text-[8px] uppercase ${c.estado === 'PENDIENTE' ? 'text-amber-500' : 'text-emerald-600'}`}>
+                                  <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-medium max-w-[280px] truncate" title={c.glosa_descripcion}>{c.glosa_descripcion}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                      {c.moneda}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_proyectada_cobro}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-mono font-black uppercase ${
+                                      c.estado === 'PENDIENTE' 
+                                        ? 'bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-[#d97706]/20 dark:text-[#fbbf24]' 
+                                        : 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-[#059669]/20 dark:text-[#34d399]'
+                                    }`}>
                                       ● {c.estado}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-2 text-center font-bold text-slate-500">{c.prioridad}</td>
+                                  <td className="px-4 py-3 text-center font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.prioridad}</td>
                                 </tr>
                               ))}
                             </tbody>
