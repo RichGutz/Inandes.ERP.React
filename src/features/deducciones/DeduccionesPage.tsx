@@ -8,6 +8,12 @@ import {
   Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign, Calendar 
 } from 'lucide-react';
 
+// Helper para determinar si el fondo es trimestral (CON01) o bimestral (todos los demás)
+const isFondoTrimestral = (idFondo?: string, freq?: number): boolean => {
+  if (!idFondo) return freq === 3;
+  return idFondo.toUpperCase().includes('CON01');
+};
+
 export const DeduccionesPage: React.FC = () => {
   // Buscador
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -186,8 +192,8 @@ export const DeduccionesPage: React.FC = () => {
       setFondoRules(rules);
       setResTasaWaiver(tasaMinima);
 
-      // 3. Fechas de corte validas
-      const fPago = c.frecuencia_cupones_meses || 2;
+      // 3. Fechas de corte validas (CON01 es el único fondo trimestral; los demás fondos son bimestrales)
+      const fPago = isFondoTrimestral(c.id_fondo, c.frecuencia_cupones_meses) ? 3 : 2;
       const dates = getValidEndOfMonthDates(fPago);
       setValidDates(dates);
       
@@ -282,7 +288,7 @@ export const DeduccionesPage: React.FC = () => {
 
     try {
       const listCargos: Array<{ fecha: Date; monto: number }> = [];
-      const fPago = selectedContrato.frecuencia_cupones_meses || 2;
+      const fPago = isFondoTrimestral(selectedContrato.id_fondo, selectedContrato.frecuencia_cupones_meses) ? 3 : 2;
       const step = fPago === 3 ? 3 : 2;
 
       if (dedMode === 'fijo') {
@@ -546,7 +552,7 @@ export const DeduccionesPage: React.FC = () => {
                             {c.id_contrato}
                           </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                            {c.id_fondo} ({c.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})
+                            {c.id_fondo} ({isFondoTrimestral(c.id_fondo, c.frecuencia_cupones_meses) ? 'Trimestral' : 'Bimestral'})
                           </span>
                         </div>
                         <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">
@@ -579,7 +585,7 @@ export const DeduccionesPage: React.FC = () => {
           <div className="flex flex-col gap-1">
             <span>📜 Contrato: <strong className="text-blue-600 dark:text-blue-400 font-bold">{selectedContrato.id_contrato}</strong></span>
             <span>👤 Inversionista: <strong>{selectedContrato.nombre_inversionista_temp || selectedContrato.id_inversionista_1}</strong></span>
-            <span>🏦 Fondo: <strong>{selectedContrato.id_fondo} ({selectedContrato.frecuencia_cupones_meses === 3 ? 'Trimestral' : 'Bimestral'})</strong></span>
+            <span>🏦 Fondo: <strong>{selectedContrato.id_fondo} ({isFondoTrimestral(selectedContrato.id_fondo, selectedContrato.frecuencia_cupones_meses) ? 'Trimestral' : 'Bimestral'})</strong></span>
           </div>
           <div className="flex flex-col gap-1 md:text-right">
             <span>🎟️ Certificado Activo: <strong className="text-rose-600 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
@@ -965,7 +971,7 @@ export const DeduccionesPage: React.FC = () => {
                       <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Configurar importes por armada:</span>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {Array.from({ length: dedMultiCuotas }).map((_, i) => {
-                          const fPago = selectedContrato.frecuencia_cupones_meses || 2;
+                          const fPago = isFondoTrimestral(selectedContrato.id_fondo, selectedContrato.frecuencia_cupones_meses) ? 3 : 2;
                           const step = fPago === 3 ? 3 : 2;
                           const baseD = dedMultiFechaInicio ? new Date(dedMultiFechaInicio + 'T00:00:00') : new Date();
                           const armDate = addMonthsEndOfMonth(baseD, i * step);
