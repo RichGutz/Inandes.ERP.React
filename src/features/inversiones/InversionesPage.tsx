@@ -1126,16 +1126,16 @@ export const InversionesPage: React.FC = () => {
                   
                   {/* Selector de filtros de fondo en sidebar local */}
                   <div className="flex gap-2 items-center flex-wrap">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Filtrar Fondos:</span>
+                    <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Filtrar Fondos:</span>
                     {uniqueFondoCodes.map(code => {
                       const isSelected = selectedFondosFilter.includes(groupedFunds[code][0].nombre_fondo);
                       return (
                         <button
                           key={code}
-                          className={`h-6 text-[8px] font-black uppercase px-2.5 rounded-full cursor-pointer transition-colors ${
+                          className={`h-7 text-[10px] font-black uppercase px-3 rounded-lg cursor-pointer transition-all ${
                             isSelected 
-                              ? 'bg-emerald-600 text-white' 
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750'
+                              ? 'bg-[#0284c7] text-white shadow-xs' 
+                              : 'bg-white hover:bg-[#f0f9ff] border border-[#e2e8f0] text-[#475569] hover:text-[#0284c7] hover:border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#cbd5e1]'
                           }`}
                           onClick={() => {
                             const fName = groupedFunds[code][0].nombre_fondo;
@@ -1152,7 +1152,7 @@ export const InversionesPage: React.FC = () => {
                     })}
                     {selectedFondosFilter.length > 0 && (
                       <button
-                        className="text-[9px] font-bold text-rose-600 hover:underline cursor-pointer ml-2"
+                        className="text-[10px] font-black text-[#e11d48] hover:underline cursor-pointer ml-2 uppercase"
                         onClick={() => setSelectedFondosFilter([])}
                       >
                         Limpiar filtros
@@ -1161,44 +1161,50 @@ export const InversionesPage: React.FC = () => {
                   </div>
 
                   {Object.entries(activeGroupedByFund).length === 0 ? (
-                    <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-900">
+                    <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1e293b]">
                       No hay contratos vigentes activos.
                     </div>
                   ) : (
                     Object.entries(activeGroupedByFund).map(([fundName, items]) => (
-                      <div key={fundName} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                        <span className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-850">
-                          📁 {fundName} ({items.length} Contratos)
-                        </span>
+                      <div key={fundName} className="glass-card overflow-hidden">
+                        <div className="py-3 px-5 bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] flex items-center justify-between">
+                          <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2">
+                            📁 {fundName} <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">({items.length} Contratos)</span>
+                          </span>
+                        </div>
 
-                        <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                          <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                        <div className="overflow-x-auto w-full">
+                          <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead>
-                              <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">ID Contrato</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Titular Principal</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase text-center">Moneda</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase text-right">Monto</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase">Inicio</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase">Vencimiento</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center">Acciones</th>
+                              <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">ID Contrato</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Titular Principal</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Monto Inversión</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Inicio</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Vencimiento</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
                               {items.map(c => (
-                                <tr key={c.id_contrato} className="border-b border-slate-150 dark:border-slate-800/50 hover:bg-slate-50/30 dark:hover:bg-slate-850/10">
-                                  <td className="px-3 py-2 font-mono font-bold text-slate-700 dark:text-slate-300">{c.id_contrato}</td>
-                                  <td className="px-3 py-2 text-slate-700 dark:text-slate-350">{c.titular?.nombre_completo}</td>
-                                  <td className="px-3 py-2 text-center text-slate-600 dark:text-slate-400">{c.moneda}</td>
-                                  <td className="px-3 py-2 text-right font-mono font-semibold text-slate-750 dark:text-slate-300">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{c.fecha_inicio}</td>
-                                  <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{c.fecha_fin}</td>
-                                  <td className="px-3 py-2 text-center">
+                                <tr key={c.id_contrato} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_contrato}</td>
+                                  <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-semibold">{c.titular?.nombre_completo}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                      {c.moneda}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_inicio}</td>
+                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_fin}</td>
+                                  <td className="px-4 py-3 text-center">
                                     <button
-                                      className="h-7 text-[8px] font-black uppercase flex items-center justify-center gap-1 px-3 mx-auto rounded bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-450 cursor-pointer transition-colors"
+                                      className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1.5"
                                       onClick={() => handleOpenActiveView(c)}
                                     >
-                                      <Eye size={10} />
+                                      <Eye size={12} />
                                       <span>Visualizar</span>
                                     </button>
                                   </td>
@@ -1217,40 +1223,44 @@ export const InversionesPage: React.FC = () => {
               {activeTab === 'cerrados' && (
                 <div className="flex flex-col gap-4 w-full animate-fadeIn">
                   {closedList.length === 0 ? (
-                    <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-900">
+                    <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1e293b]">
                       No hay contratos cerrados.
                     </div>
                   ) : (
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                      <div className="overflow-x-auto w-full border border-slate-150 dark:border-slate-800 rounded-lg">
-                        <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                    <div className="glass-card overflow-hidden">
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                           <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-850/30 border-b border-slate-200 dark:border-slate-800">
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">ID Contrato</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Titular Principal</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase">Fondo</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase text-center">Moneda</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase text-right">Monto</th>
-                              <th className="font-bold text-slate-450 dark:text-slate-500 px-3 py-2 uppercase">Fin</th>
-                              <th className="font-bold text-slate-400 dark:text-slate-500 px-3 py-2 uppercase text-center">Acciones</th>
+                            <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">ID Contrato</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Titular Principal</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Fondo</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Monto</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Fin</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Acciones</th>
                             </tr>
                           </thead>
                           <tbody>
                             {closedList.map(c => (
-                              <tr key={c.id_contrato} className="border-b border-slate-150 dark:border-slate-800/50 hover:bg-slate-50/30 dark:hover:bg-slate-850/10">
-                                <td className="px-3 py-2 font-mono font-bold text-slate-700 dark:text-slate-300">{c.id_contrato}</td>
-                                <td className="px-3 py-2 text-slate-700 dark:text-slate-350">{c.titular?.nombre_completo}</td>
-                                <td className="px-3 py-2 text-slate-700 dark:text-slate-350">{c.crm_fondos?.nombre_fondo}</td>
-                                <td className="px-3 py-2 text-center text-slate-600 dark:text-slate-400">{c.moneda}</td>
-                                <td className="px-3 py-2 text-right font-mono font-semibold text-slate-750 dark:text-slate-300">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{c.fecha_fin}</td>
-                                <td className="px-3 py-2 text-center">
+                              <tr key={c.id_contrato} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_contrato}</td>
+                                <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-semibold">{c.titular?.nombre_completo}</td>
+                                <td className="px-4 py-3 text-[#64748b] dark:text-[#94a3b8] font-medium">{c.crm_fondos?.nombre_fondo}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                    {c.moneda}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-bold text-[#475569] dark:text-[#cbd5e1] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_fin}</td>
+                                <td className="px-4 py-3 text-center">
                                   <button
-                                    className="h-7 text-[8px] font-black uppercase flex items-center justify-center gap-1 px-3 mx-auto rounded bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-450 cursor-pointer transition-colors"
+                                    className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1.5"
                                     onClick={() => handleOpenActiveView(c)}
                                   >
-                                    <Eye size={10} />
-                                    <span>Ver</span>
+                                    <Eye size={12} />
+                                    <span>Visualizar</span>
                                   </button>
                                 </td>
                               </tr>

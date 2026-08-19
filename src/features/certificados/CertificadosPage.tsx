@@ -643,17 +643,17 @@ export const CertificadosPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Filtro Fondos (pills) */}
+                {/* Filtro Fondos (pills estilo APEFAC) */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {uniqueFondos.map(fName => {
                     const isSelected = selectedFondos.includes(fName);
                     return (
                       <button
                         key={fName}
-                        className={`h-6 text-[8px] font-black uppercase px-2.5 rounded-full cursor-pointer transition-colors ${
+                        className={`h-7 text-[10px] font-black uppercase px-3 rounded-lg cursor-pointer transition-all ${
                           isSelected 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-white hover:bg-slate-100 border border-slate-250 text-slate-655 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-350 dark:hover:bg-slate-850'
+                            ? 'bg-[#0284c7] text-white shadow-xs' 
+                            : 'bg-white hover:bg-[#f0f9ff] border border-[#e2e8f0] text-[#475569] hover:text-[#0284c7] hover:border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#cbd5e1] dark:hover:bg-[#0284c7]/15'
                         }`}
                         onClick={() => {
                           if (isSelected) {
@@ -669,7 +669,7 @@ export const CertificadosPage: React.FC = () => {
                   })}
                   {selectedFondos.length > 0 && (
                     <button
-                      className="text-[9px] font-bold text-rose-600 hover:underline cursor-pointer ml-1"
+                      className="text-[10px] font-black text-[#e11d48] hover:underline cursor-pointer ml-1 uppercase"
                       onClick={() => setSelectedFondos([])}
                     >
                       Limpiar
@@ -679,34 +679,34 @@ export const CertificadosPage: React.FC = () => {
 
               </div>
 
-              {/* Botón Excel consolidado */}
+              {/* Botón Excel consolidado Estilo APEFAC */}
               <button
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-3.5 rounded-lg border border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-655 dark:text-slate-300 cursor-pointer shadow-sm ml-auto"
+                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] cursor-pointer shadow-xs transition-colors ml-auto"
                 onClick={handleExportExcel}
                 disabled={vigentesList.length === 0}
               >
-                <FileSpreadsheet size={14} className="text-emerald-600" />
-                <span>Descargar Excel Consolidado Multipe staña</span>
+                <FileSpreadsheet size={14} className="text-[#059669]" />
+                <span>Descargar Excel Consolidado Multipestaña</span>
               </button>
             </div>
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                <Loader2 className="animate-spin text-emerald-600" size={35} />
-                <p className="text-xs text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">Cargando ledger de certificados...</p>
+                <Loader2 className="animate-spin text-[#0284c7]" size={35} />
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando ledger de certificados...</p>
               </div>
             ) : error ? (
-              <div className="max-w-md mx-auto my-12 bg-white dark:bg-slate-900 border border-rose-250 p-6 rounded-2xl text-center flex flex-col items-center gap-3">
+              <div className="max-w-md mx-auto my-12 bg-white dark:bg-[#1e293b] border border-rose-200 dark:border-rose-900/50 p-6 rounded-2xl text-center flex flex-col items-center gap-3">
                 <AlertCircle className="text-rose-600" size={40} />
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">Error</h3>
-                <p className="text-xs text-slate-450 dark:text-slate-400">{error}</p>
+                <p className="text-xs text-slate-400">{error}</p>
               </div>
             ) : vigentesList.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl flex flex-col items-center justify-center gap-2">
+              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-2">
                 <span>No se encontraron certificados para el filtro seleccionado.</span>
                 {(selectedLetter !== 'TODOS' || searchQuery || selectedFondos.length > 0) && (
                   <button
-                    className="text-xs text-indigo-600 hover:underline font-black cursor-pointer"
+                    className="text-xs text-[#0284c7] hover:underline font-black cursor-pointer"
                     onClick={() => {
                       setSelectedLetter('TODOS');
                       setSearchQuery('');
@@ -729,62 +729,66 @@ export const CertificadosPage: React.FC = () => {
                   const isExpanded = !!expandedFunds[fundName];
 
                   return (
-                    <div key={fundName} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                    <div key={fundName} className="glass-card overflow-hidden">
                       
-                      {/* Cabecera Colapsable del Fondo */}
+                      {/* Cabecera Colapsable del Fondo Estilo APEFAC */}
                       <button
-                        className="w-full flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-850 cursor-pointer"
+                        className="w-full flex items-center justify-between py-3.5 px-5 bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f1f5f9] dark:hover:bg-[#1e293b] cursor-pointer transition-colors"
                         onClick={() => toggleExpandFund(fundName)}
                       >
-                        <span className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight flex items-center gap-2">
-                          📌 {fundName} <span className="text-[10px] font-bold text-slate-400">({items.length} vigentes)</span>
+                        <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2">
+                          📌 {fundName} <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">({items.length} vigentes)</span>
                         </span>
                         
                         <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">
+                          <span className="text-xs font-mono font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tabular-nums">
                             {totalStr.join(" / ")}
                           </span>
-                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          {isExpanded ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
                         </div>
                       </button>
 
-                      {/* Tabla del Fondo */}
+                      {/* Tabla del Fondo Estilo APEFAC */}
                       {isExpanded && (
                         <div className="overflow-x-auto w-full">
-                          <table className="w-full text-left border-collapse text-[9px] whitespace-nowrap">
+                          <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead>
-                              <tr className="bg-slate-50/20 dark:bg-slate-850/10 border-b border-slate-150 dark:border-slate-800">
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Certificado</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase">Titulares</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Moneda</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Inversión Inicial</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-right">Capital Actual</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Plazo (m)</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Ult. Evento</th>
-                                <th className="font-bold text-slate-450 dark:text-slate-500 px-4 py-2.5 uppercase">Fecha</th>
-                                <th className="font-bold text-slate-400 dark:text-slate-500 px-4 py-2.5 uppercase text-center">Acción</th>
+                              <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Certificado</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Titulares</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Inversión Inicial</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Capital Actual</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Plazo (m)</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Ult. Evento</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Fecha</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Acción</th>
                               </tr>
                             </thead>
                             <tbody>
                               {items.sort((a, b) => a.id_certificado.localeCompare(b.id_certificado)).map(c => (
-                                <tr key={c.id_certificado} className="border-b border-slate-100 dark:border-slate-850 hover:bg-slate-50/30 dark:hover:bg-slate-850/10">
-                                  <td className="px-4 py-2 font-mono font-bold text-slate-700 dark:text-slate-300">{c.id_certificado}</td>
-                                  <td className="px-4 py-2 text-slate-750 dark:text-slate-350 max-w-[220px] truncate" title={c.titulares_resumen.map(t => t.nombre).join(" y/o ")}>
+                                <tr key={c.id_certificado} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_certificado}</td>
+                                  <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-semibold max-w-[260px] truncate" title={c.titulares_resumen.map(t => t.nombre).join(" y/o ")}>
                                     {c.titulares_resumen.map(t => t.nombre).join(" y/o ")}
                                   </td>
-                                  <td className="px-4 py-2 text-center text-slate-600 dark:text-slate-400 font-semibold">{c.moneda}</td>
-                                  <td className="px-4 py-2 text-right font-mono text-slate-700 dark:text-slate-350">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-4 py-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-450">{c.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-4 py-2 text-center text-slate-655 dark:text-slate-400 font-semibold">{c.plazo_meses}</td>
-                                  <td className="px-4 py-2">
-                                    <span className="px-2 py-0.5 rounded-full font-black text-[8px] uppercase bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-400">
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                      {c.moneda}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono font-bold text-[#475569] dark:text-[#cbd5e1] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-center font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.plazo_meses}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2.5 py-1 rounded-md font-mono font-bold text-[9.5px] uppercase bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/30">
                                       {c.ultimo_evento}
                                     </span>
                                   </td>
-                                  <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{c.fecha_ultimo_evento}</td>
-                                  <td className="px-4 py-2 text-center">
+                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_ultimo_evento}</td>
+                                  <td className="px-4 py-3 text-center">
                                     <button
-                                      className="h-7 text-[8px] font-black uppercase bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-slate-800 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-450 px-3.5 rounded cursor-pointer transition-colors"
+                                      className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1"
                                       onClick={() => {
                                         setSelectedVisorCertId(c.id_certificado);
                                         setActiveTab('visor');
