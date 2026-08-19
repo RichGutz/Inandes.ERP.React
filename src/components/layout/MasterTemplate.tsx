@@ -21,6 +21,7 @@ import {
   Bot,
   Trash2,
   Settings,
+  Palette,
   ChevronDown,
   ChevronRight,
   Layers
@@ -423,6 +424,7 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
             {openGroup === 'mantenimiento' && (
               <nav className="flex flex-col gap-1 p-2 bg-[#f8fafc] dark:bg-[#151e2e] border-t border-[#e2e8f0] dark:border-[#334155]">
                 {[
+                  { id: 'mantenimiento_estilos', label: 'Estilos & Temas', icon: <Palette size={14} /> },
                   { id: 'mantenimiento_limpieza', label: 'Limpieza BD', icon: <Trash2 size={14} /> },
                   { id: 'mantenimiento_roles', label: 'Admin Roles', icon: <Settings size={14} /> },
                 ].map(item => {

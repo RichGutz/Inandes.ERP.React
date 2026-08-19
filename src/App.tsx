@@ -12,6 +12,7 @@ import { InversionesPage } from './features/inversiones/InversionesPage';
 import { CertificadosPage } from './features/certificados/CertificadosPage';
 import { DeduccionesPage } from './features/deducciones/DeduccionesPage';
 import { RolesPage } from './features/roles/RolesPage';
+import { EstilosPage } from './features/mantenimiento/EstilosPage';
 import { Calculator } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getInversionistas } from './services/inversionistasService';
@@ -136,6 +137,7 @@ function App() {
     herramientas_agentes: { title: 'Agentes IA', subtitle: 'Copilotos de Procesamiento de Información' },
     
     // Mantenimiento
+    mantenimiento_estilos: { title: 'Configuración de Estilos & Design System', subtitle: 'Personalización de Tema, Dark Mode, Colores de Acento y Tipografía' },
     mantenimiento_limpieza: { title: 'Limpieza BD', subtitle: 'Mantenimiento del Sandbox Contable' },
     mantenimiento_roles: { title: 'Admin Roles', subtitle: 'Privilegios y Permisos de Usuarios' }
   };
@@ -556,6 +558,8 @@ function App() {
         return renderMigrationPlaceholder('Agentes IA', 'modules/21_Agentes_IA.py');
 
       // Mantenimiento
+      case 'mantenimiento_estilos':
+        return <EstilosPage />;
       case 'mantenimiento_limpieza':
         return renderMigrationPlaceholder('Limpieza BD', 'modules/30_Limpieza_BD.py');
       case 'mantenimiento_roles':
