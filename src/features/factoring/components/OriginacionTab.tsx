@@ -753,7 +753,7 @@ export const OriginacionTab: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. CARGA DE FACTURAS (COMPACTED GRID LAYOUT)                             */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="glass-card p-5 space-y-4">
         {/* Header Inline (Título + Selector + Limpiar) */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-4">

@@ -452,44 +452,44 @@ export const DesembolsosTab: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Top Header & Metrics Cards */}
+      {/* Top Header & Metrics Cards APEFAC Style */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+        <div className="glass-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Facturas Pendientes</span>
-            <span className="text-2xl font-black text-slate-800 dark:text-slate-100">
+            <span className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] block mb-1 uppercase tracking-wider">Facturas Pendientes</span>
+            <span className="text-2xl font-mono font-black text-[#0f172a] dark:text-[#f8fafc] tabular-nums">
               {invoices.length}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-1">Aprobadas listas para desembolso</span>
+            <span className="text-[10.5px] text-[#64748b] dark:text-[#94a3b8] font-semibold block mt-1">Aprobadas listas para desembolso</span>
           </div>
-          <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-center justify-center text-amber-600">
+          <div className="h-12 w-12 rounded-xl bg-[#fffbeb] dark:bg-[#d97706]/15 border border-[#fde68a] dark:border-[#d97706]/30 flex items-center justify-center text-[#d97706]">
             <Clock size={24} />
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+        <div className="glass-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Total Abono Pendiente (PEN)</span>
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] block mb-1 uppercase tracking-wider">Total Abono Pendiente (PEN)</span>
+            <span className="text-2xl font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">
               S/ {totalPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-1">Monto Líquido a Desembolsar</span>
+            <span className="text-[10.5px] text-[#64748b] dark:text-[#94a3b8] font-semibold block mt-1">Monto Líquido a Desembolsar</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex items-center justify-between">
+        <div className="glass-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">Total Abono Pendiente (USD)</span>
-            <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
+            <span className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] block mb-1 uppercase tracking-wider">Total Abono Pendiente (USD)</span>
+            <span className="text-2xl font-mono font-black text-[#0284c7] dark:text-[#38bdf8] tabular-nums">
               $ {totalUsd.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-1">Monto Líquido a Desembolsar</span>
+            <span className="text-[10.5px] text-[#64748b] dark:text-[#94a3b8] font-semibold block mt-1">Monto Líquido a Desembolsar</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">1. Facturas Pendientes de Desembolso</h2>
+      <div className="glass-card p-6">
+        <h2 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider mb-4">1. Facturas Pendientes de Desembolso</h2>
 
         {/* Rolodex Abecedario A-Z Oficial (Regla 6 - SIEMPRE VISIBLE) */}
         <div className="flex flex-wrap items-center gap-2 mb-5 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -660,22 +660,22 @@ export const DesembolsosTab: React.FC = () => {
       {selectedInvoices.length > 0 && (
         <>
           {/* SECCIÓN 2: VOUCHER */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200 dark:border-slate-800 p-4">
-            <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wide mb-3">2. Generar Voucher de Transferencia</h2>
+          <div className="glass-card p-5">
+            <h2 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider mb-4">2. Generar Voucher de Transferencia</h2>
 
             {!datosBancarios && !loadingBanco ? (
-              <div className="text-xs text-red-600 bg-red-50 dark:bg-red-950/40 p-3 rounded-xl flex gap-2 items-center border border-red-200 dark:border-red-900 font-semibold">
+              <div className="text-xs text-[#e11d48] bg-[#fff1f2] dark:bg-[#e11d48]/15 p-3.5 rounded-xl flex gap-2 items-center border border-[#fecdd3] dark:border-[#e11d48]/30 font-bold">
                 <AlertCircle size={16} /> El emisor no tiene datos bancarios registrados o seleccionaste facturas de distinto emisor.
               </div>
             ) : loadingBanco ? (
-              <div className="flex gap-2 items-center text-xs text-slate-500 py-3"><Loader2 className="animate-spin" size={16} /> Cargando datos bancarios...</div>
+              <div className="flex gap-2 items-center text-xs text-slate-500 py-3 font-semibold"><Loader2 className="animate-spin text-[#0284c7]" size={16} /> Cargando datos bancarios...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
 
                 {/* Monto */}
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80 flex flex-col justify-center items-center">
-                  <div className="text-slate-500 uppercase font-bold text-[10px] tracking-wider mb-0.5">Total a Transferir</div>
-                  <div className="text-xl font-black text-slate-900 dark:text-white">{formatCurrency(montoTotal, monedaUnica)}</div>
+                <div className="bg-[#f8fafc] dark:bg-[#151e2e] p-4 rounded-xl border border-[#e2e8f0] dark:border-[#334155] flex flex-col justify-center items-center">
+                  <div className="text-[#64748b] dark:text-[#94a3b8] uppercase font-bold text-[10px] tracking-wider mb-0.5">Total a Transferir</div>
+                  <div className="text-xl font-mono font-black text-[#0f172a] dark:text-[#f8fafc] tabular-nums">{formatCurrency(montoTotal, monedaUnica)}</div>
                 </div>
 
                 {/* Acciones Voucher */}
@@ -683,7 +683,7 @@ export const DesembolsosTab: React.FC = () => {
                   <button
                     onClick={handleGenerateVoucher}
                     disabled={generatingVoucher}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl transition-colors flex justify-center items-center gap-2 text-xs disabled:bg-blue-400 shadow-xs cursor-pointer"
+                    className="w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold py-2.5 px-3 rounded-xl transition-colors flex justify-center items-center gap-2 text-xs disabled:opacity-50 shadow-xs cursor-pointer"
                   >
                     {generatingVoucher ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
                     Generar Voucher PDF
@@ -693,7 +693,7 @@ export const DesembolsosTab: React.FC = () => {
                     <a
                       href={`data:application/pdf;base64,${voucherB64}`}
                       download="voucher_transferencia.pdf"
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl transition-colors flex justify-center items-center gap-1.5 text-center text-xs shadow-xs font-bold"
+                      className="w-full bg-[#059669] hover:bg-[#047857] text-white font-bold py-2 px-3 rounded-xl transition-colors flex justify-center items-center gap-1.5 text-center text-xs shadow-xs font-bold"
                     >
                       <Download size={15} />
                       Descargar Voucher

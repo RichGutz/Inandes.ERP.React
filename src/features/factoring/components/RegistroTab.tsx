@@ -584,7 +584,7 @@ export const RegistroTab: React.FC = () => {
           <span>{sortOrder === 'asc' ? 'Orden: A-Z' : 'Orden: Z-A'}</span>
         </button>
         <button onClick={() => { setSelected(null); setVista('crear'); setErrorMsg(null); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-sm">
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-xs">
           <PlusCircle size={14} /> Nuevo Registro
         </button>
         <ExportButtons 
@@ -598,7 +598,7 @@ export const RegistroTab: React.FC = () => {
       </div>
 
       {/* Rolodex Alfabético A-Z */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
+      <div className="glass-card p-4">
         <div className="flex flex-wrap gap-2.5 items-center">
           {ALPHABET.map((char) => {
             const count = getLetterCount(char);
@@ -611,9 +611,9 @@ export const RegistroTab: React.FC = () => {
                 onClick={() => setSelectedLetter(char)}
                 className={`relative ${char === 'TODOS' ? 'px-4' : 'w-10'} h-10 rounded-xl font-black text-sm transition-all flex items-center justify-center cursor-pointer ${
                   isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 scale-105 ring-2 ring-indigo-400'
+                    ? 'bg-[#0284c7] text-white shadow-md shadow-[#0284c7]/30 scale-105 ring-2 ring-[#38bdf8]'
                     : hasData
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 font-bold hover:bg-indigo-100'
+                      ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/40 font-bold hover:bg-[#e0f2fe]'
                       : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
                 }`}
               >
@@ -621,7 +621,7 @@ export const RegistroTab: React.FC = () => {
                 {hasData && (
                   <span
                     className={`absolute -top-1.5 -right-1.5 text-[9px] min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full font-black border-2 border-white dark:border-slate-900 shadow-xs ${
-                      isSelected ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
+                      isSelected ? 'bg-[#059669] text-white' : 'bg-[#0284c7] text-white'
                     }`}
                   >
                     {count}
@@ -633,10 +633,10 @@ export const RegistroTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+      <div className="glass-card overflow-hidden">
         {loadingLista ? (
           <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
-            <RefreshCw size={18} className="animate-spin" /><span className="text-sm">Cargando registros...</span>
+            <RefreshCw size={18} className="animate-spin text-[#0284c7]" /><span className="text-sm font-semibold">Cargando registros...</span>
           </div>
         ) : opciones.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-2 text-slate-400">
@@ -645,43 +645,44 @@ export const RegistroTab: React.FC = () => {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-700/50 text-[10px] font-black uppercase tracking-wider text-slate-500">
+            <thead className="bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] text-[11px] font-black uppercase tracking-wider text-[#475569] dark:text-[#94a3b8]">
               <tr>
                 <th className="px-4 py-3 text-left">RUC</th>
                 <th 
                   onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                  className="px-4 py-3 text-left cursor-pointer hover:text-indigo-600 transition-colors select-none"
+                  className="px-4 py-3 text-left cursor-pointer hover:text-[#0284c7] transition-colors select-none"
                   title="Hacer clic para cambiar orden alfabético"
                 >
                   <div className="flex items-center gap-1">
                     <span>Razón Social</span>
-                    {sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-600" /> : <ArrowDown size={12} className="text-indigo-600" />}
+                    {sortOrder === 'asc' ? <ArrowUp size={12} className="text-[#0284c7]" /> : <ArrowDown size={12} className="text-[#0284c7]" />}
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-right"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-[#e2e8f0] dark:divide-[#334155]">
               {opciones.map(r => (
                 <tr key={r.RUC} onClick={() => handleSelectRUC(r.RUC.toString())}
-                  className="hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{r.RUC}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{r.RAZON_SOCIAL || r['Razon Social']}</td>
+                  className="table-row-hover cursor-pointer transition-colors">
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-[#0284c7] dark:text-[#38bdf8]">{r.RUC}</td>
+                  <td className="px-4 py-3 font-semibold text-[#0f172a] dark:text-[#f8fafc]">{r.RAZON_SOCIAL || r['Razon Social']}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      r.TIPO === 'EMISOR' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black tracking-wide ${
+                      r.TIPO === 'EMISOR' 
+                        ? 'badge-score-aaa'
+                        : 'badge-score-bbb'
                     }`}>{r.TIPO ?? 'N/A'}</span>
                   </td>
-                  <td className="px-4 py-3 text-right text-xs text-slate-400">Editar →</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-[#0284c7] dark:text-[#38bdf8]">Editar →</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
         {!loadingLista && opciones.length > 0 && (
-          <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-400 bg-slate-50 dark:bg-slate-700/30">
+          <div className="px-4 py-2 border-t border-[#e2e8f0] dark:border-[#334155] text-xs font-semibold text-[#64748b] bg-[#f8fafc] dark:bg-[#151e2e]">
             {opciones.length} de {lista.length} registros
           </div>
         )}

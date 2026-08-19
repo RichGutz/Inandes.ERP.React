@@ -389,10 +389,10 @@ export const LiquidacionesTab: React.FC = () => {
       <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4">
         <button
           onClick={() => { setActiveTab('NUEVAS'); setSelectedInvoices({}); }}
-          className={`pb-3 text-sm font-bold transition-colors border-b-2 cursor-pointer ${
+          className={`pb-3 text-xs font-black uppercase tracking-wider transition-colors border-b-2 cursor-pointer ${
             activeTab === 'NUEVAS'
-              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]'
+              : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
           }`}
         >
           Liquidaciones Nuevas ({nuevas.length})
@@ -400,10 +400,10 @@ export const LiquidacionesTab: React.FC = () => {
 
         <button
           onClick={() => { setActiveTab('EN_PROCESO'); setSelectedInvoices({}); }}
-          className={`pb-3 text-sm font-bold transition-colors border-b-2 cursor-pointer ${
+          className={`pb-3 text-xs font-black uppercase tracking-wider transition-colors border-b-2 cursor-pointer ${
             activeTab === 'EN_PROCESO'
-              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]'
+              : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
           }`}
         >
           Liquidaciones en Proceso ({enProceso.length})
@@ -411,15 +411,15 @@ export const LiquidacionesTab: React.FC = () => {
       </div>
 
       {/* --- PANEL ÚNICO UNIFICADO DE FILTROS SIMULTÁNEOS (LOOK CORPORATIVO MINIMALISTA) --- */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+      <div className="glass-card p-5 space-y-5">
+        <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-3">
           <div className="flex items-center gap-2">
-            <Filter size={18} className="text-indigo-600 dark:text-indigo-400" />
-            <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+            <Filter size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
+            <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
               Panel de Filtros Combinados
             </h3>
           </div>
-          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900">
+          <span className="text-[10px] font-black text-[#0284c7] dark:text-[#38bdf8] bg-[#f0f9ff] dark:bg-[#0284c7]/15 px-2.5 py-1 rounded-md border border-[#bae6fd] dark:border-[#0284c7]/30 uppercase tracking-wider">
             🔤 Orden Alfabético Automático (A-Z)
           </span>
         </div>
