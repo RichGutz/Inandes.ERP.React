@@ -1,3 +1,4 @@
+// src/features/factoring/FactoringPage.tsx
 import React, { useState } from 'react';
 import { TabView } from '../../components/ui/TabView';
 import { RegistroTab } from './components/RegistroTab';
@@ -22,8 +23,8 @@ export const FactoringPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-card rounded-lg shadow-sm border border-border p-6 h-[calc(100vh-140px)] overflow-hidden flex flex-col">
-      <div className="flex-1 overflow-auto -mx-6 px-6 pb-6">
+    <div className="glass-card p-0 h-[calc(100vh-140px)] overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-auto">
         <TabView 
           tabs={tabs} 
           activeTab={activeTab} 
