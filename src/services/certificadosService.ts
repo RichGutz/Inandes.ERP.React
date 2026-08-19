@@ -225,3 +225,86 @@ export const getEventosDeCertificado = async (certId: string): Promise<Certifica
   if (error) throw new Error(`Error al obtener historial de eventos: ${error.message}`);
   return data || [];
 };
+
+export interface AumentoCapitalHistorico {
+  id_evento: number;
+  id_contrato: string;
+  id_certificado: string;
+  tipo_evento: string;
+  fecha_periodo_origen: string;
+  fecha_periodo_fin: string;
+  capital_base: number;
+  capital_final_saldo: number;
+  monto_aumento: number;
+  notas: string | null;
+  created_at: string;
+  nombre_inversionista?: string;
+  documento_inversionista?: string;
+  nombre_fondo?: string;
+  moneda?: string;
+}
+
+/**
+ * Obtiene todos los eventos de aumento de capital registrados históricamente enriquecidos con datos de inversionista y fondo
+ */
+export const getAumentosCapitalHistoricos = async (): Promise<AumentoCapitalHistorico[]> => {
+  const { data: events, error: evtsErr } = await supabase
+    .from('crm_certificados_eventos')
+    .select('*')
+    .eq('tipo_evento', 'aumento_capital')
+    .order('fecha_periodo_fin', { ascending: false });
+
+  if (evtsErr) throw new Error(`Error al obtener aumentos de capital: ${evtsErr.message}`);
+  if (!events || events.length === 0) return [];
+
+  // Obtener contratos y fondos para enriquecer
+  const { data: contracts } = await supabase.from('crm_contratos').select('*');
+  const { data: funds } = await supabase.from('crm_fondos').select('*');
+  const { data: investors } = await supabase.from('crm_inversionistas').select('*');
+
+  const contractMap = new Map((contracts || []).map(c => [c.id_contrato, c]));
+  const fundMap = new Map((funds || []).map(f => [f.id_fondo, f]));
+  const investorMap = new Map((investors || []).map(i => [i.codigo_inversionista || i.documento_identidad, i]));
+
+  return events.map(evt => {
+    const contract = contractMap.get(evt.id_contrato);
+    const fund = contract ? fundMap.get(contract.id_fondo) : undefined;
+    const inv = contract ? investorMap.get(contract.id_inversionista_1) : undefined;
+
+    // Calcular monto aumento
+    let monto = 0;
+    if (evt.payload_asiento && typeof evt.payload_asiento.aumentos_capital === 'number' && evt.payload_asiento.aumentos_capital > 0) {
+      monto = evt.payload_asiento.aumentos_capital;
+    } else if (evt.notas) {
+      const match = evt.notas.match(/(\d+[\d,\.]*)\s+(PEN|USD)/i);
+      if (match) {
+        monto = parseFloat(match[1].replace(/,/g, '')) || 0;
+      }
+    }
+    if (monto === 0 && evt.capital_final_saldo && evt.capital_base) {
+      monto = Math.abs(evt.capital_final_saldo - evt.capital_base);
+    }
+    if (monto === 0 && evt.capital_final_saldo) {
+      monto = evt.capital_final_saldo;
+    }
+
+    return {
+      id_evento: evt.id_evento,
+      id_contrato: evt.id_contrato,
+      id_certificado: evt.id_certificado,
+      tipo_evento: evt.tipo_evento,
+      fecha_periodo_origen: evt.fecha_periodo_origen,
+      fecha_periodo_fin: evt.fecha_periodo_fin,
+      capital_base: evt.capital_base || 0,
+      capital_final_saldo: evt.capital_final_saldo || 0,
+      monto_aumento: monto,
+      notas: evt.notas,
+      created_at: evt.created_at,
+      nombre_inversionista: inv?.nombre_completo || (evt.payload_asiento?.inversionista as string) || 'Inversionista',
+      documento_inversionista: inv?.documento_identidad || '',
+      nombre_fondo: fund?.nombre_fondo || contract?.id_fondo || 'Fondo',
+      moneda: contract?.moneda || (evt.payload_asiento?.moneda as string) || 'USD'
+    };
+  });
+};
+

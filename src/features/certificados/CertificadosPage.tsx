@@ -1,16 +1,16 @@
 // src/features/certificados/CertificadosPage.tsx
 import React, { useEffect, useState } from 'react';
 import { 
-  getCertificadosMaster, registrarAumentoCapital, getEventosDeCertificado
+  getCertificadosMaster, registrarAumentoCapital, getEventosDeCertificado, getAumentosCapitalHistoricos
 } from '../../services/certificadosService';
-import type { CertificadoMaster } from '../../services/certificadosService';
+import type { CertificadoMaster, AumentoCapitalHistorico } from '../../services/certificadosService';
 import { supabase } from '../../services/supabaseClient';
 import { generateCertificateHtml } from '../../utils/contractPreviewGenerator';
 import type { CertificadoEvento } from '../../services/contratosService';
 import { OmniBuscadorCertificados } from '../../components/common/OmniBuscadorCertificados';
 import * as XLSX from 'xlsx';
 import { 
-  Loader2, AlertCircle, FileSpreadsheet, FileText, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers
+  Loader2, AlertCircle, FileSpreadsheet, FileText, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User
 } from 'lucide-react';
 
 const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
@@ -30,16 +30,22 @@ export const CertificadosPage: React.FC = () => {
   const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({});
 
   // ==========================================
-  // --- FORMULARIO DE AUMENTO DE CAPITAL -----
+  // --- FORMULARIO & HISTÓRICO DE AUMENTO ----
   // ==========================================
   const [selectedAumentoCert, setSelectedAumentoCert] = useState<string>('');
-
   const [aumentoMonto, setAumentoMonto] = useState<number>(5000);
   const [aumentoFecha, setAumentoFecha] = useState<string>(new Date().toISOString().split('T')[0]);
   const [aumentoVoucherName, setAumentoVoucherName] = useState<string>('');
   const [aumentoSubmitting, setAumentoSubmitting] = useState<boolean>(false);
   const [aumentoError, setAumentoError] = useState<string | null>(null);
   const [aumentoSuccess, setAumentoSuccess] = useState<boolean>(false);
+
+  // Histórico de aumentos
+  const [aumentosHistoricos, setAumentosHistoricos] = useState<AumentoCapitalHistorico[]>([]);
+  const [loadingAumentos, setLoadingAumentos] = useState<boolean>(false);
+  const [selectedAumentoYear, setSelectedAumentoYear] = useState<string>('2026');
+  const [expandedPeriodos, setExpandedPeriodos] = useState<Record<string, boolean>>({});
+  const [filtroAumentoQuery, setFiltroAumentoQuery] = useState<string>('');
 
   // ==========================================
   // --- VISOR DE CERTIFICADOS & TIMELINE -----
@@ -48,6 +54,26 @@ export const CertificadosPage: React.FC = () => {
   const [visorHtml, setVisorHtml] = useState<string>('');
   const [visorEvents, setVisorEvents] = useState<CertificadoEvento[]>([]);
   const [visorLoading, setVisorLoading] = useState<boolean>(false);
+
+  const fetchAumentos = async () => {
+    setLoadingAumentos(true);
+    try {
+      const data = await getAumentosCapitalHistoricos();
+      setAumentosHistoricos(data);
+      
+      // Auto expandir todos los periodos por defecto
+      const exp: Record<string, boolean> = {};
+      data.forEach(a => {
+        const info = getPeriodoInfo(a.fecha_periodo_fin || a.fecha_periodo_origen);
+        exp[info.bimKey] = true;
+      });
+      setExpandedPeriodos(exp);
+    } catch (err: any) {
+      console.error('Error al cargar aumentos históricos:', err);
+    } finally {
+      setLoadingAumentos(false);
+    }
+  };
 
   const fetchCertificados = async () => {
     setLoading(true);
@@ -64,6 +90,9 @@ export const CertificadosPage: React.FC = () => {
         }
       });
       setExpandedFunds(initialExp);
+      
+      // Cargar también histórico de aumentos
+      fetchAumentos();
     } catch (err: any) {
       setError(err.message || 'Error al cargar certificados.');
     } finally {
@@ -440,7 +469,6 @@ export const CertificadosPage: React.FC = () => {
       setAumentoVoucherName('');
       setSelectedAumentoCert('');
 
-
       setTimeout(() => {
         setAumentoSuccess(false);
       }, 3000);
@@ -450,6 +478,69 @@ export const CertificadosPage: React.FC = () => {
       setAumentoSubmitting(false);
     }
   };
+
+  // Helper para determinar periodo y año de una fecha
+  const getPeriodoInfo = (fecha: string) => {
+    if (!fecha) return { year: '2026', bimKey: '2026-B1', label: 'Bimestre 1: Enero – Febrero (2026)', shortLabel: 'Bimestre 1: Ene - Feb' };
+    const parts = fecha.split('-');
+    const year = parts[0] || '2026';
+    const month = parseInt(parts[1] || '1', 10);
+
+    const bimestres = [
+      { key: 'B1', label: 'Bimestre 1: Enero – Febrero', short: 'Ene - Feb' },
+      { key: 'B2', label: 'Bimestre 2: Marzo – Abril', short: 'Mar - Abr' },
+      { key: 'B3', label: 'Bimestre 3: Mayo – Junio', short: 'May - Jun' },
+      { key: 'B4', label: 'Bimestre 4: Julio – Agosto', short: 'Jul - Ago' },
+      { key: 'B5', label: 'Bimestre 5: Setiembre – Octubre', short: 'Set - Oct' },
+      { key: 'B6', label: 'Bimestre 6: Noviembre – Diciembre', short: 'Nov - Dic' },
+    ];
+
+    const bimIndex = Math.min(Math.max(Math.floor((month - 1) / 2), 0), 5);
+    const b = bimestres[bimIndex];
+    return {
+      year,
+      bimKey: `${year}-${b.key}`,
+      label: `${b.label} (${year})`,
+      shortLabel: b.label
+    };
+  };
+
+  // Filtrado y agrupado de aumentos históricos para el Tab 2
+  const filteredAumentos = aumentosHistoricos.filter(a => {
+    const info = getPeriodoInfo(a.fecha_periodo_fin || a.fecha_periodo_origen);
+    if (selectedAumentoYear !== 'TODOS' && info.year !== selectedAumentoYear) return false;
+    if (filtroAumentoQuery.trim()) {
+      const q = filtroAumentoQuery.toLowerCase();
+      const matchName = (a.nombre_inversionista || '').toLowerCase().includes(q);
+      const matchDoc = (a.documento_inversionista || '').toLowerCase().includes(q);
+      const matchFondo = (a.nombre_fondo || '').toLowerCase().includes(q);
+      const matchId = (a.id_certificado || '').toLowerCase().includes(q);
+      const matchNotas = (a.notas || '').toLowerCase().includes(q);
+      if (!matchName && !matchDoc && !matchFondo && !matchId && !matchNotas) return false;
+    }
+    return true;
+  });
+
+  const groupedAumentosByPeriodo: Record<string, { label: string; year: string; items: AumentoCapitalHistorico[]; totalUsd: number; totalPen: number }> = {};
+
+  filteredAumentos.forEach(a => {
+    const info = getPeriodoInfo(a.fecha_periodo_fin || a.fecha_periodo_origen);
+    if (!groupedAumentosByPeriodo[info.bimKey]) {
+      groupedAumentosByPeriodo[info.bimKey] = {
+        label: info.label,
+        year: info.year,
+        items: [],
+        totalUsd: 0,
+        totalPen: 0
+      };
+    }
+    groupedAumentosByPeriodo[info.bimKey].items.push(a);
+    if (a.moneda === 'USD') {
+      groupedAumentosByPeriodo[info.bimKey].totalUsd += a.monto_aumento;
+    } else {
+      groupedAumentosByPeriodo[info.bimKey].totalPen += a.monto_aumento;
+    }
+  });
 
   return (
     <div className="flex flex-col gap-6 w-full animate-fadeIn">
@@ -718,109 +809,299 @@ export const CertificadosPage: React.FC = () => {
           </div>
         )}
 
-        {/* CONTENIDO TAB 2: AUMENTO DE CAPITAL */}
+        {/* CONTENIDO TAB 2: AUMENTO DE CAPITAL (SPLIT: IZQ HISTÓRICO / DER INGRESO) */}
         {activeTab === 'aumento' && (
-          <div className="flex flex-col gap-6 w-full animate-fadeIn max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-fadeIn items-start">
             
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-sm font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">💰 Ingreso de Nuevo Capital (Aumento)</h3>
-                <p className="text-[11px] text-slate-450 dark:text-slate-400 leading-relaxed">
-                  Permite inyectar fondos adicionales a un certificado permanente existente. Se insertará un registro de evento de inyección en el ledger financiero.
-                </p>
+            {/* COLUMNA IZQUIERDA: HISTÓRICO DE AUMENTOS DESPLEGABLE (LG: 7 COLS) */}
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              
+              {/* Card Header & Filtro de Año */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <History size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">
+                        Histórico de Aumentos de Capital
+                      </h3>
+                      <p className="text-[10px] text-slate-400">
+                        Inyecciones de capital registradas en el ledger financiero agrupadas por periodo
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-900">
+                    {aumentosHistoricos.length} eventos registrados
+                  </span>
+                </div>
+
+                {/* Tabs de Años & Buscador */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800/80 pt-3">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">Año:</span>
+                    {['2026', '2025', '2024', 'TODOS'].map(yr => (
+                      <button
+                        key={yr}
+                        onClick={() => setSelectedAumentoYear(yr)}
+                        className={`h-7 px-3 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
+                          selectedAumentoYear === yr
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-750'
+                        }`}
+                      >
+                        {yr}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                    <input
+                      type="text"
+                      placeholder="Filtrar por titular, fondo..."
+                      value={filtroAumentoQuery}
+                      onChange={(e) => setFiltroAumentoQuery(e.target.value)}
+                      className="w-full h-7 pl-8 pr-3 text-[10px] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <form onSubmit={handleProcesarAumento} className="flex flex-col gap-4">
-                
-                {/* ARTEFACTO OMNIBUSCADOR MULTICRITERIO (PASO 1 + PASO 2) */}
-                <OmniBuscadorCertificados
-                  certificados={certificados}
-                  selectedCertId={selectedAumentoCert}
-                  onSelectCert={(certId) => setSelectedAumentoCert(certId)}
-                  placeholder="Escriba DNI, RUC, Nombre del titular o ID del certificado..."
-                  labelPaso1="1. FILTRAR INVERSIONISTA / CERTIFICADO DESTINO (BUSCADOR OMNI)"
-                  labelPaso2="2. SELECCIONE CERTIFICADO DESTINO"
-                  autoSelectIfSingle={true}
-                  filterOnlyVigentes={true}
-                />
+              {/* Lista de Periodos y Aumentos */}
+              {loadingAumentos ? (
+                <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                  <Loader2 size={24} className="animate-spin text-emerald-600" />
+                  <span className="text-xs">Cargando aumentos históricos...</span>
+                </div>
+              ) : Object.keys(groupedAumentosByPeriodo).length === 0 ? (
+                <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-850 rounded-2xl bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2">
+                  <AlertCircle size={28} className="text-slate-300 dark:text-slate-700" />
+                  <span className="text-xs text-slate-500">No se encontraron aumentos de capital para el filtro seleccionado</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Utilice el formulario de la derecha para registrar una nueva inyección de capital</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {Object.entries(groupedAumentosByPeriodo).map(([bimKey, grp]) => {
+                    const isExpanded = expandedPeriodos[bimKey] ?? true;
+                    return (
+                      <div key={bimKey} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                        
+                        {/* Cabecera del Periodo / Acordeón */}
+                        <div
+                          onClick={() => setExpandedPeriodos(prev => ({ ...prev, [bimKey]: !isExpanded }))}
+                          className="px-4 py-3 bg-slate-50/80 dark:bg-slate-850/50 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight flex items-center gap-1.5">
+                              <Calendar size={13} className="text-emerald-600" />
+                              {grp.label}
+                            </span>
+                            <span className="text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md">
+                              {grp.items.length} {grp.items.length === 1 ? 'aumento' : 'aumentos'}
+                            </span>
+                          </div>
 
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-[10px] font-mono font-bold">
+                              {grp.totalUsd > 0 && (
+                                <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900">
+                                  +USD {grp.totalUsd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                </span>
+                              )}
+                              {grp.totalPen > 0 && (
+                                <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-900">
+                                  +PEN {grp.totalPen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                </span>
+                              )}
+                            </div>
+                            {isExpanded ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
+                          </div>
+                        </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Capital Adicional</label>
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                      value={aumentoMonto}
-                      onChange={(e) => setAumentoMonto(Number(e.target.value) || 0)}
-                      required
-                    />
+                        {/* Listado de Aumentos del Periodo */}
+                        {isExpanded && (
+                          <div className="p-3 flex flex-col gap-2.5 divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {grp.items.map((item) => (
+                              <div key={item.id_evento} className="pt-2.5 first:pt-0 flex flex-col gap-2">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  
+                                  {/* Info Titular y Certificado */}
+                                  <div className="flex flex-col gap-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <User size={12} className="text-slate-400" />
+                                      <span className="text-xs font-black text-slate-850 dark:text-slate-100">
+                                        {item.nombre_inversionista}
+                                      </span>
+                                      {item.documento_inversionista && (
+                                        <span className="text-[9px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.2 rounded">
+                                          {item.documento_inversionista}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-450 dark:text-slate-400">
+                                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.nombre_fondo}</span>
+                                      <span>•</span>
+                                      <span className="font-mono text-[9px]">{item.id_certificado}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Monto Aumento & Fecha */}
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-900/60">
+                                      <ArrowUpCircle size={12} />
+                                      +{item.moneda} {item.monto_aumento.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-mono">
+                                      Efectivo: {item.fecha_periodo_origen || item.fecha_periodo_fin}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Saldos & Comprobante */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] bg-slate-50 dark:bg-slate-950/50 p-2 rounded-lg border border-slate-150 dark:border-slate-800/60">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-slate-400">
+                                      Saldo Previo: <strong className="font-mono text-slate-600 dark:text-slate-300">{item.moneda} {item.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong>
+                                    </span>
+                                    <span>➔</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400">
+                                      Nuevo Saldo: <strong className="font-mono">{item.moneda} {item.capital_final_saldo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong>
+                                    </span>
+                                  </div>
+
+                                  {item.notas && (
+                                    <span className="text-[9px] text-slate-400 truncate max-w-xs italic" title={item.notas}>
+                                      {item.notas}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+            </div>
+
+            {/* COLUMNA DERECHA: FORMULARIO RIBBON INGRESO DE AUMENTO (LG: 5 COLS) */}
+            <div className="lg:col-span-5 flex flex-col gap-4 sticky top-4">
+              
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
+                <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                      <DollarSign size={14} />
+                    </div>
+                    <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">
+                      Ingreso de Nuevo Capital (Aumento)
+                    </h3>
                   </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fecha Efectiva Ingreso</label>
-                    <input
-                      type="date"
-                      className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                      value={aumentoFecha}
-                      onChange={(e) => setAumentoFecha(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <p className="text-[10px] text-slate-450 dark:text-slate-400 leading-relaxed">
+                    Permite inyectar fondos adicionales a un certificado permanente vigente. El saldo del contrato y el ledger financiero se actualizarán inmediatamente.
+                  </p>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Comprobante / Archivo de Aporte (Ficticio)</label>
-                  <div className="flex items-center gap-3">
-                    <label className="h-9 px-4 text-xs font-bold bg-white dark:bg-slate-950 hover:bg-slate-50 border border-slate-250 dark:border-slate-800 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm text-slate-655 dark:text-slate-300">
-                      <Upload size={13} />
-                      <span>Seleccionar archivo</span>
+                <form onSubmit={handleProcesarAumento} className="flex flex-col gap-4">
+                  
+                  {/* ARTEFACTO OMNIBUSCADOR MULTICRITERIO (PASO 1 + PASO 2) */}
+                  <OmniBuscadorCertificados
+                    certificados={certificados}
+                    selectedCertId={selectedAumentoCert}
+                    onSelectCert={(certId) => setSelectedAumentoCert(certId)}
+                    placeholder="Escriba DNI, RUC, Titular o ID del certificado..."
+                    labelPaso1="1. FILTRAR INVERSIONISTA / CERTIFICADO"
+                    labelPaso2="2. SELECCIONE CERTIFICADO DESTINO"
+                    autoSelectIfSingle={true}
+                    filterOnlyVigentes={true}
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Adicional</label>
                       <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setAumentoVoucherName(file.name);
-                          }
-                        }}
+                        type="number"
+                        min={0}
+                        step="any"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        value={aumentoMonto}
+                        onChange={(e) => setAumentoMonto(Number(e.target.value) || 0)}
+                        required
                       />
-                    </label>
-                    {aumentoVoucherName && (
-                      <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-md border border-emerald-100 dark:border-emerald-900 flex items-center gap-1">
-                        <CheckCircle size={11} /> {aumentoVoucherName}
-                      </span>
-                    )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fecha Efectiva Ingreso</label>
+                      <input
+                        type="date"
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        value={aumentoFecha}
+                        onChange={(e) => setAumentoFecha(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {aumentoError && (
-                  <span className="text-[11px] font-semibold text-rose-600">{aumentoError}</span>
-                )}
-                {aumentoSuccess && (
-                  <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                    <CheckCircle size={12} /> Aumento registrado con éxito en el ledger.
-                  </span>
-                )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Comprobante de Aporte / Voucher</label>
+                    <div className="flex items-center gap-2">
+                      <label className="h-8 px-3 text-[11px] font-bold bg-white dark:bg-slate-950 hover:bg-slate-50 border border-slate-250 dark:border-slate-800 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-slate-655 dark:text-slate-300">
+                        <Upload size={12} />
+                        <span>Subir Voucher</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setAumentoVoucherName(file.name);
+                            }
+                          }}
+                        />
+                      </label>
+                      {aumentoVoucherName && (
+                        <span className="text-[9px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-900 flex items-center gap-1 truncate max-w-[180px]">
+                          <CheckCircle size={10} /> {aumentoVoucherName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                <button
-                  type="submit"
-                  className="w-full h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
-                  disabled={aumentoSubmitting || !selectedAumentoCert}
-                >
-                  {aumentoSubmitting ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>Registrando inyección...</span>
-                    </>
-                  ) : (
-                    <span>💾 Procesar Aumento de Capital</span>
+                  {aumentoError && (
+                    <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/30 p-2 rounded-lg border border-rose-200 dark:border-rose-900">
+                      {aumentoError}
+                    </span>
                   )}
-                </button>
+                  {aumentoSuccess && (
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-lg border border-emerald-200 dark:border-emerald-900 flex items-center gap-1">
+                      <CheckCircle size={11} /> Aumento registrado con éxito en el ledger financiero.
+                    </span>
+                  )}
 
-              </form>
+                  <button
+                    type="submit"
+                    className="w-full h-9 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer shadow flex items-center justify-center gap-1.5 disabled:opacity-50 mt-1 transition-colors"
+                    disabled={aumentoSubmitting || !selectedAumentoCert}
+                  >
+                    {aumentoSubmitting ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        <span>Registrando inyección...</span>
+                      </>
+                    ) : (
+                      <span>💾 Procesar Aumento de Capital</span>
+                    )}
+                  </button>
+
+                </form>
+
+              </div>
 
             </div>
 

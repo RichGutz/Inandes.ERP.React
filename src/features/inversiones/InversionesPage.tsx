@@ -11,7 +11,7 @@ import { generateContractHtml, generateCertificateHtml } from '../../utils/contr
 import { calculateContractCycleDates } from '../../utils/contractCycleEngine';
 import * as XLSX from 'xlsx';
 import { 
-  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check
+  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check, Search, X, Users
 } from 'lucide-react';
 
 export const InversionesPage: React.FC = () => {
@@ -50,6 +50,10 @@ export const InversionesPage: React.FC = () => {
   const [formPercentages, setFormPercentages] = useState<number[]>([]);
   const [formDeposits, setFormDeposits] = useState<number[]>([]);
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
+
+  // Estados del Rolodex de Inversionistas para Borrador
+  const [investorRolodexLetter, setInvestorRolodexLetter] = useState<string>('TODOS');
+  const [investorSearchQuery, setInvestorSearchQuery] = useState<string>('');
 
   // ==========================================
   // --- ESTADOS DEL FORMULARIO DE APROBACION -
@@ -180,6 +184,42 @@ export const InversionesPage: React.FC = () => {
   // Validaciones del Wizard de Borrador
   const sumPart = formPercentages.reduce((acc, p) => acc + p, 0);
   const isPartSumValid = Math.abs(sumPart - 100) < 0.01;
+
+  // Lógica de Abecedario y Filtrado Rolodex para Partícipes en Borrador
+  const ALPHABET_AZ = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+
+  const getLetterCountForInvestors = (char: string) => {
+    if (char === 'TODOS') return investors.length;
+    return investors.filter(inv => {
+      const raw = (inv.apellido_1 || inv.nombre_completo || '').trim();
+      if (!raw) return false;
+      const firstChar = raw.charAt(0).toUpperCase();
+      if (char === '#') return !/^[A-ZÑ]/i.test(firstChar);
+      return firstChar === char;
+    }).length;
+  };
+
+  const filteredInvestorsForRolodex = investors.filter(inv => {
+    const name = (inv.nombre_completo || '').toLowerCase();
+    const doc = (inv.documento_identidad || '').toLowerCase();
+    const ape = (inv.apellido_1 || '').toLowerCase();
+    
+    if (investorSearchQuery.trim()) {
+      const q = investorSearchQuery.toLowerCase();
+      if (!name.includes(q) && !doc.includes(q) && !ape.includes(q)) return false;
+    }
+    
+    if (investorRolodexLetter !== 'TODOS') {
+      const raw = (inv.apellido_1 || inv.nombre_completo || '').trim();
+      const firstChar = raw.charAt(0).toUpperCase();
+      if (investorRolodexLetter === '#') {
+        if (/^[A-ZÑ]/i.test(firstChar)) return false;
+      } else {
+        if (firstChar !== investorRolodexLetter) return false;
+      }
+    }
+    return true;
+  });
 
   const isBankAccountsValid = (): { valid: boolean; error: string | null } => {
     if (!selectedPlazoRow) return { valid: false, error: 'Falta configurar fondo y plazo' };
@@ -1381,41 +1421,205 @@ export const InversionesPage: React.FC = () => {
               )}
             </div>
 
-            {/* Sección 3: Los Partícipes (Inversionistas) */}
+            {/* Sección 3: Los Partícipes (Inversionistas) con Rolodex A-Z */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">3️⃣ Los Partícipes (Inversionistas)</h3>
-              
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Seleccione Inversionista(s) (Máximo 4)</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg max-h-[160px] overflow-y-auto">
-                  {investors.map(inv => {
-                    const isSelected = formSelectedInvestors.includes(inv.codigo_inversionista);
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight flex items-center gap-1.5">
+                    <Users size={14} className="text-emerald-600" />
+                    3️⃣ Los Partícipes (Inversionistas)
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    Seleccione de 1 a 4 partícipes titulares para el contrato mediante el artefacto Rolodex A-Z
+                  </p>
+                </div>
+                <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border ${
+                  formSelectedInvestors.length > 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900'
+                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900'
+                }`}>
+                  {formSelectedInvestors.length} de 4 seleccionados
+                </span>
+              </div>
+
+              {/* Bandeja de Partícipes Seleccionados */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col gap-2">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                  Partícipes Seleccionados para el Contrato:
+                </span>
+                
+                {formSelectedInvestors.length === 0 ? (
+                  <div className="py-4 text-center text-slate-400 text-xs font-semibold border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
+                    Ningún partícipe seleccionado. Busque y agregue partícipes usando el Rolodex abajo.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {formSelectedInvestors.map((code, idx) => {
+                      const inv = investors.find(i => i.codigo_inversionista === code);
+                      return (
+                        <div
+                          key={code}
+                          className="flex items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/60 rounded-lg shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-slate-850 dark:text-slate-100 truncate">
+                                {inv?.nombre_completo || code}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono">
+                                {idx === 0 ? '👑 Titular Principal' : `Partícipe Adicional #${idx + 1}`} • {inv?.documento_identidad}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => setFormSelectedInvestors(prev => prev.filter(c => c !== code))}
+                            className="w-6 h-6 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                            title="Quitar partícipe"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Artefacto Rolodex A-Z Oficial */}
+              <div className="bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-3.5 flex flex-col gap-3">
+                
+                {/* Buscador Rápido Omni */}
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+                    <input
+                      type="text"
+                      placeholder="Buscar por DNI, RUC o Nombre del inversionista..."
+                      value={investorSearchQuery}
+                      onChange={(e) => setInvestorSearchQuery(e.target.value)}
+                      className="w-full h-8 pl-8 pr-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-emerald-500 font-semibold"
+                    />
+                  </div>
+                  {investorSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setInvestorSearchQuery('')}
+                      className="h-8 px-2.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {/* Abecedario A-Z Interactivo */}
+                <div className="flex flex-wrap gap-1.5 items-center justify-center sm:justify-start">
+                  {ALPHABET_AZ.map((char) => {
+                    const count = getLetterCountForInvestors(char);
+                    const isSelected = investorRolodexLetter === char;
+                    const hasData = count > 0;
+
                     return (
                       <button
-                        key={inv.codigo_inversionista}
+                        key={char}
                         type="button"
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                          isSelected 
-                            ? 'bg-emerald-600 text-white' 
-                            : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800'
+                        onClick={() => setInvestorRolodexLetter(char)}
+                        className={`relative px-2.5 py-1 rounded-lg font-black text-[10px] transition-all flex items-center justify-center cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white shadow-xs scale-105'
+                            : hasData
+                              ? 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 hover:text-emerald-600 border border-slate-200 dark:border-slate-800'
+                              : 'bg-slate-100/60 dark:bg-slate-900/60 text-slate-300 dark:text-slate-700 opacity-50'
                         }`}
-                        onClick={() => {
-                          if (isSelected) {
-                            setFormSelectedInvestors(prev => prev.filter(c => c !== inv.codigo_inversionista));
-                          } else {
-                            if (formSelectedInvestors.length >= 4) {
-                              alert('Solo se pueden seleccionar un máximo de 4 inversionistas por contrato.');
-                              return;
-                            }
-                            setFormSelectedInvestors(prev => [...prev, inv.codigo_inversionista]);
-                          }
-                        }}
                       >
-                        {inv.nombre_completo} ({inv.documento_identidad})
+                        <span>{char}</span>
+                        {count > 0 && (
+                          <span className={`absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 rounded-full text-[8px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                            isSelected ? 'bg-amber-400 text-slate-900' : 'bg-emerald-600 text-white'
+                          }`}>
+                            {count}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Parrilla de Inversionistas Disponibles */}
+                <div className="max-h-[220px] overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {filteredInvestorsForRolodex.length === 0 ? (
+                    <div className="col-span-full py-8 text-center text-slate-400 text-xs font-semibold">
+                      No se encontraron inversionistas con los criterios actuales.
+                    </div>
+                  ) : (
+                    filteredInvestorsForRolodex.map(inv => {
+                      const isSelected = formSelectedInvestors.includes(inv.codigo_inversionista);
+                      const isMaxReached = formSelectedInvestors.length >= 4 && !isSelected;
+
+                      return (
+                        <div
+                          key={inv.codigo_inversionista}
+                          className={`p-2 rounded-lg border flex flex-col justify-between gap-1.5 transition-all ${
+                            isSelected
+                              ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800'
+                              : isMaxReached
+                                ? 'bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800/60 opacity-60'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800'
+                          }`}
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-bold text-slate-850 dark:text-slate-100 truncate" title={inv.nombre_completo}>
+                              {inv.nombre_completo}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {inv.tipo_doc || 'DNI'}: {inv.documento_identidad}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                            <span className="text-[8px] text-slate-400 truncate max-w-[100px]">
+                              {inv.ocupacion || inv.centro_labores || 'Partícipe'}
+                            </span>
+                            
+                            {isSelected ? (
+                              <button
+                                type="button"
+                                onClick={() => setFormSelectedInvestors(prev => prev.filter(c => c !== inv.codigo_inversionista))}
+                                className="h-5 px-2 text-[9px] font-black rounded bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 hover:bg-rose-100 cursor-pointer flex items-center gap-1"
+                              >
+                                <X size={9} /> Quitar
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isMaxReached}
+                                onClick={() => {
+                                  if (formSelectedInvestors.length >= 4) {
+                                    alert('Solo se pueden seleccionar un máximo de 4 inversionistas por contrato.');
+                                    return;
+                                  }
+                                  setFormSelectedInvestors(prev => [...prev, inv.codigo_inversionista]);
+                                }}
+                                className={`h-5 px-2 text-[9px] font-black rounded flex items-center gap-1 cursor-pointer transition-colors ${
+                                  isMaxReached
+                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                                }`}
+                              >
+                                <Plus size={9} /> Agregar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
               </div>
 
               {formSelectedInvestors.length > 0 && (
