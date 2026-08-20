@@ -1634,249 +1634,233 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA Estilo APEFAC */}
-          <div className="glass-card p-6 flex flex-col gap-6">
+          {/* SECCIÓN 2: PANEL OPERATIVO COMPACTO EN 3 COLUMNAS HORIZONTALES (ESTILO APEFAC) */}
+          <div className="glass-card p-5 flex flex-col gap-4">
             
             {/* Header del Panel y Modo Activo */}
-            <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#e2e8f0] dark:border-[#334155] pb-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                    ⚙️ Panel Operativo de Liquidación ({fStart} al {fEnd})
-                  </h3>
-                </div>
-                <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold">
-                  {collisionCount > 0 
-                    ? '🟢 MODO CONSULTA Y LECTURA RETROACTIVA: Los datos están oficializados en la base de datos.'
-                    : '🟡 MODO PRE-CIERRE Y SIMULACIÓN: Genere borradores, revise y oficialice los asientos.'}
-                </p>
+            <div className="flex items-center justify-between gap-4 flex-wrap pb-3 border-b border-[#e2e8f0] dark:border-[#334155]">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                  ⚙️ Panel Operativo de Liquidación ({fStart} al {fEnd})
+                </h3>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase border flex items-center gap-2 shadow-xs ${
+                <span className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black tracking-wider uppercase border flex items-center gap-1.5 shadow-xs ${
                   collisionCount > 0 
                     ? 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30' 
-                    : 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30'
+                    : 'bg-[#fff1f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30'
                 }`}>
                   {collisionCount > 0 ? (
                     <>
-                      <CheckCircle size={14} />
-                      <span>🟢 PERÍODO CERRADO ({collisionCount} Registros)</span>
+                      <CheckCircle size={13} />
+                      <span>🟢 PERÍODO CERRADO ({collisionCount} ASIENTOS)</span>
                     </>
                   ) : (
                     <>
-                      <AlertCircle size={14} />
-                      <span>🟡 MODO BORRADOR</span>
+                      <AlertCircle size={13} />
+                      <span>🔴 PERÍODO ABIERTO / SIMULACIÓN</span>
                     </>
                   )}
                 </span>
               </div>
             </div>
 
-            {/* Filtros Finitos de Selección Estilo APEFAC */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Auditar / Liquidar</label>
-                <select
-                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
-                  value={v40SelFondo}
-                  onChange={(e) => setV40SelFondo(e.target.value)}
-                >
-                  <option value="TODOS">TODOS LOS FONDOS</option>
-                  {fondosDisponibles.map(f => (
-                    <option key={f.id_fondo} value={f.id_fondo}>{f.nombre_fondo}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Frecuencia / Ciclo</label>
-                <select
-                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
-                  value={v40SelCiclo}
-                  onChange={(e) => setV40SelCiclo(e.target.value as any)}
-                >
-                  <option value="Bimestre">Bimestre</option>
-                  <option value="Trimestre">Trimestre</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Número de Período</label>
-                <select
-                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
-                  value={v40SelNum}
-                  onChange={(e) => setV40SelNum(Number(e.target.value))}
-                >
-                  {v40SelCiclo === 'Bimestre' ? (
-                    <>
-                      <option value={1}>1: Ene-Feb (Feb 28)</option>
-                      <option value={2}>2: Mar-Abr (Abr 30)</option>
-                      <option value={3}>3: May-Jun (Jun 30)</option>
-                      <option value={4}>4: Jul-Ago (Ago 31)</option>
-                      <option value={5}>5: Sep-Oct (Oct 31)</option>
-                      <option value={6}>6: Nov-Dic (Dic 31)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value={1}>1: Ene-Mar (Mar 31)</option>
-                      <option value={2}>2: Abr-Jun (Jun 30)</option>
-                      <option value={3}>3: Jul-Sep (Sep 30)</option>
-                      <option value={4}>4: Oct-Dic (Dic 31)</option>
-                    </>
-                  )}
-                </select>
-              </div>
-            </div>
-
-            {/* FASE 1: DESCARGA DE REPORTES DE AUDITORÍA */}
-            <div className="flex flex-col gap-3">
-              <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                📄 Paso 1: Generar y Revisar Reportes de Auditoría ({fEnd})
-              </h4>
-
-              {/* Banners de Progreso */}
-              {exportingExcel && (
-                <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-xs">
-                  <Loader2 size={20} className="animate-spin text-[#059669] dark:text-[#34d399] shrink-0" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-black text-[#059669] dark:text-[#34d399] uppercase tracking-wide">
-                      📊 Procesando y Compilando Libro Excel Maestro...
-                    </span>
-                    <span className="text-[11px] text-[#047857] dark:text-[#a7f3d0] font-medium">
-                      Generando hojas de auditoría contable diaria. La descarga iniciará automáticamente.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {exportingPdf && (
-                <div className="bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-xs">
-                  <Loader2 size={20} className="animate-spin text-[#0284c7] dark:text-[#38bdf8] shrink-0" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tracking-wide">
-                      📄 Generando Reporte PDF Oficial...
-                    </span>
-                    <span className="text-[11px] text-[#0369a1] dark:text-[#bae6fd] font-medium">
-                      El servidor está compilando las tablas y liquidaciones. Espere unos segundos.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={calcLoading || exportingExcel || exportingPdf}
-                  onClick={async () => {
-                    await handleExportExcelV40WithProgress();
-                  }}
-                >
-                  {exportingExcel ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Procesando Excel Maestro...</span>
-                    </>
-                  ) : excelDownloaded ? (
-                    <>
-                      <CheckCircle size={16} className="text-[#059669]" />
-                      <span>✓ Excel Maestro Descargado (Re-descargar)</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileSpreadsheet size={16} />
-                      <span>Descargar Excel Maestro (Auditoría #,##0.00)</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0284c7] hover:bg-[#0369a1] text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={calcLoading || exportingExcel || exportingPdf}
-                  onClick={async () => {
-                    await handleExportPDFV40();
-                  }}
-                >
-                  {exportingPdf ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Generando Reporte PDF...</span>
-                    </>
-                  ) : pdfDownloaded ? (
-                    <>
-                      <CheckCircle size={16} className="text-white" />
-                      <span>✓ Reporte PDF Descargado (Re-descargar)</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileText size={16} />
-                      <span>Descargar Reporte PDF Oficial</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-
-            {/* FASE 2: EJECUCIÓN OFICIAL EN BD */}
-            <div className="flex flex-col gap-3 border-t border-[#e2e8f0] dark:border-[#334155] pt-4">
-              <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                💾 Paso 2: Registro Oficial en Ledger y Persistencia DB
-              </h4>
-
-              {registerSuccessMsg && (
-                <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-start gap-3">
-                  <CheckCircle className="text-[#059669] dark:text-[#34d399] shrink-0" size={18} />
-                  <p className="text-xs font-bold text-[#059669] dark:text-[#34d399] leading-relaxed">
-                    {registerSuccessMsg}
-                  </p>
-                </div>
-              )}
-
-              {collisionCount > 0 ? (
-                <div className="bg-[#ecfdf5] dark:bg-[#059669]/10 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-[#059669] dark:text-[#34d399] text-xs font-bold">
-                    <ShieldCheck size={18} />
-                    <span>PERÍODO OFICIALIZADO: Los {collisionCount} asientos ya se encuentran registrados en Supabase.</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">
-                    Protección contra duplicados activa
+            {/* GRID DE 3 COLUMNAS HORIZONTALES (WORKFLOW COMPACTO) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+              
+              {/* COLUMNA 1: CONFIGURACIÓN DEL CORTE */}
+              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
+                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                    1. Filtros del Período
+                  </span>
+                  <span className="text-[9.5px] font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
+                    Configuración
                   </span>
                 </div>
-              ) : (
-                <div className="bg-[#ecfdf5] dark:bg-[#059669]/10 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-2 text-[#059669] dark:text-[#34d399] text-xs font-bold">
-                    <CheckCircle size={18} />
-                    <span>Período abierto ({fEnd}): Listo para registrar los asientos oficiales en la base de datos.</span>
+
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Liquidar</label>
+                    <select
+                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
+                      value={v40SelFondo}
+                      onChange={(e) => setV40SelFondo(e.target.value)}
+                    >
+                      <option value="TODOS">TODOS LOS FONDOS</option>
+                      {fondosDisponibles.map(f => (
+                        <option key={f.id_fondo} value={f.id_fondo}>{f.nombre_fondo}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Ciclo</label>
+                      <select
+                        className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
+                        value={v40SelCiclo}
+                        onChange={(e) => setV40SelCiclo(e.target.value as any)}
+                      >
+                        <option value="Bimestre">Bimestre</option>
+                        <option value="Trimestre">Trimestre</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">N° Período</label>
+                      <select
+                        className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
+                        value={v40SelNum}
+                        onChange={(e) => setV40SelNum(Number(e.target.value))}
+                      >
+                        {v40SelCiclo === 'Bimestre' ? (
+                          <>
+                            <option value={1}>1: Ene-Feb (Feb 28)</option>
+                            <option value={2}>2: Mar-Abr (Abr 30)</option>
+                            <option value={3}>3: May-Jun (Jun 30)</option>
+                            <option value={4}>4: Jul-Ago (Ago 31)</option>
+                            <option value={5}>5: Sep-Oct (Oct 31)</option>
+                            <option value={6}>6: Nov-Dic (Dic 31)</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value={1}>1: Ene-Mar (Mar 31)</option>
+                            <option value={2}>2: Abr-Jun (Jun 30)</option>
+                            <option value={3}>3: Jul-Sep (Sep 30)</option>
+                            <option value={4}>4: Oct-Dic (Dic 31)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-right">
+                  Corte: <strong className="text-[#0284c7] dark:text-[#38bdf8]">{fEnd}</strong>
+                </div>
+              </div>
+
+              {/* COLUMNA 2: PASO 1 · AUDITORÍA & REPORTES */}
+              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
+                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                    2. Auditoría & Reportes
+                  </span>
+                  <span className="text-[9.5px] font-mono font-bold text-[#059669] dark:text-[#34d399]">
+                    Pre-Cierre
+                  </span>
+                </div>
+
+                {/* Banners de Progreso si están activos */}
+                {exportingExcel && (
+                  <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-2 flex items-center gap-2 animate-pulse">
+                    <Loader2 size={14} className="animate-spin text-[#059669]" />
+                    <span className="text-[10.5px] font-black text-[#059669]">Compilando Excel...</span>
+                  </div>
+                )}
+                {exportingPdf && (
+                  <div className="bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 rounded-xl p-2 flex items-center gap-2 animate-pulse">
+                    <Loader2 size={14} className="animate-spin text-[#0284c7]" />
+                    <span className="text-[10.5px] font-black text-[#0284c7]">Generando PDF...</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
                   <button
-                    className="h-10 text-xs font-black uppercase tracking-wider bg-[#059669] hover:bg-[#047857] text-white px-6 rounded-xl cursor-pointer shadow-xs transition-all flex items-center gap-2"
-                    onClick={() => {
-                      setRegisterConfirmText('');
-                      setRegisterModalOpen(true);
+                    className="h-10 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] transition-all disabled:opacity-60"
+                    disabled={calcLoading || exportingExcel || exportingPdf}
+                    onClick={async () => {
+                      await handleExportExcelV40WithProgress();
                     }}
-                    disabled={officialRegisterLoading}
                   >
-                    {officialRegisterLoading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                    <span>Registrar Asientos en Base de Datos</span>
+                    {exportingExcel ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : excelDownloaded ? (
+                      <CheckCircle size={15} className="text-[#059669]" />
+                    ) : (
+                      <FileSpreadsheet size={15} />
+                    )}
+                    <span>{excelDownloaded ? '✓ Excel Maestro Listo' : 'Descargar Excel Maestro'}</span>
+                  </button>
+
+                  <button
+                    className="h-10 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0284c7] hover:bg-[#0369a1] text-white transition-all disabled:opacity-60"
+                    disabled={calcLoading || exportingExcel || exportingPdf}
+                    onClick={async () => {
+                      await handleExportPDFV40();
+                    }}
+                  >
+                    {exportingPdf ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : pdfDownloaded ? (
+                      <CheckCircle size={15} className="text-white" />
+                    ) : (
+                      <FileText size={15} />
+                    )}
+                    <span>{pdfDownloaded ? '✓ Reporte PDF Listo' : 'Descargar Reporte PDF'}</span>
                   </button>
                 </div>
-              )}
 
-              {/* Herramienta de Rollback */}
-              <div className="flex items-center justify-between border-t border-[#e2e8f0] dark:border-[#334155] pt-3 mt-1">
-                <button
-                  className="h-9 text-xs font-bold bg-white dark:bg-[#1e293b] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] rounded-xl px-4 flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
-                  onClick={handleOpenRollbackModal}
-                >
-                  <Undo2 size={14} />
-                  <span>Reversión / Rollback Seguro del Período</span>
-                </button>
-
-                <span className="text-[10.5px] font-semibold text-[#64748b] dark:text-[#94a3b8]">
-                  Permite reabrir el período eliminando los asientos de la fecha de corte seleccionada.
-                </span>
+                <p className="text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-medium leading-tight">
+                  Audite los montos antes de la oficialización en base de datos.
+                </p>
               </div>
+
+              {/* COLUMNA 3: PASO 2 · OFICIALIZACIÓN & ROLLBACK */}
+              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
+                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                    3. Persistencia en Base de Datos
+                  </span>
+                  <span className="text-[9.5px] font-mono font-bold text-[#e11d48] dark:text-[#fb7185]">
+                    Oficialización
+                  </span>
+                </div>
+
+                {registerSuccessMsg && (
+                  <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-2 flex items-center gap-1.5">
+                    <CheckCircle className="text-[#059669]" size={14} />
+                    <span className="text-[10px] font-bold text-[#059669]">{registerSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  {collisionCount > 0 ? (
+                    <div className="h-10 rounded-xl bg-[#ecfdf5] dark:bg-[#059669]/10 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] flex items-center justify-center gap-1.5 text-xs font-black uppercase">
+                      <ShieldCheck size={16} />
+                      <span>Período Oficializado</span>
+                    </div>
+                  ) : (
+                    <button
+                      className="h-10 text-xs font-black uppercase tracking-wider bg-[#059669] hover:bg-[#047857] text-white rounded-xl cursor-pointer shadow-xs transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                      onClick={() => {
+                        setRegisterConfirmText('');
+                        setRegisterModalOpen(true);
+                      }}
+                      disabled={officialRegisterLoading}
+                    >
+                      {officialRegisterLoading ? <Loader2 size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
+                      <span>Oficializar en Base de Datos</span>
+                    </button>
+                  )}
+
+                  {/* Botón Rollback */}
+                  <button
+                    className="h-8 text-[11px] font-bold bg-white dark:bg-[#1e293b] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    onClick={handleOpenRollbackModal}
+                  >
+                    <Undo2 size={13} />
+                    <span>Reversión / Rollback del Período</span>
+                  </button>
+                </div>
+
+                <p className="text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-medium leading-tight">
+                  {collisionCount > 0 ? 'Protección activa contra duplicidad.' : 'Reversión disponible si requiere recalcular.'}
+                </p>
+              </div>
+
             </div>
 
           </div>
