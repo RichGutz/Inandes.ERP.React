@@ -1478,47 +1478,62 @@ export const InversionistasPage: React.FC = () => {
       {activeSubTab === 'retornos_react' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (VISIÓN DE ESTADO GLOBAL) Estilo APEFAC */}
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
-                <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                  📅 Tablero Anual de Cierres ({v40SelYear})
-                </h3>
+          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (CALENDARIO DE CIERRES EJECUTIVO APEFAC) */}
+          <div className="glass-card p-6 flex flex-col gap-5 border-l-4 border-l-[#0284c7]">
+            
+            {/* Header del Calendario y Selector de Año */}
+            <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-[#e2e8f0] dark:border-[#334155]">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0284c7]/30 shadow-xs flex items-center justify-center">
+                  <Calendar size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2">
+                    <span>Cronograma Anual de Cierres & Liquidaciones</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/20 dark:text-[#38bdf8] border border-[#bae6fd]">
+                      {v40SelYear}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold mt-0.5">
+                    Seleccione el período contable bimestral (B1-B6) o trimestral (Q1-Q4) para auditar y oficializar rendimientos.
+                  </p>
+                </div>
               </div>
 
-              {/* Selector de Año */}
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Año:</span>
-                <select
-                  className="bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                  value={v40SelYear}
-                  onChange={(e) => setV40SelYear(Number(e.target.value))}
-                >
-                  <option value={2024}>2024</option>
-                  <option value={2025}>2025</option>
-                  <option value={2026}>2026</option>
-                  <option value={2027}>2027</option>
-                </select>
+              {/* Selector de Año con Pill Buttons */}
+              <div className="flex items-center gap-1.5 bg-[#f8fafc] dark:bg-[#0b0f19] p-1 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                {[2024, 2025, 2026, 2027].map(year => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => setV40SelYear(year)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                      v40SelYear === year
+                        ? 'bg-[#0284c7] text-white shadow-xs'
+                        : 'text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc] hover:bg-white dark:hover:bg-[#1e293b]'
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Grid de 12 Meses (Ene - Dic) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Grid de 12 Meses Ejecutivo (Ene - Dic) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
               {[
-                { m: 1, name: 'Enero', cycle: null, label: 'Sin cierres', funds: [] },
-                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 1, cType: 'Bimestre' },
-                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', funds: ['NSLCON01'], cNum: 1, cType: 'Trimestre' },
-                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 2, cType: 'Bimestre' },
-                { m: 5, name: 'Mayo', cycle: null, label: 'Sin cierres', funds: [] },
-                { m: 6, name: 'Junio', cycle: 'B3/Q2', label: 'Bimestre 3 / Q2', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 3, cType: 'Bimestre' },
-                { m: 7, name: 'Julio', cycle: null, label: 'Sin cierres', funds: [] },
-                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 4, cType: 'Bimestre' },
-                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', funds: ['NSLCON01'], cNum: 3, cType: 'Trimestre' },
-                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 5, cType: 'Bimestre' },
-                { m: 11, name: 'Noviembre', cycle: null, label: 'Sin cierres', funds: [] },
-                { m: 12, name: 'Diciembre', cycle: 'B6/Q4', label: 'Bimestre 6 / Q4', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 6, cType: 'Bimestre' }
+                { m: 1, name: 'Enero', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
+                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', funds: ['NSGPEN', 'NSGUSD'], cNum: 1, cType: 'Bimestre' },
+                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', funds: ['NSLCON'], cNum: 1, cType: 'Trimestre' },
+                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', funds: ['NSGPEN', 'NSGUSD'], cNum: 2, cType: 'Bimestre' },
+                { m: 5, name: 'Mayo', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
+                { m: 6, name: 'Junio', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', funds: ['NSGPEN', 'NSGUSD', 'NSLCON'], cNum: 3, cType: 'Bimestre' },
+                { m: 7, name: 'Julio', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
+                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', funds: ['NSGPEN', 'NSGUSD'], cNum: 4, cType: 'Bimestre' },
+                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', funds: ['NSLCON'], cNum: 3, cType: 'Trimestre' },
+                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', funds: ['NSGPEN', 'NSGUSD'], cNum: 5, cType: 'Bimestre' },
+                { m: 11, name: 'Noviembre', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
+                { m: 12, name: 'Diciembre', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', funds: ['NSGPEN', 'NSGUSD', 'NSLCON'], cNum: 6, cType: 'Bimestre' }
               ].map(item => {
                 // Verificar si este mes tiene cierres guardados en DB
                 let isClosedInDb = false;
@@ -1531,6 +1546,7 @@ export const InversionistasPage: React.FC = () => {
                 else if (item.m === 10) isClosedInDb = (cycleDashboard.B?.[5]?.length || 0) > 0;
                 else if (item.m === 12) isClosedInDb = (cycleDashboard.B?.[6]?.length || 0) > 0;
 
+                const hasCycle = item.funds.length > 0;
                 const isSelected = (item.cType === v40SelCiclo && item.cNum === v40SelNum);
 
                 return (
@@ -1542,46 +1558,80 @@ export const InversionistasPage: React.FC = () => {
                         setV40SelNum(item.cNum);
                       }
                     }}
-                    className={`rounded-xl p-3 border transition-all flex flex-col justify-between min-h-[110px] ${
-                      item.funds.length === 0
-                        ? 'bg-slate-50/60 dark:bg-slate-950/40 border-[#e2e8f0] dark:border-[#334155] opacity-60'
+                    className={`rounded-2xl p-4 border transition-all flex flex-col justify-between min-h-[145px] relative overflow-hidden ${
+                      !hasCycle
+                        ? 'bg-slate-50/40 dark:bg-slate-900/20 border-dashed border-[#e2e8f0] dark:border-[#334155] opacity-50'
                         : isSelected
-                        ? 'bg-white dark:bg-[#1e293b] border-[#0284c7] shadow-md ring-2 ring-[#0284c7]/30'
-                        : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] cursor-pointer'
+                        ? 'bg-white dark:bg-[#1e293b] border-[#0284c7] shadow-lg shadow-[#0284c7]/15 ring-2 ring-[#0284c7]/40 scale-[1.02] cursor-pointer'
+                        : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] hover:shadow-md cursor-pointer'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc]">{item.name}</span>
-                      {item.funds.length > 0 && (
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
+                    {/* Borde decorativo superior activo */}
+                    {isSelected && (
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0284c7] to-[#4f46e5]" />
+                    )}
+
+                    {/* Cabecera del Mes */}
+                    <div className="flex items-start justify-between gap-1">
+                      <div>
+                        <span className="text-[11px] font-mono text-[#64748b] dark:text-[#94a3b8] font-bold block">
+                          MES {String(item.m).padStart(2, '0')}
+                        </span>
+                        <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wide">
+                          {item.name}
+                        </span>
+                      </div>
+
+                      {hasCycle && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase shadow-xs ${
                           isClosedInDb
-                            ? 'bg-[#ecfdf5] text-[#059669] dark:bg-[#059669]/20 dark:text-[#34d399] border border-[#a7f3d0] dark:border-[#059669]/40'
-                            : 'bg-[#fef2f2] text-[#e11d48] dark:bg-[#e11d48]/20 dark:text-[#fb7185] border border-[#fecdd3] dark:border-[#e11d48]/40'
+                            ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-[#059669]/20 dark:text-[#34d399]'
+                            : 'bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-[#d97706]/20 dark:text-[#fbbf24]'
                         }`}>
-                          {isClosedInDb ? '🟢 CERRADO' : '🔴 PENDIENTE'}
+                          {isClosedInDb ? '● CERRADO' : '● ABIERTO'}
                         </span>
                       )}
                     </div>
 
-                    <div className="mt-2">
-                      {item.funds.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {item.funds.map(f => (
-                            <span key={f} className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
-                              isClosedInDb ? 'bg-[#059669] text-white' : 'bg-[#e11d48] text-white'
-                            }`}>
-                              {f.slice(3, 6)}
+                    {/* Ciclo y Badges de Fondos */}
+                    <div className="my-2 flex flex-col gap-1.5">
+                      {hasCycle ? (
+                        <>
+                          <div className="flex items-center justify-between text-[10.5px]">
+                            <span className="font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
+                              {item.cycle}
                             </span>
-                          ))}
-                        </div>
+                            <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
+                              {item.corte}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1">
+                            {item.funds.map(f => (
+                              <span 
+                                key={f} 
+                                className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1] border border-slate-200 dark:border-slate-700"
+                              >
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-[9px] font-semibold text-slate-400 italic">Sin cierres</span>
+                        <div className="py-2 text-center text-[10px] font-medium text-slate-400 italic">
+                          Sin cierres
+                        </div>
                       )}
                     </div>
 
-                    <div className="mt-2 border-t border-[#e2e8f0] dark:border-[#334155] pt-1.5 flex justify-between items-center text-[9px] text-[#64748b] dark:text-[#94a3b8] font-bold">
+                    {/* Footer del Mes */}
+                    <div className="border-t border-[#e2e8f0] dark:border-[#334155] pt-1.5 flex justify-between items-center text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-bold">
                       <span>{item.label}</span>
-                      {item.funds.length > 0 && <span>{item.funds.length} fond.</span>}
+                      {hasCycle && (
+                        <span className="font-mono text-[#0284c7] dark:text-[#38bdf8]">
+                          {isSelected ? '✓ Activo' : 'Seleccionar'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -1590,7 +1640,7 @@ export const InversionistasPage: React.FC = () => {
           </div>
 
           {/* SECCIÓN 2: PANEL OPERATIVO DE LIQUIDACIÓN Y AUDITORÍA Estilo APEFAC */}
-          <div className="glass-card p-5 flex flex-col gap-5">
+          <div className="glass-card p-6 flex flex-col gap-6">
             
             {/* Header del Panel y Modo Activo */}
             <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#e2e8f0] dark:border-[#334155] pb-4">
