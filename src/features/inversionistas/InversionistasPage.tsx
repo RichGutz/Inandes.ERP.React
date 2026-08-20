@@ -9,7 +9,8 @@ import * as XLSX from 'xlsx';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, 
-  ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download
+  ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download,
+  LayoutGrid, List
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
@@ -40,6 +41,7 @@ export const InversionistasPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+  const [dataViewMode, setDataViewMode] = useState<'cards' | 'table'>('cards');
 
   const ALPHABET_AZ = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
 
@@ -1300,6 +1302,36 @@ export const InversionistasPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Switcher de Vista: Tarjetas vs Tabla */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setDataViewMode('cards')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    dataViewMode === 'cards'
+                      ? 'bg-white dark:bg-[#1e293b] text-[#0284c7] dark:text-[#38bdf8] shadow-xs'
+                      : 'text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a]'
+                  }`}
+                  title="Vista de Tarjetas Compactas"
+                >
+                  <LayoutGrid size={14} />
+                  <span className="hidden sm:inline">Tarjetas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataViewMode('table')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    dataViewMode === 'table'
+                      ? 'bg-white dark:bg-[#1e293b] text-[#0284c7] dark:text-[#38bdf8] shadow-xs'
+                      : 'text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a]'
+                  }`}
+                  title="Vista de Tabla DataGrid"
+                >
+                  <List size={14} />
+                  <span className="hidden sm:inline">Tabla</span>
+                </button>
+              </div>
+
               <button 
                 className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer shadow-xs transition-all"
                 onClick={() => handleOpenEditModal(null)}
@@ -1353,10 +1385,10 @@ export const InversionistasPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Listado en Tarjetas Premium */}
+          {/* Listado en Tarjetas Ultra-Compactas o Tabla Ejecutiva */}
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-              <Loader2 className="animate-spin text-emerald-600" size={40} />
+              <Loader2 className="animate-spin text-[#0284c7]" size={40} />
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cargando partícipes desde Supabase...</p>
             </div>
           ) : error ? (
@@ -1365,114 +1397,216 @@ export const InversionistasPage: React.FC = () => {
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">Fallo de Conexión</h3>
               <p className="text-xs text-slate-450 dark:text-slate-400 leading-relaxed">{error}</p>
               <button 
-                className="mt-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer" 
+                className="mt-2 text-xs bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer" 
                 onClick={fetchDatos}
               >
                 Reintentar Conexión SSL
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
-              {filteredInversionistas.length > 0 ? (
-                filteredInversionistas.map((inv) => {
-                  const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
-                  const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
-                  
-                  return (
-                    <div 
-                      key={inv.id}
-                      className="glass-card p-5 hover:scale-[1.01] transition-all flex flex-col justify-between gap-4"
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Avatar con Gradiente APEFAC */}
+          ) : filteredInversionistas.length === 0 ? (
+            <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
+              No se encontraron inversionistas registrados.
+            </div>
+          ) : dataViewMode === 'cards' ? (
+            /* VISTA 1: TARJETAS ULTRA-COMPACTAS EJECUTIVAS APEFAC */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+              {filteredInversionistas.map((inv) => {
+                const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
+                const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
+                const state = inv.estado_compliance || 'borrador';
+                
+                let stateStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
+                if (state === 'aprobado') {
+                  stateStyle = 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30';
+                } else if (state === 'solicitado') {
+                  stateStyle = 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30';
+                } else if (state === 'rechazado') {
+                  stateStyle = 'bg-[#fff1f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30';
+                }
+                
+                return (
+                  <div 
+                    key={inv.id}
+                    className="glass-card p-3.5 hover:border-[#0284c7] hover:shadow-md transition-all flex flex-col justify-between gap-2.5 rounded-2xl group relative"
+                  >
+                    {/* Fila 1: Avatar, Nombre, DNI y Badge + Edit */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Avatar */}
                         <div 
-                          className="h-10 w-10 rounded-xl text-white font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-xs"
+                          className="h-8 w-8 rounded-xl text-white font-mono font-black text-[11px] flex items-center justify-center shrink-0 shadow-xs"
                           style={{ background: 'linear-gradient(135deg, #0284c7 0%, #4f46e5 100%)' }}
                         >
                           {initials}
                         </div>
 
-                        {/* Detalle */}
+                        {/* Nombre & Documento */}
                         <div className="flex flex-col min-w-0">
-                          <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider truncate leading-snug" title={cleanName}>
+                          <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-tight truncate leading-tight" title={cleanName}>
                             {cleanName}
                           </h4>
-                          <span className="text-[10px] font-bold text-[#0284c7] dark:text-[#38bdf8] font-mono tracking-wider mt-0.5">
-                            🆔 {inv.documento_identidad} ({inv.tipo_doc})
+                          <span className="text-[10px] font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] mt-0.5">
+                            🆔 {inv.documento_identidad || 'Sin Doc'} {inv.tipo_doc ? `(${inv.tipo_doc})` : ''}
                           </span>
                         </div>
                       </div>
 
-                      {/* Contacto & Cuentas */}
-                      <div className="flex flex-col gap-2 py-1 border-t border-[#e2e8f0] dark:border-[#334155] mt-1">
-                        <div className="flex justify-between items-center text-[10px] text-[#64748b] dark:text-[#94a3b8]">
-                          <span className="font-semibold truncate max-w-[180px]">{inv.email || 'Sin correo'}</span>
-                          <span className="font-mono">{inv.telefono || 'Sin telf'}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mt-1">
-                          {/* Cuentas Soles */}
-                          <div className="flex flex-col">
-                            <span className="text-[8px] uppercase font-bold text-[#64748b] dark:text-[#94a3b8]">PEN</span>
-                            <span className="text-[10px] font-bold text-[#0f172a] dark:text-[#f8fafc] font-mono truncate max-w-[100px]">
-                              {inv.banco_nombre_pen ? inv.banco_nombre_pen : <span className="text-slate-300 dark:text-slate-700">-</span>}
-                            </span>
-                          </div>
-
-                          {/* Cuentas Dólares */}
-                          <div className="flex flex-col">
-                            <span className="text-[8px] uppercase font-bold text-[#64748b] dark:text-[#94a3b8]">USD</span>
-                            <span className="text-[10px] font-bold text-[#0f172a] dark:text-[#f8fafc] font-mono truncate max-w-[100px]">
-                              {inv.banco_nombre_usd ? inv.banco_nombre_usd : <span className="text-slate-300 dark:text-slate-700">-</span>}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Compliance & Acciones */}
-                      <div className="flex items-center justify-between border-t border-[#e2e8f0] dark:border-[#334155] pt-3 mt-1">
-                        <div>
-                          {(() => {
-                            const state = inv.estado_compliance || 'borrador';
-                            let style = '';
-                            if (state === 'aprobado') {
-                              style = 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30';
-                            } else if (state === 'solicitado') {
-                              style = 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30';
-                            } else if (state === 'rechazado') {
-                              style = 'bg-[#fef2f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30';
-                            } else {
-                              style = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
-                            }
-                            return (
-                              <span className={`inline-flex px-2 py-0.5 rounded text-[8px] font-black tracking-wider uppercase border ${style}`}>
-                                {state}
-                              </span>
-                            );
-                          })()}
-                        </div>
-
+                      {/* Estado & Botón Editar */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-mono font-black tracking-wider uppercase border ${stateStyle}`}>
+                          {state}
+                        </span>
                         <button
-                          className="h-7 text-[10px] font-bold flex items-center gap-1 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] hover:text-[#0284c7] hover:border-[#bae6fd] text-[#475569] dark:text-[#cbd5e1] transition-colors cursor-pointer shadow-xs"
+                          className="p-1.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] hover:text-[#0284c7] hover:border-[#bae6fd] text-[#64748b] dark:text-[#94a3b8] transition-colors cursor-pointer shadow-xs"
                           onClick={() => handleOpenEditModal(inv)}
+                          title="Editar Ficha"
                         >
-                          <Edit2 size={10} />
-                          <span>Editar Ficha</span>
+                          <Edit2 size={11} />
                         </button>
                       </div>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900">
-                  No se encontraron inversionistas registrados.
-                </div>
-              )}
+
+                    {/* Fila 2: Chips Compactos de Contacto y Bancos */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#e2e8f0] dark:border-[#334155] text-[10px]">
+                      <div className="flex items-center gap-1.5 text-[#64748b] dark:text-[#94a3b8] truncate min-w-0">
+                        <span className="truncate max-w-[140px]" title={inv.email || 'Sin correo'}>
+                          ✉️ {inv.email || 'Sin correo'}
+                        </span>
+                        {inv.telefono && (
+                          <span className="font-mono text-[#0f172a] dark:text-[#f8fafc] shrink-0 font-bold">
+                            • 📞 {inv.telefono}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Bancos */}
+                      <div className="flex items-center gap-1 shrink-0 font-mono text-[9px]">
+                        {inv.banco_nombre_pen && (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0f172a] dark:text-[#f8fafc] font-bold border border-slate-200 dark:border-slate-700">
+                            S/ {inv.banco_nombre_pen}
+                          </span>
+                        )}
+                        {inv.banco_nombre_usd && (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0284c7] dark:text-[#38bdf8] font-bold border border-slate-200 dark:border-slate-700">
+                            $ {inv.banco_nombre_usd}
+                          </span>
+                        )}
+                        {!inv.banco_nombre_pen && !inv.banco_nombre_usd && (
+                          <span className="text-slate-400 italic text-[8.5px]">Sin bancos</span>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* VISTA 2: TABLA DATAGRID EJECUTIVA APEFAC */
+            <div className="glass-card overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0b0f19] text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
+                      <th className="py-3 px-4">Partícipe / Razón Social</th>
+                      <th className="py-3 px-4">Documento</th>
+                      <th className="py-3 px-4">Email & Teléfono</th>
+                      <th className="py-3 px-4">Cuentas Bancarias</th>
+                      <th className="py-3 px-4 text-center">Compliance</th>
+                      <th className="py-3 px-4 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e2e8f0] dark:divide-[#334155] text-xs">
+                    {filteredInversionistas.map((inv) => {
+                      const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
+                      const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
+                      const state = inv.estado_compliance || 'borrador';
+                      
+                      let stateStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
+                      if (state === 'aprobado') {
+                        stateStyle = 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30';
+                      } else if (state === 'solicitado') {
+                        stateStyle = 'bg-[#fffbeb] dark:bg-[#d97706]/15 text-[#d97706] dark:text-[#fbbf24] border-[#fde68a] dark:border-[#d97706]/30';
+                      } else if (state === 'rechazado') {
+                        stateStyle = 'bg-[#fff1f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30';
+                      }
+
+                      return (
+                        <tr key={inv.id} className="table-row-hover">
+                          {/* Partícipe */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div 
+                                className="h-7 w-7 rounded-lg text-white font-mono font-black text-[10px] flex items-center justify-center shrink-0 shadow-xs"
+                                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #4f46e5 100%)' }}
+                              >
+                                {initials}
+                              </div>
+                              <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] uppercase truncate max-w-[220px]" title={cleanName}>
+                                {cleanName}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Documento */}
+                          <td className="py-3 px-4 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
+                            {inv.documento_identidad || '-'} <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-normal">({inv.tipo_doc || 'DNI'})</span>
+                          </td>
+
+                          {/* Contacto */}
+                          <td className="py-3 px-4 text-[#64748b] dark:text-[#94a3b8]">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="truncate max-w-[200px]" title={inv.email || ''}>{inv.email || 'Sin correo'}</span>
+                              <span className="font-mono text-[10px] text-[#0f172a] dark:text-[#f8fafc] font-bold">{inv.telefono || '-'}</span>
+                            </div>
+                          </td>
+
+                          {/* Bancos */}
+                          <td className="py-3 px-4 font-mono text-[10px]">
+                            <div className="flex flex-wrap gap-1">
+                              {inv.banco_nombre_pen && (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0f172a] dark:text-[#f8fafc] font-bold border border-slate-200 dark:border-slate-700">
+                                  PEN: {inv.banco_nombre_pen}
+                                </span>
+                              )}
+                              {inv.banco_nombre_usd && (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0284c7] dark:text-[#38bdf8] font-bold border border-slate-200 dark:border-slate-700">
+                                  USD: {inv.banco_nombre_usd}
+                                </span>
+                              )}
+                              {!inv.banco_nombre_pen && !inv.banco_nombre_usd && (
+                                <span className="text-slate-400 italic">Sin cuentas</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Compliance */}
+                          <td className="py-3 px-4 text-center">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-[8.5px] font-mono font-black tracking-wider uppercase border ${stateStyle}`}>
+                              {state}
+                            </span>
+                          </td>
+
+                          {/* Acción */}
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              className="h-7 text-[10.5px] font-bold inline-flex items-center gap-1.5 px-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] hover:text-[#0284c7] hover:border-[#bae6fd] text-[#475569] dark:text-[#cbd5e1] transition-colors cursor-pointer shadow-xs"
+                              onClick={() => handleOpenEditModal(inv)}
+                            >
+                              <Edit2 size={11} />
+                              <span>Editar</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
       )}
-
 
       {/* --- NUEVA PESTAÑA: RETORNOS Y RENDIMIENTOS REACT (APROBADO) --- */}
       {activeSubTab === 'retornos_react' && (
