@@ -130,8 +130,8 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
           <table class="data-table">
             <thead>
               <tr>
-                <th class="text-center" style="width: 22px;">#</th>
-                <th style="width: 140px;">CERTIFICADO</th>
+                <th class="text-center" style="width: 20px;">#</th>
+                <th style="width: 135px;">CERTIFICADO</th>
                 <th>INVERSIONISTA</th>
                 <th class="text-right">CAPITAL BASE</th>
                 <th class="text-right">INT. BRUTO</th>
@@ -143,6 +143,7 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                 <th class="text-right">PENALID.</th>
                 <th class="text-right">NETO FINAL</th>
                 <th class="text-right">RESCATES</th>
+                <th class="text-right">TRANSFER.</th>
                 <th class="text-right">CAPITAL FINAL</th>
               </tr>
             </thead>
@@ -165,8 +166,13 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
+                    <td class="text-right">-</td>
                   </tr>`;
                 }
+
+                const rNetoFinal = r.neto_total !== undefined ? r.neto_total : ((r.reparto_valor || 0) - (r.deducciones_total || 0));
+                const rRescatesNetos = (r.devolucion_capital || 0) - (r.penalidad_rescate || 0);
+                const rTransferencia = rNetoFinal + rRescatesNetos;
 
                 return `
                 <tr>
@@ -181,13 +187,19 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                   <td class="text-right" style="color: #059669; font-weight: 700;">${fmtNum(r.reparto_valor)}</td>
                   <td class="text-right">${fmtNum(r.deducciones_total)}</td>
                   <td class="text-right" style="color: #e11d48; font-weight: 700;">${fmtNum(r.penalidad_rescate)}</td>
-                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.neto_total || (r.reparto_valor - (r.deducciones_total || 0)))}</td>
+                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(rNetoFinal)}</td>
                   <td class="text-right" style="color: #dc2626; font-weight: 700;">${fmtNum(r.devolucion_capital)}</td>
+                  <td class="text-right" style="color: #059669; font-weight: 900;">${fmtNumZero(rTransferencia)}</td>
                   <td class="text-right" style="color: #1e3a8a; font-weight: 800;">${fmtNumZero(r.capital_final)}</td>
                 </tr>`;
               }).join('')}
 
-              ${isLastSubPage ? `
+              ${isLastSubPage ? (() => {
+                const totNetoFinal = totals.neto_total !== undefined ? totals.neto_total : ((totals.reparto_valor || 0) - (totals.deducciones_total || 0));
+                const totRescatesNetos = (totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0);
+                const totTransferencia = totNetoFinal + totRescatesNetos;
+
+                return `
                 <tr class="totals-row">
                   <td colspan="3" class="text-center">TOTALES ${fData.fondo.id_fondo} (${moneda})</td>
                   <td class="text-right">${fmtNumZero(totals.capital)}</td>
@@ -198,11 +210,13 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                   <td class="text-right">${fmtNum(totals.reparto_valor)}</td>
                   <td class="text-right">${fmtNum(totals.deducciones_total)}</td>
                   <td class="text-right">${fmtNum(totals.penalidad_rescate)}</td>
-                  <td class="text-right">${fmtNumZero(totals.neto_total || (totals.reparto_valor - (totals.deducciones_total || 0)))}</td>
+                  <td class="text-right">${fmtNumZero(totNetoFinal)}</td>
                   <td class="text-right">${fmtNum(totals.devolucion_capital)}</td>
+                  <td class="text-right" style="font-weight: 900; color: #059669;">${fmtNumZero(totTransferencia)}</td>
                   <td class="text-right">${fmtNumZero(totals.capital_final)}</td>
                 </tr>
-              ` : ''}
+              `;
+              })() : ''}
             </tbody>
           </table>
 
@@ -277,18 +291,18 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
 
           /* Tabla Contable Bello - Exacto 25 Filas por Hoja */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 6.8pt; line-height: 1.15;
+            width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 6.4pt; line-height: 1.12;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 6.2pt; padding: 4px 2px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.1px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.9pt; padding: 3.5px 1.5px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 1px solid #cbd5e1; padding: 2.5px 2.5px; vertical-align: middle;
+            border: 1px solid #cbd5e1; padding: 2px 2px; vertical-align: middle;
           }
           table.data-table tr:nth-child(even) { background-color: #f8fafc; }
           table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
           table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #059669; border-bottom: 3px double #059669; }
-          table.data-table tr.totals-row td { color: #064e3b; font-size: 7.2pt; font-weight: 900; }
+          table.data-table tr.totals-row td { color: #064e3b; font-size: 6.8pt; font-weight: 900; }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
 
