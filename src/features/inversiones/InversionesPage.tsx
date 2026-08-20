@@ -11,7 +11,7 @@ import { generateContractHtml, generateCertificateHtml } from '../../utils/contr
 import { calculateContractCycleDates } from '../../utils/contractCycleEngine';
 import * as XLSX from 'xlsx';
 import { 
-  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check, Search, X, Users
+  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check, Search, X, Users, Pencil
 } from 'lucide-react';
 
 export const InversionesPage: React.FC = () => {
@@ -35,6 +35,13 @@ export const InversionesPage: React.FC = () => {
   // Estados del Contrato seleccionado
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [selectedContract, setSelectedContract] = useState<Contrato | null>(null);
+
+  // Estados para Edición Rápida de % Reparto
+  const [editRepartoModalOpen, setEditRepartoModalOpen] = useState<boolean>(false);
+  const [contractToEditReparto, setContractToEditReparto] = useState<Contrato | null>(null);
+  const [editRepartoValue, setEditRepartoValue] = useState<number>(100);
+  const [editRepartoSaving, setEditRepartoSaving] = useState<boolean>(false);
+  const [editRepartoSuccessMsg, setEditRepartoSuccessMsg] = useState<string | null>(null);
 
   // ==========================================
   // --- ESTADOS DEL FORMULARIO DE BORRADOR ---
@@ -669,6 +676,50 @@ export const InversionesPage: React.FC = () => {
     setView('active');
   };
 
+  // ==========================================
+  // --- EDICIÓN RÁPIDA DE % DE REPARTO -------
+  // ==========================================
+  const handleOpenEditReparto = (c: Contrato) => {
+    setContractToEditReparto(c);
+    // Si porcentaje_reparto es 0, dejamos 0; si es > 0, dejamos 100
+    const currentRep = (c.porcentaje_reparto === 0) ? 0 : 100;
+    setEditRepartoValue(currentRep);
+    setEditRepartoSuccessMsg(null);
+    setEditRepartoModalOpen(true);
+  };
+
+  const handleSaveEditReparto = async () => {
+    if (!contractToEditReparto) return;
+    try {
+      setEditRepartoSaving(true);
+      const { error } = await supabase
+        .from('crm_contratos')
+        .update({ porcentaje_reparto: editRepartoValue })
+        .eq('id_contrato', contractToEditReparto.id_contrato);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setContratos(prev => prev.map(item => 
+        item.id_contrato === contractToEditReparto.id_contrato
+          ? { ...item, porcentaje_reparto: editRepartoValue }
+          : item
+      ));
+
+      setEditRepartoSuccessMsg('¡Porcentaje de reparto actualizado correctamente!');
+      setTimeout(() => {
+        setEditRepartoModalOpen(false);
+        setEditRepartoSuccessMsg(null);
+        setContractToEditReparto(null);
+      }, 1000);
+    } catch (err: any) {
+      console.error('Error al actualizar reparto:', err);
+      alert('Error al guardar: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setEditRepartoSaving(false);
+    }
+  };
+
   const getActiveContext = () => {
     if (!selectedContract || !funds.length) return null;
     const fundRow = funds.find(f => f.id_fondo === selectedContract.id_fondo);
@@ -1200,13 +1251,22 @@ export const InversionesPage: React.FC = () => {
                                   <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_inicio}</td>
                                   <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_fin}</td>
                                   <td className="px-4 py-3 text-center">
-                                    <button
-                                      className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1.5"
-                                      onClick={() => handleOpenActiveView(c)}
-                                    >
-                                      <Eye size={12} />
-                                      <span>Visualizar</span>
-                                    </button>
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        className="w-8 h-8 rounded-lg bg-[#f0f9ff] hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#38bdf8] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                        title="Visualizar Contrato"
+                                        onClick={() => handleOpenActiveView(c)}
+                                      >
+                                        <Eye size={14} />
+                                      </button>
+                                      <button
+                                        className="w-8 h-8 rounded-lg bg-[#ecfdf5] hover:bg-[#059669] text-[#059669] hover:text-white border border-[#a7f3d0] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#34d399] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                        title="Editar % de Reparto"
+                                        onClick={() => handleOpenEditReparto(c)}
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -1255,13 +1315,22 @@ export const InversionesPage: React.FC = () => {
                                 <td className="px-4 py-3 text-right font-mono font-bold text-[#475569] dark:text-[#cbd5e1] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
                                 <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_fin}</td>
                                 <td className="px-4 py-3 text-center">
-                                  <button
-                                    className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1.5"
-                                    onClick={() => handleOpenActiveView(c)}
-                                  >
-                                    <Eye size={12} />
-                                    <span>Visualizar</span>
-                                  </button>
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      className="w-8 h-8 rounded-lg bg-[#f0f9ff] hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#38bdf8] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                      title="Visualizar Contrato"
+                                      onClick={() => handleOpenActiveView(c)}
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                    <button
+                                      className="w-8 h-8 rounded-lg bg-[#ecfdf5] hover:bg-[#059669] text-[#059669] hover:text-white border border-[#a7f3d0] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#34d399] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                      title="Editar % de Reparto"
+                                      onClick={() => handleOpenEditReparto(c)}
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -2129,6 +2198,147 @@ export const InversionesPage: React.FC = () => {
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* --- MODAL EDICIÓN RÁPIDA DE % DE REPARTO - */}
+      {/* ========================================== */}
+      {editRepartoModalOpen && contractToEditReparto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-5 animate-scaleUp">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shadow-xs">
+                  <Pencil size={15} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc] tracking-wider">
+                    Editar % de Reparto
+                  </h3>
+                  <span className="text-[10px] font-mono text-[#0284c7] dark:text-[#38bdf8] font-bold">
+                    {contractToEditReparto.id_contrato}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditRepartoModalOpen(false)}
+                className="text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc] p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Contrato Info Card */}
+            <div className="bg-[#f8fafc] dark:bg-[#151e2e] border border-[#e2e8f0] dark:border-[#334155] p-3.5 rounded-xl flex flex-col gap-1.5 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-bold uppercase">Titular:</span>
+                <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] text-right truncate max-w-[240px]">
+                  {contractToEditReparto.titular?.nombre_completo || 'N/A'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-bold uppercase">Fondo:</span>
+                <span className="font-bold text-[#0284c7] text-right">
+                  {contractToEditReparto.crm_fondos?.nombre_fondo || contractToEditReparto.id_fondo}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-bold uppercase">Monto Inversión:</span>
+                <span className="font-mono font-black text-[#059669] dark:text-[#34d399]">
+                  {contractToEditReparto.moneda} {contractToEditReparto.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+
+            {/* Opciones Exclusivas: 100% o 0% */}
+            <div className="flex flex-col gap-2.5">
+              <label className="text-[10px] font-black uppercase text-[#64748b] dark:text-[#94a3b8] tracking-wider">
+                Seleccione el Destino de los Intereses:
+              </label>
+              
+              <div className="grid grid-cols-1 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditRepartoValue(100)}
+                  className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                    editRepartoValue === 100
+                      ? 'bg-[#ecfdf5] border-[#059669] text-[#064e3b] dark:bg-[#059669]/15 dark:border-[#059669] dark:text-[#34d399] shadow-xs'
+                      : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] hover:border-[#bae6fd]'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                    editRepartoValue === 100 ? 'border-[#059669] bg-[#059669] text-white' : 'border-slate-300 dark:border-slate-600'
+                  }`}>
+                    {editRepartoValue === 100 && <Check size={12} />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black uppercase tracking-tight">
+                      100% — Reparto en Efectivo (Transferencia)
+                    </span>
+                    <span className="text-[10.5px] opacity-80 mt-0.5">
+                      Los intereses netos devengados se abonan al inversionista al cierre del ciclo.
+                    </span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEditRepartoValue(0)}
+                  className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                    editRepartoValue === 0
+                      ? 'bg-[#eff6ff] border-[#0284c7] text-[#1e3a8a] dark:bg-[#0284c7]/15 dark:border-[#0284c7] dark:text-[#38bdf8] shadow-xs'
+                      : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] hover:border-[#bae6fd]'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                    editRepartoValue === 0 ? 'border-[#0284c7] bg-[#0284c7] text-white' : 'border-slate-300 dark:border-slate-600'
+                  }`}>
+                    {editRepartoValue === 0 && <Check size={12} />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-black uppercase tracking-tight">
+                      0% — Capitalización Total (Re-inversión)
+                    </span>
+                    <span className="text-[10.5px] opacity-80 mt-0.5">
+                      Los intereses netos devengados se capitalizan sumándose al saldo capital activo.
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {editRepartoSuccessMsg && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+                <CheckCircle size={15} />
+                <span>{editRepartoSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Botones de Acción */}
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#e2e8f0] dark:border-[#334155]">
+              <button
+                type="button"
+                onClick={() => setEditRepartoModalOpen(false)}
+                disabled={editRepartoSaving}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] hover:bg-slate-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditReparto}
+                disabled={editRepartoSaving}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#059669] hover:bg-[#047857] text-white flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
+              >
+                {editRepartoSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                <span>Guardar % de Reparto</span>
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

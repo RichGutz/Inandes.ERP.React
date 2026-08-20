@@ -184,8 +184,7 @@
 2. Creada la función getActiveCapitalBalance en deduccionesService.ts para leer el último capital_final_saldo de crm_certificados_eventos, permitiendo que Rescate Total pre-llene automáticamente USD 38,881.61 en lugar del monto histórico.
 3. Integrado indicador de Neto a Devolver al Inversionista (Cash) en cada armada de rescate.
 4. En pdfGeneratorBelloConDesglose.ts, agregada la columna PENALID. a la derecha de DEDUCC., removida la redundancia de símbolos de moneda en las celdas de la grilla/totales para ganar espacio horizontal, y añadidos los cards KPI dinámicos superiores de Deducciones, Penalidades y Rescates cuando son > 0.
-[2026-08-20 10:53:00-05:00] TAREA: Agregar la columna TRANSFER. (Transferencia Neta Bancaria) inmediatamente a la derecha de RESCATES en el Reporte Integral de Liquidación y Auditoría (PDF).
-[2026-08-20 10:53:00-05:00] ESTADO: Completado con éxito.
-1. Implementada la fórmula: TRANSFERENCIA = NETO FINAL + RESCATES - PENALID. (o REPARTO + RESCATES - DEDUCC. - PENALID.) en cada fila y en la fila de totales del fondo.
-2. Ajustada la tipografía de data-table en pdfGeneratorBelloConDesglose.ts para acomodar de manera óptima las 15 columnas del reporte.
-3. Verificado con éxito npm run build (0 errores).
+[2026-08-20 11:07:00-05:00] TAREA: Actualizar el contrato NSGPEN03-007.20251128 (Zapata Palacios Luis Alberto) en crm_contratos cambiando porcentaje_reparto de 0 a 100 para liquidar intereses en efectivo durante el periodo Marzo-Abril 2026.
+[2026-08-20 11:07:00-05:00] ESTADO: Completado con éxito. porcentaje_reparto actualizado a 100 en Supabase.
+[2026-08-20 11:20:00-05:00] TAREA: Reemplazar botón 'Visualizar' en Contratos (InversionesPage.tsx) por dos botones compactos: Ojo (Visualizar) y Lápiz (Editar % Reparto), con modal exclusivo para seleccionar entre 100% (Reparto Efectivo) y 0% (Capitalización Total).
+[2026-08-20 11:20:00-05:00] ESTADO: Completado con éxito. Implementada la interfaz compacta de botones y el modal de edición conectado a crm_contratos de Supabase. Compilación limpia probada con npm run build (0 errores).
