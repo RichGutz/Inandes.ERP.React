@@ -1628,12 +1628,12 @@ export const InversionistasPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Filtros Finitos de Selección */}
+            {/* Filtros Finitos de Selección Estilo APEFAC */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Auditar / Liquidar</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Auditar / Liquidar</label>
                 <select
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
                   value={v40SelFondo}
                   onChange={(e) => setV40SelFondo(e.target.value)}
                 >
@@ -1645,9 +1645,9 @@ export const InversionistasPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Frecuencia / Ciclo</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Frecuencia / Ciclo</label>
                 <select
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
                   value={v40SelCiclo}
                   onChange={(e) => setV40SelCiclo(e.target.value as any)}
                 >
@@ -1657,9 +1657,9 @@ export const InversionistasPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Número de Período</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Número de Período</label>
                 <select
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none"
+                  className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
                   value={v40SelNum}
                   onChange={(e) => setV40SelNum(Number(e.target.value))}
                 >
@@ -1686,34 +1686,34 @@ export const InversionistasPage: React.FC = () => {
 
             {/* FASE 1: DESCARGA DE REPORTES DE AUDITORÍA */}
             <div className="flex flex-col gap-3">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
                 📄 Paso 1: Generar y Revisar Reportes de Auditoría ({fEnd})
               </h4>
 
-              {/* Banners de Progreso / Artefactos de Notificación en Vivo */}
+              {/* Banners de Progreso */}
               {exportingExcel && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
-                  <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-xs">
+                  <Loader2 size={20} className="animate-spin text-[#059669] dark:text-[#34d399] shrink-0" />
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                    <span className="text-xs font-black text-[#059669] dark:text-[#34d399] uppercase tracking-wide">
                       📊 Procesando y Compilando Libro Excel Maestro...
                     </span>
-                    <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-                      Generando hojas de auditoría contable diaria. La descarga iniciará automáticamente en breve.
+                    <span className="text-[11px] text-[#047857] dark:text-[#a7f3d0] font-medium">
+                      Generando hojas de auditoría contable diaria. La descarga iniciará automáticamente.
                     </span>
                   </div>
                 </div>
               )}
 
               {exportingPdf && (
-                <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
-                  <Loader2 size={20} className="animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <div className="bg-[#f0f9ff] dark:bg-[#0284c7]/15 border border-[#bae6fd] dark:border-[#0284c7]/30 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-xs">
+                  <Loader2 size={20} className="animate-spin text-[#0284c7] dark:text-[#38bdf8] shrink-0" />
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-black text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
-                      📄 Generando y Convirtiendo Reporte PDF Oficial (WeasyPrint Backend)...
+                    <span className="text-xs font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tracking-wide">
+                      📄 Generando Reporte PDF Oficial...
                     </span>
-                    <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
-                      El servidor está compilando las tablas y estilos. Por favor espere unos segundos mientras se procesa la descarga directa.
+                    <span className="text-[11px] text-[#0369a1] dark:text-[#bae6fd] font-medium">
+                      El servidor está compilando las tablas y liquidaciones. Espere unos segundos.
                     </span>
                   </div>
                 </div>
@@ -1721,11 +1721,7 @@ export const InversionistasPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
-                  className={`h-12 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
-                    excelDownloaded
-                      ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  }`}
+                  className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading || exportingExcel || exportingPdf}
                   onClick={async () => {
                     await handleExportExcelV40WithProgress();
@@ -1733,28 +1729,24 @@ export const InversionistasPage: React.FC = () => {
                 >
                   {exportingExcel ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={16} className="animate-spin" />
                       <span>Procesando Excel Maestro...</span>
                     </>
                   ) : excelDownloaded ? (
                     <>
-                      <CheckCircle size={18} className="text-emerald-200" />
-                      <span>✓ Excel Maestro Descargado (Clic para Re-descargar)</span>
+                      <CheckCircle size={16} className="text-[#059669]" />
+                      <span>✓ Excel Maestro Descargado (Re-descargar)</span>
                     </>
                   ) : (
                     <>
-                      <FileSpreadsheet size={18} />
-                      <span>Descargar / Consultar Excel Maestro (Formato #,##0.00)</span>
+                      <FileSpreadsheet size={16} />
+                      <span>Descargar Excel Maestro (Auditoría #,##0.00)</span>
                     </>
                   )}
                 </button>
 
                 <button
-                  className={`h-12 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
-                    pdfDownloaded
-                      ? 'bg-indigo-700 hover:bg-indigo-800 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
+                  className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0284c7] hover:bg-[#0369a1] text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={calcLoading || exportingExcel || exportingPdf}
                   onClick={async () => {
                     await handleExportPDFV40();
@@ -1762,18 +1754,18 @@ export const InversionistasPage: React.FC = () => {
                 >
                   {exportingPdf ? (
                     <>
-                      <Loader2 size={18} className="animate-spin" />
-                      <span>Procesando y Convirtiendo PDF...</span>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Generando Reporte PDF...</span>
                     </>
                   ) : pdfDownloaded ? (
                     <>
-                      <CheckCircle size={18} className="text-indigo-200" />
-                      <span>✓ Reporte PDF Descargado (Clic para Re-descargar)</span>
+                      <CheckCircle size={16} className="text-white" />
+                      <span>✓ Reporte PDF Descargado (Re-descargar)</span>
                     </>
                   ) : (
                     <>
-                      <FileText size={18} />
-                      <span>Descargar Reporte PDF Oficial (Geeksoft + InAndes)</span>
+                      <FileText size={16} />
+                      <span>Descargar Reporte PDF Oficial</span>
                     </>
                   )}
                 </button>
@@ -1782,38 +1774,38 @@ export const InversionistasPage: React.FC = () => {
 
 
             {/* FASE 2: EJECUCIÓN OFICIAL EN BD */}
-            <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <div className="flex flex-col gap-3 border-t border-[#e2e8f0] dark:border-[#334155] pt-4">
+              <h4 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
                 💾 Paso 2: Registro Oficial en Ledger y Persistencia DB
               </h4>
 
               {registerSuccessMsg && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-start gap-3">
-                  <CheckCircle className="text-emerald-600 dark:text-emerald-450 shrink-0" size={18} />
-                  <p className="text-[11px] font-semibold text-emerald-750 dark:text-emerald-400 leading-relaxed">
+                <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-start gap-3">
+                  <CheckCircle className="text-[#059669] dark:text-[#34d399] shrink-0" size={18} />
+                  <p className="text-xs font-bold text-[#059669] dark:text-[#34d399] leading-relaxed">
                     {registerSuccessMsg}
                   </p>
                 </div>
               )}
 
               {collisionCount > 0 ? (
-                <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                <div className="bg-[#ecfdf5] dark:bg-[#059669]/10 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-[#059669] dark:text-[#34d399] text-xs font-bold">
                     <ShieldCheck size={18} />
                     <span>PERÍODO OFICIALIZADO: Los {collisionCount} asientos ya se encuentran registrados en Supabase.</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400">
+                  <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">
                     Protección contra duplicados activa
                   </span>
                 </div>
               ) : (
-                <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-250 dark:border-emerald-900 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                <div className="bg-[#ecfdf5] dark:bg-[#059669]/10 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 text-[#059669] dark:text-[#34d399] text-xs font-bold">
                     <CheckCircle size={18} />
                     <span>Período abierto ({fEnd}): Listo para registrar los asientos oficiales en la base de datos.</span>
                   </div>
                   <button
-                    className="h-10 text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-xl cursor-pointer shadow transition-all flex items-center gap-2"
+                    className="h-10 text-xs font-black uppercase tracking-wider bg-[#059669] hover:bg-[#047857] text-white px-6 rounded-xl cursor-pointer shadow-xs transition-all flex items-center gap-2"
                     onClick={() => {
                       setRegisterConfirmText('');
                       setRegisterModalOpen(true);
@@ -1827,16 +1819,16 @@ export const InversionistasPage: React.FC = () => {
               )}
 
               {/* Herramienta de Rollback */}
-              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+              <div className="flex items-center justify-between border-t border-[#e2e8f0] dark:border-[#334155] pt-3 mt-1">
                 <button
-                  className="h-9 text-xs font-bold bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-xl px-4 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="h-9 text-xs font-bold bg-white dark:bg-[#1e293b] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] rounded-xl px-4 flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
                   onClick={handleOpenRollbackModal}
                 >
                   <Undo2 size={14} />
                   <span>Reversión / Rollback Seguro del Período</span>
                 </button>
 
-                <span className="text-[10px] font-semibold text-slate-400">
+                <span className="text-[10.5px] font-semibold text-[#64748b] dark:text-[#94a3b8]">
                   Permite reabrir el período eliminando los asientos de la fecha de corte seleccionada.
                 </span>
               </div>
@@ -1848,49 +1840,49 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
-      {/* --- PESTAÑA C: EECC / RETENCIONES / 2 VISORES (ESTILO FORECAST) --- */}
+      {/* --- PESTAÑA C: EECC / RETENCIONES / 2 VISORES (ESTILO APEFAC) --- */}
       {activeSubTab === 'documentos' && (
 
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+          <div className="glass-card p-5">
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl text-emerald-600 border border-emerald-100 dark:border-emerald-900">
+                <div className="p-2.5 bg-[#f0f9ff] dark:bg-[#0284c7]/15 rounded-xl text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0284c7]/30 shadow-xs">
                   <FileText size={22} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
-                    AUDITORÍA Y EMISIÓN EN CALIENTE: EECC & RETENCIONES (2 VISORES DUALES)
+                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                    📄 Auditoría y Emisión: Estados de Cuenta & Certificados de Retención
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    Visualización directa en alta resolución sin popups. Compilación y caché de alta velocidad estilo Forecast.
+                  <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold">
+                    Visualización directa en alta resolución sin popups. Compilación y caché de alta velocidad.
                   </p>
                 </div>
               </div>
 
               {/* Indicador de Estado del Período */}
               {collisionCount > 0 ? (
-                <span className="px-3 py-1.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1.5 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                  🟢 PERÍODO OFICIALIZADO EN BD ({collisionCount} Asientos)
+                <span className="px-3 py-1.5 rounded-lg text-xs font-black bg-[#ecfdf5] text-[#059669] dark:bg-[#059669]/15 dark:text-[#34d399] border border-[#a7f3d0] dark:border-[#059669]/30 flex items-center gap-1.5 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse"></span>
+                  🟢 PERÍODO OFICIALIZADO ({collisionCount} Asientos)
                 </span>
               ) : (
-                <span className="px-3 py-1.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 flex items-center gap-1.5 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                <span className="px-3 py-1.5 rounded-lg text-xs font-black bg-[#fffbeb] text-[#d97706] dark:bg-[#d97706]/15 dark:text-[#fbbf24] border border-[#fde68a] dark:border-[#d97706]/30 flex items-center gap-1.5 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-[#d97706]"></span>
                   🔴 PERÍODO EN BORRADOR / SIMULACIÓN
                 </span>
               )}
             </div>
 
             {/* Selectores Vinculados al Fondo y Fecha de Corte */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 bg-slate-50 dark:bg-slate-950 p-4 border border-slate-200 dark:border-slate-850 rounded-xl items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl items-end">
               
               {/* Selector de Fondo */}
               <div className="flex flex-col gap-1 lg:col-span-2">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fondo a Emitir</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Emitir</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                   value={docFondo}
                   onChange={(e) => {
                     setDocFondo(e.target.value);
@@ -1905,9 +1897,9 @@ export const InversionistasPage: React.FC = () => {
 
               {/* Año */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Año</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Año</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                   value={v40SelYear}
                   onChange={(e) => {
                     setV40SelYear(Number(e.target.value));
@@ -1922,9 +1914,9 @@ export const InversionistasPage: React.FC = () => {
 
               {/* Ciclo */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Ciclo</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Ciclo</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                   value={v40SelCiclo}
                   onChange={(e) => {
                     setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre');
@@ -1937,9 +1929,9 @@ export const InversionistasPage: React.FC = () => {
 
               {/* Período / Mes */}
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Período</label>
+                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">N° Período</label>
                 <select
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600 cursor-pointer"
+                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
                   value={v40SelNum}
                   onChange={(e) => {
                     setV40SelNum(Number(e.target.value));
@@ -1967,19 +1959,19 @@ export const InversionistasPage: React.FC = () => {
 
             </div>
 
-            {/* Barra de Control de Vistas y Recarga en Caliente */}
-            <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-900 text-white p-3 rounded-xl shadow-md mb-6">
+            {/* Barra de Control de Vistas y Recarga en Caliente Estilo APEFAC */}
+            <div className="flex items-center justify-between gap-4 flex-wrap bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] p-3.5 rounded-xl shadow-xs mb-6">
               
               <div className="flex items-center gap-3">
-                <span className="text-xs font-mono font-bold text-slate-300 uppercase">Modo de Visor:</span>
+                <span className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Modo de Visor:</span>
                 
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => setDocViewMode('dual')}
-                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
                       docViewMode === 'dual'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#0284c7] text-white shadow-xs'
+                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
                     }`}
                   >
                     🔲 Vista Dual 50/50
@@ -1987,10 +1979,10 @@ export const InversionistasPage: React.FC = () => {
                   
                   <button
                     onClick={() => setDocViewMode('eecc')}
-                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
                       docViewMode === 'eecc'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#0284c7] text-white shadow-xs'
+                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
                     }`}
                   >
                     📑 Solo EECC (100%)
@@ -1998,10 +1990,10 @@ export const InversionistasPage: React.FC = () => {
 
                   <button
                     onClick={() => setDocViewMode('retenciones')}
-                    className={`px-3 py-1.5 text-xs font-black uppercase rounded-md transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
                       docViewMode === 'retenciones'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#0284c7] text-white shadow-xs'
+                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
                     }`}
                   >
                     📜 Solo Retenciones (100%)
@@ -2010,38 +2002,38 @@ export const InversionistasPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="text-xs font-mono text-slate-400">
-                  Corte: <strong className="text-emerald-400">{fStart} al {fEnd}</strong>
+                <div className="text-xs font-mono text-[#64748b] dark:text-[#94a3b8]">
+                  Corte: <strong className="text-[#059669] dark:text-[#34d399]">{fStart} al {fEnd}</strong>
                 </div>
 
                 <button
                   onClick={() => setDocReloadKey(Date.now())}
-                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  className="px-3.5 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] text-[#475569] dark:text-[#cbd5e1] hover:text-[#0284c7] border border-[#e2e8f0] dark:border-[#334155] rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer shadow-xs"
                   title="Recargar visores en caliente"
                 >
                   <RotateCcw size={14} />
-                  <span>Recargar en Caliente</span>
+                  <span>Recargar</span>
                 </button>
               </div>
 
             </div>
 
-            {/* --- CONTENEDORES DE LOS 2 VISORES (ESTILO FORECAST) --- */}
+            {/* --- CONTENEDORES DE LOS 2 VISORES (ESTILO APEFAC) --- */}
             <div className={`grid gap-6 ${docViewMode === 'dual' ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
               
               {/* VISOR 1: ESTADOS DE CUENTA (EECC) */}
               {(docViewMode === 'dual' || docViewMode === 'eecc') && (
-                <div className="flex flex-col gap-2.5 w-full bg-slate-100 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-250 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col gap-3 w-full glass-card p-4">
                   
                   {/* Header del Visor EECC */}
-                  <div className="bg-slate-900 text-white p-3 rounded-xl shadow-sm flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <FileText size={18} className="text-emerald-400" />
+                  <div className="bg-[#f8fafc] dark:bg-[#151e2e] border border-[#e2e8f0] dark:border-[#334155] p-3 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                      <FileText size={18} className="text-[#0284c7] dark:text-[#38bdf8]" />
                       <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
                           ESTADOS DE CUENTA (EECC) — {docFondo || 'TODOS'}
                         </h4>
-                        <p className="text-[10px] text-slate-400 font-mono">
+                        <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
                           Periodo: {fEnd} | Formato Oficial WeasyPrint
                         </p>
                       </div>
@@ -2053,18 +2045,18 @@ export const InversionistasPage: React.FC = () => {
                           const fondo = docFondo || 'TODOS';
                           window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
                         }}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-[11px] font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
                         title="Abrir en pestaña completa independiente"
                       >
                         <ExternalLink size={13} />
-                        <span>Abrir Pestaña</span>
+                        <span>Pestaña</span>
                       </button>
 
                       <button
                         onClick={() => handleDownloadFastPdf(htmlEeccDoc, `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
                         disabled={downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF en caliente (1.5s)"
+                        className="px-3.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-60 text-white rounded-xl text-xs font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF en caliente"
                       >
                         {downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                         <span>{downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
@@ -2072,12 +2064,12 @@ export const InversionistasPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Contenedor IFrame de Alta Resolución (Estilo Forecast srcDoc) */}
-                  <div className="bg-slate-900 rounded-xl overflow-hidden shadow-inner border border-slate-700/60 p-1">
+                  {/* Contenedor IFrame */}
+                  <div className="rounded-xl overflow-hidden border border-[#e2e8f0] dark:border-[#334155] p-1 bg-slate-100 shadow-inner">
                     <iframe
                       key={`eecc-frame-${docReloadKey}-${docFondo}-${fEnd}`}
                       srcDoc={htmlEeccDoc}
-                      className="w-full h-[800px] rounded-lg border-none bg-slate-950"
+                      className="w-full h-[800px] rounded-lg border-none bg-white"
                       title="Visor Integrado EECC"
                     />
                   </div>
@@ -2087,17 +2079,17 @@ export const InversionistasPage: React.FC = () => {
 
               {/* VISOR 2: CERTIFICADOS DE RETENCIÓN (5% IR) */}
               {(docViewMode === 'dual' || docViewMode === 'retenciones') && (
-                <div className="flex flex-col gap-2.5 w-full bg-slate-100 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-250 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col gap-3 w-full glass-card p-4">
                   
                   {/* Header del Visor Retenciones */}
-                  <div className="bg-slate-900 text-white p-3 rounded-xl shadow-sm flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet size={18} className="text-blue-400" />
+                  <div className="bg-[#f8fafc] dark:bg-[#151e2e] border border-[#e2e8f0] dark:border-[#334155] p-3 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                      <FileSpreadsheet size={18} className="text-[#059669] dark:text-[#34d399]" />
                       <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
                           CERTIFICADOS DE RETENCIÓN (5% IR) — {docFondo || 'TODOS'}
                         </h4>
-                        <p className="text-[10px] text-slate-400 font-mono">
+                        <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
                           Periodo: {fEnd} | Impuesto a la Renta de 2da Categoría
                         </p>
                       </div>
@@ -2109,18 +2101,18 @@ export const InversionistasPage: React.FC = () => {
                           const fondo = docFondo || 'TODOS';
                           window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
                         }}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-[11px] font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
                         title="Abrir en pestaña completa independiente"
                       >
                         <ExternalLink size={13} />
-                        <span>Abrir Pestaña</span>
+                        <span>Pestaña</span>
                       </button>
 
                       <button
                         onClick={() => handleDownloadFastPdf(htmlRetencionesDoc, `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
                         disabled={downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-[11px] font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF en caliente (1.5s)"
+                        className="px-3.5 py-1.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-60 text-white rounded-xl text-xs font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        title="Descargar archivo binario PDF en caliente"
                       >
                         {downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                         <span>{downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
@@ -2128,12 +2120,12 @@ export const InversionistasPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Contenedor IFrame de Alta Resolución (Estilo Forecast srcDoc) */}
-                  <div className="bg-slate-900 rounded-xl overflow-hidden shadow-inner border border-slate-700/60 p-1">
+                  {/* Contenedor IFrame */}
+                  <div className="rounded-xl overflow-hidden border border-[#e2e8f0] dark:border-[#334155] p-1 bg-slate-100 shadow-inner">
                     <iframe
                       key={`ret-frame-${docReloadKey}-${docFondo}-${fEnd}`}
                       srcDoc={htmlRetencionesDoc}
-                      className="w-full h-[800px] rounded-lg border-none bg-slate-950"
+                      className="w-full h-[800px] rounded-lg border-none bg-white"
                       title="Visor Integrado Retenciones"
                     />
                   </div>
