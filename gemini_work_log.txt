@@ -192,3 +192,5 @@
 [2026-08-20 11:34:00-05:00] ESTADO: Completado con éxito. Publicado en origin/REU.RGP.RGL.20.08.26 y Tag oficial REU.RGP.RGL.20.08.26.
 [2026-08-20 12:03:00-05:00] TAREA: Corregir error duplicate key value violates unique constraint 'crm_cronograma_deducciones_rescates_pkey' en deduccionesService.ts.
 [2026-08-20 12:03:00-05:00] ESTADO: Completado con éxito. Reemplazado insert por upsert con onConflict: 'id_cuota' para permitir reprogramaciones o actualizaciones de cuotas sin colisión de llave primaria.
+[2026-08-20 12:40:00-05:00] TAREA: Corregir bug en financialCalculator.ts donde contratos extinguidos por rescate a saldo 0 (ej. NSGPEN01-046.20160101 en B1 al 28/02/2026) resucitaban en B2 (Marzo-Abril 2026) debido a la evaluación falsy de JavaScript `0 || 50000`.
+[2026-08-20 12:40:00-05:00] ESTADO: Completado con éxito. Se cambió la asignación a `capital_final_saldo !== null && capital_final_saldo !== undefined ? Number(capital_final_saldo) : capital_base` y se omiten los contratos extinguidos a saldo 0 sin nuevos aumentos. Compilación limpia probada con npm run build (0 errores).

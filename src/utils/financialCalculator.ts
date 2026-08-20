@@ -234,7 +234,9 @@ export const generateRetornosV40 = async (
     if (closingEvents.length > 0) {
       closingEvents.sort((a, b) => String(a.fecha_periodo_fin).localeCompare(String(b.fecha_periodo_fin)));
       const lastClosure = closingEvents[closingEvents.length - 1];
-      capBaseInicio = Number(lastClosure.capital_final_saldo || lastClosure.capital_base || 0);
+      capBaseInicio = (lastClosure.capital_final_saldo !== null && lastClosure.capital_final_saldo !== undefined)
+        ? Number(lastClosure.capital_final_saldo)
+        : Number(lastClosure.capital_base || 0);
       lastClosureDate = new Date(lastClosure.fecha_periodo_fin.split('T')[0] + 'T00:00:00');
       idCertOrigen = lastClosure.id_certificado || mid;
     } else {
@@ -265,6 +267,11 @@ export const generateRetornosV40 = async (
           }
         }
       }
+    }
+
+    // Si el contrato ya se extinguió en un periodo previo (saldo capital 0 o menor) y no tiene nuevos aumentos de capital, omitir del nuevo periodo
+    if (capBaseInicio <= 0 && hijos.length === 0) {
+      continue;
     }
 
     // REGULA STRICTA DE AUDITORÍA: Sin fallbacks silenciosos. Se usa únicamente la tasa pactada del contrato.
