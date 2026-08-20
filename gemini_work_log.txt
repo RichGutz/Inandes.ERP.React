@@ -188,3 +188,5 @@
 [2026-08-20 11:07:00-05:00] ESTADO: Completado con éxito. porcentaje_reparto actualizado a 100 en Supabase.
 [2026-08-20 11:20:00-05:00] TAREA: Reemplazar botón 'Visualizar' en Contratos (InversionesPage.tsx) por dos botones compactos: Ojo (Visualizar) y Lápiz (Editar % Reparto), con modal exclusivo para seleccionar entre 100% (Reparto Efectivo) y 0% (Capitalización Total).
 [2026-08-20 11:20:00-05:00] ESTADO: Completado con éxito. Implementada la interfaz compacta de botones y el modal de edición conectado a crm_contratos de Supabase. Compilación limpia probada con npm run build (0 errores).
+[2026-08-20 11:34:00-05:00] TAREA: Grabar punto de control seguro (Tag y Branch) REU.RGP.RGL.20.08.26 en GitHub.
+[2026-08-20 11:34:00-05:00] ESTADO: Completado con éxito. Publicado en origin/REU.RGP.RGL.20.08.26 y Tag oficial REU.RGP.RGL.20.08.26.
