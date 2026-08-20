@@ -211,7 +211,7 @@ export const insertCronogramaDeducciones = async (cuotas: DeduccionCuota[]): Pro
 
   const { error } = await supabase
     .from('crm_cronograma_deducciones_rescates')
-    .insert(cleanPayload);
+    .upsert(cleanPayload, { onConflict: 'id_cuota' });
 
   if (error) throw new Error(`Error al registrar cronograma: ${error.message}`);
 };
