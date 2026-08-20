@@ -178,8 +178,10 @@
 [2026-08-18 15:32:00-05:00] ESTADO: Completado con exito. Fecha restaurada a 2031-12-31.
 [2026-08-18 15:47:00-05:00] TAREA: Corregir calculador financiero financialCalculator.ts para reconocer saldos base del ledger (emision_inicial/emision al 31/12/2025) y auditar inventario de base de datos para preservar aumentos de capital y cronograma de rescates.
 [2026-08-18 15:47:00-05:00] ESTADO: Completado con exito. closingEvents ahora incluye emision_inicial/emision, asegurando que el cálculo arranque con el saldo contable real del 31/12/2025. Compilacion Vite limpia con npm run build (0 errores).
-[2026-08-18 15:50:00-05:00] TAREA: Sincronizacion y despliegue a produccion en VPS Contabo via Coolify webhook (push origin main).
-[2026-08-18 15:50:00-05:00] ESTADO: Completado con exito. Commit eb9f919 desplegado a https://inandes.geeksoft.tech sin downtime.
-
-
-
+[2026-08-20 09:55:00-05:00] TAREA: Corrección integral de inputs numéricos (eliminación del '0' persistente), pre-llenado exacto de Rescate Total con saldo capital activo real al último cierre contable (caso Zuzunaga Katty Ana DNI 09378278) y agregación de la columna PENALID. y cards dinámicos en el Reporte Integral de Liquidación y Auditoría.
+[2026-08-20 09:55:00-05:00] ESTADO: Completado con éxito.
+1. Implementado onFocus select y limpieza de valores en todas las entradas numéricas de DeduccionesPage.tsx.
+2. Creada la función getActiveCapitalBalance en deduccionesService.ts para leer el último capital_final_saldo de crm_certificados_eventos, permitiendo que Rescate Total pre-llene automáticamente USD 38,881.61 en lugar del monto histórico.
+3. Integrado indicador de Neto a Devolver al Inversionista (Cash) en cada armada de rescate.
+4. En pdfGeneratorBelloConDesglose.ts, agregada la columna PENALID. a la derecha de DEDUCC., removida la redundancia de símbolos de moneda en las celdas de la grilla/totales para ganar espacio horizontal, y añadidos los cards KPI dinámicos superiores de Deducciones, Penalidades y Rescates cuando son > 0.
+5. Verificado con éxito npm run build con 0 errores.

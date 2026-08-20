@@ -20,6 +20,16 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
     return symbol + val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  function fmtNum(val: number | undefined | null) {
+    if (val === undefined || val === null || val === 0) return '-';
+    return val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtNumZero(val: number | undefined | null) {
+    if (val === undefined || val === null) return '-';
+    return val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   let diasBase = 59;
   try {
     const d1 = new Date(fStart + 'T00:00:00');
@@ -96,6 +106,21 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
               <div class="kpi-title">REPARTO EN EFECTIVO</div>
               <div class="kpi-value kpi-value-green">${fmtValCurrency(totals.reparto_valor, moneda)}</div>
             </div>
+            ${(totals.deducciones_total && totals.deducciones_total > 0) ? `
+            <div class="kpi-card">
+              <div class="kpi-title">DEDUCCIONES TOTALES</div>
+              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.deducciones_total, moneda)}</div>
+            </div>` : ''}
+            ${(totals.penalidad_rescate && totals.penalidad_rescate > 0) ? `
+            <div class="kpi-card">
+              <div class="kpi-title">PENALIDADES RESCATE</div>
+              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.penalidad_rescate, moneda)}</div>
+            </div>` : ''}
+            ${(totals.devolucion_capital && totals.devolucion_capital > 0) ? `
+            <div class="kpi-card">
+              <div class="kpi-title">DEVOLUCIÓN DE CAPITAL</div>
+              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.devolucion_capital, moneda)}</div>
+            </div>` : ''}
             <div class="kpi-card">
               <div class="kpi-title">CAPITAL FINAL VIGENTE</div>
               <div class="kpi-value kpi-value-darkblue">${fmtValCurrency(totals.capital_final, moneda)}</div>
@@ -115,6 +140,7 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                 <th class="text-right">CAPITALIZ.</th>
                 <th class="text-right">REPARTO</th>
                 <th class="text-right">DEDUCC.</th>
+                <th class="text-right">PENALID.</th>
                 <th class="text-right">NETO FINAL</th>
                 <th class="text-right">RESCATES</th>
                 <th class="text-right">CAPITAL FINAL</th>
@@ -128,8 +154,9 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                     <td class="text-center">-</td>
                     <td style="font-weight: 700;">${r.id}</td>
                     <td>└─ Incremento de Capital</td>
-                    <td class="text-right" style="font-weight: 700;">${fmtValCurrency(r.capital, moneda)}</td>
-                    <td class="text-right" style="font-weight: 700;">${fmtValCurrency(r.bruto_total, moneda)}</td>
+                    <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.capital)}</td>
+                    <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.bruto_total)}</td>
+                    <td class="text-right">-</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
@@ -146,32 +173,34 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                   <td class="text-center">${r.n_orden || ''}</td>
                   <td style="font-weight: 700;">${r.id}</td>
                   <td>${r.inversionista}</td>
-                  <td class="text-right" style="font-weight: 700;">${fmtValCurrency(r.capital, moneda)}</td>
-                  <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtValCurrency(r.bruto_total, moneda)}</td>
-                  <td class="text-right" style="color: #dc2626;">${fmtValCurrency(r.impuesto_total, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(r.base_neta, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(r.capitalizacion, moneda)}</td>
-                  <td class="text-right" style="color: #059669; font-weight: 700;">${fmtValCurrency(r.reparto_valor, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(r.deducciones_total, moneda)}</td>
-                  <td class="text-right" style="font-weight: 700;">${fmtValCurrency(r.base_neta - (r.deducciones_total || 0), moneda)}</td>
-                  <td class="text-right" style="color: #dc2626; font-weight: 700;">${fmtValCurrency(r.devolucion_capital, moneda)}</td>
-                  <td class="text-right" style="color: #1e3a8a; font-weight: 800;">${fmtValCurrency(r.capital_final, moneda)}</td>
+                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.capital)}</td>
+                  <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtNumZero(r.bruto_total)}</td>
+                  <td class="text-right" style="color: #dc2626;">${fmtNumZero(r.impuesto_total)}</td>
+                  <td class="text-right">${fmtNumZero(r.base_neta)}</td>
+                  <td class="text-right">${fmtNum(r.capitalizacion)}</td>
+                  <td class="text-right" style="color: #059669; font-weight: 700;">${fmtNum(r.reparto_valor)}</td>
+                  <td class="text-right">${fmtNum(r.deducciones_total)}</td>
+                  <td class="text-right" style="color: #e11d48; font-weight: 700;">${fmtNum(r.penalidad_rescate)}</td>
+                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.neto_total || (r.reparto_valor - (r.deducciones_total || 0)))}</td>
+                  <td class="text-right" style="color: #dc2626; font-weight: 700;">${fmtNum(r.devolucion_capital)}</td>
+                  <td class="text-right" style="color: #1e3a8a; font-weight: 800;">${fmtNumZero(r.capital_final)}</td>
                 </tr>`;
               }).join('')}
 
               ${isLastSubPage ? `
                 <tr class="totals-row">
                   <td colspan="3" class="text-center">TOTALES ${fData.fondo.id_fondo} (${moneda})</td>
-                  <td class="text-right">${fmtValCurrency(totals.capital, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.bruto_total, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.impuesto_total, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.base_neta, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.capitalizacion, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.reparto_valor, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.deducciones_total, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.base_neta - (totals.deducciones_total || 0), moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.devolucion_capital, moneda)}</td>
-                  <td class="text-right">${fmtValCurrency(totals.capital_final, moneda)}</td>
+                  <td class="text-right">${fmtNumZero(totals.capital)}</td>
+                  <td class="text-right">${fmtNumZero(totals.bruto_total)}</td>
+                  <td class="text-right">${fmtNumZero(totals.impuesto_total)}</td>
+                  <td class="text-right">${fmtNumZero(totals.base_neta)}</td>
+                  <td class="text-right">${fmtNum(totals.capitalizacion)}</td>
+                  <td class="text-right">${fmtNum(totals.reparto_valor)}</td>
+                  <td class="text-right">${fmtNum(totals.deducciones_total)}</td>
+                  <td class="text-right">${fmtNum(totals.penalidad_rescate)}</td>
+                  <td class="text-right">${fmtNumZero(totals.neto_total || (totals.reparto_valor - (totals.deducciones_total || 0)))}</td>
+                  <td class="text-right">${fmtNum(totals.devolucion_capital)}</td>
+                  <td class="text-right">${fmtNumZero(totals.capital_final)}</td>
                 </tr>
               ` : ''}
             </tbody>
@@ -230,16 +259,16 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
           
           /* Cajas KPI de EL BELLO */
           .kpi-cards-grid {
-            display: table; width: 100%; margin-bottom: 8px; border-spacing: 4px 0; table-layout: fixed;
+            display: table; width: 100%; margin-bottom: 8px; border-spacing: 3px 0; table-layout: fixed;
           }
           .kpi-card {
-            display: table-cell; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 6px; text-align: center; vertical-align: middle;
+            display: table-cell; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 4px; text-align: center; vertical-align: middle;
           }
           .kpi-title {
-            font-size: 6pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.2px;
+            font-size: 5.2pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           .kpi-value {
-            font-size: 8.5pt; font-weight: 900; color: #0f172a;
+            font-size: 7.8pt; font-weight: 900; color: #0f172a; white-space: nowrap;
           }
           .kpi-value-green { color: #059669; }
           .kpi-value-red { color: #dc2626; }

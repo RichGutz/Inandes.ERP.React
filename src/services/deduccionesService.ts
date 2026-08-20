@@ -129,6 +129,27 @@ export const getActiveCertificadoByContrato = async (idContrato: string): Promis
 };
 
 /**
+ * Obtiene el capital base activo real vinculado a un contrato (saldo tras último cierre contable o fallback a monto_inversion)
+ */
+export const getActiveCapitalBalance = async (idContrato: string, fallbackMonto: number = 0): Promise<number> => {
+  try {
+    const { data: events } = await supabase
+      .from('crm_certificados_eventos')
+      .select('capital_final_saldo, capital_base, fecha_periodo_fin')
+      .eq('id_contrato', idContrato)
+      .order('fecha_periodo_fin', { ascending: false })
+      .limit(1);
+
+    if (events && events.length > 0 && events[0].capital_final_saldo != null && Number(events[0].capital_final_saldo) > 0) {
+      return Number(events[0].capital_final_saldo);
+    }
+  } catch (err) {
+    console.error('Error al obtener saldo capital activo:', err);
+  }
+  return fallbackMonto;
+};
+
+/**
  * Obtiene las reglas del fondo
  */
 export const getFondoRules = async (idFondo: string): Promise<{ rules: FondoRules, tasaMinima: number }> => {

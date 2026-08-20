@@ -1,7 +1,7 @@
 // src/features/deducciones/DeduccionesPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
-  buscarContratosPadre, getActiveCertificadoByContrato, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones
+  buscarContratosPadre, getActiveCertificadoByContrato, getActiveCapitalBalance, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
@@ -25,6 +25,7 @@ export const DeduccionesPage: React.FC = () => {
 
   // Datos del contrato y certificado activo
   const [activeCertId, setActiveCertId] = useState<string>('');
+  const [activeCapital, setActiveCapital] = useState<number>(0);
   const [fondoRules, setFondoRules] = useState<FondoRules>({});
   const [cronograma, setCronograma] = useState<DeduccionCuota[]>([]);
   const [cronoLoading, setCronoLoading] = useState<boolean>(false);
@@ -174,6 +175,7 @@ export const DeduccionesPage: React.FC = () => {
       loadContratoData(selectedContrato);
     } else {
       setActiveCertId('');
+      setActiveCapital(0);
       setFondoRules({});
       setValidDates([]);
       loadGlobalCronograma();
@@ -183,9 +185,12 @@ export const DeduccionesPage: React.FC = () => {
   const loadContratoData = async (c: ContratoBusqueda) => {
     setCronoLoading(true);
     try {
-      // 1. Obtener certificado activo
+      // 1. Obtener certificado activo y saldo capital vivo real
       const certId = await getActiveCertificadoByContrato(c.id_contrato);
       setActiveCertId(certId);
+
+      const realCap = await getActiveCapitalBalance(c.id_contrato, c.monto_inversion);
+      setActiveCapital(realCap);
 
       // 2. Reglas del fondo
       const { rules, tasaMinima } = await getFondoRules(c.id_fondo);
@@ -229,15 +234,16 @@ export const DeduccionesPage: React.FC = () => {
     if (validDates.length > 0) {
       const newArmadas = [];
       const penaltyPct = fondoRules.penalidad_rescate || 0;
+      const capVigente = activeCapital > 0 ? activeCapital : (selectedContrato?.monto_inversion || 0);
       const baseMonto = (resEsRescateTotal && selectedContrato) 
-        ? Math.round((selectedContrato.monto_inversion / resArmadasCount) * 100) / 100 
+        ? Math.round((capVigente / resArmadasCount) * 100) / 100 
         : 1000;
 
       for (let i = 0; i < resArmadasCount; i++) {
         const matchDate = validDates[i] || validDates[0];
         const dateStr = matchDate.toISOString().split('T')[0];
         const monto = baseMonto;
-        const penalidad = monto * (penaltyPct / 100);
+        const penalidad = Math.round(monto * (penaltyPct / 100) * 100) / 100;
 
         newArmadas.push({
           fecha: dateStr,
@@ -247,7 +253,7 @@ export const DeduccionesPage: React.FC = () => {
       }
       setResArmadasData(newArmadas);
     }
-  }, [resArmadasCount, validDates, fondoRules, selectedContrato, resEsRescateTotal]);
+  }, [resArmadasCount, validDates, fondoRules, selectedContrato, resEsRescateTotal, activeCapital]);
 
   // Llaves naturales
   const generateNaturalKeys = (
@@ -590,6 +596,7 @@ export const DeduccionesPage: React.FC = () => {
           <div className="flex flex-col gap-1 md:text-right">
             <span>🎟️ Certificado Activo: <strong className="text-rose-600 dark:text-rose-450 font-bold font-mono">{activeCertId}</strong></span>
             <span>💰 Inversión Original: <strong>{selectedContrato.moneda} {selectedContrato.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
+            <span>📈 Capital Base Activo (Último Cierre): <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{selectedContrato.moneda} {(activeCapital || selectedContrato.monto_inversion).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong></span>
             <span>📅 Fecha Vencimiento: <strong>{selectedContrato.fecha_fin}</strong></span>
           </div>
         </div>
@@ -905,9 +912,11 @@ export const DeduccionesPage: React.FC = () => {
                         type="number"
                         min={0}
                         step="any"
+                        onFocus={(e) => e.target.select()}
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                        value={dedFijoMonto}
-                        onChange={(e) => setDedFijoMonto(Number(e.target.value) || 0)}
+                        value={dedFijoMonto === 0 ? '' : dedFijoMonto}
+                        placeholder="0.00"
+                        onChange={(e) => setDedFijoMonto(e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
                         required
                       />
                     </div>
@@ -933,9 +942,11 @@ export const DeduccionesPage: React.FC = () => {
                         type="number"
                         min={1}
                         max={60}
+                        onFocus={(e) => e.target.select()}
                         className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                        value={dedFijoPeriodos}
-                        onChange={(e) => setDedFijoPeriodos(Number(e.target.value) || 1)}
+                        value={dedFijoPeriodos === 0 ? '' : dedFijoPeriodos}
+                        placeholder="1"
+                        onChange={(e) => setDedFijoPeriodos(e.target.value === '' ? 1 : (parseInt(e.target.value, 10) || 1))}
                         required
                       />
                     </div>
@@ -952,9 +963,11 @@ export const DeduccionesPage: React.FC = () => {
                           type="number"
                           min={1}
                           max={24}
+                          onFocus={(e) => e.target.select()}
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                          value={dedMultiCuotas}
-                          onChange={(e) => setDedMultiCuotas(Number(e.target.value) || 1)}
+                          value={dedMultiCuotas === 0 ? '' : dedMultiCuotas}
+                          placeholder="1"
+                          onChange={(e) => setDedMultiCuotas(e.target.value === '' ? 1 : (parseInt(e.target.value, 10) || 1))}
                           required
                         />
                       </div>
@@ -983,6 +996,7 @@ export const DeduccionesPage: React.FC = () => {
                           const step = fPago === 3 ? 3 : 2;
                           const baseD = dedMultiFechaInicio ? new Date(dedMultiFechaInicio + 'T00:00:00') : new Date();
                           const armDate = addMonthsEndOfMonth(baseD, i * step);
+                          const mVal = dedMultiMontos[i] ?? 100;
 
                           return (
                             <div key={i} className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-150 dark:border-slate-850 flex flex-col gap-1.5">
@@ -993,10 +1007,12 @@ export const DeduccionesPage: React.FC = () => {
                                 type="number"
                                 min={0}
                                 step="any"
+                                onFocus={(e) => e.target.select()}
                                 className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded p-1 text-xs font-semibold text-center focus:outline-none"
-                                value={dedMultiMontos[i] ?? 100}
+                                value={mVal === 0 ? '' : mVal}
+                                placeholder="0.00"
                                 onChange={(e) => {
-                                  const val = Number(e.target.value) || 0;
+                                  const val = e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0);
                                   setDedMultiMontos(prev => ({ ...prev, [i]: val }));
                                 }}
                               />
@@ -1016,9 +1032,11 @@ export const DeduccionesPage: React.FC = () => {
                     <input
                       type="number"
                       min={1}
+                      onFocus={(e) => e.target.select()}
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none w-32"
-                      value={dedPrioridad}
-                      onChange={(e) => setDedPrioridad(Number(e.target.value) || 2)}
+                      value={dedPrioridad === 0 ? '' : dedPrioridad}
+                      placeholder="2"
+                      onChange={(e) => setDedPrioridad(e.target.value === '' ? 1 : (parseInt(e.target.value, 10) || 2))}
                       required
                     />
                   </div>
@@ -1096,9 +1114,11 @@ export const DeduccionesPage: React.FC = () => {
                       type="number"
                       min={1}
                       max={24}
+                      onFocus={(e) => e.target.select()}
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                      value={resArmadasCount}
-                      onChange={(e) => setResArmadasCount(Number(e.target.value) || 1)}
+                      value={resArmadasCount === 0 ? '' : resArmadasCount}
+                      placeholder="1"
+                      onChange={(e) => setResArmadasCount(e.target.value === '' ? 1 : (parseInt(e.target.value, 10) || 1))}
                       required
                     />
                   </div>
@@ -1109,9 +1129,11 @@ export const DeduccionesPage: React.FC = () => {
                       type="number"
                       min={0}
                       step="any"
+                      onFocus={(e) => e.target.select()}
                       className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
-                      value={resTasaWaiver}
-                      onChange={(e) => setResTasaWaiver(Number(e.target.value) || 0)}
+                      value={resTasaWaiver === 0 ? '' : resTasaWaiver}
+                      placeholder="0"
+                      onChange={(e) => setResTasaWaiver(e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0))}
                       required
                     />
                   </div>
@@ -1172,15 +1194,17 @@ export const DeduccionesPage: React.FC = () => {
                                 type="number"
                                 min={0}
                                 step="any"
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded p-1 text-xs font-semibold text-center focus:outline-none"
-                                value={arm.monto}
+                                onFocus={(e) => e.target.select()}
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded p-1.5 text-xs font-semibold text-center focus:outline-none"
+                                value={arm.monto === 0 ? '' : arm.monto}
+                                placeholder="0.00"
                                 onChange={(e) => {
-                                  const val = Number(e.target.value) || 0;
+                                  const val = e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0);
                                   const penaltyPct = fondoRules.penalidad_rescate || 0;
                                   setResArmadasData(prev => {
                                     const cpy = [...prev];
                                     cpy[i].monto = val;
-                                    cpy[i].penalidad = val * (penaltyPct / 100);
+                                    cpy[i].penalidad = Math.round(val * (penaltyPct / 100) * 100) / 100;
                                     return cpy;
                                   });
                                 }}
@@ -1193,10 +1217,12 @@ export const DeduccionesPage: React.FC = () => {
                                 type="number"
                                 min={0}
                                 step="any"
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 rounded p-1 text-xs font-semibold text-center focus:outline-none"
-                                value={arm.penalidad}
+                                onFocus={(e) => e.target.select()}
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-855 rounded p-1.5 text-xs font-semibold text-center focus:outline-none"
+                                value={arm.penalidad === 0 ? '' : arm.penalidad}
+                                placeholder="0.00"
                                 onChange={(e) => {
-                                  const val = Number(e.target.value) || 0;
+                                  const val = e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0);
                                   setResArmadasData(prev => {
                                     const cpy = [...prev];
                                     cpy[i].penalidad = val;
@@ -1205,6 +1231,16 @@ export const DeduccionesPage: React.FC = () => {
                                 }}
                               />
                             </div>
+                          </div>
+
+                          {/* Badge Visual de Neto en Efectivo a Devolver */}
+                          <div className="p-2 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex items-center justify-between mt-0.5">
+                            <span className="text-[9.5px] font-bold text-emerald-800 dark:text-emerald-300">
+                              💵 Neto a Devolver al Inversionista:
+                            </span>
+                            <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-400">
+                              {selectedContrato.moneda} {Math.max(0, arm.monto - arm.penalidad).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
                           </div>
 
                         </div>
