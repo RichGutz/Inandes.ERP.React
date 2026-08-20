@@ -1523,17 +1523,17 @@ export const InversionistasPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
               {[
                 { m: 1, name: 'Enero', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', funds: ['NSGPEN', 'NSGUSD'], cNum: 1, cType: 'Bimestre' },
-                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', funds: ['NSLCON'], cNum: 1, cType: 'Trimestre' },
-                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', funds: ['NSGPEN', 'NSGUSD'], cNum: 2, cType: 'Bimestre' },
+                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 1, cType: 'Bimestre' },
+                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', funds: ['NSLCON01'], cNum: 1, cType: 'Trimestre' },
+                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 2, cType: 'Bimestre' },
                 { m: 5, name: 'Mayo', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 6, name: 'Junio', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', funds: ['NSGPEN', 'NSGUSD', 'NSLCON'], cNum: 3, cType: 'Bimestre' },
+                { m: 6, name: 'Junio', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 3, cType: 'Bimestre' },
                 { m: 7, name: 'Julio', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', funds: ['NSGPEN', 'NSGUSD'], cNum: 4, cType: 'Bimestre' },
-                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', funds: ['NSLCON'], cNum: 3, cType: 'Trimestre' },
-                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', funds: ['NSGPEN', 'NSGUSD'], cNum: 5, cType: 'Bimestre' },
+                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 4, cType: 'Bimestre' },
+                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', funds: ['NSLCON01'], cNum: 3, cType: 'Trimestre' },
+                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 5, cType: 'Bimestre' },
                 { m: 11, name: 'Noviembre', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 12, name: 'Diciembre', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', funds: ['NSGPEN', 'NSGUSD', 'NSLCON'], cNum: 6, cType: 'Bimestre' }
+                { m: 12, name: 'Diciembre', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 6, cType: 'Bimestre' }
               ].map(item => {
                 // Verificar si este mes tiene cierres guardados en DB
                 let isClosedInDb = false;
@@ -1558,23 +1558,18 @@ export const InversionistasPage: React.FC = () => {
                         setV40SelNum(item.cNum);
                       }
                     }}
-                    className={`rounded-2xl p-4 border transition-all flex flex-col justify-between min-h-[145px] relative overflow-hidden ${
+                    className={`rounded-2xl p-3.5 border transition-all flex flex-col justify-between min-h-[160px] ${
                       !hasCycle
                         ? 'bg-slate-50/40 dark:bg-slate-900/20 border-dashed border-[#e2e8f0] dark:border-[#334155] opacity-50'
                         : isSelected
-                        ? 'bg-white dark:bg-[#1e293b] border-[#0284c7] shadow-lg shadow-[#0284c7]/15 ring-2 ring-[#0284c7]/40 scale-[1.02] cursor-pointer'
-                        : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] hover:shadow-md cursor-pointer'
+                        ? 'bg-white dark:bg-[#1e293b] border-2 border-[#0284c7] shadow-md shadow-[#0284c7]/20 scale-[1.02] cursor-pointer'
+                        : 'bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] hover:shadow-sm cursor-pointer'
                     }`}
                   >
-                    {/* Borde decorativo superior activo */}
-                    {isSelected && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0284c7] to-[#4f46e5]" />
-                    )}
-
                     {/* Cabecera del Mes */}
                     <div className="flex items-start justify-between gap-1">
                       <div>
-                        <span className="text-[11px] font-mono text-[#64748b] dark:text-[#94a3b8] font-bold block">
+                        <span className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] font-bold block">
                           MES {String(item.m).padStart(2, '0')}
                         </span>
                         <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wide">
@@ -1586,14 +1581,14 @@ export const InversionistasPage: React.FC = () => {
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase shadow-xs ${
                           isClosedInDb
                             ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-[#059669]/20 dark:text-[#34d399]'
-                            : 'bg-[#fffbeb] text-[#d97706] border border-[#fde68a] dark:bg-[#d97706]/20 dark:text-[#fbbf24]'
+                            : 'bg-[#fff1f2] text-[#e11d48] border border-[#fecdd3] dark:bg-[#e11d48]/20 dark:text-[#fb7185]'
                         }`}>
                           {isClosedInDb ? '● CERRADO' : '● ABIERTO'}
                         </span>
                       )}
                     </div>
 
-                    {/* Ciclo y Badges de Fondos */}
+                    {/* Ciclo y Badges de Fondos (Todos los fondos del mes) */}
                     <div className="my-2 flex flex-col gap-1.5">
                       {hasCycle ? (
                         <>
@@ -1601,7 +1596,7 @@ export const InversionistasPage: React.FC = () => {
                             <span className="font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
                               {item.cycle}
                             </span>
-                            <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
+                            <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono font-bold">
                               {item.corte}
                             </span>
                           </div>
@@ -1610,7 +1605,7 @@ export const InversionistasPage: React.FC = () => {
                             {item.funds.map(f => (
                               <span 
                                 key={f} 
-                                className="px-1.5 py-0.5 rounded text-[8.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1] border border-slate-200 dark:border-slate-700"
+                                className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-100 dark:bg-slate-800/80 text-[#334155] dark:text-[#cbd5e1] border border-slate-200 dark:border-slate-700/60"
                               >
                                 {f}
                               </span>
