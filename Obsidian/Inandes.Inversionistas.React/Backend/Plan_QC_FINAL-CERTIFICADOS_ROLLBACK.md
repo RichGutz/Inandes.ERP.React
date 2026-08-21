@@ -156,9 +156,24 @@ La suite agéntica autónoma [`scratch/qc_loop_runner.py`](file:///C:/Users/rgut
 [08:24:51] ==================================================
 [08:24:51] EXITO TOTAL: LOOP DE CONTROL DE CALIDAD COMPLETADO CON CONVERGENCIA 100%
 [08:24:51] ==================================================
+### 6.2 Blindaje de Temporalidad de Contratos Nuevos (Marzo/Abril)
+
+Se implementó y verificó en el motor contable (`financialCalculator.ts`) la regla de exclusión estricta por fecha de nacimiento:
+- **Regla:** Si `c.fecha_inicio > fechaFin`, el contrato queda **100% excluido** de las consultas, tablas, archivos Excel y reportes PDF de ese corte contable.
+- **Resultado del Control QC:**
+  - **Corte 28/02/2026:** Los 11 contratos nacidos en Marzo y Abril 2026 fueron excluidos con éxito (**0/11 presentes en Ene-Feb**).
+  - **Corte 30/04/2026:** Los 11 contratos fueron incorporados con devengue diario proporcional desde su día exacto de emisión (**11/11 presentes en Mar-Abr**).
+
+```
+[09:20:12]   -> Verificacion Contratos Futuros Mar-Abr (0/11 presentes en B1): OK (100% Excluidos de Ene-Feb)
+[09:20:14]   -> Verificacion Inclusion Correcta Mar-Abr (11/11 presentes en B2): OK
+[09:20:21]   -> Idempotencia B1 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
+[09:20:23]   -> Idempotencia B2 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
 ```
 
-### 6.1 Trazabilidad Paso a Paso de los 4 Roleos Ejecutados en BD
+---
+
+### 7. ⚖️ Conclusiones y Garantías del Sistema
 
 | # | Fase del Loop | Tipo de Operación | Período Afectado | Impacto en Base de Datos Supabase | Resultado de Verificación |
 |---|---|---|---|---|---|

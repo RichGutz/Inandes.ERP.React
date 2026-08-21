@@ -148,10 +148,33 @@ export const generateRetornosV40 = async (
   }
 
   const fStartStr = fStart.toISOString().split('T')[0];
+  const fEndStr = fechaFin.toISOString().split('T')[0];
 
   // Filtrar solo los contratos vigentes durante el periodo evaluado
   const contratosMaster = rawContratosMaster.filter(c => {
-    if (c.estado === 'emitido') return true;
+    // 1. Si el contrato inicia DESPUES de la fecha de corte, aun no nace contablemente
+    const fIniStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '2000-01-01';
+    if (fIniStr > fEndStr) {
+      return false;
+    }
+
+    // 2. Si el contrato esta en estado emitido, verificar si tuvo un cierre con saldo 0 previo a este periodo
+    if (c.estado === 'emitido') {
+      const evs = eventsByContrato[c.id_contrato] || [];
+      const cierresPrevios = evs.filter(e => 
+        ['cierre_fin_contrato', 'cierre_por_rescate'].includes(e.tipo_evento) &&
+        e.fecha_periodo_fin &&
+        e.fecha_periodo_fin.split('T')[0] < fStartStr
+      );
+      if (cierresPrevios.length > 0) {
+        const lastC = cierresPrevios[cierresPrevios.length - 1];
+        const saldoC = Number(lastC.capital_final_saldo ?? lastC.capital_base ?? 0);
+        if (saldoC <= 0) return false;
+      }
+      return true;
+    }
+
+    // 3. Si el contrato esta cerrado, solo incluirlo si cerro durante este periodo o posterior
     const fFinStr = c.fecha_fin ? c.fecha_fin.split('T')[0] : '2099-12-31';
     if (fFinStr >= fStartStr) return true;
     const evs = eventsByContrato[c.id_contrato] || [];
