@@ -158,6 +158,21 @@ La suite agéntica autónoma [`scratch/qc_loop_runner.py`](file:///C:/Users/rgut
 [08:24:51] ==================================================
 ```
 
+### 6.1 Trazabilidad Paso a Paso de los 4 Roleos Ejecutados en BD
+
+| # | Fase del Loop | Tipo de Operación | Período Afectado | Impacto en Base de Datos Supabase | Resultado de Verificación |
+|---|---|---|---|---|---|
+| 1 | **Fase 1** | Cierre Oficial B1 | `2026-01-01` $\rightarrow$ `2026-02-28` | Inserta 185 asientos en `crm_certificados_eventos`. Cierra contratos extintos. Procesa cuotas Feb. | ✅ Rescates de Parra, Milla, Perales, Parodi y Villegas exactos. |
+| 2 | **Fase 2** | Cierre Oficial B2 | `2026-03-01` $\rightarrow$ `2026-04-30` | Inserta 192 asientos. Procesa cuotas Abr. Excluye extintos de Feb. | ✅ Extintos de Feb no devengan en B2. Parra aplica 2do rescate. |
+| 3 | **Fase 3** | **ROLEO #1 (Rollback B2)** | `2026-04-30` | Elimina los 192 asientos de Abr. Reactiva contratos de Abr a `'emitido'` y cuotas a `'PENDIENTE'`. | ✅ Asientos de B1 (28/02) permanecen **100% intactos (185 registros)**. |
+| 4 | **Fase 4** | **ROLEO #2 (Rollback B1)** | `2026-02-28` | Elimina los 185 asientos de Feb. Reactiva contratos de Feb a `'emitido'` y cuotas a `'PENDIENTE'`. | ✅ Retorno limpio a estado de apertura `01/01/2026` (0 cierres en BD). |
+| 5 | **Fase 5** | Re-cálculo B1 (Run 2) | `2026-01-01` $\rightarrow$ `2026-02-28` | Re-calcula y compara campo por campo vs Run 1. Inserta 185 asientos. | ✅ **Idempotencia B1:** Delta 0.00 exacto. |
+| 6 | **Fase 6** | Re-cálculo B2 (Run 2) | `2026-03-01` $\rightarrow$ `2026-04-30` | Re-calcula y compara campo por campo vs Run 1. Inserta 192 asientos. | ✅ **Idempotencia B2:** Delta 0.00 exacto. |
+| 7 | **Fase 7** | **ROLEO #3 (Rollback B2)** | `2026-04-30` | Elimina asientos de Abr. Reactiva cuotas y contratos. | ✅ Limpieza atómica de B2. |
+| 8 | **Fase 8** | **ROLEO #4 (Rollback B1)** | `2026-02-28` | Elimina asientos de Feb. Reactiva cuotas y contratos. | ✅ BD queda 100% limpia en apertura para el usuario. |
+
+---
+
 ### 7. ⚖️ Conclusiones y Garantías del Sistema
 1. **Fe Pública Contable:** Los contratos cerrados se visualizan con su rescate total y saldo `0.00` en la fecha de cierre de su período de corte y son automáticamente excluidos del devengue en períodos subsiguientes.
 2. **Preservación Inviolable de Ingredientes:** El Rollback ("Roleo") elimina única y exclusivamente los asientos calculados del período sin tocar los aumentos de capital, cuotas de cronograma ni contratos originales.
