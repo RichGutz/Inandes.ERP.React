@@ -171,46 +171,52 @@ Nuestra suite agéntica de control de calidad (`qc_loop_runner.py` / `generate_b
 ## 6. 📝 Bitácora de Ejecución del Loop de Control de Calidad
 
 ```
-[11:50:57] ==================================================
-[11:50:57] INICIANDO LOOP DE CONTROL DE CALIDAD Y CONVERGENCIA
-[11:50:57] ==================================================
-[11:50:57] Fase 0: Saneando base de datos a estado de apertura 01/01/2026...
-[11:50:59] Fase 1: Calculando Bimestre 1 (2026-01-01 a 2026-02-28)...
-[11:51:00] Bimestre 1 calculado: 185 asientos generados.
-[11:51:00]   -> Verificacion Contratos Futuros Mar-Abr (0/11 presentes en B1): OK (100% Excluidos de Ene-Feb)
-[11:51:00]   -> Verificacion Parra Forero (S/ 1,900k -> S/ 1,575k): OK
-[11:51:00]   -> Verificacion Castillo De Milla (S/ 50k -> S/ 0.00 EXTINTO): OK
-[11:51:00]   -> Verificacion Perales Bazalar (S/ 200k @ 9% -> S/ 0.00 EXTINTO): OK
-[11:51:00]   -> Verificacion Parodi Velasquez (S/ 190k -> S/ 0.00 EXTINTO): OK
-[11:51:00]   -> Verificacion Villegas Pozo ($ 60k -> $ 0.00 EXTINTO): OK
-[11:51:00] Registrando 185 asientos oficiales en DB para el corte 2026-02-28...
-[11:51:01] Oficializacion completada para 2026-02-28. Asientos insertados: 185.
-[11:51:01] Fase 2: Calculando Bimestre 2 (2026-03-01 a 2026-04-30)...
-[11:51:03] Bimestre 2 calculado: 192 asientos generados.
-[11:51:03]   -> Verificacion Inclusion Correcta Mar-Abr (11/11 presentes en B2): OK
-[11:51:03]   -> Verificacion de Exclusion de Contratos Extintos en B2: OK (100% Excluidos)
-[11:51:03]   -> Verificacion Parra Forero B2 (S/ 1,575k -> S/ 1,250k): OK
-[11:51:03] Registrando 192 asientos oficiales en DB para el corte 2026-04-30...
-[11:51:04] Oficializacion completada para 2026-04-30. Asientos insertados: 192.
-[11:51:04] Fase 3: Probando Rollback de Bimestre 2 (2026-04-30)...
-[11:51:04] Ejecutando Rollback de 2026-04-30...
-[11:51:06] Rollback completado para 2026-04-30.
-[11:51:06]   -> Verificacion Integridad B1 tras Rollback B2: OK
-[11:51:06] Fase 4: Probando Rollback de Bimestre 1 (2026-02-28)...
-[11:51:06] Ejecutando Rollback de 2026-02-28...
-[11:51:08] Rollback completado para 2026-02-28.
-[11:51:08]   -> Verificacion Vuelta a Estado Inicial 01/01/2026: OK
-[11:51:08] Fase 5: Re-calculando Bimestre 1 (Run 2)...
-[11:51:09]   -> Idempotencia B1 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
-[11:51:09] Registrando 185 asientos oficiales en DB para el corte 2026-02-28...
-[11:51:11] Oficializacion completada para 2026-02-28. Asientos insertados: 185.
-[11:51:11] Fase 6: Re-calculando Bimestre 2 (Run 2)...
-[11:51:12]   -> Idempotencia B2 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
-[11:51:12] Ejecutando Rollback de 2026-02-28...
-[11:51:14] Rollback completado para 2026-02-28.
-[11:51:14] ==================================================
-[11:51:14] EXITO TOTAL: LOOP DE CONTROL DE CALIDAD COMPLETADO CON CONVERGENCIA 100%
-[11:51:14] ==================================================
+[18:44:53] ==================================================
+[18:44:53] INICIANDO LOOP DE CONTROL DE CALIDAD Y CONVERGENCIA
+[18:44:53] ==================================================
+[18:44:53] Fase 0: Saneando base de datos a estado de apertura 01/01/2026...
+[18:44:54]   -> Sr. Zapata Palacios configurado en BD: porcentaje_reparto = 0 (Capitalizacion 100% Ene-Feb)
+[18:44:54] Fase 1: Calculando Bimestre 1 (2026-01-01 a 2026-02-28)...
+[18:44:56] Bimestre 1 calculado: 185 asientos generados.
+[18:44:56]   -> Verificacion Contratos Futuros Mar-Abr (0/11 presentes en B1): OK (100% Excluidos de Ene-Feb)
+[18:44:56]   -> Verificacion Parra Forero (S/ 1,900k -> S/ 1,575k): OK
+[18:44:56]   -> Verificacion Castillo De Milla (S/ 50k -> S/ 0.00 EXTINTO): OK
+[18:44:56]   -> Verificacion Perales Bazalar (S/ 200k @ 9% -> S/ 0.00 EXTINTO): OK
+[18:44:56]   -> Verificacion Parodi Velasquez (S/ 190k -> S/ 0.00 EXTINTO): OK
+[18:44:56]   -> Verificacion Villegas Pozo ($ 60k -> $ 0.00 EXTINTO): OK
+[18:44:56]   -> Verificacion Zapata Palacios B1 (S/ 251.8k + S/ 3.6k Cap 100% -> S/ 255,554.72): OK
+[18:44:56] Registrando 185 asientos oficiales en DB para el corte 2026-02-28...
+[18:44:57] Oficializacion completada para 2026-02-28. Asientos insertados: 185.
+[18:44:57]   -> Transicion en BD aplicada: Sr. Zapata porcentaje_reparto = 100 (Reparto en Efectivo Mar-Abr)
+[18:44:57] Fase 2: Calculando Bimestre 2 (2026-03-01 a 2026-04-30)...
+[18:44:59] Bimestre 2 calculado: 192 asientos generados.
+[18:44:59]   -> Verificacion Inclusion Correcta Mar-Abr (11/11 presentes en B2): OK
+[18:44:59]   -> Verificacion de Exclusion de Contratos Extintos en B2: OK (100% Excluidos)
+[18:44:59]   -> Verificacion Parra Forero B2 (S/ 1,575k -> S/ 1,250k): OK
+[18:44:59]   -> Verificacion Aumento Fouscas Elera (S/ 35.5k + S/ 15.0k Aum + S/ 842.93 Cap -> S/ 51,407.07): OK
+[18:44:59]   -> Verificacion Zapata Palacios B2 (Base S/ 255.5k + Reparto S/ 3.8k - Rescate S/ 5.5k -> S/ 250,000.00): OK
+[18:44:59] Registrando 192 asientos oficiales en DB para el corte 2026-04-30...
+[18:45:00] Oficializacion completada para 2026-04-30. Asientos insertados: 192.
+[18:45:00] Fase 3: Probando Rollback de Bimestre 2 (2026-04-30)...
+[18:45:00] Ejecutando Rollback de 2026-04-30...
+[18:45:02] Rollback completado para 2026-04-30.
+[18:45:02]   -> Verificacion Integridad B1 tras Rollback B2: OK
+[18:45:02] Fase 4: Probando Rollback de Bimestre 1 (2026-02-28)...
+[18:45:02] Ejecutando Rollback de 2026-02-28...
+[18:45:04] Rollback completado para 2026-02-28.
+[18:45:04]   -> Verificacion Vuelta a Estado Inicial 01/01/2026: OK
+[18:45:04] Fase 5: Re-calculando Bimestre 1 (Run 2)...
+[18:45:06]   -> Idempotencia B1 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
+[18:45:06] Registrando 185 asientos oficiales en DB para el corte 2026-02-28...
+[18:45:07] Oficializacion completada para 2026-02-28. Asientos insertados: 185.
+[18:45:07] Fase 6: Re-calculando Bimestre 2 (Run 2)...
+[18:45:09]   -> Idempotencia B2 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
+[18:45:09] Ejecutando Rollback de 2026-02-28...
+[18:45:11] Rollback completado para 2026-02-28.
+[18:45:11]   -> Base de datos devuelta a apertura 01/01/2026 con Zapata en Capitalizacion 100% (porcentaje_reparto = 0)
+[18:45:11] ==================================================
+[18:45:11] EXITO TOTAL: LOOP DE CONTROL DE CALIDAD COMPLETADO CON CONVERGENCIA 100%
+[18:45:11] ==================================================
 ```
 
 ---
