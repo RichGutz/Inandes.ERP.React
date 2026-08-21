@@ -442,7 +442,8 @@ export const CertificadosPage: React.FC = () => {
     setAumentoSuccess(false);
 
     try {
-      const nuevoSaldo = (targetCert.capital_actual || 0) + aumentoMonto;
+      const capitalAnterior = Number(targetCert.capital_actual || 0);
+      const nuevoSaldo = capitalAnterior + aumentoMonto;
 
       const eventPayload: CertificadoEvento = {
         id_certificado: targetCert.id_certificado,
@@ -451,7 +452,7 @@ export const CertificadosPage: React.FC = () => {
         tipo_evento: 'aumento_capital',
         fecha_periodo_origen: aumentoFecha,
         fecha_periodo_fin: aumentoFecha,
-        capital_base: nuevoSaldo,
+        capital_base: capitalAnterior,
         interes_generado_bruto: 0,
         impuestos_renta: 0,
         interes_neto_disponible: 0,

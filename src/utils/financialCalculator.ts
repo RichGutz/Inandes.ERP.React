@@ -278,7 +278,16 @@ export const generateRetornosV40 = async (
           continue;
         }
         if (fEv <= fechaFin) {
-          const monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
+          let monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
+          
+          // Fallback de ultra-robustez: si el delta es 0 o menor, extraer el monto desde la glosa 'notas'
+          if (monto <= 0 && e.notas) {
+            const match = String(e.notas).match(/Aumento\s+de\s+capital\s+por\s+([0-9.,]+)/i);
+            if (match) {
+              monto = parseFloat(match[1].replace(/,/g, '')) || 0;
+            }
+          }
+
           if (monto > 0) {
             hijos.push({
               id: `Aumento (${formatDate(fEv)})`,

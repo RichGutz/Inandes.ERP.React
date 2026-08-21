@@ -242,3 +242,49 @@ Nuestra suite agéntica de control de calidad (`qc_loop_runner.py` / `generate_b
 | 6 | **`financialCalculator.ts`** | `src/utils/financialCalculator.ts` | Motor de cálculo financiero TypeScript en frontend con blindaje temporal y soporte de 15 columnas oficiales. |
 | 7 | **`pdfGeneratorBelloConDesglose.ts`** | `src/utils/pdfGeneratorBelloConDesglose.ts` | Generador de reportes PDF oficiales con desglose de cupones, rescates, penalidades y transferencias. |
 | 8 | **`Plan_QC_FINAL-CERTIFICADOS_ROLLBACK.md`** | `Obsidian/Inandes.Inversionistas.React/Backend/...` | Documento maestro de arquitectura y especificación de control de calidad. |
+
+---
+
+## 9. 🔬 Análisis Post-Mortem de Errores Detectados y Blindaje Definitivo
+
+La suite de Control de Calidad se fortaleció a partir del diagnóstico y resolución de tres errores de integración:
+
+```mermaid
+graph TD
+    subgraph "Errores Detectados y Resueltos en el Loop QC"
+        E1["🔴 Error #1: Contratos Futuros en Ene-Feb<br/><i>11 contratos nacidos en Mar/Abr incluidos indebidamente</i>"]
+        E2["🔴 Error #2: Omisión de Aumentos de Capital<br/><i>Caso Fouscas: CapFinal - CapBase = 0 en payload</i>"]
+        E3["🔴 Error #3: Desalineación Excel vs PDF<br/><i>Falta de columnas PENALIDAD y TRANSFERENCIAS</i>"]
+    end
+
+    subgraph "Blindajes Aplicados al Sistema"
+        B1["🟢 Blindaje 1: Regla de Temporalidad Estricta<br/><i>fecha_inicio > fEnd descartado de raíz</i>"]
+        B2["🟢 Blindaje 2: Extracción Dual + Conciliación Entrada<br/><i>Delta + RegEx de notas + Aserción de inventario</i>"]
+        B3["🟢 Blindaje 3: Estándar 1:1 de 15 Columnas<br/><i>Fórmula de Flujo de Caja Líquido Bancario</i>"]
+    end
+
+    E1 --> B1
+    E2 --> B2
+    E3 --> B3
+```
+
+### 9.1 Error #1: Contratos Nuevos con Fecha Posterior en Reportes de Apertura
+- **Síntoma:** En el corte del `28/02/2026`, aparecían 11 contratos que recién iniciaban en Marzo y Abril (ej. `NSGPEN02-014`, `NSGPEN03-004`, `NSGUSD02-014`).
+- **Causa Raíz:** La instrucción `if (c.estado === 'emitido') return true;` en `financialCalculator.ts` no validaba si `c.fecha_inicio <= fechaFin`.
+- **Solución y Blindaje:** Se implementó la regla `if (fIniStr > fEndStr) return false;` y una aserción estricta en el QC loop verificando `0/11` contratos presentes en Enero-Febrero.
+
+### 9.2 Error #2: Omisión del Aumento de Capital en Marzo-Abril (Caso Fouscas Elera `NSGPEN03-058.20240923`)
+- **Síntoma:** Víctor Hugo Fouscas aportó **S/ 15,012.58 PEN** el `2026-03-01`, pero en el reporte de Abril no figuraba la fila secundaria `└─ Incremento de Capital` ni devengaba sus intereses.
+- **Causa Raíz:**
+  1. El formulario React (`CertificadosPage.tsx`) grababa `CapBase = 50,564.14` y `CapFinal = 50,564.14` (guardaba el nuevo saldo en ambos campos).
+  2. El motor calculaba `monto = CapFinal - CapBase = 0.00`, por lo que `if (monto > 0)` daba falso.
+  3. **Sesgo de Espejo:** El script inicial de QC implementó la misma fórmula de resta, provocando que ambos sistemas ignoraran el aumento en sincronía sin arrojar error.
+- **Solución y Blindaje:**
+  1. **Extracción Dual:** Si `CapFinal - CapBase <= 0`, el motor extrae el monto exacto parseando la glosa descriptiva de `notas` mediante expresión regular.
+  2. **Corrección de Formulario:** `CertificadosPage.tsx` ahora registra `capital_base = capitalAnterior` y `capital_final_saldo = nuevoSaldo`.
+  3. **Aserción de Conciliación de Entrada (`Input Reconciliation`):** El QC valida que todo evento `aumento_capital` en BD sea procesado obligatoriamente como un incremento con monto mayor a cero.
+
+### 9.3 Error #3: Falta de Paridad en Columnas de Excel respecto al PDF
+- **Síntoma:** El Excel exportable tenía menos columnas que el PDF oficial y no mostraba las penalidades ni el monto neto a transferir al banco.
+- **Solución y Blindaje:** Estandarización de las 15 columnas idénticas y cálculo explícito de `TRANSFERENCIAS = Neto Final + (Rescates - Penalidades)`.
+
