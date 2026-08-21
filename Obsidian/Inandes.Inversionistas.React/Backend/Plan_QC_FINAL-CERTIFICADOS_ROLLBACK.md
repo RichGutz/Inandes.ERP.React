@@ -191,6 +191,20 @@ Para garantizar que el archivo Excel exportable (`handleExportExcelV40` y `rowsX
 | 14 | **`TRANSFERENCIAS`** | $\text{Neto Final} + (\text{Rescates} - \text{Penalidad})$ *(Flujo líquido a abonar en cuenta bancaria)*. |
 | 15 | **`CAPITAL FINAL`** | $\text{Capital Base} + \text{Aumentos} + \text{Capitalización} - \text{Rescates} - \text{Penalidades}$. |
 
+### 6.4 Reasignación Oficial del Contrato de Patricia Guzmán (`NSGUSD02-014`)
+
+Se ejecutó la migración atómica en Supabase para alinear la numeración manual requerida por el usuario:
+- **Origen:** `NSGUSD02-001.20260314`
+- **Destino:** **`NSGUSD02-014.20260314`** (Titular: *Patricia Zarela Guzmán Manrique* — $ 20,000.00 USD @ 7.00%)
+- **Tablas Actualizadas:**
+  1. `crm_contratos`: Clave primaria actualizada a `NSGUSD02-014.20260314`.
+  2. `crm_certificados`: Certificado actualizado a `NSGUSD02-014.20260314.20260314`.
+  3. `crm_certificados_eventos`: Evento de emisión inicial (`id_evento: 3238`) y asientos del ledger actualizados.
+  4. `crm_cronograma_deducciones_rescates`: Integridad referencial asegurada.
+- **Validación QC:**
+  - En Ene-Feb (`2026-02-28`): Excluido 100% por fecha de nacimiento.
+  - En Mar-Abr (`2026-04-30`): Incluido con su correlativo oficial `NSGUSD02-014`, devengando 48 días exactos proporcionales ($ 184.11 bruto / $ 174.90 neto a transferir).
+
 ---
 
 ### 7. ⚖️ Conclusiones y Garantías del Sistema
