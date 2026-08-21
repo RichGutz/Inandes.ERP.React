@@ -767,7 +767,7 @@ export const InversionistasPage: React.FC = () => {
 
     const wb = XLSX.utils.book_new();
 
-    // 1. Generar pestañas limpias por Fondo con Formato Oficial y Desglose Bello
+    // 1. Generar pestañas limpias por Fondo con Formato Oficial y Desglose Bello (Fiel Reflejo 1:1 del PDF)
     currentResult.pdfData.forEach((fData: any) => {
       const fondoId = fData.fondo.id_fondo;
       const moneda = fData.fondo.moneda;
@@ -787,11 +787,17 @@ export const InversionistasPage: React.FC = () => {
             "CAPITALIZACION": "-",
             "REPARTO": "-",
             "DEDUCCIONES": "-",
+            "PENALIDAD": "-",
             "NETO FINAL": "-",
             "RESCATES": "-",
+            "TRANSFERENCIAS": "-",
             "CAPITAL FINAL": "-"
           };
         }
+
+        const rNetoFinal = r.neto_total !== undefined ? r.neto_total : Math.round(((r.reparto_valor || 0) - (r.deducciones_total || 0)) * 100) / 100;
+        const rRescatesNetos = Math.round(((r.devolucion_capital || 0) - (r.penalidad_rescate || 0)) * 100) / 100;
+        const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
 
         return {
           "#": r.n_orden,
@@ -804,13 +810,19 @@ export const InversionistasPage: React.FC = () => {
           "CAPITALIZACION": r.capitalizacion,
           "REPARTO": r.reparto_valor,
           "DEDUCCIONES": r.deducciones_total,
-          "NETO FINAL": r.neto_total,
-          "RESCATES": r.devolucion_capital,
+          "PENALIDAD": r.penalidad_rescate || 0,
+          "NETO FINAL": rNetoFinal,
+          "RESCATES": r.devolucion_capital || 0,
+          "TRANSFERENCIAS": rTransferencia,
           "CAPITAL FINAL": r.capital_final
         };
       });
 
       // Fila de Totales del Fondo
+      const totNetoFinal = totals.neto_total !== undefined ? totals.neto_total : Math.round(((totals.reparto_valor || 0) - (totals.deducciones_total || 0)) * 100) / 100;
+      const totRescatesNetos = Math.round(((totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0)) * 100) / 100;
+      const totTransferencia = Math.round((totNetoFinal + totRescatesNetos) * 100) / 100;
+
       sheetRows.push({
         "#": "TOTALES",
         "Certificado": `${fondoId} (${moneda})`,
@@ -822,8 +834,10 @@ export const InversionistasPage: React.FC = () => {
         "CAPITALIZACION": totals.capitalizacion,
         "REPARTO": totals.reparto_valor,
         "DEDUCCIONES": totals.deducciones_total,
-        "NETO FINAL": Math.round(((totals.reparto_valor || 0) - (totals.deducciones_total || 0)) * 100) / 100,
-        "RESCATES": totals.devolucion_capital,
+        "PENALIDAD": totals.penalidad_rescate || 0,
+        "NETO FINAL": totNetoFinal,
+        "RESCATES": totals.devolucion_capital || 0,
+        "TRANSFERENCIAS": totTransferencia,
         "CAPITAL FINAL": totals.capital_final
       });
 

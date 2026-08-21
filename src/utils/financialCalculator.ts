@@ -501,15 +501,20 @@ export const generateRetornosV40 = async (
         rx[columnasFechas[k]] = Math.round(r.valores_dia_padre[k] * 1000000) / 1000000;
       }
 
+      const rNetoFinal = Math.round((rep_v - ded_ord) * 100) / 100;
+      const rRescatesNetos = Math.round((rescate_sum - penalidad_sum) * 100) / 100;
+      const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+
       rx["INT. BRUTO"] = bruto;
       rx["IR (5%)"] = imp;
       rx["BASE NETA"] = neta;
       rx["CAPITALIZACION"] = cap_z;
       rx["REPARTO"] = rep_v;
       rx["DEDUCCIONES"] = ded_ord;
-      rx["NETO FINAL"] = Math.round((rep_v - ded_ord) * 100) / 100;
-      rx["RESCATES"] = rescate_sum;
       rx["PENALIDAD"] = penalidad_sum;
+      rx["NETO FINAL"] = rNetoFinal;
+      rx["RESCATES"] = rescate_sum;
+      rx["TRANSFERENCIAS"] = rTransferencia;
       rx["AUM. CAPITAL"] = aum_v;
       rx["CAPITAL FINAL"] = cap_final;
 
@@ -529,7 +534,7 @@ export const generateRetornosV40 = async (
           hx[columnasFechas[k]] = Math.round(h.v_dias[k] * 1000000) / 1000000;
         }
         hx["INT. BRUTO"] = Math.round(h.interes_acum * 100) / 100;
-        const zeroCols = ["IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "NETO FINAL", "RESCATES", "PENALIDAD", "AUM. CAPITAL", "CAPITAL FINAL"];
+        const zeroCols = ["IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "PENALIDAD", "NETO FINAL", "RESCATES", "TRANSFERENCIAS", "AUM. CAPITAL", "CAPITAL FINAL"];
         for (const col of zeroCols) {
           hx[col] = "-";
         }
@@ -593,6 +598,9 @@ export const generateRetornosV40 = async (
     }
 
     // Fila final de totales por fondo para el Excel
+    const totRescatesNetos = Math.round(((fTotals.devolucion_capital || 0) - (fTotals.penalidad_rescate || 0)) * 100) / 100;
+    const totTransferencia = Math.round(((fTotals.neto_total || 0) + totRescatesNetos) * 100) / 100;
+
     rowsXls.push({
       "#": "",
       "Certificado": "TOTALES",
@@ -606,9 +614,10 @@ export const generateRetornosV40 = async (
       "CAPITALIZACION": fTotals.capitalizacion,
       "REPARTO": fTotals.reparto_valor,
       "DEDUCCIONES": fTotals.deducciones_total,
+      "PENALIDAD": fTotals.penalidad_rescate,
       "NETO FINAL": fTotals.neto_total,
       "RESCATES": fTotals.devolucion_capital,
-      "PENALIDAD": fTotals.penalidad_rescate,
+      "TRANSFERENCIAS": totTransferencia,
       "AUM. CAPITAL": fTotals.aumentos,
       "CAPITAL FINAL": fTotals.capital_final
     });

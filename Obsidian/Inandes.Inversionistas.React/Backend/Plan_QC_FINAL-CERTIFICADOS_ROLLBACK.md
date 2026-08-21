@@ -169,7 +169,27 @@ Se implementó y verificó en el motor contable (`financialCalculator.ts`) la re
 [09:20:14]   -> Verificacion Inclusion Correcta Mar-Abr (11/11 presentes en B2): OK
 [09:20:21]   -> Idempotencia B1 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
 [09:20:23]   -> Idempotencia B2 (Run 1 == Run 2): CONVERGENCIA 100% EXACTA
-```
+### 6.3 Alineación Estricta 1:1 de Columnas entre Excel y PDF
+
+Para garantizar que el archivo Excel exportable (`handleExportExcelV40` y `rowsXls`) sea un **fiel reflejo visual y numérico al 100% del reporte PDF oficial**, se alinearon las 15 columnas en el orden exacto:
+
+| # | Columna Excel / PDF | Fórmula / Definición Contable |
+|---|---|---|
+| 1 | **`#`** | Número de orden correlativo por fondo. |
+| 2 | **`Certificado`** | Código del contrato / certificado. |
+| 3 | **`Inversionista`** | Nombre completo o partícipe (`└─ Incremento de Capital` para aumentos). |
+| 4 | **`Capital Base`** | Saldo inicial al inicio del período evaluado. |
+| 5 | **`INT. BRUTO`** | Interés bruto devengado en los días del período base 365. |
+| 6 | **`IR (5%)`** | Impuesto a la Renta de 2da categoría retenido. |
+| 7 | **`BASE NETA`** | $\text{Interés Bruto} - \text{IR 5\%}$. |
+| 8 | **`CAPITALIZACION`** | $\text{Base Neta} \times (1 - \text{porcentaje\_reparto})$ (0.00 en rescate total). |
+| 9 | **`REPARTO`** | $\text{Base Neta} \times \text{porcentaje\_reparto}$ (100% en rescate total). |
+| 10 | **`DEDUCCIONES`** | Gastos o comisiones de gestión ordinarias. |
+| 11 | **`PENALIDAD`** | Multas deducidas del rescate anticipado de capital. |
+| 12 | **`NETO FINAL`** | $\text{Reparto} - \text{Deducciones Ordinarias}$. |
+| 13 | **`RESCATES`** | Devolución de capital principal del período. |
+| 14 | **`TRANSFERENCIAS`** | $\text{Neto Final} + (\text{Rescates} - \text{Penalidad})$ *(Flujo líquido a abonar en cuenta bancaria)*. |
+| 15 | **`CAPITAL FINAL`** | $\text{Capital Base} + \text{Aumentos} + \text{Capitalización} - \text{Rescates} - \text{Penalidades}$. |
 
 ---
 
