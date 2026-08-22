@@ -208,3 +208,29 @@
 1. Validada compilación local con Vite `npm run build` (0 errores).
 2. Sincronizado y publicado commit `69ee297` en `origin/main` (`RichGutz/Inandes.ERP.React`).
 3. Auto-despliegue en caliente ejecutado por el Webhook de Coolify en VPS Contabo (`169.58.168.107` / `inandes.geeksoft.tech`).
+[2026-08-22 14:04:00-05:00] IMPLEMENTACIÓN COMPLETA DE GENERADOR TXT TELECRÉDITO BCP (ABONOS MASIVOS):
+1. Creado el servicio `bcpTelecreditoService.ts` para estructurar la cabecera 'C' (96/97 chars) y detalles 'A' (120 chars por certificado con TRANSFERENCIAS > 0).
+2. Integrado el botón 'Generar TXT BCP (Telecrédito)' en Columna 2 de `InversionistasPage.tsx` con modal interactivo de previsualización, conteo de canales (BCP vs CCI), alertas de cuentas faltantes y descarga directa.
+3. Creado el script de validación `scripts/generate_bcp_telecredito_txt.js` y generados los archivos TXT reales de prueba en `reports/`. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:08:00-05:00] EXCEL MULTI-PESTAÑA DE AUDITORÍA TELECRÉDITO BCP (1 TAB POR FONDO):
+1. Creada la función `generateBcpTelecreditoExcel` en `bcpTelecreditoService.ts` que genera un libro Excel con 1 pestaña por fondo (`BCP_NSGPEN01`, etc.).
+2. Cada pestaña incluye la Cabecera 'C', desglose legible de campos, tabla con formato Consolas y la columna `TRAMA_TXT_BCP_120_CHARS` para que el usuario pueda auditar celda por celda antes de subir o exportar a TXT.
+3. Agregado el botón 'Descargar Excel Auditoría BCP' en el modal de Telecrédito BCP.
+4. Generado `reports/AUDITORIA_LOTES_TELECREDITO_BCP_2026-02-28.xlsx` y compilación validada con `npm run build` (0 errores).
+[2026-08-22 14:20:00-05:00] HOMOLOGACIÓN EN SUPABASE Y SELECTORES SBS EN UI:
+1. Actualizada la base de datos Supabase `crm_inversionistas`: Corregido 'BBA' a 'BBVA' y 'PICHINCHA' a 'BANCO PICHINCHA'.
+2. Conteo final en Supabase 100% normalizado: BCP (45), BBVA (17), SCOTIABANK (5), INTERBANK (4), BANCO PICHINCHA (2), BANBIF (1), CAJA CUSCO (1) en PEN; BCP (29), SCOTIABANK (7), BBVA (5), INTERBANK (4) en USD.
+3. Reemplazados los campos libres de texto por selectores cerrados `<select>` con los nombres comerciales SBS oficiales (`SBS_BANCOS_NOMBRES`) en los formularios de `InversionistasPage.tsx` y `AsesoresPage.tsx`.
+4. Compilación validada con `npm run build` (0 errores).
+[2026-08-22 14:30:00-05:00] MAPEO INTEGRAL DEL DIRECTORIO SBS (43 INSTITUCIONES):
+1. Incorporadas las 20 Empresas Bancarias, 11 Cajas Municipales (CMAC), 5 Cajas Rurales (CRAC) y 7 Empresas Financieras supervisadas por la SBS con sus nicknames oficiales y prefijos CCI.
+2. Actualizados `public/assets/sbs_empresas_bancarias.json`, `public/assets/sbs_empresas_bancarias.md` y `src/constants/sbsBancos.ts`.
+3. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:35:00-05:00] VALIDACIÓN ESTRICTA DE DÍGITOS Y CONTADORES EN VIVO PARA CUENTAS Y CCIs:
+1. Base de datos: Limpiado `cci_usd` incompleto de Chávez Carbajal para operar directamente con su cuenta BCP de 14 dígitos.
+2. UI (Inversionistas y Asesores): Implementada restricción estricta de solo números (`0-9`), límites de longitud (`maxLength={16}` para cuentas y `maxLength={20}` para CCI) y badges en vivo (`✓ 20/20 dígitos` o `⚠️ X/20 dígitos`).
+3. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:42:00-05:00] PANEL OPERATIVO DE 4 COLUMNAS (WORKFLOW COMPLETO):
+1. Creada la Columna 4 oficial: '4. Transferencias Bancarias (Telecrédito BCP)'.
+2. Incorporadas opciones directas de 'Generar TXT BCP' y 'Descargar Excel Auditoría' vinculadas a los filtros de 'TODOS LOS FONDOS' o fondos individuales y el período activo.
+3. Compilación de producción validada con `npm run build` (0 errores).

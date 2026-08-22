@@ -263,3 +263,41 @@
 1. Compilación limpia local de Vite `npm run build` validada (0 errores).
 2. Commit `69ee297` sincronizado y publicado en `origin/main` (`RichGutz/Inandes.ERP.React`).
 3. Auto-despliegue en caliente ejecutado por el Webhook de Coolify en VPS Contabo (`169.58.168.107` / `inandes.geeksoft.tech`).
+[2026-08-22 14:04:00-05:00] TAREA: Desarrollar e integrar el generador de archivos TXT para Telecrédito BCP (Abonos Masivos a Terceros).
+[2026-08-22 14:04:00-05:00] ESTADO: Completado con éxito.
+1. Creado el servicio `src/services/bcpTelecreditoService.ts` cumpliendo la especificación oficial BCP (Cabecera 'C' y Detalle 'A' de 120 caracteres por cada certificado con TRANSFERENCIAS > 0).
+2. Integrado el botón 'Generar TXT BCP (Telecrédito)' en Columna 2 de `InversionistasPage.tsx` con modal interactivo que muestra métricas del lote, cuentas de cargo/abono, alertas de partícipes sin cuenta bancaria y descarga directa.
+3. Creado el script de extracción y validación `scripts/generate_bcp_telecredito_txt.js` con archivos de prueba generados en `reports/`.
+4. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:08:00-05:00] TAREA: Generar libro Excel de Auditoría Telecrédito BCP multi-pestaña (1 tab por fondo) con columnas legibles y columna de trama plana de 120 caracteres.
+[2026-08-22 14:08:00-05:00] ESTADO: Completado con éxito.
+1. Desarrollada la función `generateBcpTelecreditoExcel` en `src/services/bcpTelecreditoService.ts`.
+2. Generado el archivo [`reports/AUDITORIA_LOTES_TELECREDITO_BCP_2026-02-28.xlsx`](file:///C:/Users/rguti/Inandes.ERP.React/reports/AUDITORIA_LOTES_TELECREDITO_BCP_2026-02-28.xlsx) con pestañas individuales (`BCP_NSGPEN01`, `BCP_NSGPEN02`, `BCP_NSGPEN03`, `BCP_NSGUSD01`, `BCP_NSGUSD02`, `BCP_NSLCON01`).
+3. Agregado el botón 'Descargar Excel Auditoría BCP' en el modal interactivo de `InversionistasPage.tsx`.
+4. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:19:00-05:00] TAREA: Mapear y registrar el directorio oficial SBS de Empresas Bancarias.
+[2026-08-22 14:19:00-05:00] ESTADO: Completado con éxito.
+1. Guardado archivo [`public/assets/sbs_empresas_bancarias.json`](file:///C:/Users/rguti/Inandes.ERP.React/public/assets/sbs_empresas_bancarias.json).
+2. Guardada referencia [`public/assets/sbs_empresas_bancarias.md`](file:///C:/Users/rguti/Inandes.ERP.React/public/assets/sbs_empresas_bancarias.md).
+3. Creado módulo [`src/constants/sbsBancos.ts`](file:///C:/Users/rguti/Inandes.ERP.React/src/constants/sbsBancos.ts).
+[2026-08-22 14:24:00-05:00] TAREA: Homologar y corregir nombres de bancos en Supabase (Opción A: Nombres comerciales cortos) y restringir la UI a selectores SBS.
+[2026-08-22 14:24:00-05:00] ESTADO: Completado con éxito.
+1. Corregido 'BBA' -> 'BBVA' y 'PICHINCHA' -> 'BANCO PICHINCHA' en Supabase (`crm_inversionistas`).
+2. Actualizados los formularios de partícipes y asesores (`InversionistasPage.tsx` y `AsesoresPage.tsx`) reemplazando inputs de texto por `<select>` cerrados basados en `SBS_BANCOS_NOMBRES`.
+3. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:30:00-05:00] TAREA: Mapear el directorio integral SBS (20 Bancos, 11 CMAC, 5 CRAC, 7 Financieras = 43 entidades).
+[2026-08-22 14:30:00-05:00] ESTADO: Completado con éxito.
+1. Actualizado `public/assets/sbs_empresas_bancarias.json` con las 43 instituciones financieras supervisadas.
+2. Actualizado `public/assets/sbs_empresas_bancarias.md` con las 4 tablas oficiales.
+3. Actualizado `src/constants/sbsBancos.ts` con tipado e interfaz `SbsInstitucionFinanciera`.
+4. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:35:00-05:00] TAREA: Implementar validación estricta de dígitos (solo números), límites de longitud y badges en vivo para Cuenta y CCI en formularios de Partícipes y Asesores.
+[2026-08-22 14:35:00-05:00] ESTADO: Completado con éxito.
+1. Limpiado `cci_usd` incompleto de Chávez Carbajal en Supabase.
+2. Actualizados inputs en `InversionistasPage.tsx` y `AsesoresPage.tsx` con filtros `replace(/\D/g, '')`, límites `maxLength={16}` (cuentas) y `maxLength={20}` (CCI), y badges en vivo (`✓ 20/20 dígitos` o `⚠️ X/20 dígitos`).
+3. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 14:42:00-05:00] TAREA: Reorganizar el Panel Operativo de Liquidación en 4 Columnas con el Paso 4 exclusivo para Transferencias Telecrédito BCP (TXT y Excel).
+[2026-08-22 14:42:00-05:00] ESTADO: Completado con éxito.
+1. Implementada la Columna 4 con botones 'Generar TXT BCP' y 'Descargar Excel Auditoría'.
+2. Conectada la reactividad de fondos y períodos.
+3. Compilación de producción validada con `npm run build` (0 errores).

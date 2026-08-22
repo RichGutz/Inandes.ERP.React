@@ -7,6 +7,7 @@ import {
   Search, Loader2, AlertCircle, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, X
 } from 'lucide-react';
+import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
 
 export const AsesoresPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'datos' | 'comisiones'>('datos');
@@ -995,29 +996,59 @@ export const AsesoresPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (PEN)</label>
-                        <input
-                          type="text"
+                        <select
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={formData.banco_nombre_pen || ''}
                           onChange={(e) => handleInputChange('banco_nombre_pen', e.target.value)}
-                        />
+                        >
+                          <option value="">-- SELECCIONAR ENTIDAD SBS --</option>
+                          {SBS_BANCOS_NOMBRES.map((banco) => (
+                            <option key={banco} value={banco}>
+                              {banco}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (PEN)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (PEN)</label>
+                          {formData.numero_cuenta_pen && (
+                            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              {formData.numero_cuenta_pen.length} dígitos
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={16}
+                          placeholder="Ej: 19379031376071 (10-16 dígitos)"
+                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                           value={formData.numero_cuenta_pen || ''}
-                          onChange={(e) => handleInputChange('numero_cuenta_pen', e.target.value)}
+                          onChange={(e) => handleInputChange('numero_cuenta_pen', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (PEN)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (PEN)</label>
+                          {formData.cci_pen && (
+                            <span className={`text-[9px] font-mono font-bold ${
+                              formData.cci_pen.length === 20 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'
+                            }`}>
+                              {formData.cci_pen.length === 20 ? '✓ 20/20 dígitos' : `⚠️ ${formData.cci_pen.length}/20 dígitos`}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={20}
+                          placeholder="Ej: 00219311916481309617 (20 dígitos)"
+                          className={`bg-white dark:bg-slate-950 border rounded-lg p-2 text-xs font-mono font-bold focus:outline-none ${
+                            formData.cci_pen && formData.cci_pen.length !== 20
+                              ? 'border-amber-400 text-amber-600 dark:text-amber-400'
+                              : 'border-slate-200 dark:border-slate-800 text-[#0f172a] dark:text-[#f8fafc]'
+                          }`}
                           value={formData.cci_pen || ''}
-                          onChange={(e) => handleInputChange('cci_pen', e.target.value)}
+                          onChange={(e) => handleInputChange('cci_pen', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                     </div>
@@ -1031,29 +1062,59 @@ export const AsesoresPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (USD)</label>
-                        <input
-                          type="text"
+                        <select
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={formData.banco_nombre_usd || ''}
                           onChange={(e) => handleInputChange('banco_nombre_usd', e.target.value)}
-                        />
+                        >
+                          <option value="">-- SELECCIONAR ENTIDAD SBS --</option>
+                          {SBS_BANCOS_NOMBRES.map((banco) => (
+                            <option key={banco} value={banco}>
+                              {banco}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (USD)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (USD)</label>
+                          {formData.numero_cuenta_usd && (
+                            <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                              {formData.numero_cuenta_usd.length} dígitos
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={16}
+                          placeholder="Ej: 19395701362140 (10-16 dígitos)"
+                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                           value={formData.numero_cuenta_usd || ''}
-                          onChange={(e) => handleInputChange('numero_cuenta_usd', e.target.value)}
+                          onChange={(e) => handleInputChange('numero_cuenta_usd', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (USD)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (USD)</label>
+                          {formData.cci_usd && (
+                            <span className={`text-[9px] font-mono font-bold ${
+                              formData.cci_usd.length === 20 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-500'
+                            }`}>
+                              {formData.cci_usd.length === 20 ? '✓ 20/20 dígitos' : `⚠️ ${formData.cci_usd.length}/20 dígitos`}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={20}
+                          placeholder="Ej: 00219312146395616216 (20 dígitos)"
+                          className={`bg-white dark:bg-slate-950 border rounded-lg p-2 text-xs font-mono font-bold focus:outline-none ${
+                            formData.cci_usd && formData.cci_usd.length !== 20
+                              ? 'border-amber-400 text-amber-600 dark:text-amber-400'
+                              : 'border-slate-200 dark:border-slate-800 text-[#0f172a] dark:text-[#f8fafc]'
+                          }`}
                           value={formData.cci_usd || ''}
-                          onChange={(e) => handleInputChange('cci_usd', e.target.value)}
+                          onChange={(e) => handleInputChange('cci_usd', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                     </div>

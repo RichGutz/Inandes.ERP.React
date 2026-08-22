@@ -6,13 +6,16 @@ import { generateRetornosV40 } from '../../utils/financialCalculator';
 import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
 import { supabase } from '../../services/supabaseClient';
 import ExcelJS from 'exceljs';
+import { generateBcpTelecreditoTxt, downloadBcpTxtFile, generateBcpTelecreditoExcel } from '../../services/bcpTelecreditoService';
+import type { BcpTransferItem, BcpBatchConfig, BcpGeneratedFile } from '../../services/bcpTelecreditoService';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, 
   ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download,
-  LayoutGrid, List, Mail, Send
+  LayoutGrid, List, Mail, Send, Landmark
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
+import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo con persistencia en sessionStorage
@@ -38,6 +41,15 @@ export const InversionistasPage: React.FC = () => {
   const [emailSummaryModalOpen, setEmailSummaryModalOpen] = useState<boolean>(false);
   const [emailConfirmText, setEmailConfirmText] = useState<string>('');
   const [emailDispatchSuccessMsg, setEmailDispatchSuccessMsg] = useState<string | null>(null);
+
+  // Modal de Transferencias Masivas BCP (Telecrédito)
+  const [bcpModalOpen, setBcpModalOpen] = useState<boolean>(false);
+  const [bcpCuentaOrigen, setBcpCuentaOrigen] = useState<string>('19300000000000');
+  const [bcpTipoCuentaOrigen, setBcpTipoCuentaOrigen] = useState<'CCT' | 'SCA'>('CCT');
+  const [bcpValidacionIdc, setBcpValidacionIdc] = useState<'S' | 'N'>('S');
+  const [bcpReferenciaLote, setBcpReferenciaLote] = useState<string>('');
+  const [bcpLoading, setBcpLoading] = useState<boolean>(false);
+  const [bcpBatchData, setBcpBatchData] = useState<BcpGeneratedFile | null>(null);
 
 
   // Estado común de partícipes
@@ -1147,6 +1159,139 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
+  // Preparar y abrir Modal de Transferencias Masivas BCP (Telecrédito)
+  const handlePrepareBcpBatch = async () => {
+    setBcpLoading(true);
+    try {
+      const currentResult = await handleRunV40Calculation();
+      if (!currentResult || !currentResult.pdfData || currentResult.pdfData.length === 0) {
+        alert("No hay datos calculados para generar el archivo BCP.");
+        return;
+      }
+
+      // Cargar datos bancarios actualizados de inversionistas
+      const { data: invList } = await supabase
+        .from('crm_inversionistas')
+        .select('*');
+
+      const invMapLocal: Record<string, any> = {};
+      if (invList) {
+        for (const i of invList) {
+          for (const key of ['id', 'uuid', 'documento_identidad', 'codigo_inversionista']) {
+            if (i[key]) invMapLocal[String(i[key]).toLowerCase()] = i;
+          }
+        }
+      }
+
+      const items: BcpTransferItem[] = [];
+      let nOrden = 1;
+
+      currentResult.pdfData.forEach((fData: any) => {
+        const monedaFondo = (fData.fondo?.moneda || 'PEN').toUpperCase() as 'PEN' | 'USD';
+        const isUsd = monedaFondo === 'USD';
+        const rows = fData.blocks[0].rows || [];
+
+        rows.forEach((r: any) => {
+          if (r.tipo === 'AUMENTO') return; // Los aumentos están integrados en el contrato padre
+
+          const rNetoFinal = r.neto_total !== undefined ? r.neto_total : Math.round(((r.reparto_valor || 0) - (r.deducciones_total || 0)) * 100) / 100;
+          const rRescatesNetos = Math.round(((r.devolucion_capital || 0) - (r.penalidad_rescate || 0)) * 100) / 100;
+          const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+
+          if (rTransferencia > 0) {
+            // Buscar datos del inversionista
+            const invObj = invMapLocal[String(r.id_inversionista_1 || '').toLowerCase()] || 
+              Object.values(invMapLocal).find((inv: any) => (inv.nombre_completo || '').toUpperCase() === (r.inversionista || '').toUpperCase()) || {};
+
+            const banco = isUsd ? (invObj.banco_nombre_usd || '') : (invObj.banco_nombre_pen || '');
+            const numeroCuenta = isUsd ? (invObj.numero_cuenta_usd || '') : (invObj.numero_cuenta_pen || '');
+            const cci = isUsd ? (invObj.cci_usd || '') : (invObj.cci_pen || '');
+
+            const isBcp = (banco || '').toUpperCase().includes('BCP') && Boolean(numeroCuenta);
+            const hasCci = Boolean(cci && cci.replace(/\D/g, '').length === 20);
+
+            let estadoCuenta: 'BCP' | 'INTERBANCARIO' | 'SIN_CUENTA' = 'SIN_CUENTA';
+            if (isBcp) estadoCuenta = 'BCP';
+            else if (hasCci) estadoCuenta = 'INTERBANCARIO';
+
+            items.push({
+              nOrden: nOrden++,
+              idContrato: r.id,
+              inversionistaId: invObj.id || r.id_inversionista_1 || '',
+              inversionistaNombre: r.inversionista || invObj.nombre_completo || 'N/A',
+              tipoDoc: invObj.tipo_doc || 'DNI',
+              numDoc: invObj.documento_identidad || '',
+              banco,
+              numeroCuenta,
+              cci,
+              montoTransferencia: rTransferencia,
+              moneda: monedaFondo,
+              estadoCuenta
+            });
+          }
+        });
+      });
+
+      if (items.length === 0) {
+        alert("No se encontraron partícipes con saldo en la columna TRANSFERENCIAS mayor a cero.");
+        return;
+      }
+
+      const monedaBatch = items[0]?.moneda || 'PEN';
+      const cleanFecha = fEnd.replace(/-/g, '');
+      const refLoteDefault = `LOTE-${v40SelFondo !== 'TODOS' ? v40SelFondo : monedaBatch}-${cleanFecha}`;
+      setBcpReferenciaLote(refLoteDefault);
+
+      const batchConfig: BcpBatchConfig = {
+        fechaProceso: fEnd,
+        tipoCuentaOrigen: bcpTipoCuentaOrigen,
+        moneda: monedaBatch,
+        numeroCuentaOrigen: bcpCuentaOrigen,
+        referenciaLote: refLoteDefault,
+        validacionIdc: bcpValidacionIdc
+      };
+
+      const result = generateBcpTelecreditoTxt(batchConfig, items);
+      setBcpBatchData(result);
+      setBcpModalOpen(true);
+    } catch (err: any) {
+      alert(`Error preparando lote BCP: ${err.message}`);
+    } finally {
+      setBcpLoading(false);
+    }
+  };
+
+  const handleDownloadBcpTxt = () => {
+    if (!bcpBatchData) return;
+    
+    const batchConfig: BcpBatchConfig = {
+      fechaProceso: fEnd,
+      tipoCuentaOrigen: bcpTipoCuentaOrigen,
+      moneda: bcpBatchData.items[0]?.moneda || 'PEN',
+      numeroCuentaOrigen: bcpCuentaOrigen,
+      referenciaLote: bcpReferenciaLote,
+      validacionIdc: bcpValidacionIdc
+    };
+
+    const finalBatch = generateBcpTelecreditoTxt(batchConfig, bcpBatchData.items);
+    downloadBcpTxtFile(finalBatch.filename, finalBatch.content);
+  };
+
+  const handleDownloadBcpExcel = async () => {
+    if (!bcpBatchData) return;
+    
+    const batchConfig: BcpBatchConfig = {
+      fechaProceso: fEnd,
+      tipoCuentaOrigen: bcpTipoCuentaOrigen,
+      moneda: bcpBatchData.items[0]?.moneda || 'PEN',
+      numeroCuentaOrigen: bcpCuentaOrigen,
+      referenciaLote: bcpReferenciaLote,
+      validacionIdc: bcpValidacionIdc
+    };
+
+    await generateBcpTelecreditoExcel(batchConfig, bcpBatchData.items);
+  };
+
 
 
   // Guardar permanente en base de datos
@@ -2048,8 +2193,8 @@ export const InversionistasPage: React.FC = () => {
               </div>
             </div>
 
-            {/* GRID DE 3 COLUMNAS HORIZONTALES (WORKFLOW COMPACTO) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+            {/* GRID DE 4 COLUMNAS HORIZONTALES (WORKFLOW COMPLETO) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
               
               {/* COLUMNA 1: CONFIGURACIÓN DEL CORTE */}
               <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
@@ -2169,7 +2314,7 @@ export const InversionistasPage: React.FC = () => {
 
                   <button
                     className="h-10 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0284c7] hover:bg-[#0369a1] text-white transition-all disabled:opacity-60"
-                    disabled={calcLoading || exportingExcel || exportingPdf}
+                    disabled={calcLoading || exportingExcel || exportingPdf || bcpLoading}
                     onClick={async () => {
                       await handleExportPDFV40();
                     }}
@@ -2190,7 +2335,7 @@ export const InversionistasPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* COLUMNA 3: PASO 2 · OFICIALIZACIÓN & ROLLBACK */}
+              {/* COLUMNA 3: PASO 3 · OFICIALIZACIÓN & ROLLBACK */}
               <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
                 <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
                   <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
@@ -2228,18 +2373,66 @@ export const InversionistasPage: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Botón Rollback */}
-                  <button
-                    className="h-8 text-[11px] font-bold bg-white dark:bg-[#1e293b] hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 dark:hover:text-rose-400 border border-[#e2e8f0] dark:border-[#334155] text-[#475569] dark:text-[#cbd5e1] rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                    onClick={handleOpenRollbackModal}
-                  >
-                    <Undo2 size={13} />
-                    <span>Reversión / Rollback del Período</span>
-                  </button>
+                  {collisionCount > 0 && (
+                    <button
+                      className="h-8 text-[11px] font-bold text-[#e11d48] dark:text-[#fb7185] hover:bg-[#fff1f2] dark:hover:bg-[#e11d48]/10 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-[#fecdd3] dark:border-[#e11d48]/30"
+                      onClick={handleOpenRollbackModal}
+                      disabled={rollbackLoading}
+                    >
+                      <Undo2 size={13} />
+                      <span>Reversión / Rollback del Período</span>
+                    </button>
+                  )}
                 </div>
 
                 <p className="text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-medium leading-tight">
                   {collisionCount > 0 ? 'Protección activa contra duplicidad.' : 'Reversión disponible si requiere recalcular.'}
+                </p>
+              </div>
+
+              {/* COLUMNA 4: PASO 4 · TRANSFERENCIAS MASIVAS (TELECRÉDITO BCP) */}
+              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
+                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
+                    4. Transferencias Bancarias
+                  </span>
+                  <span className="text-[9.5px] font-mono font-bold text-[#4f46e5] dark:text-[#818cf8]">
+                    Telecrédito BCP
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {/* Opción 1: Generar / Descargar TXT */}
+                  <button
+                    className="h-10 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#4f46e5] hover:bg-[#4338ca] text-white transition-all disabled:opacity-60"
+                    disabled={calcLoading || bcpLoading}
+                    onClick={async () => {
+                      await handlePrepareBcpBatch();
+                    }}
+                  >
+                    {bcpLoading ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Download size={15} />
+                    )}
+                    <span>Generar TXT BCP</span>
+                  </button>
+
+                  {/* Opción 2: Descargar Excel Auditoría BCP */}
+                  <button
+                    className="h-10 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#eef2ff] dark:bg-[#312e81]/30 border border-[#c7d2fe] dark:border-[#4f46e5]/40 text-[#4338ca] dark:text-[#a5b4fc] hover:bg-[#e0e7ff] transition-all disabled:opacity-60"
+                    disabled={calcLoading || bcpLoading}
+                    onClick={async () => {
+                      await handlePrepareBcpBatch();
+                    }}
+                  >
+                    <FileSpreadsheet size={15} />
+                    <span>Descargar Excel Auditoría</span>
+                  </button>
+                </div>
+
+                <p className="text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-medium leading-tight">
+                  Columna TRANSFERENCIAS (Rendimientos + Rescates).
                 </p>
               </div>
 
@@ -2931,29 +3124,59 @@ export const InversionistasPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (PEN)</label>
-                        <input
-                          type="text"
+                        <select
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={formData.banco_nombre_pen || ''}
                           onChange={(e) => handleInputChange('banco_nombre_pen', e.target.value)}
-                        />
+                        >
+                          <option value="">-- SELECCIONAR ENTIDAD SBS --</option>
+                          {SBS_BANCOS_NOMBRES.map((banco) => (
+                            <option key={banco} value={banco}>
+                              {banco}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (PEN)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (PEN)</label>
+                          {formData.numero_cuenta_pen && (
+                            <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              {formData.numero_cuenta_pen.length} dígitos
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={16}
+                          placeholder="Ej: 19379031376071 (10-16 dígitos)"
+                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                           value={formData.numero_cuenta_pen || ''}
-                          onChange={(e) => handleInputChange('numero_cuenta_pen', e.target.value)}
+                          onChange={(e) => handleInputChange('numero_cuenta_pen', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (PEN)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (PEN)</label>
+                          {formData.cci_pen && (
+                            <span className={`text-[9px] font-mono font-bold ${
+                              formData.cci_pen.length === 20 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'
+                            }`}>
+                              {formData.cci_pen.length === 20 ? '✓ 20/20 dígitos' : `⚠️ ${formData.cci_pen.length}/20 dígitos`}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={20}
+                          placeholder="Ej: 00219311916481309617 (20 dígitos)"
+                          className={`bg-white dark:bg-slate-950 border rounded-lg p-2 text-xs font-mono font-bold focus:outline-none ${
+                            formData.cci_pen && formData.cci_pen.length !== 20
+                              ? 'border-amber-400 text-amber-600 dark:text-amber-400'
+                              : 'border-slate-200 dark:border-slate-800 text-[#0f172a] dark:text-[#f8fafc]'
+                          }`}
                           value={formData.cci_pen || ''}
-                          onChange={(e) => handleInputChange('cci_pen', e.target.value)}
+                          onChange={(e) => handleInputChange('cci_pen', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                     </div>
@@ -2967,29 +3190,59 @@ export const InversionistasPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Banco (USD)</label>
-                        <input
-                          type="text"
+                        <select
                           className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
                           value={formData.banco_nombre_usd || ''}
                           onChange={(e) => handleInputChange('banco_nombre_usd', e.target.value)}
-                        />
+                        >
+                          <option value="">-- SELECCIONAR ENTIDAD SBS --</option>
+                          {SBS_BANCOS_NOMBRES.map((banco) => (
+                            <option key={banco} value={banco}>
+                              {banco}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (USD)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">N° Cuenta (USD)</label>
+                          {formData.numero_cuenta_usd && (
+                            <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                              {formData.numero_cuenta_usd.length} dígitos
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={16}
+                          placeholder="Ej: 19395701362140 (10-16 dígitos)"
+                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
                           value={formData.numero_cuenta_usd || ''}
-                          onChange={(e) => handleInputChange('numero_cuenta_usd', e.target.value)}
+                          onChange={(e) => handleInputChange('numero_cuenta_usd', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (USD)</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">CCI (USD)</label>
+                          {formData.cci_usd && (
+                            <span className={`text-[9px] font-mono font-bold ${
+                              formData.cci_usd.length === 20 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-500'
+                            }`}>
+                              {formData.cci_usd.length === 20 ? '✓ 20/20 dígitos' : `⚠️ ${formData.cci_usd.length}/20 dígitos`}
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
-                          className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none"
+                          maxLength={20}
+                          placeholder="Ej: 00219312146395616216 (20 dígitos)"
+                          className={`bg-white dark:bg-slate-950 border rounded-lg p-2 text-xs font-mono font-bold focus:outline-none ${
+                            formData.cci_usd && formData.cci_usd.length !== 20
+                              ? 'border-amber-400 text-amber-600 dark:text-amber-400'
+                              : 'border-slate-200 dark:border-slate-800 text-[#0f172a] dark:text-[#f8fafc]'
+                          }`}
                           value={formData.cci_usd || ''}
-                          onChange={(e) => handleInputChange('cci_usd', e.target.value)}
+                          onChange={(e) => handleInputChange('cci_usd', e.target.value.replace(/\D/g, ''))}
                         />
                       </div>
                     </div>
@@ -3389,6 +3642,255 @@ export const InversionistasPage: React.FC = () => {
                 <Send size={14} />
                 <span>{emailDispatchSuccessMsg ? '✓ Resumen Validado' : `Enviar Correos (${totalEmailsToDispatch})`}</span>
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DE TRANSFERENCIAS MASIVAS BCP (TELECRÉDITO)                         */}
+      {/* ========================================================================= */}
+      {bcpModalOpen && bcpBatchData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            {/* Header del Modal */}
+            <div className="px-6 py-4 bg-linear-to-r from-[#1e1b4b] to-[#312e81] text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-white/10 text-indigo-300">
+                  <Landmark size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black tracking-wide flex items-center gap-2">
+                    Lote Telecrédito BCP — Abonos Masivos
+                    <span className="text-[11px] font-mono font-bold bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30">
+                      {bcpBatchData.items[0]?.moneda}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-indigo-200/80 font-medium">
+                    Archivo plano oficial .TXT para la columna TRANSFERENCIAS (Rendimientos y Rescates)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBcpModalOpen(false)}
+                className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Cuerpo del Modal */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-4">
+              
+              {/* Tarjetas Superiores de Métricas */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Total Transferencias</span>
+                  <span className="text-sm font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
+                    {bcpBatchData.totalRegistros} certificados
+                  </span>
+                </div>
+
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Monto Total del Lote</span>
+                  <span className="text-sm font-mono font-black text-[#059669]">
+                    {bcpBatchData.items[0]?.moneda === 'USD' ? '$' : 'S/'} {bcpBatchData.montoTotal.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Destinos de Abono</span>
+                  <span className="text-xs font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
+                    {bcpBatchData.totalBcp} BCP · {bcpBatchData.totalCci} CCI
+                  </span>
+                </div>
+
+                <div className={`p-3 border rounded-xl flex flex-col gap-0.5 ${
+                  bcpBatchData.totalSinCuenta > 0 
+                    ? 'bg-[#fffbeb] dark:bg-[#78350f]/20 border-[#fde68a] text-[#b45309]' 
+                    : 'bg-[#f8fafc] dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155]'
+                }`}>
+                  <span className="text-[9.5px] font-black uppercase">Sin Cuenta Bancaria</span>
+                  <span className={`text-xs font-mono font-bold ${bcpBatchData.totalSinCuenta > 0 ? 'text-[#b45309]' : 'text-[#64748b]'}`}>
+                    {bcpBatchData.totalSinCuenta > 0 ? `⚠️ ${bcpBatchData.totalSinCuenta} partícipes` : '✓ 0 faltantes'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Parámetros de Cabecera BCP */}
+              <div className="p-4 bg-[#f8fafc] dark:bg-[#1e293b]/60 border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-1.5">
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
+                    Configuración de Cabecera (Registro 'C' — BCP)
+                  </span>
+                  <span className="text-[10px] font-mono text-[#64748b]">Longitud exacta: 96/97 chars</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">
+                      Cuenta Cargo InAndes
+                    </label>
+                    <input
+                      type="text"
+                      className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 px-2.5 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
+                      value={bcpCuentaOrigen}
+                      onChange={(e) => setBcpCuentaOrigen(e.target.value)}
+                      placeholder="Ej: 19300000000000"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">
+                      Tipo Cuenta Origen
+                    </label>
+                    <select
+                      className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
+                      value={bcpTipoCuentaOrigen}
+                      onChange={(e) => setBcpTipoCuentaOrigen(e.target.value as any)}
+                    >
+                      <option value="CCT">CCT (Corriente)</option>
+                      <option value="SCA">SCA (Ahorros)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">
+                      Referencia del Lote
+                    </label>
+                    <input
+                      type="text"
+                      className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 px-2.5 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none uppercase"
+                      value={bcpReferenciaLote}
+                      onChange={(e) => setBcpReferenciaLote(e.target.value.toUpperCase())}
+                      placeholder="Ej: LOTE-NSGPEN01-20260228"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">
+                      Validación IDC / Titularidad
+                    </label>
+                    <select
+                      className="bg-white dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
+                      value={bcpValidacionIdc}
+                      onChange={(e) => setBcpValidacionIdc(e.target.value as any)}
+                    >
+                      <option value="S">S = Validar Nombre/Doc contra BCP</option>
+                      <option value="N">N = Sin Validación Estricta</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabla de Detalle de Abonos */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10.5px] font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
+                    Detalle de Transferencias por Certificado ({bcpBatchData.items.length})
+                  </span>
+                  <span className="text-[10px] text-[#64748b] font-mono">1 línea por certificado (120 chars)</span>
+                </div>
+
+                <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden shadow-xs max-h-64 overflow-y-auto">
+                  <table className="w-full text-left text-xs border-collapse font-sans">
+                    <thead className="bg-[#0f172a] text-white font-mono text-[10px] sticky top-0 z-10 uppercase">
+                      <tr>
+                        <th className="py-2 px-2.5 text-center w-10">#</th>
+                        <th className="py-2 px-3">Certificado</th>
+                        <th className="py-2 px-3">Inversionista / Razón Social</th>
+                        <th className="py-2 px-2 text-center">Doc</th>
+                        <th className="py-2 px-3">Banco / Cuenta / CCI</th>
+                        <th className="py-2 px-3 text-right">Monto</th>
+                        <th className="py-2 px-2.5 text-center">Canal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e2e8f0] dark:divide-[#334155] text-[11px] font-mono">
+                      {bcpBatchData.items.map((it, idx) => (
+                        <tr key={it.idContrato} className="hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]/50 transition-colors">
+                          <td className="py-1.5 px-2.5 text-center text-[#64748b]">{idx + 1}</td>
+                          <td className="py-1.5 px-3 font-bold text-[#0f172a] dark:text-[#f8fafc]">{it.idContrato}</td>
+                          <td className="py-1.5 px-3 font-sans font-medium text-[#334155] dark:text-[#cbd5e1] truncate max-w-56" title={it.inversionistaNombre}>
+                            {it.inversionistaNombre}
+                          </td>
+                          <td className="py-1.5 px-2 text-center text-[#64748b]">
+                            {it.tipoDoc}: {it.numDoc || '-'}
+                          </td>
+                          <td className="py-1.5 px-3 text-[#334155] dark:text-[#cbd5e1]">
+                            {it.estadoCuenta === 'BCP' ? (
+                              <span className="text-[#059669] font-bold">BCP: {it.numeroCuenta}</span>
+                            ) : it.estadoCuenta === 'INTERBANCARIO' ? (
+                              <span className="text-[#0284c7] font-bold">CCI: {it.cci}</span>
+                            ) : (
+                              <span className="text-[#e11d48] font-bold italic">⚠️ Sin Cuenta Registrada</span>
+                            )}
+                          </td>
+                          <td className="py-1.5 px-3 text-right font-black text-[#059669]">
+                            {it.montoTransferencia.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-1.5 px-2.5 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              it.estadoCuenta === 'BCP'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200'
+                                : it.estadoCuenta === 'INTERBANCARIO'
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200'
+                            }`}>
+                              {it.estadoCuenta === 'BCP' ? 'BCP' : it.estadoCuenta === 'INTERBANCARIO' ? 'CCI' : 'ALERTA'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b] border-t border-[#e2e8f0] dark:border-[#334155] flex items-center justify-between">
+              <div className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-mono">
+                Total a Transferir: <strong className="text-[#059669] text-xs">
+                  {bcpBatchData.items[0]?.moneda === 'USD' ? '$' : 'S/'} {bcpBatchData.montoTotal.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </strong>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="h-9 text-xs font-bold px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => setBcpModalOpen(false)}
+                >
+                  Cerrar
+                </button>
+
+                <button
+                  type="button"
+                  className="h-9 text-xs font-black uppercase tracking-wider px-5 rounded-xl bg-[#059669] hover:bg-[#047857] text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  onClick={async () => {
+                    await handleDownloadBcpExcel();
+                  }}
+                >
+                  <FileSpreadsheet size={15} />
+                  <span>Descargar Excel Auditoría BCP</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="h-9 text-xs font-black uppercase tracking-wider px-5 rounded-xl bg-[#4f46e5] hover:bg-[#4338ca] text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  onClick={() => {
+                    handleDownloadBcpTxt();
+                    setBcpModalOpen(false);
+                  }}
+                >
+                  <Download size={15} />
+                  <span>Descargar Archivo TXT Telecrédito</span>
+                </button>
+              </div>
             </div>
 
           </div>

@@ -1,0 +1,389 @@
+[
+  {
+    "id": 1,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO DE CREDITO DEL PERU",
+    "nombre_comercial": "BCP",
+    "codigo_cci": "002",
+    "canal_bcp": "ABONO_DIRECTO_BCP",
+    "tipo_cuenta_default": "CCT"
+  },
+  {
+    "id": 2,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO BBVA PERU",
+    "nombre_comercial": "BBVA",
+    "codigo_cci": "011",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 3,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO INTERNACIONAL DEL PERU S.A.A.",
+    "nombre_comercial": "INTERBANK",
+    "codigo_cci": "003",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 4,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "SCOTIABANK PERU S.A.A.",
+    "nombre_comercial": "SCOTIABANK",
+    "codigo_cci": "009",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 5,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO INTERAMERICANO DE FINANZAS",
+    "nombre_comercial": "BANBIF",
+    "codigo_cci": "038",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 6,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO PICHINCHA",
+    "nombre_comercial": "BANCO PICHINCHA",
+    "codigo_cci": "018",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 7,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO GNB PERU S.A.",
+    "nombre_comercial": "BANCO GNB",
+    "codigo_cci": "053",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 8,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO DE COMERCIO",
+    "nombre_comercial": "BANCOM",
+    "codigo_cci": "049",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 9,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO FALABELLA PERU S.A.",
+    "nombre_comercial": "BANCO FALABELLA",
+    "codigo_cci": "056",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 10,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO RIPLEY PERU S.A.",
+    "nombre_comercial": "BANCO RIPLEY",
+    "codigo_cci": "054",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 11,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO SANTANDER PERU S.A.",
+    "nombre_comercial": "BANCO SANTANDER",
+    "codigo_cci": "055",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 12,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "ALFIN BANCO S.A.",
+    "nombre_comercial": "ALFIN BANCO",
+    "codigo_cci": "045",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 13,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "MIBANCO, BANCO DE LA MICROEMPRESA S.A.",
+    "nombre_comercial": "MIBANCO",
+    "codigo_cci": "048",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 14,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO BCI PERU",
+    "nombre_comercial": "BANCO BCI",
+    "codigo_cci": "062",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 15,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANCO EFECTIVA S.A.",
+    "nombre_comercial": "BANCO EFECTIVA",
+    "codigo_cci": "065",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 16,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "COMPARTAMOS BANCO S.A.",
+    "nombre_comercial": "COMPARTAMOS BANCO",
+    "codigo_cci": "063",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 17,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "CITIBANK DEL PERU S.A.",
+    "nombre_comercial": "CITIBANK",
+    "codigo_cci": "007",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 18,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "ICBC PERU BANK",
+    "nombre_comercial": "ICBC PERU",
+    "codigo_cci": "060",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 19,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "BANK OF CHINA (PERU) S.A.",
+    "nombre_comercial": "BANK OF CHINA",
+    "codigo_cci": "061",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 20,
+    "tipo_entidad": "BANCO",
+    "razon_social_sbs": "SANTANDER CONSUMER BANK",
+    "nombre_comercial": "SANTANDER CONSUMER",
+    "codigo_cci": "064",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 21,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC AREQUIPA",
+    "nombre_comercial": "CAJA AREQUIPA",
+    "codigo_cci": "801",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 22,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC CUSCO S.A.",
+    "nombre_comercial": "CAJA CUSCO",
+    "codigo_cci": "806",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 23,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC DEL SANTA",
+    "nombre_comercial": "CAJA DEL SANTA",
+    "codigo_cci": "812",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 24,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC HUANCAYO",
+    "nombre_comercial": "CAJA HUANCAYO",
+    "codigo_cci": "805",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 25,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC ICA",
+    "nombre_comercial": "CAJA ICA",
+    "codigo_cci": "804",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 26,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC MAYNAS",
+    "nombre_comercial": "CAJA MAYNAS",
+    "codigo_cci": "810",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 27,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC PAITA",
+    "nombre_comercial": "CAJA PAITA",
+    "codigo_cci": "811",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 28,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC PIURA",
+    "nombre_comercial": "CAJA PIURA",
+    "codigo_cci": "808",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 29,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC TACNA",
+    "nombre_comercial": "CAJA TACNA",
+    "codigo_cci": "809",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 30,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CMAC TRUJILLO",
+    "nombre_comercial": "CAJA TRUJILLO",
+    "codigo_cci": "807",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 31,
+    "tipo_entidad": "CAJA_MUNICIPAL",
+    "razon_social_sbs": "CAJA METROPOLITANA DE LIMA",
+    "nombre_comercial": "CAJA METROPOLITANA",
+    "codigo_cci": "803",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 32,
+    "tipo_entidad": "CAJA_RURAL",
+    "razon_social_sbs": "CRAC LOS ANDES",
+    "nombre_comercial": "CAJA LOS ANDES",
+    "codigo_cci": "815",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 33,
+    "tipo_entidad": "CAJA_RURAL",
+    "razon_social_sbs": "CRAC DEL CENTRO",
+    "nombre_comercial": "CAJA DEL CENTRO",
+    "codigo_cci": "816",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 34,
+    "tipo_entidad": "CAJA_RURAL",
+    "razon_social_sbs": "CRAC PRYMERA",
+    "nombre_comercial": "CAJA PRYMERA",
+    "codigo_cci": "818",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 35,
+    "tipo_entidad": "CAJA_RURAL",
+    "razon_social_sbs": "CRAC INCASUR",
+    "nombre_comercial": "CAJA INCASUR",
+    "codigo_cci": "819",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 36,
+    "tipo_entidad": "CAJA_RURAL",
+    "razon_social_sbs": "CRAC CENCOSUD SCOTIA",
+    "nombre_comercial": "CAJA CENCOSUD SCOTIA",
+    "codigo_cci": "820",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 37,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA CONFIANZA S.A.A.",
+    "nombre_comercial": "FINANCIERA CONFIANZA",
+    "codigo_cci": "301",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 38,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA OH! S.A.",
+    "nombre_comercial": "FINANCIERA OH!",
+    "codigo_cci": "302",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 39,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA QAPAQ S.A.",
+    "nombre_comercial": "FINANCIERA QAPAQ",
+    "codigo_cci": "303",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 40,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA PROEMPRESA S.A.",
+    "nombre_comercial": "FINANCIERA PROEMPRESA",
+    "codigo_cci": "304",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 41,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA CREDINKA S.A.",
+    "nombre_comercial": "FINANCIERA CREDINKA",
+    "codigo_cci": "305",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 42,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "MITSUI AUTO FINANCE PERU S.A.",
+    "nombre_comercial": "FINANCIERA MAF",
+    "codigo_cci": "306",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  },
+  {
+    "id": 43,
+    "tipo_entidad": "FINANCIERA",
+    "razon_social_sbs": "FINANCIERA SANTANDER CONSUMER S.A.",
+    "nombre_comercial": "FINANCIERA SANTANDER",
+    "codigo_cci": "307",
+    "canal_bcp": "INTERBANCARIO_CCI",
+    "tipo_cuenta_default": "CND"
+  }
+]

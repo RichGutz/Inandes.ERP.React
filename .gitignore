@@ -35,4 +35,5 @@ backend/sa_credentials.json
 sa_credentials.json
 backend/gmail_*.json
 gmail_*.json
-
+# Office temp files
+~$*
