@@ -183,3 +183,4 @@
 1. UI FILTROS: Integrado el botón 'Enviar Correo' en la barra de filtros de 'InversionistasPage.tsx' a la derecha del selector 'N° Período'.
 2. MODAL DE RESUMEN PREVIO: Al pulsar el botón se despliega el modal interactivo con desglose tabular por fondo (Fondo, Moneda, Conteo de Partícipes Titular 1, Documentos Adjuntos y Total Consolidado).
 3. SEGURIDAD Y PROTECCIÓN: Implementado campo de confirmación 'Escribe ENVIAR aquí...' y blindado el botón en modo de protección (sin auto-disparo de correos reales a terceros). Compilación limpia de producción con Vite (0 errores).
+[2026-08-21 21:08:00-05:00] PUNTO DE CONTROL GIT TAG: Creado y publicado exitosamente el tag de control oficial `SESION.CORREOS.EECC.21.08.26` en origin/main (Commit `824cd91`). Rama activa de trabajo: `main`.
