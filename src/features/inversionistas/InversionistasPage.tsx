@@ -10,7 +10,7 @@ import {
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, 
   ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download,
-  LayoutGrid, List
+  LayoutGrid, List, Mail, Send
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 
@@ -33,6 +33,11 @@ export const InversionistasPage: React.FC = () => {
   // Modal de confirmacion de Registro Oficial
   const [registerModalOpen, setRegisterModalOpen] = useState<boolean>(false);
   const [registerConfirmText, setRegisterConfirmText] = useState<string>('');
+
+  // Modal de confirmacion de Despacho de Correos
+  const [emailSummaryModalOpen, setEmailSummaryModalOpen] = useState<boolean>(false);
+  const [emailConfirmText, setEmailConfirmText] = useState<string>('');
+  const [emailDispatchSuccessMsg, setEmailDispatchSuccessMsg] = useState<string | null>(null);
 
 
   // Estado común de partícipes
@@ -738,6 +743,46 @@ export const InversionistasPage: React.FC = () => {
 </body>
 </html>`;
   }, [docEvents, fondosDisponibles, inversionistas, docFondo, fStart, fEnd, docLoading]);
+
+  // Resumen Consolidado por Fondo para Despacho de Correos
+  const fundSummaryForEmail = useMemo(() => {
+    const map: Record<string, { fondo: string; nombre: string; moneda: string; count: number; countRetencion: number }> = {};
+    
+    let targetEvents = docEvents.filter(e => e.fecha_periodo_fin === fEnd);
+    if (docFondo && docFondo !== 'TODOS') {
+      targetEvents = targetEvents.filter(e => 
+        (e.id_certificado && e.id_certificado.startsWith(docFondo)) ||
+        (e.id_contrato && e.id_contrato.startsWith(docFondo))
+      );
+    }
+
+    targetEvents.forEach(e => {
+      const fCode = (e.id_contrato || e.id_certificado || 'OTROS').split('.')[0].split('-')[0];
+      const fondoObj = fondosDisponibles.find(f => f.id_fondo === fCode);
+      const nombre = fondoObj ? fondoObj.nombre_fondo : fCode;
+      const moneda = fondoObj ? fondoObj.moneda : (e.payload_asiento?.moneda || 'PEN');
+      
+      if (!map[fCode]) {
+        map[fCode] = {
+          fondo: fCode,
+          nombre: nombre,
+          moneda: moneda,
+          count: 0,
+          countRetencion: 0
+        };
+      }
+      map[fCode].count += 1;
+      if (Number(e.impuestos_renta || 0) > 0) {
+        map[fCode].countRetencion += 1;
+      }
+    });
+
+    return Object.values(map);
+  }, [docEvents, fEnd, docFondo, fondosDisponibles]);
+
+  const totalEmailsToDispatch = useMemo(() => {
+    return fundSummaryForEmail.reduce((acc, f) => acc + f.count, 0);
+  }, [fundSummaryForEmail]);
 
   // Ejecución del cálculo local
   const handleRunV40Calculation = async () => {
@@ -2053,7 +2098,7 @@ export const InversionistasPage: React.FC = () => {
             </div>
 
             {/* Selectores Vinculados al Fondo y Fecha de Corte */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl items-end">
               
               {/* Selector de Fondo */}
               <div className="flex flex-col gap-1 lg:col-span-2">
@@ -2132,6 +2177,24 @@ export const InversionistasPage: React.FC = () => {
                     </>
                   )}
                 </select>
+              </div>
+
+              {/* Botón de Despacho Oficial por Correo */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tracking-wider">Despacho Oficial</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmailConfirmText('');
+                    setEmailDispatchSuccessMsg(null);
+                    setEmailSummaryModalOpen(true);
+                  }}
+                  className="h-[34px] w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer px-2.5"
+                  title="Enviar Estados de Cuenta y Retenciones por correo a partícipes"
+                >
+                  <Mail size={14} />
+                  <span className="truncate">Enviar Correo</span>
+                </button>
               </div>
 
             </div>
@@ -2975,6 +3038,170 @@ export const InversionistasPage: React.FC = () => {
                 <span>Ejecutar Rollback</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Despacho de Correos a Inversionistas: Paso Intermedio con Resumen por Fondo y Confirmación ENVIAR */}
+      {emailSummaryModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-[#0f172a] border border-[#bae6fd] dark:border-[#1e293b] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Header del Modal */}
+            <div className="bg-[#0284c7] px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-xl text-white">
+                  <Mail size={22} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    Despacho Oficial de Estados de Cuenta y Retenciones
+                  </h3>
+                  <p className="text-[11px] text-sky-100 font-semibold">
+                    Emisión institucional automatizada desde inversionistas@inandes.com
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setEmailSummaryModalOpen(false); setEmailConfirmText(''); setEmailDispatchSuccessMsg(null); }}
+                className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Cuerpo del Modal con Resumen de Fondos */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-4">
+              
+              {/* Tarjetas Superiores de Contexto */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Período de Corte</span>
+                  <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc]">{fStart} al {fEnd}</span>
+                </div>
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Remitente Oficial</span>
+                  <span className="text-xs font-bold text-[#0284c7] dark:text-[#38bdf8] truncate" title="inversionistas@inandes.com">inversionistas@inandes.com</span>
+                </div>
+                <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Copia de Auditoría (CC)</span>
+                  <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] truncate" title="rgutil@gmail.com">rgutil@gmail.com</span>
+                </div>
+              </div>
+
+              {/* Tabla Resumen de Envíos por Fondo */}
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center justify-between">
+                  <span>📊 Resumen Previo de Destinatarios por Fondo</span>
+                  <span className="text-[11px] font-mono text-[#0284c7] font-bold">{totalEmailsToDispatch} Partícipes en Total</span>
+                </span>
+
+                <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-[#f1f5f9] dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] font-bold text-[10.5px] uppercase border-b border-[#e2e8f0] dark:border-[#334155]">
+                      <tr>
+                        <th className="py-2.5 px-3">Fondo</th>
+                        <th className="py-2.5 px-2 text-center">Moneda</th>
+                        <th className="py-2.5 px-3 text-center">Destinatarios (Titular 1)</th>
+                        <th className="py-2.5 px-3">Documentos Adjuntos</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#e2e8f0] dark:divide-[#334155]">
+                      {fundSummaryForEmail.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-4 text-center text-slate-400 font-semibold italic">
+                            No se encontraron asientos contables cerrados para el período seleccionado.
+                          </td>
+                        </tr>
+                      ) : (
+                        fundSummaryForEmail.map((item) => (
+                          <tr key={item.fondo} className="hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]/50 transition-colors">
+                            <td className="py-2.5 px-3 font-bold text-[#0f172a] dark:text-[#f8fafc]">
+                              {item.nombre} <span className="font-mono text-[10px] text-[#64748b] dark:text-[#94a3b8]">({item.fondo})</span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
+                              {item.moneda}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-[#059669]">
+                              {item.count} {item.count === 1 ? 'partícipe' : 'partícipes'}
+                            </td>
+                            <td className="py-2.5 px-3 text-[#64748b] dark:text-[#94a3b8] text-[11px]">
+                              <span>📄 EECC</span>
+                              {item.countRetencion > 0 && <span className="ml-1 text-[#0284c7] font-semibold">+ 📜 Retención ({item.countRetencion})</span>}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    <tfoot className="bg-[#f8fafc] dark:bg-[#1e293b] font-black border-t-2 border-[#e2e8f0] dark:border-[#334155]">
+                      <tr>
+                        <td colSpan={2} className="py-2.5 px-3 uppercase text-[#0f172a] dark:text-[#f8fafc]">Total General a Despachar:</td>
+                        <td className="py-2.5 px-3 text-center font-mono text-[#059669] text-sm">
+                          {totalEmailsToDispatch} Correos
+                        </td>
+                        <td className="py-2.5 px-3 text-[10.5px] text-[#64748b]">100% Personalizado por Inversionista</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mensaje de Confirmación / Estado Protegido */}
+              {emailDispatchSuccessMsg ? (
+                <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-[#059669] dark:text-[#34d399] font-medium leading-relaxed">
+                  <CheckCircle size={18} className="shrink-0 mt-0.5 text-[#059669]" />
+                  <span>{emailDispatchSuccessMsg}</span>
+                </div>
+              ) : (
+                /* Campo de Confirmación de Seguridad ENVIAR */
+                <div className="flex flex-col gap-2 pt-2 border-t border-[#e2e8f0] dark:border-[#334155]">
+                  <label className="text-[10.5px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    Para confirmar la orden de despacho, escribe <span className="text-[#0284c7] font-black">ENVIAR</span> en el campo:
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border-2 border-[#e2e8f0] dark:border-[#334155] focus:border-[#0284c7] dark:focus:border-[#0284c7] rounded-xl py-2 px-3 text-sm font-black text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-colors tracking-widest uppercase"
+                    placeholder="Escribe ENVIAR aquí..."
+                    value={emailConfirmText}
+                    onChange={(e) => setEmailConfirmText(e.target.value.toUpperCase())}
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] italic">
+                    ℹ️ Modo de seguridad: Los correos se emitirán con la plantilla institucional HTML de InAndes y ambos PDFs adjuntos.
+                  </p>
+                </div>
+              )}
+
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b] border-t border-[#e2e8f0] dark:border-[#334155] flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="h-9 text-xs font-bold px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 cursor-pointer transition-colors"
+                onClick={() => { setEmailSummaryModalOpen(false); setEmailConfirmText(''); setEmailDispatchSuccessMsg(null); }}
+              >
+                Cerrar
+              </button>
+              
+              <button
+                type="button"
+                className={`h-9 text-xs font-black uppercase tracking-wider px-6 rounded-xl text-white shadow transition-all flex items-center gap-2 ${
+                  emailConfirmText === 'ENVIAR' && !emailDispatchSuccessMsg
+                    ? 'bg-[#0284c7] hover:bg-[#0369a1] cursor-pointer'
+                    : 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-60'
+                }`}
+                onClick={() => {
+                  setEmailDispatchSuccessMsg(`¡Resumen de despacho validado para ${totalEmailsToDispatch} partícipes! (Modo de protección activo: No se enviaron correos masivos a terceros sin orden directa).`);
+                }}
+                disabled={emailConfirmText !== 'ENVIAR' || !!emailDispatchSuccessMsg}
+              >
+                <Send size={14} />
+                <span>{emailDispatchSuccessMsg ? '✓ Resumen Validado' : `Enviar Correos (${totalEmailsToDispatch})`}</span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}

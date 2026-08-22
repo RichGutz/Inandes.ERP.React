@@ -218,3 +218,9 @@
    - Febrero 2026: EECC (S/ 600,000.00 / Neto S/ 9,674.38) + Certificado Retención 2da Cat (IR S/ 509.18).
    - Abril 2026: EECC (S/ 600,000.00 / Neto S/ 10,002.33) + Certificado Retención 2da Cat (IR S/ 526.44).
 3. Despachados exitosamente a 'rickgallo@gmail.com' con CC a 'rgutil@gmail.com' bajo la identidad oficial 'INANDES Inversionistas <inversionistas@inandes.com>'.
+[2026-08-21 21:02:00-05:00] TAREA: Implementar paso intermedio de despacho de correos a inversionistas en InversionistasPage.tsx.
+[2026-08-21 21:02:00-05:00] ESTADO: Completado con éxito.
+1. Añadido botón 'Enviar Correo' en la barra de filtros de 'EECC / Retenciones' a la derecha del selector 'N° Período'.
+2. Creado el Modal de Pre-Vuelo y Resumen Consolidado de Destinatarios por Fondo (Fondos, Monedas, Conteo de Partícipes Titular 1, Documentos Adjuntos y Total General).
+3. Incorporado campo de validación de seguridad 'Escribe ENVIAR aquí...' y blindado el botón 'Enviar Correos' en modo de protección (sin auto-disparo de envíos masivos reales sin autorización final).
+4. Compilación limpia validada con 'npm run build' (0 errores).
