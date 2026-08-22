@@ -310,3 +310,9 @@
 2. Actualizado logo a `/assets/Logo.Inandes.MODERNO.jpeg`.
 3. Implementada descarga con `html2pdf.js` con `orientation: 'landscape'` y naming `CERTIFICADO_${id_certificado}_${YYYY-MM-DD}.pdf`.
 4. Compilación de producción validada con `npm run build` (0 errores).
+[2026-08-22 15:13:00-05:00] TAREA: Eliminar en cascada el contrato duplicado `NSGPEN03-039.20260501` en Supabase preservando el contrato legítimo `NSGPEN03-031.20260501`.
+[2026-08-22 15:13:00-05:00] ESTADO: Completado con éxito.
+1. Eliminados eventos `10786` y `11272` de `crm_certificados_eventos`.
+2. Eliminado certificado `NSGPEN03-039.20260501.20260501` de `crm_certificados`.
+3. Eliminado contrato `NSGPEN03-039.20260501` de `crm_contratos`.
+4. Verificada integridad del contrato `NSGPEN03-031.20260501` y sus partícipes (Yagua Padilla / Yagua López).

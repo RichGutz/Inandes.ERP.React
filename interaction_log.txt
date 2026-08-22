@@ -243,3 +243,8 @@
 3. Implementada descarga directa de PDF nativo horizontal (`landscape` A4) con `html2pdf.js` para visualización perfecta y derecha en Foxit Reader y Adobe.
 4. Naming automático de archivo: `CERTIFICADO_${id_certificado}_${YYYY-MM-DD}.pdf`.
 5. Compilación de producción validada con `npm run build` (0 errores).
+[2026-08-22 15:13:00-05:00] ELIMINACIÓN EN CASCADA DE CONTRATO DUPLICADO (NSGPEN03-039.20260501):
+1. Eliminados de `crm_certificados_eventos`: eventos `10786` (emisión) y `11272` (cierre 30/06/2026).
+2. Eliminado de `crm_certificados`: certificado `NSGPEN03-039.20260501.20260501`.
+3. Eliminado de `crm_contratos`: contrato `NSGPEN03-039.20260501`.
+4. Verificado contrato original `NSGPEN03-031.20260501` intacto y vigente con sus partícipes (Yagua Padilla / Yagua López).
