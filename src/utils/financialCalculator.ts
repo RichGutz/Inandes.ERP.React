@@ -413,7 +413,10 @@ export const generateRetornosV40 = async (
     };
 
     for (const r of rowsF) {
+      const bruto_hijos = r.hijos.reduce((sum: number, h: any) => sum + (Math.round(h.interes_acum * 100) / 100), 0);
       const bruto = Math.round(r.interes_total_acum * 100) / 100;
+      const bruto_padre = Math.round((bruto - bruto_hijos) * 100) / 100;
+      
       const imp = Math.round(bruto * 0.05 * 100) / 100;
       const neta = Math.round((bruto - imp) * 100) / 100;
       
@@ -514,7 +517,7 @@ export const generateRetornosV40 = async (
       const rRescatesNetos = Math.round((rescate_sum - penalidad_sum) * 100) / 100;
       const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
 
-      rx["INT. BRUTO"] = bruto;
+      rx["INT. BRUTO"] = bruto_padre;
       rx["IR (5%)"] = imp;
       rx["BASE NETA"] = neta;
       rx["CAPITALIZACION"] = cap_z;
@@ -560,7 +563,7 @@ export const generateRetornosV40 = async (
         aumentos: aum_v,
         tasa_cert: `${(r.tasa_pactada * 100).toFixed(2)}%`,
         valores: r.valores_dia_padre,
-        bruto_total: bruto,
+        bruto_total: bruto_padre,
         impuesto_total: imp,
         base_neta: neta,
         capitalizacion: cap_z,
@@ -590,7 +593,7 @@ export const generateRetornosV40 = async (
       }
 
       // Actualizar acumuladores totales
-      fTotals.capital += r.capital_base;
+      fTotals.capital += (r.capital_base + aum_v);
       fTotals.bruto_total += bruto;
       fTotals.impuesto_total += imp;
       fTotals.base_neta += neta;
