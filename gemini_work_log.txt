@@ -301,3 +301,6 @@
 1. Implementada la Columna 4 con botones 'Generar TXT BCP' y 'Descargar Excel Auditoría'.
 2. Conectada la reactividad de fondos y períodos.
 3. Compilación de producción validada con `npm run build` (0 errores).
+[2026-08-22 14:48:00-05:00] TAREA: Corregir aumento de capital en Supabase (`crm_certificados_eventos`) para `NSGPEN01-088.20160101.20260430` (Chang Lock Julia Esther).
+[2026-08-22 14:48:00-05:00] ESTADO: Completado con éxito.
+1. Actualizado `id_evento: 10784` con `capital_final_saldo: 420000` (Aumento exacto de +PEN 200,000.00 del 2026-07-01).

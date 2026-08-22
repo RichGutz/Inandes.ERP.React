@@ -234,3 +234,6 @@
 1. Creada la Columna 4 oficial: '4. Transferencias Bancarias (Telecrédito BCP)'.
 2. Incorporadas opciones directas de 'Generar TXT BCP' y 'Descargar Excel Auditoría' vinculadas a los filtros de 'TODOS LOS FONDOS' o fondos individuales y el período activo.
 3. Compilación de producción validada con `npm run build` (0 errores).
+[2026-08-22 14:48:00-05:00] CORRECCIÓN DE AUMENTO DE CAPITAL EN SUPABASE:
+1. Actualizado el evento `id_evento: 10784` en `crm_certificados_eventos` para el certificado `NSGPEN01-088.20160101.20260430` (Chang Lock Julia Esther).
+2. Ajustado `capital_final_saldo` de 420,001.00 a 420,000.00 PEN (Aumento exacto de +PEN 200,000.00 con fecha efectiva 2026-07-01).
