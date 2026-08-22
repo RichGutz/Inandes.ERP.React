@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f0;font-family:Arial,Helvetica,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2f0;padding:28px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.10);">
+
+          <!-- HEADER RIBBON (LIMPIO CON RESERVA DE ESPACIO) -->
+          <tr>
+            <td style="background-color:#e3bf60;padding:0;text-align:center;line-height:0;height:168px;">
+              <img src="cid:logo_inandes" alt="INANDES" width="600" height="168" style="width:600px;height:168px;display:block;" />
+            </td>
+          </tr>
+
+          <!-- HERO BANNER -->
+          <tr>
+            <td style="background-color:#004d40;padding:36px 32px 32px 32px;">
+              <p style="margin:0 0 6px 0;color:#f5c75d;font-family:Arial,sans-serif;font-size:14pt;font-weight:bold;letter-spacing:1px;text-transform:uppercase;">
+                Fondo de Inversión Privado {{FONDO_NOMBRE}}
+              </p>
+              <p style="margin:0;color:#ffffff;font-size:20pt;font-weight:bold;line-height:1.3;">
+                Tu Estado de Cuenta<br>
+                <span style="color:#a5d6a7;">{{PERIODO_INICIO}}</span>
+                <span style="color:#ffffff;font-weight:normal;font-size:14pt;"> al </span>
+                <span style="color:#a5d6a7;">{{PERIODO_FIN}}</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- SALUDO -->
+          <tr>
+            <td style="padding:32px 32px 8px 32px;">
+              <p style="margin:0;font-size:17pt;font-weight:bold;color:#004d40;">
+                Hola {{NOMBRE_CORTO}},
+              </p>
+            </td>
+          </tr>
+
+          <!-- CUERPO -->
+          <tr>
+            <td style="padding:12px 32px 24px 32px;color:#444444;font-size:11pt;line-height:1.75;">
+              <p style="margin:0 0 14px 0;">
+                Por medio de la presente nos permitimos saludarlo(a) cordialmente, a fin de remitirle
+                su <strong>Estado de Cuenta</strong> correspondiente al período del
+                <strong>{{PERIODO_INICIO}}</strong> al <strong>{{PERIODO_FIN}}</strong>.
+              </p>
+              <p style="margin:0 0 14px 0;">
+                Asimismo, le remitimos el <strong>Certificado de Retención de Renta de
+                Segunda Categoría</strong> correspondiente al mismo período, ambos relativos a su inversión:
+              </p>
+              <p style="margin:0 0 4px 0;"><strong>Fondo:</strong> {{FONDO_NOMBRE}}</p>
+              <p style="margin:0 0 14px 0;"><strong>Certificado:</strong> {{ID_CERTIFICADO}}</p>
+              <p style="margin:0;">
+                Ambos documentos se encuentran adjuntos al presente correo en formato PDF.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CIFRA DESTACADA: CAPITAL FINAL -->
+          <tr>
+            <td style="padding:0 32px 32px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #004d40;border-radius:8px;background-color:#f0faf8;">
+                <tr>
+                  <td style="padding:20px 24px;text-align:center;">
+                    <p style="margin:0 0 4px 0;font-size:9pt;color:#666;text-transform:uppercase;letter-spacing:1px;">Inversión al {{PERIODO_FIN}}</p>
+                    <p style="margin:0;font-size:26pt;font-weight:bold;color:#004d40;letter-spacing:1px;">
+                      {{MONEDA}} {{CAPITAL_FINAL}}
+                    </p>
+                    <p style="margin:6px 0 0 0;font-size:8.5pt;color:#888;">Certificado N° {{ID_CERTIFICADO}}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- SEPARADOR -->
+          <tr>
+            <td style="padding:0 32px;"><hr style="border:none;border-top:1px solid #e0e0e0;margin:0;"></td>
+          </tr>
+
+          <!-- FIRMA -->
+          <tr>
+            <td style="padding:24px 32px 28px 32px;">
+              <p style="margin:0;font-weight:bold;font-size:11.5pt;color:#004d40;">J. Ricardo Gallo Pizarro</p>
+              <p style="margin:2px 0;font-size:9pt;color:#555;">INANDES Activos Alternativos SAC</p>
+              <p style="margin:7px 0 2px 0;font-size:9pt;font-weight:bold;color:#333;">Gerente General</p>
+              <p style="margin:1px 0;font-size:9pt;color:#555;">+51 992 778 175 &nbsp;|&nbsp; rgallo@inandes.com</p>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background-color:#004d40;padding:16px 32px;">
+              <p style="margin:0;font-size:8pt;color:#80cbc4;text-align:center;line-height:1.6;">
+                <strong style="color:#ffffff;">INANDES Activos Alternativos SAC</strong><br>
+                Los Tulipanes 147 of. 306, Santiago de Surco, Lima &nbsp;|&nbsp; +(511) 712 1700 &nbsp;|&nbsp; info@inandes.com
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- SUB-FOOTER -->
+        <table width="600" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+          <tr>
+            <td style="font-size:8pt;color:#999;text-align:center;padding:0 20px;line-height:1.6;">
+              Este correo fue enviado a {{EMAIL_DESTINO}} por INANDES Activos Alternativos SAC.<br>
+              Por favor agrega <strong>inversionistas@inandes.com</strong> a tus contactos de confianza.
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

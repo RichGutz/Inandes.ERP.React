@@ -33,4 +33,6 @@ backups.supabase/
 facturas_inandes/
 backend/sa_credentials.json
 sa_credentials.json
+backend/gmail_*.json
+gmail_*.json
 

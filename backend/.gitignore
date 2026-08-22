@@ -1,6 +1,7 @@
 # Secrets y credenciales
 .env
 sa_credentials.json
+gmail_*.json
 *credentials*.json
 *secret*.json
 *.pem

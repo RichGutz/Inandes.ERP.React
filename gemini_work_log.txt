@@ -197,4 +197,24 @@
 [2026-08-20 15:53:00-05:00] TAREA: Ejecutar y validar el Loop de Auditoría Autónoma In-Memory (Bimestre 1 Ene-Feb 2026 -> Bimestre 2 Mar-Abr 2026) sin persistir asientos previos.
 [2026-08-20 15:53:00-05:00] ESTADO: Completado con éxito. Verificada la extinción a S/ 0.00 de los 4 contratos con rescate total en B1 (Castillo Julia, Perales María, Parodi Jorge, Villegas Renán), comprobando que NO figuran en B2 (198 en B1 -> 194 en B2), y validando que los rescates parciales arranquen con su saldo exacto (Parra Gladys con S/ 1,575,000.00). Convergencia 100% matemática garantizada.
 [2026-08-20 16:04:00-05:00] TAREA: Grabar punto de control seguro (Tag y Branch) SAFEPOINT.20.08.26 / AUDIT.LOOP.INMEMORY.20.08.26 en GitHub.
-[2026-08-20 16:04:00-05:00] ESTADO: Completado con éxito. Publicado en origin/SAFEPOINT.20.08.26 y Tag oficial AUDIT.LOOP.INMEMORY.20.08.26.
+[2026-08-21 20:38:00-05:00] TAREA: Implementar servicio unificado de correo (email_service.py), endpoint FastAPI (/api/inversionistas/enviar-reportes) y validar despacho exitoso con token previo autenticado.
+[2026-08-21 20:38:00-05:00] ESTADO: Completado con éxito.
+1. Creado backend/services/email_service.py con soporte para OAuth2 Token (refresco automático), Service Account DWD y SMTP fallback.
+2. Copiados gmail_oauth_token.json y gmail_oauth_credentials.json al worktree de backend/.
+3. Implementado endpoint POST /api/inversionistas/enviar-reportes en backend/routers/inversionistas.py con renderizado en caliente de EECC y Retenciones PDF mediante WeasyPrint.
+[2026-08-21 20:42:00-05:00] TAREA: Despachar Estados de Cuenta (EECC) y Certificados de Retención oficiales de Febrero y Abril 2026 al inversionista Gallo Pizarro Juan Ricardo (DNI 02816271) a su correo registrado en BD ('rickgallo@gmail.com').
+[2026-08-21 20:42:00-05:00] ESTADO: Completado con éxito.
+1. Consultado Supabase: Contrato oficial 'NSGPEN01-002.20160101' (Fondo FDO NSG MIPYME PEN 01, Capital S/ 600,000.00).
+2. Generados PDFs con WeasyPrint:
+   - Febrero 2026 (01.01.2026 - 28.02.2026): EECC (Neto S/ 9,674.38) + Certificado Retención 2da Cat (IR S/ 509.18).
+   - Abril 2026 (01.03.2026 - 30.04.2026): EECC (Neto S/ 10,002.33) + Certificado Retención 2da Cat (IR S/ 526.44).
+3. Despachados dos correos oficiales con plantilla HTML corporativa, ribbon InAndes y adjuntos a 'rickgallo@gmail.com' con CC a 'rgutil@gmail.com'.
+[2026-08-21 20:43:00-05:00] TAREA: Despachar correos específicos de Certificados Oficiales de Retención de Renta de 2da Categoría (Febrero y Abril 2026) a Gallo Pizarro Juan Ricardo con copia (CC) a 'rgutil@gmail.com'.
+[2026-08-21 20:43:00-05:00] ESTADO: Completado con éxito. Despachados ambos correos con sus respectivos PDFs oficiales generados y copia carbón entregada a 'rgutil@gmail.com'.
+[2026-08-21 20:47:00-05:00] TAREA: Despachar paquete combinado (EECC + Certificado de Retención) de Febrero y Abril 2026 desde la dirección corporativa oficial 'inversionistas@inandes.com' mediante Google Workspace Domain-Wide Delegation (Método 1).
+[2026-08-21 20:47:00-05:00] ESTADO: Completado con éxito.
+1. Autenticación exitosa ante Gmail API delegada en 'inversionistas@inandes.com'.
+2. Generados y adjuntados en caliente:
+   - Febrero 2026: EECC (S/ 600,000.00 / Neto S/ 9,674.38) + Certificado Retención 2da Cat (IR S/ 509.18).
+   - Abril 2026: EECC (S/ 600,000.00 / Neto S/ 10,002.33) + Certificado Retención 2da Cat (IR S/ 526.44).
+3. Despachados exitosamente a 'rickgallo@gmail.com' con CC a 'rgutil@gmail.com' bajo la identidad oficial 'INANDES Inversionistas <inversionistas@inandes.com>'.

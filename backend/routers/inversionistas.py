@@ -1,9 +1,9 @@
-# backend/routers/inversionistas.py
 import os
 import sys
 import io
 import datetime
 import base64
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse, Response
 from pydantic import BaseModel
@@ -604,4 +604,192 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
         raise
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Error al generar Retenciones PDF: {str(err)}")
+
+
+# =========================================================================
+# --- ENDPOINTS DE ENVÍO DE CORREOS (EECC + RETENCIÓN) ---
+# =========================================================================
+
+class EnviarReportesRequest(BaseModel):
+    id_fondo: str = "TODOS"
+    fecha_fin: str = "2026-02-28"
+    cert_ids: Optional[List[str]] = None
+    override_email: Optional[str] = None  # Para pruebas (redirige todos a este correo)
+    cc_email: Optional[str] = "rgutil@gmail.com"
+
+
+@router.post("/enviar-reportes")
+def post_enviar_reportes(req: EnviarReportesRequest):
+    """
+    Genera EECC y Certificado de Retención en PDF y los envía por correo
+    a cada inversionista correspondiente.
+    """
+    from services.email_service import send_email
+
+    try:
+        supabase = get_supabase_client()
+        query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', req.fecha_fin)
+        res = query.execute()
+
+        events = res.data or []
+        if req.id_fondo != 'TODOS':
+            events = [e for e in events if e.get('id_certificado', '').startswith(req.id_fondo) or e.get('id_contrato', '').startswith(req.id_fondo)]
+
+        events = [e for e in events if e.get('tipo_evento') in ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'aumento_capital']]
+
+        if req.cert_ids:
+            events = [e for e in events if e.get('id_certificado') in req.cert_ids or e.get('id_contrato') in req.cert_ids]
+
+        if not events:
+            raise HTTPException(status_code=404, detail="No se encontraron eventos contables para los parámetros indicados.")
+
+        # Cargar fondos e inversionistas
+        res_fondos = supabase.table('crm_fondos').select('*').execute()
+        fondos_map = {f['id_fondo']: f for f in (res_fondos.data or [])}
+
+        res_invs = supabase.table('crm_inversionistas').select('*').execute()
+        invs_list = res_invs.data or []
+
+        def get_inv_info(name_str):
+            s = (name_str or "").strip().lower()
+            for r in invs_list:
+                full = f"{r.get('nombre_1','')} {r.get('nombre_2','')} {r.get('apellido_1','')} {r.get('apellido_2','')}".strip().lower()
+                if full == s or (s and s in full) or (full and full in s):
+                    return {
+                        'email': r.get('email') or r.get('correo_electronico') or '',
+                        'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
+                        'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
+                        'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
+                    }
+            return {'email': '', 'dni': 'S/D', 'direccion': 'Lima, Perú', 'nombre_corto': 'Estimado(a) Inversionista'}
+
+        env = Environment(loader=FileSystemLoader(templates_dir))
+        env.globals['format_num'] = format_num
+        tpl_eecc = env.get_template('estado_cuenta_inversionista_v2.html')
+        tpl_retencion = env.get_template('retencion_renta_v2.html')
+
+        # Cargar plantilla HTML del correo
+        email_body_tpl_path = os.path.join(templates_dir, 'email_eecc_body.html')
+        with open(email_body_tpl_path, 'r', encoding='utf-8') as f:
+            email_html_raw = f.read()
+
+        enviados = []
+        errores = []
+
+        for e in events:
+            payload = e.get('payload_asiento') or {}
+            f_code = e.get('id_contrato', '').split('-')[0]
+            fondo_info = fondos_map.get(f_code, {})
+            nombre_fondo = fondo_info.get('nombre_fondo', f_code)
+            moneda = payload.get('moneda') or fondo_info.get('moneda') or 'PEN'
+            valor_cuota = float(fondo_info.get('valor_cuota_inicial', 1.0))
+            cid = e.get('id_contrato', e.get('id_certificado'))
+
+            inversionista = payload.get('inversionista') or 'Inversionista'
+            inv_info = get_inv_info(inversionista)
+
+            dest_email = req.override_email if req.override_email else inv_info['email']
+            if not dest_email:
+                errores.append({'certificado': cid, 'inversionista': inversionista, 'error': 'Sin correo electrónico registrado'})
+                continue
+
+            # 1. Generar EECC PDF
+            cert_eecc_data = {
+                'fondo_nombre': nombre_fondo,
+                'fecha_inicio_str': format_date_str(e.get('fecha_periodo_origen', '')),
+                'fecha_fin_str': format_date_str(e.get('fecha_periodo_fin', '')),
+                'inversionista_nombre': inversionista,
+                'id_certificado': cid,
+                'moneda': moneda,
+                'capital_inicial': e.get('capital_base', 0.0),
+                'bruto_total': e.get('interes_generado_bruto', 0.0),
+                'impuesto': e.get('impuestos_renta', 0.0),
+                'deducciones': e.get('monto_deduccion', 0.0),
+                'neto_disponible': e.get('interes_neto_disponible', 0.0),
+                'capitalizacion': e.get('monto_capitalizacion', 0.0),
+                'rescates': e.get('monto_rescate', 0.0),
+                'monto_transferido': e.get('monto_reparto', 0.0),
+                'capital_final': e.get('capital_final_saldo', 0.0),
+                'valor_cuota': valor_cuota,
+            }
+            html_eecc = tpl_eecc.render({'certs': [cert_eecc_data], 'logo_path': logo_path})
+            pdf_eecc_bytes = HTML(string=html_eecc, base_url=backend_root).write_pdf()
+
+            attachments = [{
+                'filename': f"EECC_{cid}.pdf",
+                'content_bytes': pdf_eecc_bytes
+            }]
+
+            # 2. Generar Retención PDF si hay impuesto
+            impuesto_raw = float(e.get('impuestos_renta', 0.0))
+            if impuesto_raw > 0:
+                ir_pen = round(impuesto_raw * 3.75 if moneda == 'USD' else impuesto_raw, 2)
+                cert_ret_item = {
+                    'num_certificado': cid,
+                    'nombre_fondo': nombre_fondo,
+                    'nombres_participes': inversionista,
+                    'dni_participes': inv_info['dni'],
+                    'direccion_fiscal': inv_info['direccion'],
+                    'monto_ir_pen_num': f"{ir_pen:,.2f}",
+                    'monto_ir_pen_letras': numero_a_letras_soles(ir_pen),
+                    'f_inicio': format_date_str(e.get('fecha_periodo_origen', '')),
+                    'f_fin': format_date_str(e.get('fecha_periodo_fin', '')),
+                    'moneda': moneda,
+                    'base_retencion': f"{float(e.get('interes_generado_bruto', 0.0)):,.2f}",
+                    'fecha_operacion': format_date_str(e.get('fecha_periodo_fin', '')),
+                    'tipo_cambio_display': "PEN 3.750",
+                    'dia_hoy': "28",
+                    'mes_hoy': "febrero",
+                    'anio_hoy': "2026"
+                }
+                html_ret = tpl_retencion.render({
+                    'certificados': [cert_ret_item],
+                    'logo_path': logo_path,
+                    'firma_path': firma_path
+                })
+                pdf_ret_bytes = HTML(string=html_ret, base_url=backend_root).write_pdf()
+                attachments.append({
+                    'filename': f"Retencion_2daCat_{cid}.pdf",
+                    'content_bytes': pdf_ret_bytes
+                })
+
+            # 3. Ensamblar Cuerpo HTML del Correo
+            body_html = email_html_raw \
+                .replace("{{FONDO_NOMBRE}}", nombre_fondo) \
+                .replace("{{NOMBRE_CORTO}}", inv_info['nombre_corto']) \
+                .replace("{{PERIODO_INICIO}}", format_date_str(e.get('fecha_periodo_origen', ''))) \
+                .replace("{{PERIODO_FIN}}", format_date_str(e.get('fecha_periodo_fin', ''))) \
+                .replace("{{MONEDA}}", moneda) \
+                .replace("{{CAPITAL_FINAL}}", f"{float(e.get('capital_final_saldo', 0.0)):,.2f}") \
+                .replace("{{ID_CERTIFICADO}}", cid) \
+                .replace("{{EMAIL_DESTINO}}", dest_email)
+
+            asunto = f"Fondo de Inversión {nombre_fondo} – Estado de Cuenta {format_date_str(e.get('fecha_periodo_fin', ''))}"
+
+            ok, msg = send_email(
+                to_email=dest_email,
+                subject=asunto,
+                html_body=body_html,
+                attachments=attachments,
+                cc_email=req.cc_email or "rgutil@gmail.com"
+            )
+
+            if ok:
+                enviados.append({'certificado': cid, 'inversionista': inversionista, 'email': dest_email})
+            else:
+                errores.append({'certificado': cid, 'inversionista': inversionista, 'error': msg})
+
+        return {
+            'status': 'ok',
+            'total_procesados': len(events),
+            'enviados_count': len(enviados),
+            'errores_count': len(errores),
+            'enviados': enviados,
+            'errores': errores
+        }
+
+    except HTTPException:
+        raise
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Error al procesar envío masivo: {str(err)}")
 
