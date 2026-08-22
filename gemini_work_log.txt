@@ -258,3 +258,8 @@
 3. Fila de Totales con sumatoria diaria calculada para cada uno de los 59 días.
 4. Generado `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CON_DIAS_COLAPSADOS.xlsx`.
 5. Compilación limpia verificada con `npm run build` (0 errores).
+[2026-08-22 13:52:00-05:00] TAREA: Desplegar cambios y mejoras de Excel a Producción en VPS Contabo.
+[2026-08-22 13:52:00-05:00] ESTADO: Completado con éxito.
+1. Compilación limpia local de Vite `npm run build` validada (0 errores).
+2. Commit `69ee297` sincronizado y publicado en `origin/main` (`RichGutz/Inandes.ERP.React`).
+3. Auto-despliegue en caliente ejecutado por el Webhook de Coolify en VPS Contabo (`169.58.168.107` / `inandes.geeksoft.tech`).

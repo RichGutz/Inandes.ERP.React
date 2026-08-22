@@ -204,3 +204,7 @@
 2. Configurada agrupación horizontal nativa de Excel con `outlineLevel: 1` y `hidden: true` por defecto.
 3. El usuario puede abrir y cerrar el desglose diario pulsando el botón `[+]`/`[-]` encima de `INT. BRUTO` o usando los selectores de nivel `1` y `2` de Excel.
 4. Generado `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CON_DIAS_COLAPSADOS.xlsx` y validada compilación limpia con `npm run build` (0 errores).
+[2026-08-22 13:52:00-05:00] DESPLIEGUE A PRODUCCIÓN VPS CONTABO (COOLIFY):
+1. Validada compilación local con Vite `npm run build` (0 errores).
+2. Sincronizado y publicado commit `69ee297` en `origin/main` (`RichGutz/Inandes.ERP.React`).
+3. Auto-despliegue en caliente ejecutado por el Webhook de Coolify en VPS Contabo (`169.58.168.107` / `inandes.geeksoft.tech`).
