@@ -224,20 +224,24 @@ export const calculateValorCuotaV26 = async (
       });
     }
 
-    // Configurar filas de totales de resumen
+    // Configurar filas de totales de resumen con distribución clara
     const summaryDefs = [
-      { id: 'TOTAL CAPITAL', css: 'summary-row' },
+      { id: 'TOTAL CAPITAL (Apertura)', css: 'summary-row font-black' },
       { id: 'SPACER_1', css: 'spacer-row' },
-      { id: 'INVERSIONES ORIGINALES', css: 'summary-row' },
-      { id: 'INV. ORIGINALES ACUMULADAS', css: 'summary-row' },
+      { id: '(+) CAPITAL ADICIONAL (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CAPITAL ACUMULADO', css: 'summary-row' },
+      { id: 'CUOTAS APERTURA', css: 'summary-row' },
+      { id: '(+) CUOTAS ADICIONALES (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CUOTAS TOTALES CIERRE', css: 'summary-row' },
       { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
       { id: 'SPACER_2', css: 'spacer-row' },
-      { id: 'GANANCIA TOTAL BRUTA', css: 'summary-row' },
-      { id: 'COM. ADMIN (-)', css: 'summary-row text-rose-600' },
-      { id: 'COM. CAPT. (-)', css: 'summary-row text-rose-600' },
+      { id: 'GANANCIA TOTAL BRUTA (Base 360)', css: 'summary-row' },
+      { id: 'PATRIMONIO TOTAL (Pre-Aportes)', css: 'summary-row' },
+      { id: 'COM. ADMIN (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. (-) (Base 365)', css: 'summary-row text-rose-600' },
       { id: 'COM. MISC. (-)', css: 'summary-row text-rose-600' },
-      { id: 'GANANCIA OPERATIVA', css: 'summary-row font-black' },
-      { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row' },
+      { id: 'GANANCIA OPERATIVA (Neta)', css: 'summary-row font-black' },
+      { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row font-black' },
       { id: 'VAL CUOTA FINAL', css: 'vc-cell' }
     ];
 
@@ -284,10 +288,12 @@ export const calculateValorCuotaV26 = async (
 
       // Procesar aumentos de capital que ocurren hoy (si d > startDate)
       let apD = 0.0;
+      let nuevasCuotasD = 0.0;
       if (dStr !== startDateStr) {
         for (const r of certRows) {
           const aumentosHoy = (aumMap[r.id] || []).filter(a => a.fecha.toISOString().split('T')[0] === dStr);
           for (const a of aumentosHoy) {
+            const nuevasCuotas = a.monto / vCuoH;
             const nuevoHijo = {
               tipo: 'AUMENTO',
               id: `Aumento (${a.fecha.getDate()}/${a.fecha.getMonth() + 1})`,
@@ -298,8 +304,9 @@ export const calculateValorCuotaV26 = async (
             };
             r.hijos.push(nuevoHijo);
             r.capital += a.monto;
-            r.cuotas += a.monto / vCuoH;
+            r.cuotas += nuevasCuotas;
             apD += a.monto;
+            nuevasCuotasD += nuevasCuotas;
           }
         }
       }
@@ -312,15 +319,19 @@ export const calculateValorCuotaV26 = async (
         if (sRow) sRow.valores_dia.push(value);
       };
 
-      setSummaryVal('TOTAL CAPITAL', patAyer);
-      setSummaryVal('INVERSIONES ORIGINALES', apD);
-      setSummaryVal('INV. ORIGINALES ACUMULADAS', fInvAcu);
+      setSummaryVal('TOTAL CAPITAL (Apertura)', patAyer);
+      setSummaryVal('(+) CAPITAL ADICIONAL (Hoy)', apD);
+      setSummaryVal('(=) CAPITAL ACUMULADO', fInvAcu);
+      setSummaryVal('CUOTAS APERTURA', cuotasAyer);
+      setSummaryVal('(+) CUOTAS ADICIONALES (Hoy)', nuevasCuotasD);
+      setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasAyer + nuevasCuotasD);
       setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
-      setSummaryVal('GANANCIA TOTAL BRUTA', iBrutoD);
-      setSummaryVal('COM. ADMIN (-)', gAdmD);
-      setSummaryVal('COM. CAPT. (-)', gCapD);
+      setSummaryVal('GANANCIA TOTAL BRUTA (Base 360)', iBrutoD);
+      setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + uNetaD);
+      setSummaryVal('COM. ADMIN (-) (Base 365)', gAdmD);
+      setSummaryVal('COM. CAPT. (-) (Base 365)', gCapD);
       setSummaryVal('COM. MISC. (-)', gMiscD);
-      setSummaryVal('GANANCIA OPERATIVA', uNetaD);
+      setSummaryVal('GANANCIA OPERATIVA (Neta)', uNetaD);
       
       const patCierre = patAyer + uNetaD + apD;
       setSummaryVal('PATRIMONIO TOTAL CIERRE', patCierre);

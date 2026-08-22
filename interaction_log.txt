@@ -184,3 +184,23 @@
 2. MODAL DE RESUMEN PREVIO: Al pulsar el botón se despliega el modal interactivo con desglose tabular por fondo (Fondo, Moneda, Conteo de Partícipes Titular 1, Documentos Adjuntos y Total Consolidado).
 3. SEGURIDAD Y PROTECCIÓN: Implementado campo de confirmación 'Escribe ENVIAR aquí...' y blindado el botón en modo de protección (sin auto-disparo de correos reales a terceros). Compilación limpia de producción con Vite (0 errores).
 [2026-08-21 21:08:00-05:00] PUNTO DE CONTROL GIT TAG: Creado y publicado exitosamente el tag de control oficial `SESION.CORREOS.EECC.21.08.26` en origin/main (Commit `824cd91`). Rama activa de trabajo: `main`.
+[2026-08-22 13:08:00-05:00] INICIO Y PRIMER CICLO QC MOTOR NAV (VALOR CUOTA V26 ENE-FEB 2026): Implementado el script `scripts/qc_nav_ene_feb_2026.js` integrando el ingrediente canónico de Auditoría (187 contratos, saldos iniciales del Ledger al 31/12/2025 y aumentos de capital). Generado el libro Excel oficial `reports/Reporte_NAV_QC_Ene_Feb_2026.xlsx` con 6 pestañas y 59 columnas continuas. Redactada la nota técnica `Obsidian/Inandes.Inversionistas.React/02.PROCEDIMIENTO_QC_MOTOR_NAV.md` (preservada en Markdown). Cruce 100% verificado con el estándar de Auditoría Oficial.
+[2026-08-22 13:24:00-05:00] FORMATEO PROFESIONAL Y ESTILIZACIÓN EXCEL NAV (EXCELJS):
+1. Instalado `exceljs` en el frontend y scripts de backend.
+2. Formateadas todas las cifras numéricas con separador de miles y dos decimales (`#,##0.00`) y precisión de 6 decimales para Valor Cuota (`0.000000`).
+3. Fila 1 con cabeceras en Dark Navy `#0F172A`/`#1E293B`, fuente blanca en negrita, altura 28px y paneles inmovilizados (Freeze Panes en Columna A y Fila 1).
+4. Columna ITEM con anchos automáticos (40ch), colores semánticos por concepto (Verde para aportes, Rojo para comisiones, Azul para ganancias, Oro para patrimonio de cierre) y sangría en aumentos de capital.
+5. Actualizados `FondosPage.tsx`, `fondosService.ts` y generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx`. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 13:30:00-05:00] TIPOGRAFÍA MONOSPACED CONSOLAS EN EXCEL NAV: Actualizada la fuente tipográfica de todas las celdas, cabeceras, contratos y resúmenes a 'Consolas' en `FondosPage.tsx` y `generate_styled_nav_excel.js`. Re-generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx` y validada compilación limpia con `npm run build` (0 errores).
+[2026-08-22 13:35:00-05:00] HOMOLOGACIÓN DE FORMATO PROFESIONAL EN EXCEL DE AUDITORÍA Y RETORNOS (EXCELJS + CONSOLAS):
+1. Actualizado `handleExportExcelV40` en `InversionistasPage.tsx` con `ExcelJS`.
+2. Aplicada tipografía monoespaciada `Consolas` en todas las celdas, cabeceras y totales.
+3. Formato numérico contable `#,##0.00` con separador de miles y dos decimales en todas las columnas monetarias.
+4. Fila 1 de encabezados con Dark Navy `#0F172A`/`#1E293B`, texto blanco en negrita y paneles inmovilizados (Freeze Panes en columnas 1-3 y Fila 1).
+5. Fila de Totales con fondo dorado `#FEF3C7` y doble borde contable inferior; filas de aumento con sangría y texto itálica verde esmeralda.
+6. Generado `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CONSOLAS_STYLED.xlsx` y validada compilación con `npm run build` (0 errores).
+[2026-08-22 13:45:00-05:00] AGRUPACIÓN HORIZONTAL DE COLUMNAS DIARIAS COLAPSADAS [+] / [-] (EXCEL OUTLINE):
+1. Integradas las 59 columnas de intereses diarios (`01/01` al `28/02`) directamente en cada pestaña de Fondo (`Fondo_NSG...`).
+2. Configurada agrupación horizontal nativa de Excel con `outlineLevel: 1` y `hidden: true` por defecto.
+3. El usuario puede abrir y cerrar el desglose diario pulsando el botón `[+]`/`[-]` encima de `INT. BRUTO` o usando los selectores de nivel `1` y `2` de Excel.
+4. Generado `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CON_DIAS_COLAPSADOS.xlsx` y validada compilación limpia con `npm run build` (0 errores).

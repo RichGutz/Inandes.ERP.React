@@ -226,3 +226,35 @@
 4. Compilación limpia validada con 'npm run build' (0 errores).
 [2026-08-21 21:08:00-05:00] TAREA: Consolidar y publicar punto de control seguro (Safe Point) de la sesión.
 [2026-08-21 21:08:00-05:00] ESTADO: Completado con éxito. Creado y publicado el Tag oficial `SESION.CORREOS.EECC.21.08.26` sobre commit `824cd91` en `origin/main`.
+[2026-08-22 13:08:00-05:00] TAREA: Iniciar Loop QC del Motor NAV (Valor Cuota V26) para el periodo Ene-Feb 2026 y contrastar con la Auditoría Oficial.
+[2026-08-22 13:08:00-05:00] ESTADO: Completado con éxito.
+1. Implementado el script de simulación y extracción `scripts/qc_nav_ene_feb_2026.js` integrando el padrón de 187 contratos, saldos del Ledger al 31/12/2025 y aumentos de capital.
+2. Generado el archivo Excel oficial de auditoría `reports/Reporte_NAV_QC_Ene_Feb_2026.xlsx` con 6 pestañas independientes y 59 columnas diarias continuas.
+3. Elaborada la nota técnica `Obsidian/Inandes.Inversionistas.React/02.PROCEDIMIENTO_QC_MOTOR_NAV.md` (mantenida en formato Markdown conforme a la instrucción).
+4. Verificada la convergencia exacta de contratos y saldos iniciales frente al reporte de auditoría.
+[2026-08-22 13:24:00-05:00] TAREA: Aplicar formato contable y estilización profesional al libro Excel del Motor NAV (ExcelJS).
+[2026-08-22 13:24:00-05:00] ESTADO: Completado con éxito.
+1. Incorporada la biblioteca `exceljs` en el cliente React y en los scripts de auditoría.
+2. Aplicado formato de número con separador de miles y dos decimales (`#,##0.00`) para todas las cifras monetarias y 6 decimales para Valor Cuota (`0.000000`).
+3. Fila 1 de cabecera con fondo Dark Navy corporativo (`#0F172A`/`#1E293B`), texto blanco en negrita y paneles inmovilizados (Freeze Panes en Columna A y Fila 1).
+4. Columna A (ITEM) con anchos de 40ch, sangría itálica para aumentos y paleta de colores por concepto (Verde aportes, Rojo comisiones, Azul utilidad, Oro patrimonio de cierre).
+5. Actualizados `FondosPage.tsx`, `fondosService.ts` y generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx`. Compilación limpia verificada con `npm run build` (0 errores).
+[2026-08-22 13:30:00-05:00] TAREA: Cambiar fuente tipográfica a Consolas (Monospaced) en exportación Excel de Valor Cuota.
+[2026-08-22 13:30:00-05:00] ESTADO: Completado con éxito.
+1. Configurada la fuente `Consolas` en todas las celdas, cabeceras y resúmenes de `FondosPage.tsx` y `generate_styled_nav_excel.js`.
+2. Re-generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx`.
+3. Compilación limpia validada con `npm run build` (0 errores).
+[2026-08-22 13:35:00-05:00] TAREA: Homologar formato profesional, diseño visual y tipografía Consolas en el Excel de Auditoría y Control (Inversionistas).
+[2026-08-22 13:35:00-05:00] ESTADO: Completado con éxito.
+1. Actualizada la función `handleExportExcelV40` en `InversionistasPage.tsx` con la biblioteca `ExcelJS`.
+2. Aplicada fuente `Consolas` en todas las celdas, cabeceras y totales de las pestañas de fondos (`Fondo_NSG...`) y de auditoría diaria (`Audit_NSG...`).
+3. Configurados formatos contables `#,##0.00`, paneles inmovilizados (Freeze Panes), encabezado Dark Navy y resaltado de Totales con fondo oro/ámbar y doble borde contable.
+4. Generado el archivo de control `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CONSOLAS_STYLED.xlsx`.
+5. Compilación limpia verificada con `npm run build` (0 errores).
+[2026-08-22 13:45:00-05:00] TAREA: Implementar agrupación horizontal nativa de Excel con desglose diario colapsado [+] / [-].
+[2026-08-22 13:45:00-05:00] ESTADO: Completado con éxito.
+1. Incorporadas las 59 columnas de devengo diario (`01/01` al `28/02`) con agrupación horizontal nativa (`outlineLevel: 1`, `hidden: true`) en cada pestaña de fondo.
+2. El reporte abre en vista ejecutiva (resumida) y permite desplegar el cálculo diario detallado de cada contrato haciendo clic en el botón `[+]` encima de `INT. BRUTO` o en los selectores de nivel `1`/`2` de Excel.
+3. Fila de Totales con sumatoria diaria calculada para cada uno de los 59 días.
+4. Generado `reports/AUDITORIA_OFICIAL_SISTEMA_2026-02-28_CON_DIAS_COLAPSADOS.xlsx`.
+5. Compilación limpia verificada con `npm run build` (0 errores).

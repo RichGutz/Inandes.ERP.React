@@ -5,7 +5,7 @@ import type { Inversionista } from '../../services/inversionistasService';
 import { generateRetornosV40 } from '../../utils/financialCalculator';
 import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
 import { supabase } from '../../services/supabaseClient';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, 
@@ -801,7 +801,7 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  // Exportar Excel Detallado Oficial y Auditoría (SheetJS)
+  // Exportar Excel Detallado Oficial y Auditoría con Formato Profesional (ExcelJS)
   const handleExportExcelV40 = async () => {
     // Forzar cálculo fresco para asegurar que el Excel refleje siempre los últimos datos de la BD
     const currentResult = await handleRunV40Calculation();
@@ -810,57 +810,145 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    const wb = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'INANDES GRUPO FINANCIERO';
+    workbook.lastModifiedBy = 'InAndes React CRM';
+    workbook.created = new Date();
 
-    // 1. Generar pestañas limpias por Fondo con Formato Oficial y Desglose Bello (Fiel Reflejo 1:1 del PDF)
+    // 1. Generar pestañas limpias por Fondo con Formato Oficial y Desglose Diario Colapsado [+] / [-]
     currentResult.pdfData.forEach((fData: any) => {
       const fondoId = fData.fondo.id_fondo;
       const moneda = fData.fondo.moneda;
       const rows = fData.blocks[0].rows || [];
       const totals = fData.totals || {};
+      const fDays: string[] = fData.blocks[0].days || [];
 
-      const sheetRows: any[] = rows.map((r: any) => {
-        if (r.tipo === 'AUMENTO') {
-          return {
-            "#": "-",
-            "Certificado": r.id,
-            "Inversionista": "└─ Incremento de Capital",
-            "Capital Base": r.capital,
-            "INT. BRUTO": r.bruto_total,
-            "IR (5%)": "-",
-            "BASE NETA": "-",
-            "CAPITALIZACION": "-",
-            "REPARTO": "-",
-            "DEDUCCIONES": "-",
-            "PENALIDAD": "-",
-            "NETO FINAL": "-",
-            "RESCATES": "-",
-            "TRANSFERENCIAS": "-",
-            "CAPITAL FINAL": "-"
-          };
+      const headersFondo = [
+        "#", "Certificado", "Inversionista", "Capital Base",
+        ...fDays,
+        "INT. BRUTO", "IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES",
+        "PENALIDAD", "NETO FINAL", "RESCATES", "TRANSFERENCIAS", "CAPITAL FINAL"
+      ];
+
+      const dailyStartIndex = 5;
+      const dailyEndIndex = dailyStartIndex + fDays.length - 1;
+
+      const ws = workbook.addWorksheet(`Fondo_${fondoId.slice(0, 24)}`, {
+        views: [{ state: 'frozen', xSplit: 3, ySplit: 1 }] // Inmovilizar #, Certificado, Inversionista y Fila 1
+      });
+
+      // Configurar agrupación horizontal en Excel
+      ws.properties.outlineProperties = {
+        summaryBelow: false,
+        summaryRight: true
+      };
+
+      // Cabecera Fila 1
+      const headerRow = ws.addRow(headersFondo);
+      headerRow.height = 28;
+      headerRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: colNumber <= 3 ? 'FF0F172A' : (colNumber <= dailyEndIndex ? 'FF334155' : 'FF1E293B') }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: colNumber <= 3 ? 'center' : 'right' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF334155' } },
+          bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+          left: { style: 'thin', color: { argb: 'FF334155' } },
+          right: { style: 'thin', color: { argb: 'FF334155' } }
+        };
+      });
+
+      // Acumulador de suma diaria para la fila de totales
+      const sumDias = new Array(fDays.length).fill(0.0);
+
+      // Filas de Certificados y Aumentos
+      rows.forEach((r: any) => {
+        const isAumento = r.tipo === 'AUMENTO';
+        const vDias = r.valores || [];
+        for (let dIdx = 0; dIdx < vDias.length; dIdx++) {
+          sumDias[dIdx] += (Number(vDias[dIdx]) || 0);
         }
 
-        const rNetoFinal = r.neto_total !== undefined ? r.neto_total : Math.round(((r.reparto_valor || 0) - (r.deducciones_total || 0)) * 100) / 100;
-        const rRescatesNetos = Math.round(((r.devolucion_capital || 0) - (r.penalidad_rescate || 0)) * 100) / 100;
-        const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+        let rowValues: any[] = [];
 
-        return {
-          "#": r.n_orden,
-          "Certificado": r.id,
-          "Inversionista": r.inversionista,
-          "Capital Base": r.capital,
-          "INT. BRUTO": r.bruto_total,
-          "IR (5%)": r.impuesto_total,
-          "BASE NETA": r.base_neta,
-          "CAPITALIZACION": r.capitalizacion,
-          "REPARTO": r.reparto_valor,
-          "DEDUCCIONES": r.deducciones_total,
-          "PENALIDAD": r.penalidad_rescate || 0,
-          "NETO FINAL": rNetoFinal,
-          "RESCATES": r.devolucion_capital || 0,
-          "TRANSFERENCIAS": rTransferencia,
-          "CAPITAL FINAL": r.capital_final
-        };
+        if (isAumento) {
+          rowValues = [
+            "-",
+            r.id,
+            "   └─ Incremento de Capital",
+            r.capital || 0,
+            ...vDias,
+            r.bruto_total || 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+          ];
+        } else {
+          const rNetoFinal = r.neto_total !== undefined ? r.neto_total : Math.round(((r.reparto_valor || 0) - (r.deducciones_total || 0)) * 100) / 100;
+          const rRescatesNetos = Math.round(((r.devolucion_capital || 0) - (r.penalidad_rescate || 0)) * 100) / 100;
+          const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+
+          rowValues = [
+            r.n_orden,
+            r.id,
+            r.inversionista,
+            r.capital || 0,
+            ...vDias,
+            r.bruto_total || 0,
+            r.impuesto_total || 0,
+            r.base_neta || 0,
+            r.capitalizacion || 0,
+            r.reparto_valor || 0,
+            r.deducciones_total || 0,
+            r.penalidad_rescate || 0,
+            rNetoFinal,
+            r.devolucion_capital || 0,
+            rTransferencia,
+            r.capital_final || 0
+          ];
+        }
+
+        const addedRow = ws.addRow(rowValues);
+        addedRow.height = 20;
+
+        addedRow.eachCell((cell, colNumber) => {
+          if (colNumber === 1) {
+            cell.font = { name: 'Consolas', size: 9.5, color: { argb: 'FF64748B' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          } else if (colNumber === 2) {
+            cell.font = { name: 'Consolas', size: 9.5, bold: !isAumento, color: { argb: 'FF1E293B' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          } else if (colNumber === 3) {
+            cell.font = { 
+              name: 'Consolas', 
+              size: isAumento ? 9 : 9.5, 
+              italic: isAumento, 
+              bold: false, 
+              color: { argb: isAumento ? 'FF059669' : 'FF1E293B' } 
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'left', indent: isAumento ? 1 : 0 };
+          } else {
+            cell.numFmt = '#,##0.00';
+            cell.font = { 
+              name: 'Consolas', 
+              size: 9.5, 
+              italic: isAumento, 
+              color: { argb: isAumento ? 'FF059669' : 'FF334155' } 
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          }
+
+          if (isAumento) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+          }
+
+          cell.border = {
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFF1F5F9' } }
+          };
+        });
       });
 
       // Fila de Totales del Fondo
@@ -868,38 +956,139 @@ export const InversionistasPage: React.FC = () => {
       const totRescatesNetos = Math.round(((totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0)) * 100) / 100;
       const totTransferencia = Math.round((totNetoFinal + totRescatesNetos) * 100) / 100;
 
-      sheetRows.push({
-        "#": "TOTALES",
-        "Certificado": `${fondoId} (${moneda})`,
-        "Inversionista": "",
-        "Capital Base": totals.capital,
-        "INT. BRUTO": totals.bruto_total,
-        "IR (5%)": totals.impuesto_total,
-        "BASE NETA": totals.base_neta,
-        "CAPITALIZACION": totals.capitalizacion,
-        "REPARTO": totals.reparto_valor,
-        "DEDUCCIONES": totals.deducciones_total,
-        "PENALIDAD": totals.penalidad_rescate || 0,
-        "NETO FINAL": totNetoFinal,
-        "RESCATES": totals.devolucion_capital || 0,
-        "TRANSFERENCIAS": totTransferencia,
-        "CAPITAL FINAL": totals.capital_final
+      const totalRowValues = [
+        "TOTALES",
+        `${fondoId} (${moneda})`,
+        "",
+        totals.capital || 0,
+        ...sumDias,
+        totals.bruto_total || 0,
+        totals.impuesto_total || 0,
+        totals.base_neta || 0,
+        totals.capitalizacion || 0,
+        totals.reparto_valor || 0,
+        totals.deducciones_total || 0,
+        totals.penalidad_rescate || 0,
+        totNetoFinal,
+        totals.devolucion_capital || 0,
+        totTransferencia,
+        totals.capital_final || 0
+      ];
+
+      const totalRow = ws.addRow(totalRowValues);
+      totalRow.height = 24;
+
+      totalRow.eachCell((cell, colNumber) => {
+        if (colNumber <= 2) {
+          cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FF78350F' } };
+          cell.alignment = { vertical: 'middle', horizontal: colNumber === 1 ? 'center' : 'left' };
+        } else if (colNumber === 3) {
+          cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FF78350F' } };
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        } else {
+          cell.numFmt = '#,##0.00';
+          cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FF78350F' } };
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        }
+
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } }; // Soft Gold
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFD97706' } },
+          bottom: { style: 'double', color: { argb: 'FFD97706' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
       });
 
-      const ws = XLSX.utils.json_to_sheet(sheetRows);
-      XLSX.utils.book_append_sheet(wb, ws, `Fondo_${fondoId.slice(0, 24)}`);
+      // Anchos de Columna y Agrupamiento [+] / [-]
+      ws.getColumn(1).width = 8;   // #
+      ws.getColumn(2).width = 32;  // Certificado
+      ws.getColumn(3).width = 42;  // Inversionista
+      ws.getColumn(4).width = 16;  // Capital Base
+
+      // Agrupar y ocultar por defecto las columnas de días diarios
+      for (let c = dailyStartIndex; c <= dailyEndIndex; c++) {
+        const col = ws.getColumn(c);
+        col.width = 14;
+        col.outlineLevel = 1;
+        col.hidden = true; // Colapsado con botón [+] en Excel
+      }
+
+      // Columnas de Liquidación y Cierre
+      for (let c = dailyEndIndex + 1; c <= headersFondo.length; c++) {
+        ws.getColumn(c).width = 16;
+      }
     });
 
     // 2. Generar pestañas de Auditoría Diaria Detallada
     if (currentResult.xlsDict) {
       for (const [fondoId, filas] of Object.entries(currentResult.xlsDict)) {
-        const wsAudit = XLSX.utils.json_to_sheet(filas as any[]);
-        XLSX.utils.book_append_sheet(wb, wsAudit, `Audit_${fondoId.slice(0, 18)}`);
+        const rowsAudit = filas as any[];
+        if (!rowsAudit || rowsAudit.length === 0) continue;
+
+        const wsAudit = workbook.addWorksheet(`Audit_${fondoId.slice(0, 18)}`, {
+          views: [{ state: 'frozen', xSplit: 2, ySplit: 1 }] // Inmovilizar #, Certificado y Fila 1
+        });
+
+        // Extraer encabezados de las claves del primer objeto
+        const auditHeaders = Object.keys(rowsAudit[0]);
+        const auditHeaderRow = wsAudit.addRow(auditHeaders);
+        auditHeaderRow.height = 28;
+
+        auditHeaderRow.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: colNumber <= 2 ? 'FF0F172A' : 'FF1E293B' }
+          };
+          cell.alignment = { vertical: 'middle', horizontal: colNumber <= 2 ? 'left' : 'right' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FF334155' } },
+            bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+            left: { style: 'thin', color: { argb: 'FF334155' } },
+            right: { style: 'thin', color: { argb: 'FF334155' } }
+          };
+        });
+
+        // Filas de Auditoría Diaria
+        rowsAudit.forEach((rObj: any) => {
+          const rowVals = auditHeaders.map(h => {
+            const val = rObj[h];
+            if (val === '-' || val === undefined || val === null) return 0;
+            return typeof val === 'number' ? val : (isNaN(Number(val)) ? val : Number(val));
+          });
+
+          const addedAuditRow = wsAudit.addRow(rowVals);
+          addedAuditRow.height = 20;
+
+          addedAuditRow.eachCell((cell, colNumber) => {
+            if (colNumber <= 2) {
+              cell.font = { name: 'Consolas', size: 9.5, bold: false, color: { argb: 'FF1E293B' } };
+              cell.alignment = { vertical: 'middle', horizontal: 'left' };
+            } else {
+              cell.numFmt = '#,##0.00';
+              cell.font = { name: 'Consolas', size: 9.5, color: { argb: 'FF334155' } };
+              cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            }
+            cell.border = {
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFF1F5F9' } }
+            };
+          });
+        });
+
+        wsAudit.getColumn(1).width = 10;
+        wsAudit.getColumn(2).width = 34;
+        for (let c = 3; c <= auditHeaders.length; c++) {
+          wsAudit.getColumn(c).width = 14;
+        }
       }
     }
 
-    const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbOut], { type: 'application/octet-stream' });
+    // Descargar archivo binario
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
