@@ -304,3 +304,9 @@
 [2026-08-22 14:48:00-05:00] TAREA: Corregir aumento de capital en Supabase (`crm_certificados_eventos`) para `NSGPEN01-088.20160101.20260430` (Chang Lock Julia Esther).
 [2026-08-22 14:48:00-05:00] ESTADO: Completado con éxito.
 1. Actualizado `id_evento: 10784` con `capital_final_saldo: 420000` (Aumento exacto de +PEN 200,000.00 del 2026-07-01).
+[2026-08-22 15:03:00-05:00] TAREA: Corregir visor de certificados (eliminar scroll horizontal), usar logo moderno InAndes, descargar PDF en orientación horizontal nativa (Foxit) y naming automático con fecha.
+[2026-08-22 15:03:00-05:00] ESTADO: Completado con éxito.
+1. Ajustados los estilos CSS en `CERTIFICADO_HTML_TEMPLATE` (`overflow-x: hidden`, `@page { size: A4 landscape; }`).
+2. Actualizado logo a `/assets/Logo.Inandes.MODERNO.jpeg`.
+3. Implementada descarga con `html2pdf.js` con `orientation: 'landscape'` y naming `CERTIFICADO_${id_certificado}_${YYYY-MM-DD}.pdf`.
+4. Compilación de producción validada con `npm run build` (0 errores).

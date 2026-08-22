@@ -238,7 +238,11 @@ export const generateCertificateHtml = (context: {
     const monedaNombre = monedaIso === 'USD' ? "DOLARES DE LOS ESTADOS UNIDOS DE AMERICA" : "SOLES";
     const montoLetrasStr = `${numberToWordsEs(montoInt)} y ${String(montoCent).padStart(2, '0')}/100 ${monedaNombre}`;
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const filenameClean = `CERTIFICADO_${cert_meta.id_certificado}_${todayStr}`;
+
     const replacements: Record<string, string> = {
+      "{{CERTIFICADO_FILENAME}}": filenameClean,
       "{{LOGO_EFI_PATH}}": logo_efi_path,
       "{{FIRMA_PATH}}": firma_path,
       "{{FONDO_NOMBRE}}": `FONDO DE INVERSIÓN PRIVADO ${fund.nombre_fondo.toUpperCase()}`,

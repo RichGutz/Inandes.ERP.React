@@ -283,118 +283,140 @@ export const CERTIFICADO_HTML_TEMPLATE = `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>{{CERTIFICADO_FILENAME}}</title>
     <style>
         @page {
             size: A4 landscape;
-            margin: 1.5cm;
+            margin: 1.2cm;
         }
-        body {
-            font-family: 'Arial', sans-serif;
-            color: #333;
-            line-height: 1.6;
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
             margin: 0;
             padding: 0;
-            text-align: justify;
+            overflow-x: hidden;
+            background-color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         .certificate-container {
             width: 100%;
-            height: 100%;
-            border: 0px solid #ccc;
-            padding: 20px;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 0 auto;
+            padding: 20px 24px;
             position: relative;
-            zoom: 0.9;
         }
         .header-container {
             display: flex;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             justify-content: space-between;
         }
         .logo-box {
-            width: 150px;
+            width: 170px;
             flex-shrink: 0;
         }
         .side-spacer {
-            width: 150px;
+            width: 170px;
             flex-shrink: 0;
         }
-        .logo-efi {
-            width: 150px;
+        .logo-inandes {
+            width: 170px;
+            max-height: 75px;
+            height: auto;
+            object-fit: contain;
         }
         .center-box {
             flex-grow: 1;
             text-align: center;
+            padding: 0 12px;
         }
         .fondo-info {
-            font-weight: bold;
-            font-size: 14pt;
+            font-weight: 800;
+            font-size: 13pt;
             text-transform: uppercase;
             margin-bottom: 2px;
+            color: #0f172a;
         }
         .ruc-info {
-            font-size: 10pt;
-            margin-bottom: 5px;
-            font-weight: bold;
+            font-size: 9.5pt;
+            margin-bottom: 4px;
+            font-weight: 700;
+            color: #475569;
         }
         .cert-title {
-            font-size: 16pt;
-            font-weight: bold;
+            font-size: 15pt;
+            font-weight: 900;
             text-transform: uppercase;
-            margin: 5px 0 0 0;
+            margin: 4px 0 0 0;
+            color: #0f172a;
         }
         .content-text {
-            font-size: 12.5pt;
-            margin-bottom: 40px;
+            font-size: 12pt;
+            margin-bottom: 30px;
             line-height: 1.8;
             text-align: justify;
+            color: #1e293b;
         }
         .placeholder {
-            font-weight: bold;
+            font-weight: 800;
+            color: #0f172a;
         }
         .footer {
-            margin-top: 40px;
+            margin-top: 30px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
         .place-date {
-            font-size: 12pt;
+            font-size: 11pt;
+            font-weight: 600;
+            color: #334155;
         }
         .signature-block {
             text-align: center;
-            width: 250px;
+            width: 240px;
         }
         .signature-img {
-            width: 180px;
+            width: 170px;
             height: auto;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         .signature-line {
-            border-top: 1.5px solid #000;
-            margin: 5px 0;
+            border-top: 1.5px solid #0f172a;
+            margin: 4px 0;
         }
         .signature-name {
-            font-weight: bold;
-            font-size: 11pt;
+            font-weight: 800;
+            font-size: 10.5pt;
+            color: #0f172a;
         }
         .signature-dni {
-            font-size: 10pt;
+            font-size: 9.5pt;
+            color: #475569;
+            font-weight: 600;
         }
         .note {
-            position: absolute;
-            bottom: 0;
-            left: 20px;
-            font-size: 8.5pt;
-            font-weight: bold;
+            margin-top: 24px;
+            font-size: 8pt;
+            font-weight: 800;
             text-transform: uppercase;
+            color: #64748b;
+            text-align: left;
         }
     </style>
 </head>
 <body>
-    <div class="certificate-container">
+    <div class="certificate-container" id="certificate-print-area">
         <div class="header-container">
             <div class="logo-box">
-                <img src="{{LOGO_EFI_PATH}}" class="logo-efi" alt="Logo EFI">
+                <img src="{{LOGO_EFI_PATH}}" class="logo-inandes" alt="Logo InAndes">
             </div>
             <div class="center-box">
                 <div class="fondo-info">{{FONDO_NOMBRE}}</div>

@@ -9,8 +9,10 @@ import { generateCertificateHtml } from '../../utils/contractPreviewGenerator';
 import type { CertificadoEvento } from '../../services/contratosService';
 import { OmniBuscadorCertificados } from '../../components/common/OmniBuscadorCertificados';
 import * as XLSX from 'xlsx';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 import { 
-  Loader2, AlertCircle, FileSpreadsheet, FileText, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User
+  Loader2, AlertCircle, FileSpreadsheet, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User, Download, Printer
 } from 'lucide-react';
 
 const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
@@ -215,7 +217,7 @@ export const CertificadosPage: React.FC = () => {
           fecha_inicio: contract.fecha_inicio || new Date().toISOString().split('T')[0],
           fecha_fin: contract.fecha_fin || new Date().toISOString().split('T')[0]
         },
-        logo_efi_path: '/logo.EFI.png',
+        logo_efi_path: '/assets/Logo.Inandes.MODERNO.jpeg',
         firma_path: '/Firma.Ricardo.GALLO.png',
         cert_meta: {
           fecha_emision: certData?.fecha_emision || contract.fecha_inicio || new Date().toISOString().split('T')[0],
@@ -231,6 +233,55 @@ export const CertificadosPage: React.FC = () => {
       setVisorHtml(`<h3>Error al cargar visor: ${err.message}</h3>`);
     } finally {
       setVisorLoading(false);
+    }
+  };
+
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
+
+  // Descarga directa del PDF en orientación horizontal nativa (Landscape A4)
+  const handleDownloadPdf = async () => {
+    if (!visorHtml || !selectedVisorCertId) return;
+    setDownloadingPdf(true);
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const filename = `CERTIFICADO_${selectedVisorCertId}_${todayStr}.pdf`;
+
+      // Crear contenedor temporal fuera de pantalla
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '1120px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      tempContainer.innerHTML = visorHtml;
+      document.body.appendChild(tempContainer);
+
+      const targetEl = (tempContainer.querySelector('#certificate-print-area') || tempContainer) as HTMLElement;
+
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          letterRendering: true,
+          logging: false
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'landscape' as const // Orientación horizontal nativa para Foxit Reader y navegadores
+        }
+      };
+
+      await (html2pdf() as any).set(opt).from(targetEl).save();
+      document.body.removeChild(tempContainer);
+    } catch (err: any) {
+      console.error('Error al generar PDF horizontal con html2pdf, abriendo diálogo de impresión:', err);
+      handlePrintPdf();
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -1136,13 +1187,34 @@ export const CertificadosPage: React.FC = () => {
               </div>
 
               {selectedVisorCertId && visorHtml && (
-                <button
-                  className="h-9 text-xs font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all ml-auto"
-                  onClick={handlePrintPdf}
-                >
-                  <FileText size={14} />
-                  <span>Imprimir Certificado PDF</span>
-                </button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    className="h-9 text-xs font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all disabled:opacity-60"
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                  >
+                    {downloadingPdf ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Generando PDF...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={14} />
+                        <span>Descargar Certificado PDF</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    className="h-9 text-xs font-bold uppercase bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#334155] dark:text-[#cbd5e1] hover:bg-slate-50 dark:hover:bg-slate-800 px-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                    onClick={handlePrintPdf}
+                    title="Imprimir / Vista previa de navegador"
+                  >
+                    <Printer size={14} />
+                    <span>Imprimir</span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -1161,10 +1233,11 @@ export const CertificadosPage: React.FC = () => {
                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Generando vista previa del documento...</p>
                     </div>
                   ) : visorHtml ? (
-                    <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden bg-slate-100 p-2 shadow-inner">
+                    <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 p-2 shadow-inner">
                       <iframe
                         srcDoc={visorHtml}
-                        className="w-full h-[580px] bg-white border-0 rounded-lg"
+                        className="w-full h-[620px] bg-white border-0 rounded-lg overflow-x-hidden block shadow-xs"
+                        style={{ overflowX: 'hidden' }}
                         title="Documento Certificado Visor"
                       />
                     </div>

@@ -237,3 +237,9 @@
 [2026-08-22 14:48:00-05:00] CORRECCIÓN DE AUMENTO DE CAPITAL EN SUPABASE:
 1. Actualizado el evento `id_evento: 10784` en `crm_certificados_eventos` para el certificado `NSGPEN01-088.20160101.20260430` (Chang Lock Julia Esther).
 2. Ajustado `capital_final_saldo` de 420,001.00 a 420,000.00 PEN (Aumento exacto de +PEN 200,000.00 con fecha efectiva 2026-07-01).
+[2026-08-22 15:03:00-05:00] VISOR DE CERTIFICADOS, LOGO MODERNO Y DESCARGA PDF HORIZONTAL (FOXIT):
+1. Eliminado el scroll horizontal del visor mediante layout responsive al 100% y `overflow-x: hidden`.
+2. Actualizado el logo oficial a `public/assets/Logo.Inandes.MODERNO.jpeg` en `CertificadosPage.tsx`, `contractTemplates.ts` y `contractPreviewGenerator.ts`.
+3. Implementada descarga directa de PDF nativo horizontal (`landscape` A4) con `html2pdf.js` para visualización perfecta y derecha en Foxit Reader y Adobe.
+4. Naming automático de archivo: `CERTIFICADO_${id_certificado}_${YYYY-MM-DD}.pdf`.
+5. Compilación de producción validada con `npm run build` (0 errores).
