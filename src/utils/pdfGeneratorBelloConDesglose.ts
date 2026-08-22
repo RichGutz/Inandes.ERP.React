@@ -16,18 +16,17 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
 
   function fmtValCurrency(val: number | undefined | null, moneda: string) {
     if (val === undefined || val === null) return '-';
+    const n = Number(val);
+    if (isNaN(n) || Math.abs(n) < 0.000001) return '-';
     const symbol = moneda === 'USD' ? '$ ' : 'S/ ';
-    return symbol + val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return symbol + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtNum(val: number | undefined | null) {
-    if (val === undefined || val === null || val === 0) return '-';
-    return val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  function fmtNumZero(val: number | undefined | null) {
     if (val === undefined || val === null) return '-';
-    return val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const n = Number(val);
+    if (isNaN(n) || Math.abs(n) < 0.000001) return '-';
+    return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   let diasBase = 59;
@@ -155,8 +154,8 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                     <td class="text-center">-</td>
                     <td style="font-weight: 700;">${r.id}</td>
                     <td>└─ Incremento de Capital</td>
-                    <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.capital)}</td>
-                    <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.bruto_total)}</td>
+                    <td class="text-right" style="font-weight: 700;">${fmtNum(r.capital)}</td>
+                    <td class="text-right" style="font-weight: 700;">${fmtNum(r.bruto_total)}</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
@@ -179,18 +178,18 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                   <td class="text-center">${r.n_orden || ''}</td>
                   <td style="font-weight: 700;">${r.id}</td>
                   <td>${r.inversionista}</td>
-                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(r.capital)}</td>
-                  <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtNumZero(r.bruto_total)}</td>
-                  <td class="text-right" style="color: #dc2626;">${fmtNumZero(r.impuesto_total)}</td>
-                  <td class="text-right">${fmtNumZero(r.base_neta)}</td>
+                  <td class="text-right" style="font-weight: 700;">${fmtNum(r.capital)}</td>
+                  <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtNum(r.bruto_total)}</td>
+                  <td class="text-right" style="color: #dc2626;">${fmtNum(r.impuesto_total)}</td>
+                  <td class="text-right">${fmtNum(r.base_neta)}</td>
                   <td class="text-right">${fmtNum(r.capitalizacion)}</td>
                   <td class="text-right" style="color: #059669; font-weight: 700;">${fmtNum(r.reparto_valor)}</td>
                   <td class="text-right">${fmtNum(r.deducciones_total)}</td>
                   <td class="text-right" style="color: #e11d48; font-weight: 700;">${fmtNum(r.penalidad_rescate)}</td>
-                  <td class="text-right" style="font-weight: 700;">${fmtNumZero(rNetoFinal)}</td>
+                  <td class="text-right" style="font-weight: 700;">${fmtNum(rNetoFinal)}</td>
                   <td class="text-right" style="color: #dc2626; font-weight: 700;">${fmtNum(r.devolucion_capital)}</td>
-                  <td class="text-right" style="color: #059669; font-weight: 900;">${fmtNumZero(rTransferencia)}</td>
-                  <td class="text-right" style="color: #1e3a8a; font-weight: 800;">${fmtNumZero(r.capital_final)}</td>
+                  <td class="text-right" style="color: #059669; font-weight: 900;">${fmtNum(rTransferencia)}</td>
+                  <td class="text-right" style="color: #1e3a8a; font-weight: 800;">${fmtNum(r.capital_final)}</td>
                 </tr>`;
               }).join('')}
 
@@ -202,18 +201,18 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                 return `
                 <tr class="totals-row">
                   <td colspan="3" class="text-center">TOTALES ${fData.fondo.id_fondo} (${moneda})</td>
-                  <td class="text-right">${fmtNumZero(totals.capital)}</td>
-                  <td class="text-right">${fmtNumZero(totals.bruto_total)}</td>
-                  <td class="text-right">${fmtNumZero(totals.impuesto_total)}</td>
-                  <td class="text-right">${fmtNumZero(totals.base_neta)}</td>
+                  <td class="text-right">${fmtNum(totals.capital)}</td>
+                  <td class="text-right">${fmtNum(totals.bruto_total)}</td>
+                  <td class="text-right">${fmtNum(totals.impuesto_total)}</td>
+                  <td class="text-right">${fmtNum(totals.base_neta)}</td>
                   <td class="text-right">${fmtNum(totals.capitalizacion)}</td>
                   <td class="text-right">${fmtNum(totals.reparto_valor)}</td>
                   <td class="text-right">${fmtNum(totals.deducciones_total)}</td>
                   <td class="text-right">${fmtNum(totals.penalidad_rescate)}</td>
-                  <td class="text-right">${fmtNumZero(totNetoFinal)}</td>
+                  <td class="text-right">${fmtNum(totNetoFinal)}</td>
                   <td class="text-right">${fmtNum(totals.devolucion_capital)}</td>
-                  <td class="text-right" style="font-weight: 900; color: #059669;">${fmtNumZero(totTransferencia)}</td>
-                  <td class="text-right">${fmtNumZero(totals.capital_final)}</td>
+                  <td class="text-right" style="font-weight: 900; color: #059669;">${fmtNum(totTransferencia)}</td>
+                  <td class="text-right">${fmtNum(totals.capital_final)}</td>
                 </tr>
               `;
               })() : ''}
