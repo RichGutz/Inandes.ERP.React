@@ -122,14 +122,8 @@ export const CertificadosPage: React.FC = () => {
       // 1. Buscar en certificados master cargados previamente
       const masterCert = certificados.find(c => c.id_certificado === certId);
 
-      // 2. Intentar obtener datos de crm_certificados o crm_contratos
-      const { data: certData } = await supabase
-        .from('crm_certificados')
-        .select('*')
-        .eq('id_certificado', certId)
-        .maybeSingle();
-
-      const targetContractId = certData?.id_contrato || masterCert?.id_contrato || certId;
+      // 2. Obtener datos directamente de crm_contratos
+      const targetContractId = masterCert?.id_contrato || certId.split('.').slice(0, 2).join('.') || certId;
 
       const { data: contractData } = await supabase
         .from('crm_contratos')
@@ -220,10 +214,10 @@ export const CertificadosPage: React.FC = () => {
         logo_efi_path: '/assets/Logo.Inandes.MODERNO.jpeg',
         firma_path: '/Firma.Ricardo.GALLO.png',
         cert_meta: {
-          fecha_emision: certData?.fecha_emision || contract.fecha_inicio || new Date().toISOString().split('T')[0],
+          fecha_emision: contract.fecha_inicio || masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
           id_certificado: certId,
-          monto_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? certData?.monto_inversion ?? 0,
-          cuotas_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? certData?.monto_inversion ?? 0
+          monto_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0,
+          cuotas_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0
         }
       });
 

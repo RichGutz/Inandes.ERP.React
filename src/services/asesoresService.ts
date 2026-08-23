@@ -159,13 +159,13 @@ export const calculateComisionesProyeccion = async (
     }
   }
 
-  // 3. Obtener Certificados y Contratos
-  const { data: certData, error: certErr } = await supabase
-    .from('crm_certificados')
-    .select('id_certificado, fecha_emision, monto_inversion, crm_contratos(id_fondo, id_asesor, fecha_inicio)')
-    .eq('estado', 'emitido');
+  // 3. Obtener Contratos activos/emitidos
+  const { data: contratosData, error: contratosErr } = await supabase
+    .from('crm_contratos')
+    .select('id_contrato, id_fondo, id_asesor, monto_inversion, fecha_inicio, estado')
+    .neq('estado', 'borrador');
     
-  if (certErr) throw new Error(`Error en certificados: ${certErr.message}`);
+  if (contratosErr) throw new Error(`Error en contratos: ${contratosErr.message}`);
 
   const dataProyeccion: any[] = [];
   const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -180,9 +180,8 @@ export const calculateComisionesProyeccion = async (
     });
   }
 
-  if (certData) {
-    for (const c of certData) {
-      const contrato: any = c.crm_contratos;
+  if (contratosData) {
+    for (const contrato of contratosData) {
       if (!contrato) continue;
       
       // Filtrar por asesor
@@ -192,10 +191,10 @@ export const calculateComisionesProyeccion = async (
       const fondo = fondosMap[fCode];
       if (!fondo) continue;
 
-      const idCertificado = c.id_certificado;
+      const idCertificado = contrato.id_contrato;
       let birthDate: Date;
 
-      // Extraer fecha de nacimiento del ID de Certificado
+      // Extraer fecha de inicio del Contrato
       const matchDate = idCertificado.match(/(20\d{6})/);
       if (matchDate) {
         const dStr = matchDate[1];
@@ -206,7 +205,7 @@ export const calculateComisionesProyeccion = async (
           0, 0, 0, 0
         );
       } else {
-        const emision = c.fecha_emision;
+        const emision = contrato.fecha_inicio;
         birthDate = emision ? new Date(emision.split('T')[0] + 'T00:00:00') : new Date();
       }
 
@@ -214,7 +213,7 @@ export const calculateComisionesProyeccion = async (
       const matchCorr = idCertificado.match(/-(\d+)/);
       const correlativo = matchCorr ? parseInt(matchCorr[1], 10) : 999999;
 
-      const capital = Number(c.monto_inversion || 0);
+      const capital = Number(contrato.monto_inversion || 0);
       const frecuencia = Number(fondo.frecuencia_cupones_meses || 1);
 
       // Tasas

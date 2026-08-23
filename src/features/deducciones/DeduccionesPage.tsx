@@ -1,7 +1,7 @@
 // src/features/deducciones/DeduccionesPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
-  buscarContratosPadre, getActiveCertificadoByContrato, getActiveCapitalBalance, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones
+  buscarContratosPadre, getActiveCertificadoByContrato, getActiveCapitalBalance, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones, getParticipesMap
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
@@ -29,6 +29,7 @@ export const DeduccionesPage: React.FC = () => {
   const [fondoRules, setFondoRules] = useState<FondoRules>({});
   const [cronograma, setCronograma] = useState<DeduccionCuota[]>([]);
   const [cronoLoading, setCronoLoading] = useState<boolean>(false);
+  const [participesMap, setParticipesMap] = useState<Record<string, string>>({});
 
   // Pestañas internas
   const [activeSubTab, setActiveSubTab] = useState<'cronograma' | 'deduccion' | 'rescate'>('cronograma');
@@ -160,7 +161,11 @@ export const DeduccionesPage: React.FC = () => {
   const loadGlobalCronograma = async () => {
     setCronoLoading(true);
     try {
-      const crono = await getCronogramaDeduccionesGlobal();
+      const [crono, pMap] = await Promise.all([
+        getCronogramaDeduccionesGlobal(),
+        getParticipesMap()
+      ]);
+      setParticipesMap(pMap);
       setCronograma(crono);
     } catch (err) {
       console.error(err);
@@ -239,8 +244,19 @@ export const DeduccionesPage: React.FC = () => {
         ? Math.round((capVigente / resArmadasCount) * 100) / 100 
         : 1000;
 
+      // Si es rescate total, buscar automáticamente la fecha de corte que coincida con el fin del contrato
+      let defaultDateIndex = 0;
+      if (resEsRescateTotal && selectedContrato?.fecha_fin) {
+        const finStr = selectedContrato.fecha_fin.split('T')[0];
+        const matchIdx = validDates.findIndex(d => d.toISOString().split('T')[0] === finStr);
+        if (matchIdx !== -1) {
+          defaultDateIndex = matchIdx;
+        }
+      }
+
       for (let i = 0; i < resArmadasCount; i++) {
-        const matchDate = validDates[i] || validDates[0];
+        const targetIdx = (resEsRescateTotal && resArmadasCount === 1) ? defaultDateIndex : i;
+        const matchDate = validDates[targetIdx] || validDates[i] || validDates[0];
         const dateStr = matchDate.toISOString().split('T')[0];
         const monto = baseMonto;
         const penalidad = Math.round(monto * (penaltyPct / 100) * 100) / 100;
@@ -727,31 +743,54 @@ export const DeduccionesPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-6 w-full">
-                  {/* Tarjeta Resumen de Provisión de Cash Estilo APEFAC */}
+                  {/* Tarjeta Resumen de Provisión de Cash Inteligente Estilo APEFAC */}
                   {(() => {
                     const rescatesOnly = filteredCronograma.filter(c => c.tipo_cargo === 'RESCATE_CAPITAL');
+                    const hasPendientes = rescatesOnly.some(c => c.estado === 'PENDIENTE');
+                    const allProcesados = rescatesOnly.length > 0 && rescatesOnly.every(c => c.estado === 'PROCESADO');
+
                     const cashPEN = rescatesOnly.filter(c => c.moneda === 'PEN').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
                     const cashUSD = rescatesOnly.filter(c => c.moneda === 'USD').reduce((sum, x) => sum + (x.monto_cobrar || 0), 0);
 
+                    const cardTitle = allProcesados
+                      ? `✅ Cash Liquidado / Ejecutado en Rescates (${selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})`
+                      : hasPendientes
+                        ? `💰 Provisión de Cash Requerida (${selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})`
+                        : `📊 Resumen de Rescates (${selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})`;
+
+                    const cardSubtitle = allProcesados
+                      ? `Capital amortizado y liquidado exitosamente en los cierres contables oficiales del Ledger`
+                      : `Flujo de tesorería pendiente y requerido para atender las devoluciones programadas`;
+
                     return (
-                      <div className="glass-card p-5 flex flex-col md:flex-row items-center justify-between gap-4 border-l-4 border-l-[#0284c7]">
+                      <div className={`glass-card p-5 flex flex-col md:flex-row items-center justify-between gap-4 border-l-4 ${
+                        allProcesados ? 'border-l-[#059669]' : 'border-l-[#0284c7]'
+                      }`}>
                         <div className="flex items-center gap-3">
-                          <div className="p-3 bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] rounded-xl">
+                          <div className={`p-3 rounded-xl ${
+                            allProcesados 
+                              ? 'bg-[#ecfdf5] text-[#059669] dark:bg-[#059669]/15 dark:text-[#34d399]' 
+                              : 'bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8]'
+                          }`}>
                             <DollarSign size={22} />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc] tracking-wider">💰 Provisión Total de Cash para Rescates ({selCorteFilter === 'TODOS' ? `Año ${selYearFilter}` : `Corte ${selCorteFilter}`})</span>
-                            <span className="text-[11px] font-semibold text-[#64748b] dark:text-[#94a3b8]">Flujo de tesorería requerido para atender devoluciones en el período filtrado</span>
+                            <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc] tracking-wider">{cardTitle}</span>
+                            <span className="text-[11px] font-semibold text-[#64748b] dark:text-[#94a3b8]">{cardSubtitle}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="flex flex-col text-right">
-                            <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Provisión Soles (PEN)</span>
+                            <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">
+                              {allProcesados ? 'Total Liquidado (PEN)' : 'Provisión Soles (PEN)'}
+                            </span>
                             <span className="font-mono text-base font-black text-[#059669] dark:text-[#34d399] tabular-nums">S/ {cashPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                           </div>
                           {cashUSD > 0 && (
                             <div className="flex flex-col text-right border-l border-[#e2e8f0] dark:border-[#334155] pl-6">
-                              <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Provisión Dólares (USD)</span>
+                              <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">
+                                {allProcesados ? 'Total Liquidado (USD)' : 'Provisión Dólares (USD)'}
+                              </span>
                               <span className="font-mono text-base font-black text-[#0284c7] dark:text-[#38bdf8] tabular-nums">$ {cashUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
                             </div>
                           )}
@@ -793,7 +832,7 @@ export const DeduccionesPage: React.FC = () => {
                           <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead>
                               <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
-                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">ID Cuota / Asiento</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Inversionista / Partícipes</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Contrato</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Tipo Cargo</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Glosa / Descripción</th>
@@ -805,10 +844,21 @@ export const DeduccionesPage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {cuotas.map(c => (
-                                <tr key={c.id_cuota} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
-                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_cuota}</td>
-                                  <td className="px-4 py-3 font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.id_contrato || '-'}</td>
+                              {cuotas.map(c => {
+                                const investorName = participesMap[c.id_contrato] || (selectedContrato?.id_contrato === c.id_contrato ? selectedContrato.nombre_inversionista_temp : null) || 'Inversionista No Identificado';
+                                return (
+                                  <tr key={c.id_cuota} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                    <td className="px-4 py-3 max-w-[280px]">
+                                      <div className="flex flex-col">
+                                        <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] text-xs leading-tight truncate" title={investorName}>
+                                          {investorName}
+                                        </span>
+                                        <span className="font-mono text-[9.5px] text-[#64748b] dark:text-[#94a3b8] tracking-tight">
+                                          {c.id_cuota}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">{c.id_contrato || '-'}</td>
                                   <td className="px-4 py-3">
                                     <span className={`px-2.5 py-1 rounded-md text-[9.5px] font-mono font-bold uppercase ${
                                       c.tipo_cargo === 'RESCATE_CAPITAL' 
@@ -839,7 +889,8 @@ export const DeduccionesPage: React.FC = () => {
                                   </td>
                                   <td className="px-4 py-3 text-center font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.prioridad}</td>
                                 </tr>
-                              ))}
+                              );
+                            })}
                             </tbody>
                           </table>
                         </div>

@@ -254,4 +254,33 @@
 3. Actualizado evento contable 11371 en crm_certificados_eventos a NSGPEN03-052.20260813.20260813 y re-sincronizada la tabla crm_certificados.
 4. Documentado el caso y análisis arquitectónico en Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md.
 
+[2026-08-23 08:56:00-05:00] DESACOPLAMIENTO Y DEPRECACIÓN DE TABLA REDUNDANTE (crm_certificados):
+1. Creado respaldo de los 22 registros existentes en `backups/crm_certificados_legacy_snapshot.json`.
+2. Desacopladas todas las lecturas de `crm_certificados`:
+   - `asesoresService.ts`: Ahora consulta `crm_contratos` directamente (incluyendo los +180 contratos para proyección de comisiones).
+   - `deduccionesService.ts`: Ahora consulta el último evento en `crm_certificados_eventos`.
+   - `CertificadosPage.tsx`: Ahora lee directamente de `crm_contratos` y `crm_certificados_eventos`.
+3. Desactivada inserción redundante en `contratosService.ts` (`approveContrato`) e `InversionesPage.tsx`.
+4. El sistema opera ahora 100% bajo la arquitectura Ledger-First (`crm_contratos` + `crm_certificados_eventos`).
+5. Compilación validada en limpio con `npm run build` (0 errores TS).
 
+[2026-08-23 09:17:00-05:00] CORRECCIÓN DE RESCATE DUPLICADO Y DESFASADO (Certificado 37 - Vera Tudela Ugás):
+1. Detectadas 2 solicitudes de rescate duplicadas en `crm_cronograma_deducciones_rescates` fechadas erróneamente a `2026-02-28`.
+2. Saneada la base de datos eliminando duplicados e insertando el registro único corregido para el corte de fin de contrato (`2026-06-30`, USD 20,000.00).
+3. Blindado `DeduccionesPage.tsx` para auto-seleccionar la fecha de fin de contrato (`fecha_fin`) al marcar 'Rescate Total'.
+4. Compilación validada con `npm run build` (0 errores).
+5. Documentado el caso en `Obsidian/Inandes.Inversionistas.React/Backend/Casuistica_errores_USER_por_STRESS.TEST.md`.
+
+[2026-08-23 09:32:00-05:00] SINCRONIZACIÓN DE CRONOGRAMA CON LEDGER Y CICLO ROLLBACK:
+1. Saneadas en Supabase las 25 cuotas de amortización de períodos cerrados (2026-02-28, 2026-03-31, 2026-04-30), actualizándolas a estado `PROCESADO`.
+2. Actualizado el tipo `DeduccionCuota.estado` en `deduccionesService.ts` para incluir `PROCESADO` y `LIQUIDADO`.
+3. Mejorada la tarjeta KPI en `DeduccionesPage.tsx` para mostrar "Cash Liquidado" en períodos cerrados vs. "Provisión Requerida" en períodos abiertos.
+4. Verificada la simetría e idempotencia del Rollback (conmutación automática `PROCESADO` <-> `PENDIENTE`).
+5. Compilación validada con `npm run build` (0 errores).
+6. Documentada la arquitectura en `Obsidian/Inandes.Inversionistas.React/Backend/Casuistica_errores_USER_por_STRESS.TEST.md`.
+
+[2026-08-23 09:48:00-05:00] MEJORA UX CRONOGRAMA DEDUCCIONES / RESCATES:
+1. Reemplazada la primera columna técnica (`ID Cuota / Asiento`) por el nombre completo y legible de los partícipes e inversionistas del contrato (`Inversionista / Partícipes`).
+2. Mantenido el código de contrato intacto en la segunda columna (`Contrato`).
+3. Agregado el servicio `getParticipesMap` en `deduccionesService.ts` mapeando de forma eficiente `crm_contratos` <-> `crm_inversionistas`.
+4. Compilación validada con `npm run build` (0 errores TS).

@@ -147,13 +147,13 @@ export const deleteContrato = async (idContrato: string): Promise<void> => {
 };
 
 /**
- * Flujo de aprobación atómico
+ * Flujo de aprobación atómico (Contrato + Ledger Contable)
  */
 export const approveContrato = async (
   draftId: string,
   newContract: Contrato,
-  cert: Certificado,
-  event: CertificadoEvento
+  _cert?: Partial<Certificado> | any,
+  event?: CertificadoEvento | any
 ): Promise<void> => {
   // 1. Insertar el contrato definitivo
   const { error: insErr } = await supabase
@@ -170,21 +170,17 @@ export const approveContrato = async (
     console.warn(`Alerta: Contrato insertado pero falló la eliminación del borrador: ${delErr.message}`);
   }
 
-  // 3. Insertar el certificado
-  const { error: certErr } = await supabase
-    .from('crm_certificados')
-    .insert(cert);
-  if (certErr) throw new Error(`Error al emitir certificado: ${certErr.message}`);
-
-  // 4. Insertar el evento inicial de emisión
-  const safeEvent = {
-    ...event,
-    id_certificado_origen: event.id_certificado_origen || event.id_certificado || newContract.id_contrato
-  };
-  const { error: evtErr } = await supabase
-    .from('crm_certificados_eventos')
-    .insert(safeEvent);
-  if (evtErr) throw new Error(`Error al registrar evento inicial: ${evtErr.message}`);
+  // 3. Insertar el evento inicial de emisión en el Ledger (crm_certificados_eventos)
+  if (event) {
+    const safeEvent = {
+      ...event,
+      id_certificado_origen: event.id_certificado_origen || event.id_certificado || newContract.id_contrato
+    };
+    const { error: evtErr } = await supabase
+      .from('crm_certificados_eventos')
+      .insert(safeEvent);
+    if (evtErr) throw new Error(`Error al registrar evento inicial: ${evtErr.message}`);
+  }
 };
 
 /**

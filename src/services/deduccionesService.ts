@@ -12,7 +12,7 @@ export interface DeduccionCuota {
   moneda: string;
   monto_cobrar: number;
   fecha_proyectada_cobro: string; // YYYY-MM-DD
-  estado: 'PENDIENTE' | 'COBRADO' | 'ANULADO';
+  estado: 'PENDIENTE' | 'PROCESADO' | 'COBRADO' | 'LIQUIDADO' | 'ANULADO';
   prioridad: number;
   tasa?: number | null;
   es_rescate_total?: boolean;
@@ -99,32 +99,21 @@ export const buscarContratosPadre = async (busqueda: string): Promise<ContratoBu
 };
 
 /**
- * Obtiene el ID del certificado activo vinculado a un contrato (o fallback inandes)
+ * Obtiene el ID del certificado activo vinculado a un contrato (desde el ledger contable o fallback inandes)
  */
 export const getActiveCertificadoByContrato = async (idContrato: string): Promise<string> => {
-  const { data: certs } = await supabase
-    .from('crm_certificados')
-    .select('id_certificado, estado')
-    .eq('id_contrato', idContrato)
-    .eq('estado', 'ACTIVO');
-
-  if (certs && certs.length > 0) {
-    return certs[0].id_certificado;
-  }
-
-  const { data: fallbacks } = await supabase
-    .from('crm_certificados')
+  const { data: events } = await supabase
+    .from('crm_certificados_eventos')
     .select('id_certificado')
     .eq('id_contrato', idContrato)
-    .neq('estado', 'ANULADO')
-    .order('fecha_emision', { ascending: false })
+    .order('fecha_periodo_fin', { ascending: false })
     .limit(1);
 
-  if (fallbacks && fallbacks.length > 0) {
-    return fallbacks[0].id_certificado;
+  if (events && events.length > 0 && events[0].id_certificado) {
+    return events[0].id_certificado;
   }
 
-  // Fallback si no existe certificado
+  // Fallback si no existe certificado en el ledger
   return `${idContrato}.00000000.00000000`;
 };
 
@@ -200,6 +189,55 @@ export const getCronogramaDeduccionesGlobal = async (): Promise<DeduccionCuota[]
 
   if (error) throw new Error(`Error al obtener cronogramas globales: ${error.message}`);
   return data || [];
+};
+
+/**
+ * Obtiene el mapa maestro de id_contrato -> Nombres de los partícipes
+ */
+export const getParticipesMap = async (): Promise<Record<string, string>> => {
+  const [contratosRes, invsRes] = await Promise.all([
+    supabase.from('crm_contratos').select('id_contrato, id_inversionista_1, id_inversionista_2, id_inversionista_3, id_inversionista_4'),
+    supabase.from('crm_inversionistas').select('codigo_inversionista, nombre_completo, apellido_1, apellido_2, nombre_1, nombre_2')
+  ]);
+
+  const invNames: Record<string, string> = {};
+  if (invsRes.data) {
+    invsRes.data.forEach((inv: any) => {
+      let name = inv.nombre_completo;
+      if (!name) {
+        name = [inv.apellido_1, inv.apellido_2, inv.nombre_1, inv.nombre_2].filter(Boolean).join(' ');
+      }
+      if (inv.codigo_inversionista) {
+        invNames[inv.codigo_inversionista] = name;
+        const cleanCode = inv.codigo_inversionista.replace('DNI', '');
+        invNames[cleanCode] = name;
+        invNames[`DNI${cleanCode}`] = name;
+      }
+    });
+  }
+
+  const pMap: Record<string, string> = {};
+  if (contratosRes.data) {
+    contratosRes.data.forEach((c: any) => {
+      const names: string[] = [];
+      [1, 2, 3, 4].forEach(i => {
+        const invId = c[`id_inversionista_${i}`];
+        if (invId) {
+          const clean = String(invId).replace('DNI', '');
+          if (invNames[invId]) {
+            names.push(invNames[invId]);
+          } else if (invNames[clean]) {
+            names.push(invNames[clean]);
+          } else {
+            names.push(String(invId));
+          }
+        }
+      });
+      pMap[c.id_contrato] = names.length > 0 ? names.join(' / ') : 'Inversionista No Identificado';
+    });
+  }
+
+  return pMap;
 };
 
 /**

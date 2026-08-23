@@ -1,0 +1,453 @@
+[
+  {
+    "id_certificado": "NSGPEN02-018.20260301.20260301",
+    "id_contrato": "NSGPEN02-018.20260301",
+    "fecha_emision": "2026-03-01",
+    "monto_inversion": 50000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 50000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "MALDONADO CORTEZ EDWIN",
+        "documento": "07765525",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T22:13:35.545638+00:00",
+    "updated_at": "2026-08-18T22:13:35.545638+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN02-014.20260312.20260312",
+    "id_contrato": "NSGPEN02-014.20260312",
+    "fecha_emision": "2026-03-12",
+    "monto_inversion": 100000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 100000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "PINTO SERPA ANÍBAL DOMINGO",
+        "documento": "10614180",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "PACAHUALA GARCIA ZULEMA CARMEN",
+        "documento": "40279733",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T22:16:18.84884+00:00",
+    "updated_at": "2026-08-18T22:16:18.84884+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN02-016.20260312.20260312",
+    "id_contrato": "NSGPEN02-016.20260312",
+    "fecha_emision": "2026-03-12",
+    "monto_inversion": 100000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 100000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "CASTILLO VERGARA LUIS ALBERTO",
+        "documento": "18213464",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T22:48:54.381197+00:00",
+    "updated_at": "2026-08-18T22:48:54.381197+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN02-017.20260304.20260304",
+    "id_contrato": "NSGPEN02-017.20260304",
+    "fecha_emision": "2026-03-04",
+    "monto_inversion": 50000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 50000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "SALARRAYÁN HOLGUIN MÓNICA MERLE",
+        "documento": "10322737",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T22:56:48.651289+00:00",
+    "updated_at": "2026-08-18T22:56:48.651289+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN02-019.20260413.20260413",
+    "id_contrato": "NSGPEN02-019.20260413",
+    "fecha_emision": "2026-04-13",
+    "monto_inversion": 50000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 50000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "GAVIDIA CABRERA ERNESTO HENRY",
+        "documento": "42135290",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "ALBAN LOPEZ ERIKA MILUSKA",
+        "documento": "44942141",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T23:07:05.244735+00:00",
+    "updated_at": "2026-08-18T23:07:05.244735+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-004.20260311.20260311",
+    "id_contrato": "NSGPEN03-004.20260311",
+    "fecha_emision": "2026-03-11",
+    "monto_inversion": 100000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 100000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "SAYÁN ESPINOZA ROCÍO DE FÁTIMA",
+        "documento": "08186892",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T23:20:43.854143+00:00",
+    "updated_at": "2026-08-18T23:20:43.854143+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-038.20260429.20260429",
+    "id_contrato": "NSGPEN03-038.20260429",
+    "fecha_emision": "2026-04-29",
+    "monto_inversion": 231250.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 231250.0,
+    "titulares_resumen": [
+      {
+        "nombre": "CABELLOS ZAGACETA MAGNOLIA RUTH",
+        "documento": "07841520",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-18T23:31:23.571131+00:00",
+    "updated_at": "2026-08-18T23:31:23.571131+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-009.20260302.20260302",
+    "id_contrato": "NSGUSD02-009.20260302",
+    "fecha_emision": "2026-03-02",
+    "monto_inversion": 50000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 50000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "NAVARRETE  CARLOS ALBERTO",
+        "documento": "000147063",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "VARETTO  GRACIELA ELISA",
+        "documento": "000286039",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-19T00:10:20.715392+00:00",
+    "updated_at": "2026-08-19T00:10:20.715392+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-012.20260316.20260316",
+    "id_contrato": "NSGUSD02-012.20260316",
+    "fecha_emision": "2026-03-16",
+    "monto_inversion": 20000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 20000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "PEÑAFLOR RIVAS EDUARDO DANIEL",
+        "documento": "25674102",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-19T00:30:59.869338+00:00",
+    "updated_at": "2026-08-19T00:30:59.869338+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-013.20260320.20260320",
+    "id_contrato": "NSGUSD02-013.20260320",
+    "fecha_emision": "2026-03-20",
+    "monto_inversion": 50000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 50000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "MC IVER DONALD ANGUS",
+        "documento": "49064174",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-19T00:36:56.76447+00:00",
+    "updated_at": "2026-08-19T00:36:56.76447+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-014.20260314.20260314",
+    "id_contrato": "NSGUSD02-014.20260314",
+    "fecha_emision": "2026-03-14",
+    "monto_inversion": 20000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 20000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "GUZMÁN MANRIQUE PATRICIA ZARELA",
+        "documento": "29614292",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-21T16:50:31.973666+00:00",
+    "updated_at": "2026-08-21T16:50:31.973666+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-001.20260527.20260527",
+    "id_contrato": "NSGUSD02-001.20260527",
+    "fecha_emision": "2026-05-27",
+    "monto_inversion": 25000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 25000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "ESPINOSA RIVAS MIGUEL ANGEL",
+        "documento": "06637791",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "OSORIO PAULO BETTY ESPERANZA",
+        "documento": "08765887",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T01:45:44.976589+00:00",
+    "updated_at": "2026-08-22T01:45:44.976589+00:00"
+  },
+  {
+    "id_certificado": "NSGUSD02-015.20260625.20260625",
+    "id_contrato": "NSGUSD02-015.20260625",
+    "fecha_emision": "2026-06-25",
+    "monto_inversion": 35000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 35000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "QUISPE SAIRE RUTH JANET",
+        "documento": "40813155",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T01:58:34.400363+00:00",
+    "updated_at": "2026-08-22T01:58:34.400363+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-025.20260512.20260512",
+    "id_contrato": "NSGPEN03-025.20260512",
+    "fecha_emision": "2026-05-12",
+    "monto_inversion": 200000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 200000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "QUINTANILLA PAUCARCAJA ANA CLAUDIA",
+        "documento": "10308404",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T02:18:18.869637+00:00",
+    "updated_at": "2026-08-22T02:18:18.869637+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN02-020.20260501.20260501",
+    "id_contrato": "NSGPEN02-020.20260501",
+    "fecha_emision": "2026-05-01",
+    "monto_inversion": 100000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 100000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "AGUINAGA OLIVER EDGARDO",
+        "documento": "04641802",
+        "participacion_pct": 25
+      },
+      {
+        "nombre": "AGUINAGA SALCEDO RODRIGO EDGARDO",
+        "documento": "70006502",
+        "participacion_pct": 25
+      },
+      {
+        "nombre": "AGUINAGA SALCEDO KALINA DEL CARMEN",
+        "documento": "70006505",
+        "participacion_pct": 25
+      },
+      {
+        "nombre": "AGUINAGA SALCEDO MILKA PATRICIA DEL CARMEN",
+        "documento": "70006504",
+        "participacion_pct": 25
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T17:56:03.690501+00:00",
+    "updated_at": "2026-08-22T17:56:03.690501+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-031.20260501.20260501",
+    "id_contrato": "NSGPEN03-031.20260501",
+    "fecha_emision": "2026-05-01",
+    "monto_inversion": 500000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 500000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "YAGUA PADILLA TIRZO",
+        "documento": "04729095",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "YAGUA LÓPEZ GEOVANA MARÍA",
+        "documento": "72942928",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T19:38:08.064359+00:00",
+    "updated_at": "2026-08-22T19:38:08.064359+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-035.20260822.20260822",
+    "id_contrato": "NSGPEN03-035.20260822",
+    "fecha_emision": "2026-08-22",
+    "monto_inversion": 142669.89,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 142669.89,
+    "titulares_resumen": [
+      {
+        "nombre": "GUILLÉN LARA DONNY EDWIN",
+        "documento": "42983181",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T19:50:33.739411+00:00",
+    "updated_at": "2026-08-22T19:50:33.739411+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-036.20260818.20260818",
+    "id_contrato": "NSGPEN03-036.20260818",
+    "fecha_emision": "2026-08-18",
+    "monto_inversion": 184000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 184000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "NEUHAUS BUZAGLO FERNANDO LUIS",
+        "documento": "75613669",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T22:15:49.677557+00:00",
+    "updated_at": "2026-08-22T22:15:49.677557+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-039.20260716.20260716",
+    "id_contrato": "NSGPEN03-039.20260716",
+    "fecha_emision": "2026-07-16",
+    "monto_inversion": 200000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 200000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "LUGO MIGONE AROLDO MANUEL",
+        "documento": "07877044",
+        "participacion_pct": 100
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T22:31:29.240729+00:00",
+    "updated_at": "2026-08-22T22:31:29.240729+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-043.20260731.20260731",
+    "id_contrato": "NSGPEN03-043.20260731",
+    "fecha_emision": "2026-07-31",
+    "monto_inversion": 180000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 180000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "GARCÍA IRIARTE GERMÁN RICARDO",
+        "documento": "10315539",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "GARCÍA FRKOVICH GARY ENRIQUE",
+        "documento": "44673704",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T22:48:27.079108+00:00",
+    "updated_at": "2026-08-22T22:48:27.079108+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-048.20260803.20260803",
+    "id_contrato": "NSGPEN03-048.20260803",
+    "fecha_emision": "2026-08-03",
+    "monto_inversion": 100000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 100000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "PARODI VELÁSQUEZ JORGE ANTONIO",
+        "documento": "08080536",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "TEJADA CHUMPITAZ MIRTHA FELICITA",
+        "documento": "15713832",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-22T23:59:13.326449+00:00",
+    "updated_at": "2026-08-22T23:59:13.326449+00:00"
+  },
+  {
+    "id_certificado": "NSGPEN03-052.20260813.20260813",
+    "id_contrato": "NSGPEN03-052.20260813",
+    "fecha_emision": "2026-08-13",
+    "monto_inversion": 112000.0,
+    "valor_cuota": 1.0,
+    "numero_cuotas": 112000.0,
+    "titulares_resumen": [
+      {
+        "nombre": "TEMOCHE SILVA JORGE ARTURO",
+        "documento": "07546408",
+        "participacion_pct": 50
+      },
+      {
+        "nombre": "TEMOCHE SILVA LUIS RICARDO",
+        "documento": "07543693",
+        "participacion_pct": 50
+      }
+    ],
+    "estado": "emitido",
+    "created_at": "2026-08-23T00:10:48.259325+00:00",
+    "updated_at": "2026-08-23T00:10:48.259325+00:00"
+  }
+]

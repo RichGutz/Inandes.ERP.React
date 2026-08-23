@@ -802,28 +802,41 @@ export const InversionesPage: React.FC = () => {
     if (!selectedContract) return;
     setCertLoading(true);
     try {
-      const { data: certs } = await supabase
-        .from('crm_certificados')
+      const { data: evts } = await supabase
+        .from('crm_certificados_eventos')
         .select('*')
         .eq('id_contrato', selectedContract.id_contrato)
-        .order('fecha_emision', { ascending: false })
+        .order('fecha_periodo_fin', { ascending: false })
         .limit(1);
 
-      if (certs && certs.length > 0) {
-        setActiveCert(certs[0] as Certificado);
-        
-        const { data: evts } = await supabase
-          .from('crm_certificados_eventos')
-          .select('*')
-          .eq('id_certificado', certs[0].id_certificado)
-          .order('fecha_periodo_origen', { ascending: false })
-          .limit(1);
+      if (evts && evts.length > 0) {
+        const latestEvt = evts[0] as CertificadoEvento;
+        setActiveCertEvent(latestEvt);
 
-        if (evts && evts.length > 0) {
-          setActiveCertEvent(evts[0] as CertificadoEvento);
-        } else {
-          setActiveCertEvent(null);
-        }
+        const mappedHolders: { nombre: string; documento: string; participacion_pct: number }[] = [];
+        [1, 2, 3, 4].forEach(i => {
+          const invId = (selectedContract as any)[`id_inversionista_${i}`];
+          const pct = Number((selectedContract as any)[`porcentaje_participacion_${i}`] || 0);
+          if (invId) {
+            const invObj = investors.find(inv => inv.codigo_inversionista === invId);
+            mappedHolders.push({
+              nombre: invObj ? (invObj.nombre_completo || `${invObj.apellido_1 || ''} ${invObj.nombre_1 || ''}`.trim()) : invId,
+              documento: invObj ? (invObj.dni_ruc || invObj.documento_identidad || invId) : invId,
+              participacion_pct: pct
+            });
+          }
+        });
+
+        setActiveCert({
+          id_certificado: latestEvt.id_certificado || `${selectedContract.id_contrato}.${selectedContract.fecha_inicio.replace(/-/g, '')}`,
+          id_contrato: selectedContract.id_contrato,
+          fecha_emision: selectedContract.fecha_inicio,
+          monto_inversion: selectedContract.monto_inversion,
+          valor_cuota: 1.0,
+          numero_cuotas: selectedContract.monto_inversion,
+          titulares_resumen: mappedHolders,
+          estado: 'emitido'
+        });
       } else {
         setActiveCert(null);
         setActiveCertEvent(null);
