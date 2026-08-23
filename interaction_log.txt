@@ -248,3 +248,10 @@
 2. Eliminado de `crm_certificados`: certificado `NSGPEN03-039.20260501.20260501`.
 3. Eliminado de `crm_contratos`: contrato `NSGPEN03-039.20260501`.
 4. Verificado contrato original `NSGPEN03-031.20260501` intacto y vigente con sus partícipes (Yagua Padilla / Yagua López).
+[2026-08-23 08:46:00-05:00] SANEAMIENTO ETL DE CORRELATIVO RECICLADO (Temoche Silva Jorge Arturo):
+1. Detectada y resuelta colisión de correlativo por reciclaje manual pre-ERP: el código NSGPEN03-050 correspondía históricamente a un contrato cerrado (Perales Bazalar María Agueda).
+2. Reasignado contrato de Temoche Silva de NSGPEN03-050.20260813 a NSGPEN03-052.20260813 en crm_contratos.
+3. Actualizado evento contable 11371 en crm_certificados_eventos a NSGPEN03-052.20260813.20260813 y re-sincronizada la tabla crm_certificados.
+4. Documentado el caso y análisis arquitectónico en Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md.
+
+
