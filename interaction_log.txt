@@ -291,3 +291,6 @@
 3. Estandarizada la función `getNextCorrelativeForFondo` en `contratosService.ts` implementando el algoritmo de llenado de huecos por menor muerto disponible.
 4. Documentado el algoritmo formal en `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
 5. Compilación validada con `npm run build` (0 errores TS).
+
+[2026-08-23 10:38:00-05:00] SAFE POINT / GIT TAG:
+1. Creado y publicado a origin el tag `RESURECCIONES.OK` sobre el commit `3d6f16b` en la rama `main`.
