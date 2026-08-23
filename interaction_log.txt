@@ -284,3 +284,10 @@
 2. Mantenido el código de contrato intacto en la segunda columna (`Contrato`).
 3. Agregado el servicio `getParticipesMap` en `deduccionesService.ts` mapeando de forma eficiente `crm_contratos` <-> `crm_inversionistas`.
 4. Compilación validada con `npm run build` (0 errores TS).
+
+[2026-08-23 10:20:00-05:00] RESTAURACIÓN CONTRATOS EDWIN MALDONADO Y ALGORITMO REENCARNACIONES:
+1. Restaurados en `crm_contratos` los contratos históricos `NSGPEN01-081.20160101` y `NSGPEN01-084.20160101` de Edwin Maldonado (`DNI07765525`) con estado `cerrado_por_rescate`.
+2. Verificada la integridad referencial y eliminado el estado "Inversionista No Identificado" en la grilla de deducciones/rescates.
+3. Estandarizada la función `getNextCorrelativeForFondo` en `contratosService.ts` implementando el algoritmo de llenado de huecos por menor muerto disponible.
+4. Documentado el algoritmo formal en `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
+5. Compilación validada con `npm run build` (0 errores TS).

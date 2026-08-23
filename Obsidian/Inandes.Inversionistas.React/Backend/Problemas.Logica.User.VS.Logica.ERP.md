@@ -35,40 +35,84 @@ Reasignar el correlativo de la nueva inversión de Temoche Silva de **`050`** a 
 
 ---
 
-## 3. Acciones Ejecutadas en la Base de Datos (Supabase)
+## 3. Caso de Estudio 2: Traspaso de Fondos y Eliminación Prematura de Contratos Cerrados (Edwin Maldonado)
 
-Se ejecutó la migración atómica verificando la disponibilidad total del correlativo `NSGPEN03-052`:
+### Diagnóstico de la Casuística:
+* **Fondo Origen (`NSGPEN01`):**  
+  El inversionista **Maldonado Cortez Edwin** (`DNI 07765525`) poseía dos contratos históricos:
+  * `NSGPEN01-081.20160101` $\rightarrow$ S/ 25,000.00 PEN
+  * `NSGPEN01-084.20160101` $\rightarrow$ S/ 25,000.00 PEN
+  * Ambos contratos fueron liquidados mediante **Rescate Total** al **28 de Febrero de 2026** (Salidas registradas en los Eventos Ledger `792` y `794`).
+* **Fondo Destino (`NSGPEN02`):**  
+  Al día siguiente (**01 de Marzo de 2026**), el inversionista traspasó y reinvirtió el total de su capital (**S/ 50,000.00 PEN**) en el nuevo contrato:
+  * `NSGPEN02-018.20260301` (Vigente en `crm_contratos`, Evento Ledger `3231`).
 
-| Tabla | Identificador Previo | Identificador Nuevo / Acción | Estado |
-|---|---|---|---|
-| **`crm_contratos`** | `NSGPEN03-050.20260813` | `NSGPEN03-052.20260813` (Insertado nuevo, eliminado viejo) | ✅ Actualizado |
-| **`crm_certificados`** | `NSGPEN03-050.20260813.20260813` | `NSGPEN03-052.20260813.20260813` (id_contrato: `NSGPEN03-052.20260813`) | ✅ Sincronizado |
-| **`crm_certificados_eventos`** | Evento ID `11371` | `id_contrato`: `NSGPEN03-052.20260813`<br>`id_certificado`: `NSGPEN03-052.20260813.20260813`<br>`id_certificado_origen`: `NSGPEN03-052.20260813.20260813` | ✅ Ledger Actualizado |
-| **`crm_cronograma_deducciones_rescates`** | N/A (0 registros) | No requirió modificaciones | ✅ Sin impacto |
+### La Lógica Pre-ERP vs. La Falla Relacional en el ERP:
+1. **La Acción del Usuario Pre-ERP:** Al crear el nuevo contrato en `NSGPEN02`, el operador **eliminó manualmente las dos fichas de `crm_contratos`** (`NSGPEN01-081` y `084`), asumiendo que "como ya estaban extintas, no debían ocupar espacio en el padrón de contratos".
+2. **El Síntoma en el ERP:** En la pantalla de deducciones/rescates, las cuotas históricas del 28 de Febrero seguían figurando en el cronograma, pero al hacer el lookup referencial en `crm_contratos`, arrojaba el error visual: **`Inversionista No Identificado`**.
+
+### La Regla de Oro del ERP: *Los Contratos Cerrados NUNCA se Eliminan*
+En una arquitectura contable relacional:
+* Los contratos extintos **deben permanecer registrados en `crm_contratos`** con su estado formal: **`estado = 'cerrado_por_rescate'`** o **`estado = 'cerrado_fin_contrato'`**.
+* Borrar una fila de contrato destruye la integridad referencial con los asientos contables históricos de `crm_certificados_eventos`.
 
 ---
 
-## 4. Aclaración Arquitectónica: La Tabla `crm_certificados`
+## 4. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
+
+Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** en `crm_certificados_eventos` y los **209 contratos** en `crm_contratos`:
+
+| Casuística de Integridad | Resultado Empírico | Diagnóstico |
+|---|:---:|---|
+| **Contratos en Ledger sin ficha en `crm_contratos`** | **`2` únicos casos** | Únicamente `NSGPEN01-081.20160101` y `NSGPEN01-084.20160101` (Edwin Maldonado). 0 casos adicionales. |
+| **Resurrecciones Contables (Saldo 0 $\rightarrow$ Saldo > 0)** | **`0` casos** | Ningún contrato cerrado resucitó con nuevo capital bajo el mismo código. |
+| **Discrepancias de Partícipe en Asientos Ledger** | **`0` casos** | Los 595 asientos del Ledger corresponden al 100% con los titulares registrados. |
+
+---
+
+## 5. Aclaración Arquitectónica: La Tabla `crm_certificados`
 
 ### ¿Es necesaria *Sine Qua Non*?
-**NO.** La tabla `crm_certificados` es un maestro documental redundante.
+**NO.** La tabla `crm_certificados` es un maestro documental redundante que ha sido desacoplada.
 
 * **Arquitectura Ledger-First del ERP:**  
   Toda la lógica financiera, devengues, cortes bimestrales, liquidaciones y cálculo de patrimonio se sustenta exclusivamente en:
-  1. `crm_contratos` (Parámetros y condiciones legales/contractuales).
+  1. `crm_contratos` (Parámetros, partícipes y condiciones contractuales).
   2. `crm_certificados_eventos` (Ledger contable de eventos financieros con saldos vivos).
 * **Evidencia Técnica:**  
-  Los más de 370 contratos históricos del fondo operan perfectamente sin registros en `crm_certificados`. Dicha tabla sólo contiene los 22 contratos aprobados recientemente vía web. No obstante, se mantiene sincronizada para evitar inconsistencias en vistas secundarias.
+  Los más de 370 contratos históricos del fondo operan perfectamente sin registros en `crm_certificados`.
 
 ---
 
-## 5. Protocolo para Futuros Casos de Reciclaje ETL
+## 6. Protocolo para Futuros Casos de Reciclaje ETL
 
-Ante situaciones similares donde el usuario reporte contratos reciclados:
-1. **Verificación de Disponibilidad:** Comprobar que el nuevo correlativo propuesto no exista en ninguna tabla (`crm_contratos`, `crm_certificados_eventos`, `crm_certificados`, `crm_cronograma_deducciones_rescates`).
+Ante situaciones donde el usuario reporte contratos reciclados o migraciones de fondos:
+1. **Verificación de Disponibilidad:** Comprobar que el nuevo correlativo propuesto no exista en ninguna tabla (`crm_contratos`, `crm_certificados_eventos`, `crm_cronograma_deducciones_rescates`).
 2. **Reasignación Atómica:**
    - Crear el nuevo registro en `crm_contratos`.
    - Re-apuntar los eventos contables en `crm_certificados_eventos`.
-   - Actualizar `crm_certificados` si existe la cabecera.
    - Eliminar el contrato previo reciclado para liberar el historial del titular original.
-3. **Registro en Bitácora:** Documentar el cambio en los logs de interacción y notas de Obsidian.
+3. **Preservación de Históricos:** Ante rescates y traspasos a nuevos fondos, **mantener siempre el contrato origen en `crm_contratos`** marcado como `cerrado_por_rescate`.
+4. **Registro en Bitácora:** Documentar el cambio en los logs de interacción y notas de Obsidian.
+
+---
+
+## 7. Algoritmo Oficial de Reencarnaciones: *"Llenado de Huecos por Menor Muerto Disponible"*
+
+### 📐 Fundamento del Algoritmo:
+Para mantener una baraja compacta de contratos sin dejar números abandonados:
+
+1. **Definición de Conjuntos:**
+   * Sea $A_{\text{vivos}}$ el conjunto de correlativos numéricos de los contratos actualmente activos/vivos en el fondo (`estado IN ('emitido', 'activo', 'vigente')`).
+   * Sea $N_{\max}$ el correlativo numérico más alto registrado históricamente en el fondo.
+2. **Evaluación Ascendente de Disponibilidad:**
+   * Se evalúa en orden ascendente $k = 1, 2, 3, \dots, N_{\max}$.
+   * Si existe un $k \notin A_{\text{vivos}}$ (es decir, el número $k$ está cerrado o no está activo), se selecciona dicho **menor $k$ disponible** (*"muerto libre"*).
+3. **Expansión a Techo Nuevo ($N_{\max} + 1$):**
+   * Si todos los correlativos $1 \dots N_{\max}$ están actualmente vivos, el nuevo correlativo asignado será **$N_{\max} + 1$**.
+4. **Composición de la Llave Natural Inmutable:**
+   * La nueva emisión adopta la clave:
+     $$\mathbf{[FONDO] - [00K] . [YYYYMMDD]}$$
+   * De este modo, la reencarnación nace con su propia llave primaria en Postgres sin colisionar ni sobreescribir la primera encarnación histórica (`[FONDO]-[00K].[FECHA_ANTERIOR]`).
+
+

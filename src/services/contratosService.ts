@@ -184,6 +184,41 @@ export const approveContrato = async (
 };
 
 /**
+ * Obtiene el siguiente correlativo para un fondo aplicando la regla de
+ * "Llenado de Huecos por Menor Muerto Disponible" (1..N o N+1)
+ */
+export const getNextCorrelativeForFondo = async (idFondo: string): Promise<number> => {
+  const { data: activeContracts, error } = await supabase
+    .from('crm_contratos')
+    .select('id_contrato')
+    .eq('id_fondo', idFondo)
+    .in('estado', ['emitido', 'pendiente_aprobacion', 'propuesto', 'activo', 'vigente'])
+    .like('id_contrato', `${idFondo}-%`);
+
+  if (error) throw new Error(`Error calculando correlativo: ${error.message}`);
+
+  const activeCorrelatives = new Set<number>();
+  if (activeContracts) {
+    for (const row of activeContracts) {
+      if (row.id_contrato) {
+        const match = row.id_contrato.match(/-(\d+)/);
+        if (match) {
+          activeCorrelatives.add(parseInt(match[1], 10));
+        }
+      }
+    }
+  }
+
+  // Buscar el menor entero disponible (1, 2, 3...)
+  let nextCorrelative = 1;
+  while (activeCorrelatives.has(nextCorrelative)) {
+    nextCorrelative++;
+  }
+
+  return nextCorrelative;
+};
+
+/**
  * Guarda el archivo firmado o URL de contrato
  */
 export const updateContratoFirmado = async (idContrato: string, url: string): Promise<void> => {
