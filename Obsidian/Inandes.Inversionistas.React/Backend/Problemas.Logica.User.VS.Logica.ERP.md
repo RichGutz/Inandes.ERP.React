@@ -58,7 +58,32 @@ En una arquitectura contable relacional:
 
 ---
 
-## 4. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
+## 4. Caso de Estudio 3: Reencarnación de Contrato del Mismo Inversionista (Edgardo Aguinaga Oliver)
+
+### Diagnóstico de la Casuística:
+* **Inversionistas Titulares:** 
+  * Principal: **Aguinaga Oliver Edgardo** (`DNI04641802`)
+  * Cotitulares (25% c/u): **Aguinaga Salcedo Rodrigo Edgardo** (`DNI70006502`), **Aguinaga Salcedo Kalina Del Carmen** (`DNI70006505`), **Aguinaga Salcedo Milka Patricia** (`DNI70006504`).
+* **Contrato Histórico Inicial (`004`):**  
+  * Código: `NSGPEN02-004.20230501`  
+  * Monto: S/ 100,000.00 PEN (Fondo `NSGPEN02`, Plazo 36m, Tasa 9.5%)  
+  * Vigencia: `2023-05-01` al `2026-04-30` (Vencimiento al 30 de abril de 2026).
+* **Nuevo Contrato Emitido por Renovación (`020` erróneo):**  
+  * Código generado originalmente: `NSGPEN02-020.20260501`  
+  * Vigencia: `2026-05-01` al `2029-04-30` (Plazo: 36 meses, S/ 100,000.00 PEN, Tasa 9.5%).
+
+### El Problema Detectado:
+Al registrar la renovación que inicia inmediatamente tras el vencimiento (`2026-05-01`), el operador o flujo manual asignó un correlativo nuevo desvinculado (`020`) en lugar de mantener la reencarnación del contrato base del cliente (`004`), fragmentando la historia contable y la correlación del partícipe en el fondo `NSGPEN02`.
+
+### Solución y Corrección Atómica Aplicada en Supabase:
+1. **Reasignación en `crm_contratos`:** Se migró el registro `NSGPEN02-020.20260501` a **`NSGPEN02-004.20260501`**.
+2. **Reasignación en `crm_certificados_eventos`:** El asiento contable de emisión (Evento `#10785`) se actualizó a `id_contrato = 'NSGPEN02-004.20260501'` e `id_certificado = 'NSGPEN02-004.20260501.20260501'`.
+3. **Reasignación en `crm_certificados`:** Se migró el certificado `NSGPEN02-020.20260501.20260501` a `NSGPEN02-004.20260501.20260501`.
+4. **Preservación Inmutable:** El contrato histórico primario `NSGPEN02-004.20230501` se mantiene intacto como la primera encarnación histórica del partícipe.
+
+---
+
+## 5. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
 
 Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** en `crm_certificados_eventos` y los **209 contratos** en `crm_contratos`:
 

@@ -315,3 +315,18 @@
 4. Verificación de endpoints en vivo: `GET https://inandes.geeksoft.tech/api/desembolsos/pendientes` respondiendo HTTP 200 OK con datos JSON reales.
 5. Validación de compilación local con `npm run build` (0 errores) y sincronización a Git (`main`, commits `210d3fe` y `a527f1e`).
 6. Actualización integral del documento `10. Correccion.Direccionamiento.Hostinger.md` en Obsidian con toda la bitácora técnica.
+
+[2026-08-25 11:55:00-05:00] REENCARNACIÓN ATÓMICA DE CONTRATO (AGUINAGA OLIVER EDGARDO - NSGPEN02-004):
+1. Reasignado en Supabase el nuevo contrato de renovación de `NSGPEN02-020.20260501` a `NSGPEN02-004.20260501` en `crm_contratos`.
+2. Actualizado el asiento contable de emisión inicial (Evento `#10785`) en `crm_certificados_eventos` asociándolo a `NSGPEN02-004.20260501`.
+3. Migrado el registro correspondiente en `crm_certificados` a `NSGPEN02-004.20260501.20260501`.
+4. Eliminado el contrato residual 020 y verificado que el contrato histórico original `NSGPEN02-004.20230501` se mantiene intacto.
+5. Documentado el Caso de Estudio 3 en la nota técnica `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
+
+[2026-08-25 13:07:00-05:00] RESOLUCIÓN MULTI-FRECUENCIA EN RETORNOS (CON01 TRIMESTRAL VS BIMESTRALES):
+1. En `src/utils/financialCalculator.ts`, se refactorizó `generateRetornosV40` para computar de forma autónoma la fecha de inicio canónica `fStartFund` según la periodicidad del fondo (`frecuencia_cupones_meses`).
+2. En cortes coincidentes como Junio (`2026-06-30`), los 5 fondos bimestrales liquidan su ciclo de 61 días (Mayo-Junio), mientras que el fondo trimestral `NSLCON01` liquida automáticamente sus 91 días completos (Abril-Junio).
+3. En `src/utils/pdfGeneratorBelloConDesglose.ts`, se actualizó la cabecera del reporte para renderizar dinámicamente las fechas y días base propios de cada fondo (`Período: 2026-04-01 al 2026-06-30 (91 Días Base 365)` para CON01).
+4. Verificada la compilación local limpia con `npm run build` (0 errores).
+
+

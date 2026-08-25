@@ -66,6 +66,10 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
       const isLastSubPage = pageIdx === numSubPages - 1;
       const parteStr = numSubPages > 1 ? ` (Parte ${pageIdx + 1} de ${numSubPages})` : '';
 
+      const fStartFund = fData.fStart || fStart;
+      const fEndFund = fData.fEnd || fEnd;
+      const diasBaseFund = fData.diasBase || fData.blocks?.[0]?.days?.length || diasBase;
+
       pagesHtml.push(`
         <div class="report-page">
           <table class="top-header-table">
@@ -75,7 +79,7 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
               </td>
               <td class="text-center">
                 <div class="report-main-title">REPORTE INTEGRAL DE LIQUIDACIÓN Y AUDITORÍA</div>
-                <div class="report-sub-title">Período: ${fStart} al ${fEnd} (${diasBase} Días Base 365)</div>
+                <div class="report-sub-title">Período: ${fStartFund} al ${fEndFund} (${diasBaseFund} Días Base 365)</div>
               </td>
               <td style="width: 160px;" class="text-right">
                 <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">

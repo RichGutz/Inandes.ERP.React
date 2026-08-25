@@ -49,7 +49,8 @@ const getInvName = (c: any, invMap: Record<string, string>): string => {
 
 /**
  * Traduce el motor de retornos v40 a TypeScript.
- * Realiza las consultas SSL directas a Supabase y calcula el ledger del periodo.
+ * Realiza las consultas SSL directas a Supabase y calcula el ledger del periodo
+ * adaptando de forma autónoma la frecuencia de cada fondo (Bimestral 2m vs Trimestral 3m).
  */
 export const generateRetornosV40 = async (
   codigoFondo: string | null = null,
@@ -58,18 +59,11 @@ export const generateRetornosV40 = async (
 ): Promise<CalculationResult> => {
   const hoy = new Date();
   
-  // Normalizar fechas de entrada
+  // Normalizar fechas de corte
   const fechaFin = fechaCorte ? new Date(fechaCorte + 'T00:00:00') : new Date(hoy.setHours(0,0,0,0));
-  const fStart = fechaInicio ? new Date(fechaInicio + 'T00:00:00') : new Date(fechaFin.getFullYear(), 0, 1);
-
-  // Crear la lista de días completos en el periodo
-  const diasPeriodo: Date[] = [];
-  const current = new Date(fStart);
-  while (current <= fechaFin) {
-    diasPeriodo.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-  const columnasFechas = diasPeriodo.map(d => formatDateMD(d));
+  const fEndStr = fechaFin.toISOString().split('T')[0];
+  const monthFin = fechaFin.getMonth() + 1; // 1-indexed (1-12)
+  const yearFin = fechaFin.getFullYear();
 
   // 1. Cargar inversionistas para mapeo de nombres completos
   const { data: invData, error: invErr } = await supabase
@@ -124,9 +118,8 @@ export const generateRetornosV40 = async (
 
   const allCids = rawContratosMaster.map(c => c.id_contrato);
 
-  // 4. Historial Ledger (Eventos previos) y Arrastre de Saldo de Cierre
+  // 4. Historial Ledger (Eventos previos)
   const eventsByContrato: Record<string, any[]> = {};
-
   const chunkSize = 100;
   for (let i = 0; i < allCids.length; i += chunkSize) {
     const chunk = allCids.slice(i, i + chunkSize);
@@ -147,250 +140,246 @@ export const generateRetornosV40 = async (
     }
   }
 
-  const fStartStr = fStart.toISOString().split('T')[0];
-  const fEndStr = fechaFin.toISOString().split('T')[0];
-
-  // Filtrar solo los contratos vigentes durante el periodo evaluado
-  const contratosMaster = rawContratosMaster.filter(c => {
-    // 1. Si el contrato inicia DESPUES de la fecha de corte, aun no nace contablemente
-    const fIniStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '2000-01-01';
-    if (fIniStr > fEndStr) {
-      return false;
-    }
-
-    // 2. Si el contrato esta en estado emitido, verificar si tuvo un cierre con saldo 0 previo a este periodo
-    if (c.estado === 'emitido') {
-      const evs = eventsByContrato[c.id_contrato] || [];
-      const cierresPrevios = evs.filter(e => 
-        ['cierre_fin_contrato', 'cierre_por_rescate'].includes(e.tipo_evento) &&
-        e.fecha_periodo_fin &&
-        e.fecha_periodo_fin.split('T')[0] < fStartStr
-      );
-      if (cierresPrevios.length > 0) {
-        const lastC = cierresPrevios[cierresPrevios.length - 1];
-        const saldoC = Number(lastC.capital_final_saldo ?? lastC.capital_base ?? 0);
-        if (saldoC <= 0) return false;
-      }
-      return true;
-    }
-
-    // 3. Si el contrato esta cerrado, solo incluirlo si cerro durante este periodo o posterior
-    const fFinStr = c.fecha_fin ? c.fecha_fin.split('T')[0] : '2099-12-31';
-    if (fFinStr >= fStartStr) return true;
-    const evs = eventsByContrato[c.id_contrato] || [];
-    const cierreEv = evs.find(e => e.tipo_evento === 'cierre_fin_contrato' || e.tipo_evento === 'cierre_por_rescate');
-    if (!cierreEv) return true;
-    const cFinStr = cierreEv.fecha_periodo_fin ? cierreEv.fecha_periodo_fin.split('T')[0] : '2000-01-01';
-    return cFinStr >= fStartStr;
-  });
-
-  const contratosMap: Record<string, any> = {};
-  for (const c of contratosMaster) {
-    contratosMap[c.id_contrato] = c;
-  }
-  const cidsActivos = contratosMaster.map(c => c.id_contrato);
-
   // 5. Carga de Cronogramas de deducciones y rescates
-  const cronDedMap: Record<string, any[]> = {};
-  const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number; es_rescate_total?: boolean }>> = {};
-  const cronBalPrevMap: Record<string, number> = {};
-
-  for (let i = 0; i < cidsActivos.length; i += chunkSize) {
-    const chunk = cidsActivos.slice(i, i + chunkSize);
+  const allCronItems: any[] = [];
+  for (let i = 0; i < allCids.length; i += chunkSize) {
+    const chunk = allCids.slice(i, i + chunkSize);
     const { data: items, error: itemsErr } = await supabase
       .from('crm_cronograma_deducciones_rescates')
       .select('*')
       .in('id_contrato', chunk);
 
     if (itemsErr) throw new Error(`Error en cronograma: ${itemsErr.message}`);
-
-    if (items) {
-      for (const item of items) {
-        const cid = item.id_contrato || item.id_certificado;
-        const fP = new Date(item.fecha_proyectada_cobro.split('T')[0] + 'T00:00:00');
-        const tipo = item.tipo_cargo;
-
-        if (fP < fStart) {
-          if (tipo === 'RESCATE_CAPITAL') {
-            if (!cronBalPrevMap[cid]) cronBalPrevMap[cid] = 0;
-            cronBalPrevMap[cid] -= Number(item.monto_cobrar);
-          }
-        } else if (fP <= fechaFin) {
-          if (tipo === 'RESCATE_CAPITAL') {
-            if (!cronRescMap[cid]) cronRescMap[cid] = [];
-            cronRescMap[cid].push({
-              id_registro: item.id_cuota,
-              fecha: fP,
-              monto: Number(item.monto_cobrar),
-              tasa: Number(item.tasa || 0) / 100,
-              es_rescate_total: Boolean(item.es_rescate_total || (item.glosa_descripcion && item.glosa_descripcion.includes('[RESCATE TOTAL]')))
-            });
-          } else {
-            if (!cronDedMap[cid]) cronDedMap[cid] = [];
-            cronDedMap[cid].push(item);
-          }
-        }
-      }
-    }
+    if (items) allCronItems.push(...items);
   }
 
-  // 6. Preparación de Filas de Cálculo con Arrastre del Cierre Anterior
-  const certRowsData: any[] = [];
-  for (const mid of cidsActivos) {
-    const c = contratosMap[mid];
-    if (!c) continue;
-
-    const events = eventsByContrato[mid] || [];
-    events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
-
-    // Buscar el último evento previo al inicio de este periodo (cierres anteriores o emisión inicial al 31/12/2025)
-    const closingEvents = events.filter(e => 
-      ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'emision'].includes(e.tipo_evento) &&
-      e.fecha_periodo_fin &&
-      new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') < fStart
-    );
-
-    let lastClosureDate: Date | null = null;
-    let capBaseInicio = 0;
-    let idCertOrigen = mid;
-
-    if (closingEvents.length > 0) {
-      closingEvents.sort((a, b) => String(a.fecha_periodo_fin).localeCompare(String(b.fecha_periodo_fin)));
-      const lastClosure = closingEvents[closingEvents.length - 1];
-      capBaseInicio = (lastClosure.capital_final_saldo !== null && lastClosure.capital_final_saldo !== undefined)
-        ? Number(lastClosure.capital_final_saldo)
-        : Number(lastClosure.capital_base || 0);
-      lastClosureDate = new Date(lastClosure.fecha_periodo_fin.split('T')[0] + 'T00:00:00');
-      idCertOrigen = lastClosure.id_certificado || mid;
-    } else {
-      capBaseInicio = Number(c.monto_inversion || 0) + (cronBalPrevMap[mid] || 0.0);
-      idCertOrigen = mid;
-    }
-
-    // Filtrar aumentos de capital/hijos: solo incluir los ocurridos DESPUÉS de la fecha del último cierre
-    const hijos: any[] = [];
-    for (const e of events) {
-      if (['aumento_capital', 'reinvierte_interes'].includes(e.tipo_evento)) {
-        const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
-        const fEv = new Date(rawF.split('T')[0] + 'T00:00:00');
-
-        if (lastClosureDate && fEv <= lastClosureDate) {
-          continue;
-        }
-        if (fEv <= fechaFin) {
-          let monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
-          
-          // Fallback de ultra-robustez: si el delta es 0 o menor, extraer el monto desde la glosa 'notas'
-          if (monto <= 0 && e.notas) {
-            const match = String(e.notas).match(/Aumento\s+de\s+capital\s+por\s+([0-9.,]+)/i);
-            if (match) {
-              monto = parseFloat(match[1].replace(/,/g, '')) || 0;
-            }
-          }
-
-          if (monto > 0) {
-            hijos.push({
-              id: `Aumento (${formatDate(fEv)})`,
-              fecha: fEv,
-              monto,
-              interes_acum: 0.0,
-              v_dias: []
-            });
-          }
-        }
-      }
-    }
-
-    // Si el contrato ya se extinguió en un periodo previo (saldo capital 0 o menor) y no tiene nuevos aumentos de capital, omitir del nuevo periodo
-    if (capBaseInicio <= 0 && hijos.length === 0) {
-      continue;
-    }
-
-    // REGULA STRICTA DE AUDITORÍA: Sin fallbacks silenciosos. Se usa únicamente la tasa pactada del contrato.
-    const tasaRaw = c.tasa_pactada;
-    const tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
-    const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
-
-    certRowsData.push({
-      id: mid,
-      id_certificado_origen: idCertOrigen,
-      id_contrato: mid,
-      id_fondo: c.id_fondo,
-      moneda: c.moneda,
-      inversionista: getInvName(c, invMap),
-      capital_base: capBaseInicio,
-      emision: new Date(c.fecha_inicio.split('T')[0] + 'T00:00:00'),
-      tasa_pactada: tasaP,
-      porcentaje_reparto: repartoPct,
-      hijos,
-      interes_total_acum: 0.0,
-      cron_deducciones: cronDedMap[mid] || [],
-      cron_rescates: cronRescMap[mid] || [],
-      valores_dia_padre: []
-    });
-  }
-
-  certRowsData.sort((a, b) => {
-    if (a.id_fondo !== b.id_fondo) return a.id_fondo.localeCompare(b.id_fondo);
-    return extractCorrelativo(a.id) - extractCorrelativo(b.id);
-  });
-
-  // 7. Bucle Diario
-  for (const d of diasPeriodo) {
-    d.setHours(0, 0, 0, 0);
-    const dTime = d.getTime();
-
-    for (const row of certRowsData) {
-      const rescates = (row.cron_rescates || []).slice().sort((x: any, y: any) => x.fecha.getTime() - y.fecha.getTime());
-      const r_a = rescates.find((r: any) => dTime <= r.fecha.getTime());
-
-      let cap_rem = row.capital_base;
-      for (const r of rescates) {
-        if (dTime > r.fecha.getTime()) {
-          cap_rem -= r.monto;
-        }
-      }
-
-      const t_hoy = row.tasa_pactada;
-      const base_hoy = r_a ? row.capital_base : Math.max(0.0, cap_rem);
-
-      const isEmittedOrAfter = dTime >= row.emision.getTime();
-      const int_dia_p = isEmittedOrAfter ? (base_hoy * (t_hoy / BASE_DIAS)) : 0.0;
-
-      row.valores_dia_padre.push(int_dia_p);
-      row.interes_total_acum += int_dia_p;
-
-      for (const h of row.hijos) {
-        const isAumOrAfter = dTime >= h.fecha.getTime();
-        const int_dia_h = isAumOrAfter ? (h.monto * (t_hoy / BASE_DIAS)) : 0.0;
-        h.interes_acum += int_dia_h;
-        h.v_dias.push(int_dia_h);
-        row.interes_total_acum += int_dia_h;
-      }
-    }
-  }
-
-  // 8. Generación de Salida
+  // 6. Generación de Salida por Fondo con Periodo Canónico Independiente
   const asientos: any[] = [];
   const xlsDict: Record<string, any[]> = {};
   const pdfData: any[] = [];
 
-  const uniqueFIds = Array.from(new Set(certRowsData.map(r => r.id_fondo)));
+  const uniqueFIds = Array.from(new Set(rawContratosMaster.map(r => r.id_fondo)));
   const fondosOrder = PRIORITY_FONDOS.filter(f => uniqueFIds.includes(f))
     .concat(uniqueFIds.filter(f => !PRIORITY_FONDOS.includes(f)).sort());
 
-  const monthFin = fechaFin.getMonth() + 1; // 1-indexed (1-12)
-
   for (const fIdStr of fondosOrder) {
-    const rowsF = certRowsData.filter(r => r.id_fondo === fIdStr);
-    if (rowsF.length === 0) continue;
-
     const fondoMeta = fondosMap[fIdStr] || {};
-    const frecuencia = Number(fondoMeta.frecuencia_cupones_meses || 1);
+    const frecuencia = Number(fondoMeta.frecuencia_cupones_meses || 2);
 
-    // Filtración por ciclo contable
+    // Filtración por ciclo contable: si el mes de corte no coincide con la periodicidad del fondo, omitir
     if (monthFin % frecuencia !== 0) {
       continue;
+    }
+
+    // Determinar la fecha de inicio canónica exacta según la periodicidad del fondo
+    let fStartFund: Date;
+    if (codigoFondo && codigoFondo !== 'TODOS' && fechaInicio) {
+      fStartFund = new Date(fechaInicio + 'T00:00:00');
+    } else {
+      const startMonth = monthFin - frecuencia + 1;
+      fStartFund = new Date(yearFin, startMonth - 1, 1);
+    }
+    const fStartFundStr = fStartFund.toISOString().split('T')[0];
+
+    // Lista de días completa del período específico de este fondo
+    const diasPeriodoFund: Date[] = [];
+    const cur = new Date(fStartFund);
+    while (cur <= fechaFin) {
+      diasPeriodoFund.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    const columnasFechasFund = diasPeriodoFund.map(d => formatDateMD(d));
+
+    // Filtrar contratos de este fondo vigentes en su período
+    const contratosMaster = rawContratosMaster.filter(c => {
+      if (c.id_fondo !== fIdStr) return false;
+      const fIniStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '2000-01-01';
+      if (fIniStr > fEndStr) return false;
+
+      if (c.estado === 'emitido') {
+        const evs = eventsByContrato[c.id_contrato] || [];
+        const cierresPrevios = evs.filter(e => 
+          ['cierre_fin_contrato', 'cierre_por_rescate'].includes(e.tipo_evento) &&
+          e.fecha_periodo_fin &&
+          e.fecha_periodo_fin.split('T')[0] < fStartFundStr
+        );
+        if (cierresPrevios.length > 0) {
+          const lastC = cierresPrevios[cierresPrevios.length - 1];
+          const saldoC = Number(lastC.capital_final_saldo ?? lastC.capital_base ?? 0);
+          if (saldoC <= 0) return false;
+        }
+        return true;
+      }
+
+      const fFinStr = c.fecha_fin ? c.fecha_fin.split('T')[0] : '2099-12-31';
+      if (fFinStr >= fStartFundStr) return true;
+      const evs = eventsByContrato[c.id_contrato] || [];
+      const cierreEv = evs.find(e => e.tipo_evento === 'cierre_fin_contrato' || e.tipo_evento === 'cierre_por_rescate');
+      if (!cierreEv) return true;
+      const cFinStr = cierreEv.fecha_periodo_fin ? cierreEv.fecha_periodo_fin.split('T')[0] : '2000-01-01';
+      return cFinStr >= fStartFundStr;
+    });
+
+    if (contratosMaster.length === 0) continue;
+
+    const contratosMap: Record<string, any> = {};
+    for (const c of contratosMaster) {
+      contratosMap[c.id_contrato] = c;
+    }
+    const cidsActivos = contratosMaster.map(c => c.id_contrato);
+
+    // Mapear cronograma para este fondo
+    const cronDedMap: Record<string, any[]> = {};
+    const cronRescMap: Record<string, Array<{ id_registro: string; fecha: Date; monto: number; tasa: number; es_rescate_total?: boolean }>> = {};
+    const cronBalPrevMap: Record<string, number> = {};
+
+    for (const item of allCronItems) {
+      const cid = item.id_contrato || item.id_certificado;
+      if (!contratosMap[cid]) continue;
+      const fP = new Date(item.fecha_proyectada_cobro.split('T')[0] + 'T00:00:00');
+      const tipo = item.tipo_cargo;
+
+      if (fP < fStartFund) {
+        if (tipo === 'RESCATE_CAPITAL') {
+          if (!cronBalPrevMap[cid]) cronBalPrevMap[cid] = 0;
+          cronBalPrevMap[cid] -= Number(item.monto_cobrar);
+        }
+      } else if (fP <= fechaFin) {
+        if (tipo === 'RESCATE_CAPITAL') {
+          if (!cronRescMap[cid]) cronRescMap[cid] = [];
+          cronRescMap[cid].push({
+            id_registro: item.id_cuota,
+            fecha: fP,
+            monto: Number(item.monto_cobrar),
+            tasa: Number(item.tasa || 0) / 100,
+            es_rescate_total: Boolean(item.es_rescate_total || (item.glosa_descripcion && item.glosa_descripcion.includes('[RESCATE TOTAL]')))
+          });
+        } else {
+          if (!cronDedMap[cid]) cronDedMap[cid] = [];
+          cronDedMap[cid].push(item);
+        }
+      }
+    }
+
+    // Preparar filas del fondo con arrastre del cierre anterior
+    const certRowsData: any[] = [];
+    for (const mid of cidsActivos) {
+      const c = contratosMap[mid];
+      if (!c) continue;
+
+      const events = eventsByContrato[mid] || [];
+      events.sort((a, b) => String(a.fecha_periodo_fin || '2000-01-01').localeCompare(String(b.fecha_periodo_fin || '2000-01-01')));
+
+      const closingEvents = events.filter(e => 
+        ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'emision'].includes(e.tipo_evento) &&
+        e.fecha_periodo_fin &&
+        new Date(e.fecha_periodo_fin.split('T')[0] + 'T00:00:00') < fStartFund
+      );
+
+      let lastClosureDate: Date | null = null;
+      let capBaseInicio = 0;
+      let idCertOrigen = mid;
+
+      if (closingEvents.length > 0) {
+        closingEvents.sort((a, b) => String(a.fecha_periodo_fin).localeCompare(String(b.fecha_periodo_fin)));
+        const lastClosure = closingEvents[closingEvents.length - 1];
+        capBaseInicio = (lastClosure.capital_final_saldo !== null && lastClosure.capital_final_saldo !== undefined)
+          ? Number(lastClosure.capital_final_saldo)
+          : Number(lastClosure.capital_base || 0);
+        lastClosureDate = new Date(lastClosure.fecha_periodo_fin.split('T')[0] + 'T00:00:00');
+        idCertOrigen = lastClosure.id_certificado || mid;
+      } else {
+        capBaseInicio = Number(c.monto_inversion || 0) + (cronBalPrevMap[mid] || 0.0);
+        idCertOrigen = mid;
+      }
+
+      const hijos: any[] = [];
+      for (const e of events) {
+        if (['aumento_capital', 'reinvierte_interes'].includes(e.tipo_evento)) {
+          const rawF = e.fecha_evento || e.fecha_periodo_fin || '2020-01-01';
+          const fEv = new Date(rawF.split('T')[0] + 'T00:00:00');
+
+          if (lastClosureDate && fEv <= lastClosureDate) continue;
+          if (fEv <= fechaFin) {
+            let monto = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
+            if (monto <= 0 && e.notas) {
+              const match = String(e.notas).match(/Aumento\s+de\s+capital\s+por\s+([0-9.,]+)/i);
+              if (match) monto = parseFloat(match[1].replace(/,/g, '')) || 0;
+            }
+            if (monto > 0) {
+              hijos.push({
+                id: `Aumento (${formatDate(fEv)})`,
+                fecha: fEv,
+                monto,
+                interes_acum: 0.0,
+                v_dias: []
+              });
+            }
+          }
+        }
+      }
+
+      if (capBaseInicio <= 0 && hijos.length === 0) continue;
+
+      const tasaRaw = c.tasa_pactada;
+      const tasaP = (tasaRaw && Number(tasaRaw) > 0) ? (Number(tasaRaw) / 100) : 0.0;
+      const repartoPct = Number(c.porcentaje_reparto || 0) / 100;
+
+      certRowsData.push({
+        id: mid,
+        id_certificado_origen: idCertOrigen,
+        id_contrato: mid,
+        id_fondo: c.id_fondo,
+        moneda: c.moneda,
+        inversionista: getInvName(c, invMap),
+        capital_base: capBaseInicio,
+        emision: new Date(c.fecha_inicio.split('T')[0] + 'T00:00:00'),
+        tasa_pactada: tasaP,
+        porcentaje_reparto: repartoPct,
+        hijos,
+        interes_total_acum: 0.0,
+        cron_deducciones: cronDedMap[mid] || [],
+        cron_rescates: cronRescMap[mid] || [],
+        valores_dia_padre: []
+      });
+    }
+
+    certRowsData.sort((a, b) => {
+      if (a.id_fondo !== b.id_fondo) return a.id_fondo.localeCompare(b.id_fondo);
+      return extractCorrelativo(a.id) - extractCorrelativo(b.id);
+    });
+
+    // Bucle diario para este fondo
+    for (const d of diasPeriodoFund) {
+      d.setHours(0, 0, 0, 0);
+      const dTime = d.getTime();
+
+      for (const row of certRowsData) {
+        const rescates = (row.cron_rescates || []).slice().sort((x: any, y: any) => x.fecha.getTime() - y.fecha.getTime());
+        const r_a = rescates.find((r: any) => dTime <= r.fecha.getTime());
+
+        let cap_rem = row.capital_base;
+        for (const r of rescates) {
+          if (dTime > r.fecha.getTime()) cap_rem -= r.monto;
+        }
+
+        const t_hoy = row.tasa_pactada;
+        const base_hoy = r_a ? row.capital_base : Math.max(0.0, cap_rem);
+
+        const isEmittedOrAfter = dTime >= row.emision.getTime();
+        const int_dia_p = isEmittedOrAfter ? (base_hoy * (t_hoy / BASE_DIAS)) : 0.0;
+
+        row.valores_dia_padre.push(int_dia_p);
+        row.interes_total_acum += int_dia_p;
+
+        for (const h of row.hijos) {
+          const isAumOrAfter = dTime >= h.fecha.getTime();
+          const int_dia_h = isAumOrAfter ? (h.monto * (t_hoy / BASE_DIAS)) : 0.0;
+          h.interes_acum += int_dia_h;
+          h.v_dias.push(int_dia_h);
+          row.interes_total_acum += int_dia_h;
+        }
+      }
     }
 
     const rowsPdf: any[] = [];
@@ -412,7 +401,7 @@ export const generateRetornosV40 = async (
       capital_final: 0
     };
 
-    for (const r of rowsF) {
+    for (const r of certRowsData) {
       const bruto_hijos = r.hijos.reduce((sum: number, h: any) => sum + (Math.round(h.interes_acum * 100) / 100), 0);
       const bruto = Math.round(r.interes_total_acum * 100) / 100;
       const bruto_padre = Math.round((bruto - bruto_hijos) * 100) / 100;
@@ -429,7 +418,6 @@ export const generateRetornosV40 = async (
 
       let rescate_sum = 0;
       if (tieneRescateTotal) {
-        // En Rescate Total: 0 recapitalización, 100% de la neta a reparto, y devolución del 100% del capital base activo
         cap_z = 0.0;
         rep_v = neta;
         rescate_sum = Math.round((r.capital_base + aum_v) * 100) / 100;
@@ -481,8 +469,8 @@ export const generateRetornosV40 = async (
         id_certificado_origen: r.id_certificado_origen || r.id_contrato,
         id_contrato: r.id_contrato,
         tipo_evento: tipo_ev,
-        fecha_periodo_origen: fStart.toISOString().split('T')[0],
-        fecha_periodo_fin: fechaFin.toISOString().split('T')[0],
+        fecha_periodo_origen: fStartFundStr,
+        fecha_periodo_fin: fEndStr,
         capital_base: r.capital_base,
         tasa_aplicada: r.tasa_pactada,
         interes_generado_bruto: bruto,
@@ -510,7 +498,7 @@ export const generateRetornosV40 = async (
 
       // Columnas de intereses diarios
       for (let k = 0; k < r.valores_dia_padre.length; k++) {
-        rx[columnasFechas[k]] = Math.round(r.valores_dia_padre[k] * 1000000) / 1000000;
+        rx[columnasFechasFund[k]] = Math.round(r.valores_dia_padre[k] * 1000000) / 1000000;
       }
 
       const rNetoFinal = Math.round((rep_v - ded_ord) * 100) / 100;
@@ -543,7 +531,7 @@ export const generateRetornosV40 = async (
           "Capital Base": h.monto
         };
         for (let k = 0; k < h.v_dias.length; k++) {
-          hx[columnasFechas[k]] = Math.round(h.v_dias[k] * 1000000) / 1000000;
+          hx[columnasFechasFund[k]] = Math.round(h.v_dias[k] * 1000000) / 1000000;
         }
         hx["INT. BRUTO"] = Math.round(h.interes_acum * 100) / 100;
         const zeroCols = ["IR (5%)", "BASE NETA", "CAPITALIZACION", "REPARTO", "DEDUCCIONES", "PENALIDAD", "NETO FINAL", "RESCATES", "TRANSFERENCIAS", "AUM. CAPITAL", "CAPITAL FINAL"];
@@ -639,11 +627,14 @@ export const generateRetornosV40 = async (
     pdfData.push({
       fondo: fondoMeta,
       totals: fTotals,
+      fStart: fStartFundStr,
+      fEnd: fEndStr,
+      diasBase: diasPeriodoFund.length,
       vars: { pasiva: "v40", tasa_display: `${(fondoMeta.tasa || 0).toFixed(2)}%` },
       blocks: [{
         idx: 1,
         month_name: `${getMonthName(fechaFin.getMonth() + 1)} ${fechaFin.getFullYear()}`,
-        days: columnasFechas,
+        days: columnasFechasFund,
         is_last: true,
         rows: rowsPdf
       }]
@@ -652,3 +643,4 @@ export const generateRetornosV40 = async (
 
   return { asientos, xlsDict, pdfData };
 };
+

@@ -329,6 +329,19 @@
 [2026-08-24 20:46:00-05:00] ESTADO: Completado con éxito.
 1. Validada compilación limpia local con `npm run build` (0 errores).
 2. Commit y Tag `VERSION.ROLLBACK.RGP.24.08.26` creados y publicados en `origin/main`.
+[2026-08-25 11:55:00-05:00] TAREA: Corregir correlativo de nuevo contrato de renovación de Aguinaga Oliver Edgardo (de NSGPEN02-020.20260501 a NSGPEN02-004.20260501) en Supabase.
+[2026-08-25 11:55:00-05:00] ESTADO: Completado con éxito.
+1. Reasignado contrato `NSGPEN02-020.20260501` a `NSGPEN02-004.20260501` en `crm_contratos`.
+2. Actualizado asiento contable de emisión inicial (Evento 10785) en `crm_certificados_eventos` a `NSGPEN02-004.20260501`.
+3. Migrado certificado en `crm_certificados` a `NSGPEN02-004.20260501.20260501`.
+4. Eliminado contrato residual 020. Preservado intacto el histórico `NSGPEN02-004.20230501`.
+5. Documentado el Caso de Estudio 3 en `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
 
+[2026-08-25 13:07:00-05:00] TAREA: Soporte multi-frecuencia autónomo en motor de Retornos V40 (financialCalculator.ts) y reporte PDF/Excel para fondos trimestrales (CON01) en cortes coincidentes como Junio.
+[2026-08-25 13:07:00-05:00] ESTADO: Completado con éxito.
+1. En `financialCalculator.ts`, se refactorizó la resolución de períodos para calcular de forma independiente `fStartFund` según la periodicidad del fondo (`frecuencia_cupones_meses`).
+2. Los 5 fondos bimestrales calculan 61 días (Mayo-Junio), mientras que NSLCON01 calcula automáticamente sus 91 días completos (Abril-Junio) en cortes coincidentes como Junio y Diciembre.
+3. En `pdfGeneratorBelloConDesglose.ts`, se adaptó el encabezado por hoja para mostrar el período y días base específicos de cada fondo (`Período: 2026-04-01 al 2026-06-30 (91 Días Base 365)` para CON01).
+4. Validada compilación de producción limpia con `npm run build` (0 errores).
 
 
