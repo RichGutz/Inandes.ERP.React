@@ -316,3 +316,19 @@
 2. Eliminado certificado `NSGPEN03-039.20260501.20260501` de `crm_certificados`.
 3. Eliminado contrato `NSGPEN03-039.20260501` de `crm_contratos`.
 4. Verificada integridad del contrato `NSGPEN03-031.20260501` y sus partícipes (Yagua Padilla / Yagua López).
+[2026-08-24 10:35:00-05:00] TAREA: Corregir fecha errónea de rescate de NSGPEN01-017 (Barton Carmen Michele) pasando del 28/02/2026 al 31/08/2026 en Supabase.
+[2026-08-24 10:35:00-05:00] ESTADO: Completado con éxito.
+1. Eliminada cuota errónea del 28/02/2026 de `crm_cronograma_deducciones_rescates`.
+2. Verificada cuota de rescate de S/ 50,000.00 con fecha `2026-08-31` en estado `PENDIENTE`.
+3. Reactivado el contrato `NSGPEN01-017.20160101` a estado `emitido` en `crm_contratos`.
+4. Actualizado asiento contable al 28/02/2026 (evento `11572`) a `cierre_fin_ciclo` con capital final de S/ 60,000.00 y rescate 0.
+[2026-08-24 11:50:00-05:00] TAREA: Ajustar monto de rescate en un centavo menos para contrato NSGPEN03-037.20260224 (de 1,307.03 a 1,307.02 PEN) en Supabase.
+[2026-08-24 11:50:00-05:00] ESTADO: Completado con éxito.
+1. Actualizado `monto_cobrar` a `1307.02` en `crm_cronograma_deducciones_rescates` para la cuota `RES-NSGPEN03-037.20260224.260820.260430-C.1/1` (30/04/2026).
+[2026-08-24 20:46:00-05:00] TAREA: Grabar punto de control seguro (Safe Point / Tag) VERSION.ROLLBACK.RGP.24.08.26 en rama main de GitHub.
+[2026-08-24 20:46:00-05:00] ESTADO: Completado con éxito.
+1. Validada compilación limpia local con `npm run build` (0 errores).
+2. Commit y Tag `VERSION.ROLLBACK.RGP.24.08.26` creados y publicados en `origin/main`.
+
+
+

@@ -294,3 +294,19 @@
 
 [2026-08-23 10:38:00-05:00] SAFE POINT / GIT TAG:
 1. Creado y publicado a origin el tag `RESURECCIONES.OK` sobre el commit `3d6f16b` en la rama `main`.
+
+[2026-08-24 10:35:00-05:00] CORRECCIÓN DE FECHA DE RESCATE NSGPEN01-017 (Barton Carmen Michele):
+1. Eliminada cuota errónea del 28/02/2026 en `crm_cronograma_deducciones_rescates`.
+2. Verificada y establecida cuota de rescate oficial de S/ 50,000.00 con fecha `2026-08-31` en estado `PENDIENTE`.
+3. Reactivado contrato `NSGPEN01-017.20160101` a estado `emitido` en `crm_contratos`.
+4. Corregido asiento contable de cierre al 2026-02-28 (evento `11572`) a `cierre_fin_ciclo` con capital final íntegro de S/ 60,000.00 y rescate 0.
+
+[2026-08-24 11:50:00-05:00] AJUSTE DE CENTAVO EN RESCATE NSGPEN03-037.20260224:
+1. Actualizado `monto_cobrar` de 1,307.03 a 1,307.02 PEN en `crm_cronograma_deducciones_rescates` (cuota `RES-NSGPEN03-037.20260224.260820.260430-C.1/1` con vencimiento 30/04/2026).
+
+[2026-08-24 20:46:00-05:00] SAFE POINT / GIT TAG:
+1. Validada compilación local limpia con `npm run build` (0 errores).
+2. Creado y publicado a origin el tag `VERSION.ROLLBACK.RGP.24.08.26` en la rama `main`.
+
+
+
