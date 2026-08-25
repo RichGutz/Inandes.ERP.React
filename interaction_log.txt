@@ -308,5 +308,10 @@
 1. Validada compilación local limpia con `npm run build` (0 errores).
 2. Creado y publicado a origin el tag `VERSION.ROLLBACK.RGP.24.08.26` en la rama `main`.
 
-
-
+[2026-08-25 10:20:00-05:00] INDEPENDENCIA DE CONTABO & CORRECCIÓN DE DIRECCIONAMIENTO RESIDUAL:
+1. Auditoría forense de servicios residuales en Hostinger (91.108.125.253) y llamadas hacia FastAPI / generación de PDFs.
+2. Homologación de frontend en React: eliminadas URLs absolutas en `FondosPage.tsx` e `InversionistasPage.tsx`, e integrado `getApiBaseUrl()` centralizado en `factoringService.ts`.
+3. Corrección de DNS interno en red Docker Coolify de Contabo (169.58.168.107): asignados alias `inandes-api` y `3g5kcala3ypqzlsrhyelxyev` al contenedor backend (`ac166703883d`), eliminando el 502 Bad Gateway en Caddy.
+4. Verificación de endpoints en vivo: `GET https://inandes.geeksoft.tech/api/desembolsos/pendientes` respondiendo HTTP 200 OK con datos JSON reales.
+5. Validación de compilación local con `npm run build` (0 errores) y sincronización a Git (`main`, commits `210d3fe` y `a527f1e`).
+6. Actualización integral del documento `10. Correccion.Direccionamiento.Hostinger.md` en Obsidian con toda la bitácora técnica.
