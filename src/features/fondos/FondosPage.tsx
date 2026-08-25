@@ -1,6 +1,7 @@
 // src/features/fondos/FondosPage.tsx
 import React, { useEffect, useState } from 'react';
 import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
+import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -285,7 +286,8 @@ export const FondosPage: React.FC = () => {
       const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
       const filename = `Directorio_Maestro_Fondos.pdf`;
 
-      const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+      const API_BASE = getApiBaseUrl();
+      const response = await fetch(`${API_BASE}/api/inversionistas/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: printHtml, filename })

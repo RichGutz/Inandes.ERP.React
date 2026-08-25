@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { getApiBaseUrl } from '../config/apiConfig';
 import type { FactoringBatch } from '../features/factoring/utils/FactoringCalculations';
 
 // --- Tipos para las entidades del negocio ---
@@ -86,16 +87,6 @@ const generateProposalId = (): string => {
   const dd = String(now.getDate()).padStart(2, '0');
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `FACT-${yy}${mm}${dd}-${rand}`;
-};
-
-const getApiBaseUrl = (): string => {
-  if (import.meta.env.VITE_API_FACTORING_URL) {
-    return import.meta.env.VITE_API_FACTORING_URL;
-  }
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'https://api-factoring.geeksoft.tech';
-  }
-  return 'http://localhost:8000';
 };
 
 export const factoringService = {

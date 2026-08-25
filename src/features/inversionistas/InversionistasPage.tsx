@@ -1,6 +1,7 @@
 // src/features/inversionistas/InversionistasPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { getInversionistas, upsertInversionista } from '../../services/inversionistasService';
+import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Inversionista } from '../../services/inversionistasService';
 import { generateRetornosV40 } from '../../utils/financialCalculator';
 import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
@@ -124,7 +125,8 @@ export const InversionistasPage: React.FC = () => {
       // Conservar imagenes, logos y firmas para el PDF oficial
       const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
 
-      const response = await fetch('https://inandes.react.geeksoft.tech/api/inversionistas/generate-pdf', {
+      const API_BASE = getApiBaseUrl();
+      const response = await fetch(`${API_BASE}/api/inversionistas/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: printHtml, filename })
@@ -2665,7 +2667,8 @@ export const InversionistasPage: React.FC = () => {
                       <button
                         onClick={() => {
                           const fondo = docFondo || 'TODOS';
-                          window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
+                          const API_BASE = getApiBaseUrl();
+                          window.open(`${API_BASE}/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
                         }}
                         className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
                         title="Abrir en pestaña completa independiente"
@@ -2721,7 +2724,8 @@ export const InversionistasPage: React.FC = () => {
                       <button
                         onClick={() => {
                           const fondo = docFondo || 'TODOS';
-                          window.open(`https://inandes.react.geeksoft.tech/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
+                          const API_BASE = getApiBaseUrl();
+                          window.open(`${API_BASE}/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
                         }}
                         className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
                         title="Abrir en pestaña completa independiente"
