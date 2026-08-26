@@ -83,6 +83,34 @@ Al registrar la renovación que inicia inmediatamente tras el vencimiento (`2026
 
 ---
 
+## 4. Caso de Estudio 4: Desfase de Fechas en Renovación con Reinversión Continua (Donny Guillén Lara - `NSGPEN03-035`)
+
+* **Partícipe:** Guillén Lara Donny Edwin (`DNI42983181`)
+* **Fondo:** `NSGPEN03` (FDO NSG MIPYME PEN 03)
+* **Contrato Histórico Previo:**
+  * Código: `NSGPEN03-035.20250701`
+  * Vigencia: `2025-07-01` al `2026-06-30` (12 meses).
+  * Liquidación al 30 de junio de 2026: Capital base S/ 140,770.17 + Interés neto S/ 1,899.72 = **S/ 142,669.89 PEN** (cerrado por rescate total para renovación/reinversión).
+* **Nuevo Contrato Emitido por Renovación (`20260822` erróneo):**
+  * Código generado originalmente: `NSGPEN03-035.20260822`
+  * Vigencia registrada: `2026-08-22` al `2028-08-31` (Plazo: 24 meses, S/ 142,669.89 PEN, Tasa 9.0%).
+
+### El Problema Detectado:
+El usuario ingresó como fecha de inicio el día del registro administrativo en el sistema (`2026-08-22`), creando un desfase artificial de 52 días sin devengue en Julio y Agosto. En la realidad financiera, la reinversión y devengue son continuos a partir del día siguiente al vencimiento del contrato anterior (`2026-07-01`).
+
+### Solución y Corrección Atómica Aplicada en Supabase:
+1. **Reasignación en `crm_contratos`:**
+   * Se migró `NSGPEN03-035.20260822` $\rightarrow$ **`NSGPEN03-035.20260701`**.
+   * Se corrigió `fecha_inicio = '2026-07-01'` y `fecha_fin = '2028-06-30'` (24 meses exactos).
+2. **Reasignación en `crm_certificados_eventos`:**
+   * El asiento contable de emisión (Evento `#11366`) se actualizó con `id_contrato = 'NSGPEN03-035.20260701'`, `id_certificado = 'NSGPEN03-035.20260701.20260701'`, y `fecha_periodo_origen = fecha_periodo_fin = '2026-07-01'`.
+3. **Reasignación en `crm_certificados`:**
+   * Se migró el certificado a `NSGPEN03-035.20260701.20260701` con fecha de emisión `2026-07-01`.
+4. **Limpieza Residual:**
+   * Eliminado el registro residual con sufijo `20260822`. El histórico `NSGPEN03-035.20250701` se mantiene inalterado como primera encarnación histórica.
+
+---
+
 ## 5. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
 
 Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** en `crm_certificados_eventos` y los **209 contratos** en `crm_contratos`:

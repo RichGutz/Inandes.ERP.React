@@ -344,4 +344,14 @@
 3. En `pdfGeneratorBelloConDesglose.ts`, se adaptó el encabezado por hoja para mostrar el período y días base específicos de cada fondo (`Período: 2026-04-01 al 2026-06-30 (91 Días Base 365)` para CON01).
 4. Validada compilación de producción limpia con `npm run build` (0 errores).
 
+[2026-08-25 17:45:00-05:00] TAREA: Corregir fecha de inicio y correlativo de renovación para partícipe Guillén Lara Donny Edwin (de NSGPEN03-035.20260822 a NSGPEN03-035.20260701) en Supabase.
+[2026-08-25 17:45:00-05:00] ESTADO: Completado con éxito.
+1. Reasignado contrato `NSGPEN03-035.20260822` a `NSGPEN03-035.20260701` en `crm_contratos` (Vigencia: `2026-07-01` al `2028-06-30`, S/ 142,669.89 PEN, 24 meses, 9.0%).
+2. Actualizado asiento de emisión inicial (Evento `#11366`) en `crm_certificados_eventos` asociándolo a `NSGPEN03-035.20260701` y fecha `2026-07-01`.
+3. Migrado certificado en `crm_certificados` a `NSGPEN03-035.20260701.20260701`.
+4. Eliminado contrato residual `20260822`. Preservado intacto el histórico `NSGPEN03-035.20250701`.
+5. Documentado el Caso de Estudio 4 en `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
+
+
+
 
