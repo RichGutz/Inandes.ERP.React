@@ -111,7 +111,29 @@ El usuario ingresó como fecha de inicio el día del registro administrativo en 
 
 ---
 
-## 5. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
+## 5. Caso de Estudio 5: Corrección de Fecha de Fin por Error de Digitación (Rodrigo Aravena Elías - `NSGPEN03-049`)
+
+* **Partícipe:** Aravena Elías Rodrigo (`DNI46873804`)
+* **Fondo:** `NSGPEN03` (FDO NSG MIPYME PEN 03)
+* **Contrato:**
+  * Código: `NSGPEN03-049.20230901`
+  * Parámetros: S/ 96,270.76 PEN, Plazo: 36 meses, Tasa: 9.50% TEA, 100% Capitalización (0% Reparto), Cupones Bimestrales.
+  * Fecha de Inicio: `2023-09-01`
+  * Fecha de Fin Registrada Originalmente: `2026-10-31` ⚠️ *(Error de digitación que sumaba 38 meses en lugar de 36)*.
+
+### El Problema Detectado:
+Al registrar el contrato con fecha de inicio `2023-09-01` y plazo de 36 meses (3 años), la fecha de vencimiento contractual exacta debió ser el **`2026-08-31`**. Sin embargo, se digitó por error `2026-10-31`, lo que habría provocado que el sistema continúe devengando cupones durante el bimestre Septiembre-Octubre 2026.
+
+### Solución y Corrección Aplicada en Supabase:
+1. **Actualización en `crm_contratos`:**
+   * Se actualizó `fecha_fin = '2026-08-31'` para el registro `NSGPEN03-049.20230901`.
+2. **Impacto Cero en Asientos Históricos:**
+   * Los 4 eventos contables existentes en `crm_certificados_eventos` (Emisión inicial y cortes bimestrales Ene-Feb, Mar-Abr, May-Jun 2026) se mantienen inalterados.
+   * El ciclo Julio-Agosto 2026 (`2026-07-01` a `2026-08-31`) queda formalmente establecido como el último ciclo de vigencia contractual para su liquidación/renovación.
+
+---
+
+## 6. Auditoría Integral Forense de "Reencarnaciones" y Anomalías
 
 Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** en `crm_certificados_eventos` y los **209 contratos** en `crm_contratos`:
 
@@ -123,7 +145,7 @@ Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** 
 
 ---
 
-## 5. Aclaración Arquitectónica: La Tabla `crm_certificados`
+## 7. Aclaración Arquitectónica: La Tabla `crm_certificados`
 
 ### ¿Es necesaria *Sine Qua Non*?
 **NO.** La tabla `crm_certificados` es un maestro documental redundante que ha sido desacoplada.
@@ -137,7 +159,7 @@ Se ejecutó un escaneo total de integridad sobre los **595 asientos contables** 
 
 ---
 
-## 6. Protocolo para Futuros Casos de Reciclaje ETL
+## 8. Protocolo para Futuros Casos de Reciclaje ETL
 
 Ante situaciones donde el usuario reporte contratos reciclados o migraciones de fondos:
 1. **Verificación de Disponibilidad:** Comprobar que el nuevo correlativo propuesto no exista en ninguna tabla (`crm_contratos`, `crm_certificados_eventos`, `crm_cronograma_deducciones_rescates`).
@@ -150,7 +172,7 @@ Ante situaciones donde el usuario reporte contratos reciclados o migraciones de 
 
 ---
 
-## 7. Algoritmo Oficial de Reencarnaciones: *"Llenado de Huecos por Menor Muerto Disponible"*
+## 9. Algoritmo Oficial de Reencarnaciones: *"Llenado de Huecos por Menor Muerto Disponible"*
 
 ### 📐 Fundamento del Algoritmo:
 Para mantener una baraja compacta de contratos sin dejar números abandonados:

@@ -352,6 +352,19 @@
 4. Eliminado contrato residual `20260822`. Preservado intacto el histórico `NSGPEN03-035.20250701`.
 5. Documentado el Caso de Estudio 4 en `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
 
+[2026-08-26 09:53:00-05:00] TAREA: Corregir fecha de fin por error de digitacion en contrato NSGPEN03-049.20230901 (de 2026-10-31 a 2026-08-31) en Supabase.
+[2026-08-26 09:53:00-05:00] ESTADO: Completado con exito.
+1. Actualizada la columna fecha_fin a '2026-08-31' para el contrato NSGPEN03-049.20230901 (Rodrigo Aravena Elias) en crm_contratos.
+2. Comprobada la vigencia exacta de 36 meses (2023-09-01 a 2026-08-31) y confirmada la integridad de los 4 eventos bimestrales existentes en crm_certificados_eventos.
+3. Documentado el Caso de Estudio 5 en Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md.
 
-
+[2026-08-26 14:20:00-05:00] TAREA: Incorporar sondas forenses de salud para el Worker de PDF y conectividad Caddy-FastAPI en el sistema de monitoreo diario.
+[2026-08-26 14:20:00-05:00] ESTADO: Completado con exito.
+1. Creado el script maestro de diagnostico en scripts/monitor_vps_daily.py con 4 sondas de salud para InAndes ERP:
+   - Sonda 1: Estado del contenedor FastAPI y respuesta HTTP 200 de Uvicorn en puerto 8010.
+   - Sonda 2: Canal de resolucion DNS interna de red Caddy -> http://3g5kcala3ypqzlsrhyelxyev:8010.
+   - Sonda 3: Validacion de persistencia de custom_network_aliases en la base de datos de Coolify (PostgreSQL).
+   - Sonda 4: Verificacion de rutas publicas HTTPS y respuesta del endpoint generador de PDF (evitando 502/503).
+2. Probada la ejecucion completa del script por terminal contra Contabo y Hostinger (salida consolidada en C:\Users\rguti\VPS_Health_Logs).
+3. Actualizada la documentacion en Obsidian/Mudanza.Contabo/Mudanza.Contabo/11.CRON.JOB.SALUD.VPS.md con la nueva matriz de control y umbrales criticos.
 

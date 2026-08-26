@@ -335,5 +335,13 @@
 4. Eliminado el contrato residual `20260822` y verificado que el contrato histórico original `NSGPEN03-035.20250701` se mantiene intacto.
 5. Documentado el Caso de Estudio 4 en la nota técnica `Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md`.
 
+[2026-08-26 09:53:00-05:00] CORRECCION DE FECHA DE FIN POR ERROR DE DIGITACION (RODRIGO ARAVENA ELIAS - NSGPEN03-049):
+1. Actualizada en Supabase la columna fecha_fin de '2026-10-31' a '2026-08-31' para el contrato NSGPEN03-049.20230901 en crm_contratos.
+2. Confirmado que el plazo contractual de 36 meses (2023-09-01 al 2026-08-31) queda matematicamente exacto sin impacto adverso en los 4 eventos historicos de crm_certificados_eventos.
+3. Documentado el Caso de Estudio 5 en la nota tecnica Obsidian/Inandes.Inversionistas.React/Backend/Problemas.Logica.User.VS.Logica.ERP.md.
 
+[2026-08-26 14:20:00-05:00] IMPLEMENTACION DE SONDAS FORENSES PARA WORKER PDF EN MONITOREO VPS:
+1. Incorporadas 4 sondas de salud al script scripts/monitor_vps_daily.py: estado del contenedor FastAPI, test de respuesta interna Uvicorn (8010), canal Caddy->FastAPI por alias DNS y persistencia en Coolify DB.
+2. Ejecutado test integral contra Contabo y Hostinger con volcado de logs a C:\Users\rguti\VPS_Health_Logs.
+3. Actualizada la documentacion tecnica en Obsidian/Mudanza.Contabo/Mudanza.Contabo/11.CRON.JOB.SALUD.VPS.md.
 
