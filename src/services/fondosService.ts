@@ -1,5 +1,5 @@
-// src/services/fondosService.ts
 import { supabase } from './supabaseClient';
+import { generateRetornosV40 } from '../utils/financialCalculator';
 
 export interface Fondo {
   id_fondo_plazo?: string;
@@ -131,46 +131,14 @@ export const calculateValorCuotaV26 = async (
     }
   }
 
-  // 2. Cargar Contratos de Inversión emitidos
-  let queryContratos = supabase
-    .from('crm_contratos')
-    .select('id_contrato, fecha_inicio, monto_inversion, id_fondo')
-    .eq('estado', 'emitido');
-    
-  if (codigoFondo) {
-    queryContratos = queryContratos.eq('id_fondo', codigoFondo);
-  }
-  
-  const { data: contratosData, error: contrErr } = await queryContratos;
-  if (contrErr) throw new Error(`Error en contratos: ${contrErr.message}`);
-  if (!contratosData || contratosData.length === 0) return [];
+  // 2. Ejecutar Motor Oficial de Retornos y Rendimientos V40 para obtener contratos e intereses diarios homologados
+  const fStartStr = startDate.toISOString().split('T')[0];
+  const fEndStr = endDate.toISOString().split('T')[0];
+  const retornosCalc = await generateRetornosV40(codigoFondo, fStartStr, fEndStr);
 
-  const certIds = contratosData.map(c => c.id_contrato);
-
-  // 3. Cargar aumentos de capital de crm_certificados_eventos
-  const { data: aumData, error: aumErr } = await supabase
-    .from('crm_certificados_eventos')
-    .select('*')
-    .in('id_certificado', certIds)
-    .eq('tipo_evento', 'aumento_capital');
-
-  if (aumErr) throw new Error(`Error en aumentos de capital: ${aumErr.message}`);
-
-  const aumMap: Record<string, Array<{ fecha: Date; monto: number }>> = {};
-  if (aumData) {
-    for (const a of aumData) {
-      const idCert = a.id_certificado;
-      if (!aumMap[idCert]) aumMap[idCert] = [];
-      const fDate = new Date(a.fecha_periodo_origen.split('T')[0] + 'T00:00:00');
-      const monto = Number(a.capital_final_saldo || 0) - Number(a.capital_base || 0);
-      aumMap[idCert].push({ fecha: fDate, monto });
-    }
-  }
-
-  // 4. Configurar el rango de días en el periodo
+  // 3. Configurar el rango de días en el periodo
   const diasPeriodo: Date[] = [];
   let curr = new Date(startDate);
-  // Asegurar horas en 0 para comparaciones consistentes
   curr.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setHours(0, 0, 0, 0);
@@ -190,39 +158,32 @@ export const calculateValorCuotaV26 = async (
     const pCap    = Number(fondo.comision_captacion_fondo || 0) / 100;
     const pMisc   = Number(fondo.comision_miscelaneos_fondo || 0) / 100;
 
-    const certsFondo = contratosData.filter(c => c.id_fondo === fid);
-    if (certsFondo.length === 0) continue;
+    // Obtener datos calculados desde el motor oficial de Retornos
+    const fondoRetornoData = retornosCalc.pdfData.find((p: any) => p.fondo?.id_fondo === fid);
+    const certsRetorno = fondoRetornoData?.rows || [];
+    if (certsRetorno.length === 0) continue;
 
-    // Ordenamiento por correlativo numérico del id_contrato
-    certsFondo.sort((a, b) => {
-      const m1 = a.id_contrato.match(/[.-](\d+)/);
-      const m2 = b.id_contrato.match(/[.-](\d+)/);
-      const idx1 = m1 ? parseInt(m1[1], 10) : 999;
-      const idx2 = m2 ? parseInt(m2[1], 10) : 999;
-      return idx1 - idx2;
-    });
-
-    // Inicializar filas de contratos
-    const certRows: any[] = [];
-    const startDateStr = startDate.toISOString().split('T')[0];
-
-    for (const c of certsFondo) {
-      // Calcular Capital Inicial en la fecha de inicio del periodo
-      const births = (aumMap[c.id_contrato] || []).filter(a => a.fecha.toISOString().split('T')[0] === startDateStr);
-      const capIniAum = births.reduce((acc, a) => acc + a.monto, 0);
-      const capIni = capIniAum > 0 ? capIniAum : Number(c.monto_inversion);
-
-      certRows.push({
+    // Inicializar filas de contratos mapeadas desde Retornos
+    const certRows: any[] = certsRetorno.map((r: any) => {
+      const capIni = Number(r.capital_base || 0);
+      return {
         tipo: 'CERT',
-        id: c.id_contrato,
+        id: r.id || r.id_contrato,
         capital: capIni,
-        cuotas: capIni, // Inicialmente 1.0 cuota por sol/dólar
-        emision: new Date(c.fecha_inicio + 'T00:00:00'),
-        interes_acum: 0.0,
-        valores_dia: [] as number[],
-        hijos: [] as any[]
-      });
-    }
+        cuotas: capIni,
+        emision: r.emision ? new Date(r.emision) : new Date(startDate),
+        interes_acum: Number(r.interes_bruto || 0),
+        valores_dia: (r.valores_dia_padre || []).slice(),
+        hijos: (r.hijos || []).map((h: any) => ({
+          tipo: 'AUMENTO',
+          id: h.id || `Aumento (${h.fecha ? new Date(h.fecha).getDate() : ''}/${h.fecha ? new Date(h.fecha).getMonth() + 1 : ''})`,
+          monto: Number(h.monto || 0),
+          fecha_ingreso: h.fecha ? new Date(h.fecha) : new Date(startDate),
+          valores_dia: (h.v_dias || []).slice(),
+          interes_acum: Number(h.interes_acum || 0)
+        }))
+      };
+    });
 
     // Configurar filas de totales de resumen con distribución clara
     const summaryDefs = [
@@ -252,58 +213,40 @@ export const calculateValorCuotaV26 = async (
       valores_dia: [] as number[]
     }));
 
-    // Simulación día a día V27 (Homologada con modelo Ricardo Gallo)
+    // Simulación día a día V27 (Integrada con devengos de Retornos)
     let patAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
     let cuotasAyer = certRows.reduce((acc, c) => acc + c.cuotas, 0);
     let fInvAcu = patAyer;
     let vCuoAyer = 1.0;
 
-    for (const d of diasPeriodo) {
-      const dStr = d.toISOString().split('T')[0];
+    for (let dayIdx = 0; dayIdx < diasPeriodo.length; dayIdx++) {
+      const d = diasPeriodo[dayIdx];
 
       // 1. Devengos de Comisiones Gestor (Base 365)
       const gAdmD  = patAyer * (pAdmin / 365.0);
       const gCapD  = patAyer * (pCap / 365.0);
       const gMiscD = patAyer * (pMisc / 365.0);
 
-      // 2. Calcular devengos individuales de cada contrato
+      // 2. Suma de intereses diarios provenientes DIRECTAMENTE del motor de Retornos V40
       let pagoInvD = 0.0;
       for (const r of certRows) {
-        const isEmitted = d >= r.emision;
-        const vD = isEmitted ? r.capital * (tActiva / 365.0) : 0.0;
-        r.valores_dia.push(vD);
-        r.interes_acum += vD;
+        const vD = r.valores_dia[dayIdx] || 0.0;
         pagoInvD += vD;
 
         for (const h of r.hijos) {
-          const isHijoEmitted = d >= h.fecha_ingreso;
-          const vDh = isHijoEmitted ? h.monto * (tActiva / 365.0) : 0.0;
-          h.valores_dia.push(vDh);
-          h.interes_acum += vDh;
+          const vDh = h.valores_dia[dayIdx] || 0.0;
           pagoInvD += vDh;
         }
       }
 
-      // 3. Procesar aumentos de capital que ocurren hoy (si d > startDate)
+      // 3. Aumentos de capital del día
       let apD = 0.0;
       let nuevasCuotasD = 0.0;
-      if (dStr !== startDateStr) {
-        for (const r of certRows) {
-          const aumentosHoy = (aumMap[r.id] || []).filter(a => a.fecha.toISOString().split('T')[0] === dStr);
-          for (const a of aumentosHoy) {
-            const nuevasCuotas = Math.trunc(a.monto / vCuoAyer);
-            const nuevoHijo = {
-              tipo: 'AUMENTO',
-              id: `Aumento (${a.fecha.getDate()}/${a.fecha.getMonth() + 1})`,
-              monto: a.monto,
-              fecha_ingreso: a.fecha,
-              valores_dia: new Array(diasPeriodo.indexOf(d)).fill(0.0),
-              interes_acum: 0.0
-            };
-            r.hijos.push(nuevoHijo);
-            r.capital += a.monto;
-            r.cuotas += nuevasCuotas;
-            apD += a.monto;
+      for (const r of certRows) {
+        for (const h of r.hijos) {
+          if (h.fecha_ingreso && h.fecha_ingreso.getTime() === d.getTime()) {
+            const nuevasCuotas = Math.trunc(h.monto / vCuoAyer);
+            apD += h.monto;
             nuevasCuotasD += nuevasCuotas;
           }
         }
@@ -311,9 +254,9 @@ export const calculateValorCuotaV26 = async (
 
       fInvAcu += apD;
 
-      // 4. Ingreso Bruto Activo Diario (Equilibrado para cubrir pasiva + comisiones en Base 365)
+      // 4. Ingreso Bruto Activo Diario
       const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
-      const iBrutoD = patAyer * (tActiva / 365.0);
+      const iBrutoD = patAyer * (tActiva > 0 ? (tActiva / 360.0) : (0.14 / 360.0));
 
       // 5. Cierre Contable Diario
       const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
