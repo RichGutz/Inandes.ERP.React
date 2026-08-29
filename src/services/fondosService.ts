@@ -132,8 +132,14 @@ export const calculateValorCuotaV26 = async (
   }
 
   // 2. Ejecutar Motor Oficial de Retornos y Rendimientos V40 para obtener contratos e intereses diarios homologados
-  const fStartStr = startDate.toISOString().split('T')[0];
-  const fEndStr = endDate.toISOString().split('T')[0];
+  const formatYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const fStartStr = formatYMD(startDate);
+  const fEndStr = formatYMD(endDate);
   const retornosCalc = await generateRetornosV40(codigoFondo, fStartStr, fEndStr);
 
   // 3. Configurar el rango de días en el periodo
@@ -385,6 +391,8 @@ export const calculateValorCuotaV26 = async (
 
   return reports;
 };
+
+export const calculateValorCuotaV27 = calculateValorCuotaV26;
 
 // =========================================================================
 // PERSISTENCIA Y ROLLBACK DE CIERRES DE VALOR CUOTA (NAV V27)

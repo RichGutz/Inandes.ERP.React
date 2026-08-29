@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   getFondos, 
   upsertFondos, 
-  calculateValorCuotaV26,
+  calculateValorCuotaV27,
   getValorCuotaEvents,
   fetchValorCuotaDashboard,
   oficializarCierreValorCuota,
@@ -12,7 +12,6 @@ import {
 import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
-import ExcelJS from 'exceljs';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
@@ -21,7 +20,9 @@ import {
   Plus, Search, Building2, X, Calendar, Trash2
 } from 'lucide-react';
 import { generatePdfValorCuotaV27 } from '../../utils/pdfGeneratorValorCuotaV27';
+import { generateValorCuotaExcelV27 } from '../../utils/excelGeneratorValorCuotaV27';
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
+
 
 export const FondosPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'variables' | 'valorCuota'>('variables');
@@ -97,15 +98,69 @@ export const FondosPage: React.FC = () => {
   const [vcRollbackLoading, setVcRollbackLoading] = useState<boolean>(false);
   const [vcSuccessMsg, setVcSuccessMsg] = useState<string | null>(null);
 
+  const handleExportVcExcel = async () => {
+    setVcExportingExcel(true);
+    try {
+      let reportsToUse = vcReportData;
+      if (reportsToUse.length === 0) {
+        const sParts = fStart.split('-').map(Number);
+        const eParts = fEnd.split('-').map(Number);
+        const start = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+        const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
+        const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
+        reportsToUse = await calculateValorCuotaV27(filterFondo, start, end);
+        if (reportsToUse.length === 0) {
+          alert("No hay reportes de valor cuota para exportar en Excel.");
+          return;
+        }
+        setVcReportData(reportsToUse);
+      }
+
+      const blob = await generateValorCuotaExcelV27({
+        reports: reportsToUse,
+        fStart,
+        fEnd,
+        selFondo: vcSelFondo,
+        anio: vcSelYear
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+      a.download = `EXCEL_MAESTRO_VALOR_CUOTA_NAV_V27_${fEnd}_${nowStamp}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setVcExcelDownloaded(true);
+    } catch (err: any) {
+      alert(`Error generando Excel Maestro de Valor Cuota: ${err.message}`);
+    } finally {
+      setVcExportingExcel(false);
+    }
+  };
+
   const handleExportPDFVc = async () => {
     setVcExportingPdf(true);
     try {
-      if (vcReportData.length === 0) {
-        alert("No hay reportes de valor cuota calculados para exportar en PDF.");
-        return;
+      let reportsToUse = vcReportData;
+      if (reportsToUse.length === 0) {
+        const sParts = fStart.split('-').map(Number);
+        const eParts = fEnd.split('-').map(Number);
+        const start = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+        const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
+        const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
+        reportsToUse = await calculateValorCuotaV27(filterFondo, start, end);
+        if (reportsToUse.length === 0) {
+          alert("No hay reportes de valor cuota calculados para exportar en PDF.");
+          return;
+        }
+        setVcReportData(reportsToUse);
       }
+
       const htmlContent = generatePdfValorCuotaV27({
-        reports: vcReportData,
+        reports: reportsToUse,
         fStart,
         fEnd,
         selFondo: vcSelFondo,
@@ -189,28 +244,20 @@ export const FondosPage: React.FC = () => {
     }
   }, [activeSubTab, vcSelYear, fEnd]);
 
-  // Carga automática del cálculo de Valor Cuota
+  // Carga automática del cálculo de Valor Cuota V27
   const handleCalculateValorCuota = async () => {
     setVcLoading(true);
     try {
-      let startMonth = 0;
-      let endMonth = 0;
-      if (vcSelTipo === 'Bimestre') {
-        startMonth = (vcSelNum - 1) * 2;
-        endMonth = startMonth + 1;
-      } else {
-        startMonth = (vcSelNum - 1) * 3;
-        endMonth = startMonth + 2;
-      }
-
-      const start = new Date(vcSelYear, startMonth, 1, 0, 0, 0, 0);
-      const end = new Date(vcSelYear, endMonth + 1, 0, 0, 0, 0, 0);
+      const sParts = fStart.split('-').map(Number);
+      const eParts = fEnd.split('-').map(Number);
+      const start = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+      const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
       
       const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
-      const reports = await calculateValorCuotaV26(filterFondo, start, end);
+      const reports = await calculateValorCuotaV27(filterFondo, start, end);
       setVcReportData(reports);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error al calcular Valor Cuota V27:", err);
     } finally {
       setVcLoading(false);
     }
@@ -612,180 +659,7 @@ export const FondosPage: React.FC = () => {
     XLSX.writeFile(wb, 'fondos_crm.xlsx');
   };
 
-  // Exportar Matriz Completa de Valor Cuota a Excel con formato y estilos profesionales (ExcelJS)
-  const handleExportVcExcel = async () => {
-    if (vcReportData.length === 0) {
-      alert("No hay datos de Valor Cuota para exportar.");
-      return;
-    }
 
-    setVcExportingExcel(true);
-    try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'INANDES GRUPO FINANCIERO';
-      workbook.lastModifiedBy = 'InAndes React CRM';
-      workbook.created = new Date();
-
-      for (const report of vcReportData) {
-        const sheetName = (report.fondo.id_fondo || 'FONDO').slice(0, 31);
-
-        // 1. Recopilar todos los dias del periodo continuo
-        const allDays: string[] = [];
-        for (const block of report.blocks) {
-          for (const dayStr of block.days) {
-            if (!allDays.includes(dayStr)) {
-              allDays.push(dayStr);
-            }
-          }
-        }
-
-        if (allDays.length === 0) continue;
-
-        const ws = workbook.addWorksheet(sheetName, {
-          views: [{ state: 'frozen', xSplit: 1, ySplit: 1 }] // Inmovilizar Columna A y Fila 1
-        });
-
-        // 2. Fila 1 - Encabezados
-        const headerRow = ws.addRow(['ITEM', ...allDays]);
-        headerRow.height = 28;
-
-        headerRow.eachCell((cell, colNumber) => {
-          cell.font = { name: 'Consolas', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: colNumber === 1 ? 'FF0F172A' : 'FF1E293B' }
-          };
-          cell.alignment = { vertical: 'middle', horizontal: colNumber === 1 ? 'left' : 'center' };
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FF334155' } },
-            bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
-            left: { style: 'thin', color: { argb: 'FF334155' } },
-            right: { style: 'thin', color: { argb: 'FF334155' } }
-          };
-        });
-
-        const sampleBlock = report.blocks[0];
-        if (!sampleBlock) continue;
-
-        // 3. Filas de Datos
-        for (let rIdx = 0; rIdx < sampleBlock.rows.length; rIdx++) {
-          const rowMeta = sampleBlock.rows[rIdx];
-          if (rowMeta.tipo === 'SPACER') continue;
-
-          const isAumento = rowMeta.tipo === 'AUMENTO';
-          const isTotal = rowMeta.tipo === 'TOTAL';
-          const isVc = rowMeta.id.includes('VAL CUOTA');
-          const isCapitalApertura = rowMeta.id.includes('TOTAL CAPITAL');
-          const isAporte = rowMeta.id.includes('(+)');
-          const isComision = rowMeta.id.includes('COM.');
-          const isPatrimonioCierre = rowMeta.id.includes('PATRIMONIO TOTAL CIERRE');
-          const isGananciaOperativa = rowMeta.id.includes('GANANCIA OPERATIVA');
-
-          const itemLabel = isAumento ? `   ${rowMeta.id}` : rowMeta.id;
-          const rowValues: any[] = [itemLabel];
-
-          for (const block of report.blocks) {
-            const blockRow = block.rows[rIdx];
-            for (let dIdx = 0; dIdx < block.days.length; dIdx++) {
-              const cellVal = blockRow?.cells[dIdx]?.val;
-              const numericVal = (cellVal === '-' || cellVal === undefined || cellVal === null) ? 0 : Number(cellVal);
-              rowValues.push(numericVal);
-            }
-          }
-
-          const addedRow = ws.addRow(rowValues);
-          addedRow.height = isPatrimonioCierre || isVc ? 24 : 21;
-
-          // Definir colores para filas de resumen vs filas normales
-          let bgColor = isTotal ? 'FFF8FAFC' : (isAumento ? 'FFF0FDF4' : 'FFFFFFFF');
-          let fontColor = 'FF1E293B';
-          let isBold = isTotal;
-
-          if (isCapitalApertura) {
-            bgColor = 'FFF1F5F9';
-            fontColor = 'FF0F172A';
-          } else if (isAporte) {
-            bgColor = 'FFECFDF5';
-            fontColor = 'FF047857';
-          } else if (isComision) {
-            bgColor = 'FFFEF2F2';
-            fontColor = 'FFB91C1C';
-          } else if (isGananciaOperativa) {
-            bgColor = 'FFEFF6FF';
-            fontColor = 'FF1D4ED8';
-          } else if (isPatrimonioCierre) {
-            bgColor = 'FFFEF3C7';
-            fontColor = 'FF78350F';
-          } else if (isVc) {
-            bgColor = 'FFDBEAFE';
-            fontColor = 'FF1E40AF';
-          } else if (isAumento) {
-            fontColor = 'FF059669';
-          }
-
-          addedRow.eachCell((cell, colNumber) => {
-            if (colNumber === 1) {
-              cell.font = { 
-                name: 'Consolas', 
-                size: isTotal ? 10 : 9.5, 
-                bold: isBold, 
-                italic: isAumento, 
-                color: { argb: fontColor } 
-              };
-              cell.alignment = { vertical: 'middle', horizontal: 'left', indent: isAumento ? 1 : 0 };
-            } else {
-              cell.numFmt = isVc ? '0.000000' : '#,##0.00';
-              cell.font = { 
-                name: 'Consolas', 
-                size: 9.5, 
-                bold: isBold, 
-                italic: isAumento, 
-                color: { argb: fontColor } 
-              };
-              cell.alignment = { vertical: 'middle', horizontal: 'right' };
-            }
-
-            if (bgColor !== 'FFFFFFFF') {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-            }
-
-            cell.border = {
-              top: isPatrimonioCierre ? { style: 'thin', color: { argb: 'FFD97706' } } : { style: 'thin', color: { argb: 'FFE2E8F0' } },
-              bottom: isPatrimonioCierre ? { style: 'double', color: { argb: 'FFD97706' } } : { style: 'thin', color: { argb: 'FFE2E8F0' } },
-              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-            };
-          });
-        }
-
-        // Anchos de columna
-        ws.getColumn(1).width = 40;
-        for (let c = 2; c <= allDays.length + 1; c++) {
-          ws.getColumn(c).width = 15;
-        }
-      }
-
-      // Descargar archivo binario Excel
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
-      a.download = `Reporte_NAV_V27_Export_${vcSelYear}_${nowStamp}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-
-      setVcExcelDownloaded(true);
-    } catch (err: any) {
-      alert(`Error exportando Excel: ${err.message}`);
-    } finally {
-      setVcExportingExcel(false);
-    }
-  };
 
 
   return (
