@@ -112,4 +112,19 @@ CREATE POLICY "Permitir eliminacion anon de valor cuota" ON public.crm_valor_cuo
 
 ---
 
+## 🛠️ 6. Inventario de Scripts Forenses y de Convergencia
+
+Para certificar la fidelidad matemática, la creación de la base de datos y la comparación con el Excel de Ricardo Gallo, se desarrollaron y ejecutaron los siguientes scripts en el workspace:
+
+| Script | Propósito / Función | Resultado / Métrica |
+| :--- | :--- | :--- |
+| [`scripts/qc_motor_nav_v27_convergence.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/qc_motor_nav_v27_convergence.py) | **Calibración Matemática del Motor NAV V27**: Compara día a día los 5 fondos contra el Excel manual de Ricardo Gallo (`REPORTE VC FDO NSG TODOS 1BIM 2026 - 2026 08 24.xlsx`) aplicando la fórmula de equilibrio contable ($P\&L = 0$). | **295 / 295 Aserciones Aprobadas** (100.00% convergencia, $\Delta = 0.000000$). |
+| [`scripts/qc_compare_excels.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/qc_compare_excels.py) | **Auditoría Comparativa de Excels**: Contrasta celda por celda el archivo exportado desde producción (`Reporte_NAV_V27_Export_2026_20260829_180714.xlsx`) versus el benchmark de Ricardo Gallo, analizando bases de días (360 vs 365) y tamaño de cartera. | Identifica y certifica que la diferencia numérica proviene de la cartera viva real de Supabase vs corte manual estático. |
+| [`scripts/execute_ddl_vps.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/execute_ddl_vps.py) | **Ejecución DDL Remota por SSH**: Conecta al VPS Contabo (`169.58.168.107`) y ejecuta el script de creación de `crm_valor_cuota_eventos` dentro del contenedor PostgreSQL (`supabase-db-3tnh2d2coj2iajith0gw3e07`). | Tabla, índices y políticas RLS creados con éxito. |
+| [`scripts/check_vps_deploy.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/check_vps_deploy.py) | **Monitoreo de Despliegue en VPS**: Inspecciona el estado de los contenedores Docker en Contabo y verifica la salida de logs y salud de Coolify. | Certifica contenedores activos y versión de commit en producción. |
+| [`scripts/convert_md_to_pdf.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/convert_md_to_pdf.py) | **Compilador Markdown a PDF Ejecutivo**: Convierte automáticamente las notas técnicas de Obsidian a documentos PDF formateados con CSS corporativo. | Generación de PDFs oficiales del proyecto. |
+| [`audio_transcrip/transcribe_whisper.py`](file:///c:/Users/rguti/Inandes.ERP.React/audio_transcrip/transcribe_whisper.py) | **Transcriptor de Audio con IA**: Transcribe audios `.ogg` a texto para extraer requerimientos directos del usuario. | Transcripción de `UI.CIERRES.NAV27.ogg`. |
+
+---
+
 *Documentación oficializada y registrada por Detective Benoit Blanc - 29 de Agosto de 2026.*

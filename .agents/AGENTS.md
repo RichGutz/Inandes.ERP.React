@@ -93,3 +93,7 @@ Todo agente DEBE consultar las credenciales del proyecto en estas ubicaciones es
 2. Supabase Cloud (PostgreSQL): `Obsidian/Inandes.Factoring.React/06. Procedimientos de Despliegue y Base de Datos.md` y `.env` / `.env.production` (Proyecto: egvcinsbyropumybatdf).
 3. Hostinger VPS (DESACTIVADO / OBSOLETO): No utilizar.
 
+## Regla 13 - PROHIBIDO Generar PDFs sin Solicitud Explicita del Usuario
+Queda estrictamente PROHIBIDO compilar o convertir archivos Markdown (.md) a PDF de forma automatica salvo que el usuario lo solicite expresa y directamente en su mensaje. Toda documentacion se mantiene exclusivamente en Markdown (.md).
+
+
