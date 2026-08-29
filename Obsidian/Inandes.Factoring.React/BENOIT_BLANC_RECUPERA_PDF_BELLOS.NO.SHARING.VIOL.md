@@ -258,6 +258,7 @@ python scripts/qc_excel_vs_pdf_parity.py
 | :--- | :---: | :--- |
 | **`PDF.RET.REN.PERFECTO`** | `98e0403` | Generación de PDF WeasyPrint, grilla contable 15 cols, logo Geeksoft y guardián inmortal systemd. |
 | **`PDF.50FILAS.ULTRALIGERO.PERFECTO`** | `e0e45ed` | Compaginador inteligente ($\le 50$ filas/hoja), optimización de logos al 95.8% (221 KB) y descarga en 5.5s sin corrupción. |
+| **`PDF.RET.REN.PERFECTO.40.FILAS`** | `03d2d3b` | Compaginador de 40 filas oxigenadas, paridad total 1:1 Excel vs PDF 15 columnas, burbujas inteligentes y manual maestro. |
 
 ### 8.2. Protocolo de Restauración Inmediata ante Desastres
 Si algún agente altera indebidamente los archivos del reporte PDF:
