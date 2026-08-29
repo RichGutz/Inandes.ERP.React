@@ -111,12 +111,25 @@ export function generateReporteBelloPdfHtml(
 
     const certCount = allRows.filter(r => r.tipo === 'PADRE' || (!r.tipo && !r.is_aumento)).length;
 
-    // Regla de Oro: Exacto 25 filas contables por hoja A4 Landscape
-    const ROWS_PER_PAGE = 25;
-    const totalPagesFund = Math.max(1, Math.ceil(allRows.length / ROWS_PER_PAGE));
+    // 🎯 ALGORITMO COMPAGINADOR INTELIGENTE (<= 50 Filas por Hoja A4 Landscape)
+    const MAX_ROWS_SINGLE_PAGE = 50;
+    const ROWS_PER_PAGE_SPLIT = 40; // Cuando supera 50 filas, divide equitativamente
+
+    let chunks: CertRow[][] = [];
+    if (allRows.length <= MAX_ROWS_SINGLE_PAGE) {
+      chunks = [allRows];
+    } else {
+      const numPages = Math.ceil(allRows.length / ROWS_PER_PAGE_SPLIT);
+      const chunkSize = Math.ceil(allRows.length / numPages);
+      for (let i = 0; i < allRows.length; i += chunkSize) {
+        chunks.push(allRows.slice(i, i + chunkSize));
+      }
+    }
+
+    const totalPagesFund = chunks.length;
 
     for (let pageIdx = 0; pageIdx < totalPagesFund; pageIdx++) {
-      const pageRows = allRows.slice(pageIdx * ROWS_PER_PAGE, (pageIdx + 1) * ROWS_PER_PAGE);
+      const pageRows = chunks[pageIdx];
       const isLastPage = pageIdx === totalPagesFund - 1;
       const parteStr = totalPagesFund > 1 ? ` (PARTE ${pageIdx + 1} DE ${totalPagesFund})` : '';
       const fStartFund = fData.fStart || fStart;
@@ -231,7 +244,7 @@ export function generateReporteBelloPdfHtml(
                   return `
                     <tr class="aumento-row">
                       <td class="text-center">-</td>
-                      <td style="font-family: monospace; font-size: 5.8pt; padding-left: 6px;">&rdsh; AUMENTO ${r.fecha_ingreso_str || ''}</td>
+                      <td style="font-family: monospace; font-size: 5.5pt; padding-left: 6px;">&rdsh; AUMENTO ${r.fecha_ingreso_str || ''}</td>
                       <td style="font-style: italic; color: #0284c7;">└─ Incremento de Capital</td>
                       <td class="text-right" style="color: #64748b;">-</td>
                       <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtVal(intBruto)}</td>
@@ -252,7 +265,7 @@ export function generateReporteBelloPdfHtml(
                 return `
                   <tr>
                     <td class="text-center font-bold" style="background: #f8fafc; font-weight: 800;">${nOrden}</td>
-                    <td class="font-mono font-bold" style="font-weight: 700; font-size: 5.8pt;">${certId}</td>
+                    <td class="font-mono font-bold" style="font-weight: 700; font-size: 5.5pt;">${certId}</td>
                     <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">${titular}</td>
                     <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(capBase)}</td>
                     <td class="text-right text-blue-600" style="color: #0284c7; font-weight: 700;">${fmtVal(intBruto)}</td>
@@ -310,7 +323,7 @@ export function generateReporteBelloPdfHtml(
         <style>
           @page {
             size: A4 landscape;
-            margin: 4mm 6mm !important;
+            margin: 3.5mm 5mm !important;
           }
           * { 
             box-sizing: border-box; 
@@ -321,7 +334,7 @@ export function generateReporteBelloPdfHtml(
             padding: 0 !important; 
             background-color: #ffffff !important; 
             color: #0f172a; 
-            font-size: 7pt;
+            font-size: 6pt;
           }
           .report-page {
             width: 100%;
@@ -335,59 +348,59 @@ export function generateReporteBelloPdfHtml(
             page-break-after: avoid;
           }
           .top-header-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 2px;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.5px;
           }
-          .top-header-table td { border: none; padding: 0; }
-          .logo-geeksoft { height: 26px; width: auto; object-fit: contain; }
-          .logo-inandes { height: 24px; width: auto; object-fit: contain; }
+          .top-header-table td { border: none; padding: 0; vertical-align: middle; }
+          .logo-geeksoft { height: 34px; width: auto; object-fit: contain; }
+          .logo-inandes { height: 26px; width: auto; object-fit: contain; }
           .report-main-title {
-            font-weight: 900; font-size: 10pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
+            font-weight: 900; font-size: 9.5pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
           }
           .report-sub-title {
-            font-size: 6.8pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
+            font-size: 6.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
           }
           .fund-badge-banner {
-            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 7.2pt; text-transform: uppercase; padding: 2px 10px; border-radius: 4px; text-align: center; margin: 2px auto 3px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
+            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.8pt; text-transform: uppercase; padding: 1.5px 8px; border-radius: 3px; text-align: center; margin: 1.5px auto 2px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
           }
           
           /* Cajas KPI de EL BELLO */
           table.kpi-cards-table {
-            width: 100%; border-collapse: separate; border-spacing: 3px 0; margin-bottom: 3px; table-layout: fixed;
+            width: 100%; border-collapse: separate; border-spacing: 2.5px 0; margin-bottom: 2px; table-layout: fixed;
           }
           table.kpi-cards-table td.kpi-card {
-            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 3px; text-align: center; vertical-align: middle;
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1.5px 2px; text-align: center; vertical-align: middle;
           }
           .kpi-title {
-            font-size: 4.8pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 4.5pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           .kpi-value {
-            font-size: 7pt; font-weight: 900; color: #0f172a; white-space: nowrap;
+            font-size: 6.8pt; font-weight: 900; color: #0f172a; white-space: nowrap;
           }
           .kpi-value-green { color: #059669; }
           .kpi-value-red { color: #dc2626; }
           .kpi-value-blue { color: #0284c7; }
           .kpi-value-darkblue { color: #1e3a8a; }
 
-          /* Tabla Contable Bello - Exacto 25 Filas por Hoja */
+          /* Tabla Contable Bello - Soporta hasta 50 Filas por Hoja */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 6pt; line-height: 1.1;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.5pt; line-height: 1.05;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.5pt; padding: 2px 1.5px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 1.5px 1px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 1px solid #cbd5e1; padding: 1.2px 2px; vertical-align: middle;
+            border: 1px solid #cbd5e1; padding: 0.8px 1.5px; vertical-align: middle;
           }
           table.data-table tr:nth-child(even) { background-color: #f8fafc; }
           table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
-          table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #059669; border-bottom: 2px solid #059669; }
-          table.data-table tr.totals-row td { color: #064e3b; font-size: 6.2pt; font-weight: 900; }
+          table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 1.5px solid #059669; border-bottom: 1.5px solid #059669; }
+          table.data-table tr.totals-row td { color: #064e3b; font-size: 5.8pt; font-weight: 900; }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
 
           /* Pie de Página Oficial */
           .page-footer {
-            width: 100%; margin-top: 2px; border-top: 1px solid #cbd5e1; padding-top: 1.5px; font-size: 5.5pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
+            width: 100%; margin-top: 1px; border-top: 1px solid #cbd5e1; padding-top: 1px; font-size: 5pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
           }
         </style>
       </head>
