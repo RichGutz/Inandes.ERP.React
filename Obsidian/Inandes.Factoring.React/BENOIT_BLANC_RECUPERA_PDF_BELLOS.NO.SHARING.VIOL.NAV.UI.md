@@ -75,13 +75,19 @@ for (const r of rawRows) {
 * **Parte 2 (Días 16 al 31 + Total Cierre)**: Segunda quincena con la columna de liquidación final y Valor Cuota de cierre.
 * Integrado con el microservicio WeasyPrint vía [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts).
 
+### 2.4. Calibración Visual y Formato Numérico Limpio:
+* **Altura de Filas -7%**: Se compactaron los paddings a `1.1px 1.8px`, tipografía a `5.4pt` y `line-height: 1.10`, garantizando que las matrices de 30-40 filas quepan con total soltura en A4 Landscape.
+* **Supresión de Centavos en Cifras $\ge 100,000$**: Números de 6 o 7 dígitos (ej. `10,434,753`) se muestran redondeados sin centavos para evitar saturación visual en las celdas diarias.
+* **Tratamiento de Saldos de Apertura en Totales Horizontales**: Filas como `TOTAL CAPITAL (Apertura)`, `CUOTAS APERTURA` y `PATRIMONIO PRE-APORTES` muestran `-` en la columna total horizontal (ya que sumar stocks diarios horizontalmente no tiene sentido financiero), mientras que filas de cierre muestran el saldo exacto final de cierre.
+
 ---
 
 ## 🧪 3. Control de Calidad (`QC`)
-* **Compilación Frontend**: `npm run build` en **`5.36s`** (0 errores).
-* **Despliegue Contabo**: Commit `f3295f4` en `origin/main`.
+* **Compilación Frontend**: `npm run build` (`✓ 0 errores, 3.32s`).
+* **Despliegue Contabo**: Commit `aa75652` en `origin/main`.
 * **Guardián Systemd VPS**: **`HTTP 200 OK`**.
 
 ---
 
 *Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
+
