@@ -1,35 +1,51 @@
-import { LOGO_INANDES_BASE64 } from '../assets/base64Images';
+import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../assets/base64Images';
 
 export interface CertRow {
-  num?: number;
+  num?: number | string;
+  n_orden?: number | string;
   tipo: 'PADRE' | 'AUMENTO' | 'SPACER' | 'TOTAL';
-  id_certificado: string;
-  inversionista: string;
-  capital: number;
-  bruto: number;
-  impuesto: number;
-  reparto: number;
-  capitalizacion: number;
-  deducciones: number;
-  penalidad: number;
-  neto: number;
-  rescate: number;
-  monto_transferir: number;
-  capital_final: number;
+  id?: string;
+  id_certificado?: string;
+  inversionista?: string;
+  titular?: string;
+  capital?: number;
+  capital_base?: number;
+  bruto?: number;
+  bruto_total?: number;
+  impuesto?: number;
+  impuesto_total?: number;
+  base_neta?: number;
+  reparto?: number;
+  reparto_valor?: number;
+  capitalizacion?: number;
+  capitalizacion_valor?: number;
+  deducciones?: number;
+  deducciones_total?: number;
+  penalidad?: number;
+  penalidad_rescate?: number;
+  neto?: number;
+  neto_total?: number;
+  rescate?: number;
+  devolucion_capital?: number;
+  monto_transferir?: number;
+  monto_transferido?: number;
+  capital_final?: number;
   fecha_ingreso_str?: string;
   is_first?: boolean;
+  is_aumento?: boolean;
 }
 
 export interface FundReportData {
   fondo: { id_fondo: string; nombre_fondo?: string; moneda?: string };
-  fStart: string;
-  fEnd: string;
+  fStart?: string;
+  fEnd?: string;
   diasBase?: number;
-  rows: CertRow[];
+  rows?: CertRow[];
   totals: {
     capital: number;
     bruto_total: number;
     impuesto_total: number;
+    base_neta?: number;
     reparto_valor: number;
     capitalizacion_valor: number;
     deducciones_total: number;
@@ -80,9 +96,20 @@ export function generateReporteBelloPdfHtml(
 
   fundsData.forEach((fData) => {
     const moneda = fData.fondo.moneda || (fData.fondo.id_fondo.includes('USD') ? 'USD' : 'PEN');
-    const allRows = fData.rows || [];
-    const totals = fData.totals;
-    const certCount = allRows.filter(r => r.tipo === 'PADRE').length;
+    
+    // Extraer filas contables: ya sea desde fData.rows o fData.blocks[0].rows
+    const allRows: CertRow[] = (fData.rows && fData.rows.length > 0)
+      ? fData.rows
+      : (fData.blocks?.[0]?.rows || []);
+
+    const totals = fData.totals || {
+      capital: 0, bruto_total: 0, impuesto_total: 0, base_neta: 0,
+      reparto_valor: 0, capitalizacion_valor: 0, deducciones_total: 0,
+      penalidad_rescate: 0, devolucion_capital: 0, neto_total: 0,
+      monto_transferir_total: 0, capital_final: 0
+    };
+
+    const certCount = allRows.filter(r => r.tipo === 'PADRE' || (!r.tipo && !r.is_aumento)).length;
 
     // Regla de Oro: Exacto 25 filas contables por hoja A4 Landscape
     const ROWS_PER_PAGE = 25;
@@ -102,10 +129,7 @@ export function generateReporteBelloPdfHtml(
           <table class="top-header-table">
             <tr>
               <td style="width: 180px; text-align: left; vertical-align: middle;">
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 900; font-size: 13pt; color: #0284c7; letter-spacing: -0.5px; line-height: 1;">
-                  GEEK<span style="color: #0f172a;">SOFT</span>
-                  <div style="font-size: 5.5pt; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-top: 1px;">TECHNOLOGIES</div>
-                </div>
+                <img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft" alt="Geeksoft">
               </td>
               <td class="text-center" style="vertical-align: middle;">
                 <div class="report-main-title">REPORTE INTEGRAL DE LIQUIDACIÓN Y AUDITORÍA</div>
@@ -186,45 +210,62 @@ export function generateReporteBelloPdfHtml(
             </thead>
             <tbody>
               ${pageRows.map((r) => {
-                if (r.tipo === 'AUMENTO') {
+                const certId = r.id || r.id_certificado || '';
+                const titular = r.inversionista || r.titular || '';
+                const isAumento = r.tipo === 'AUMENTO' || (r.is_aumento === true);
+                const nOrden = r.n_orden || r.num || (isAumento ? '-' : '');
+                const capBase = r.capital !== undefined ? r.capital : (r.capital_base || 0);
+                const intBruto = r.bruto_total !== undefined ? r.bruto_total : (r.bruto || 0);
+                const irImp = r.impuesto_total !== undefined ? r.impuesto_total : (r.impuesto || 0);
+                const baseNeta = r.base_neta !== undefined ? r.base_neta : (intBruto && irImp ? intBruto - irImp : (r.neto || 0));
+                const capZ = r.capitalizacion !== undefined ? r.capitalizacion : (r.capitalizacion_valor || 0);
+                const repVal = r.reparto_valor !== undefined ? r.reparto_valor : (r.reparto || 0);
+                const deducTot = r.deducciones_total !== undefined ? r.deducciones_total : (r.deducciones || 0);
+                const penResc = r.penalidad_rescate !== undefined ? r.penalidad_rescate : (r.penalidad || 0);
+                const netoFin = r.neto_total !== undefined ? r.neto_total : (r.neto !== undefined ? r.neto : (repVal - deducTot));
+                const rescatesTot = r.devolucion_capital !== undefined ? r.devolucion_capital : (r.rescate || 0);
+                const transfTot = r.monto_transferir !== undefined ? r.monto_transferir : (r.monto_transferido || 0);
+                const capFin = r.capital_final || 0;
+
+                if (isAumento) {
                   return `
                     <tr class="aumento-row">
                       <td class="text-center">-</td>
                       <td style="font-family: monospace; font-size: 5.8pt; padding-left: 6px;">&rdsh; AUMENTO ${r.fecha_ingreso_str || ''}</td>
-                      <td></td>
+                      <td style="font-style: italic; color: #0284c7;">└─ Incremento de Capital</td>
                       <td class="text-right" style="color: #64748b;">-</td>
-                      <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtVal(r.bruto)}</td>
-                      <td class="text-right" style="color: #dc2626;">${fmtVal(r.impuesto)}</td>
-                      <td class="text-right">${fmtVal(r.neto)}</td>
-                      <td class="text-right">${fmtVal(r.capitalizacion)}</td>
-                      <td class="text-right" style="color: #059669; font-weight: 700;">${fmtVal(r.reparto)}</td>
-                      <td class="text-right">${fmtVal(r.deducciones)}</td>
-                      <td class="text-right">${fmtVal(r.penalidad)}</td>
-                      <td class="text-right" style="font-weight: 700;">${fmtVal(r.neto)}</td>
-                      <td class="text-right">${fmtVal(r.rescate)}</td>
-                      <td class="text-right">${fmtVal(r.monto_transferir)}</td>
-                      <td class="text-right" style="font-weight: 700;">${fmtVal(r.capital_final)}</td>
+                      <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtVal(intBruto)}</td>
+                      <td class="text-right" style="color: #dc2626;">${fmtVal(irImp)}</td>
+                      <td class="text-right">${fmtVal(baseNeta)}</td>
+                      <td class="text-right">${fmtVal(capZ)}</td>
+                      <td class="text-right" style="color: #059669; font-weight: 700;">${fmtVal(repVal)}</td>
+                      <td class="text-right">${fmtVal(deducTot)}</td>
+                      <td class="text-right">${fmtVal(penResc)}</td>
+                      <td class="text-right" style="font-weight: 700;">${fmtVal(netoFin)}</td>
+                      <td class="text-right">${fmtVal(rescatesTot)}</td>
+                      <td class="text-right">${fmtVal(transfTot)}</td>
+                      <td class="text-right" style="font-weight: 700;">${fmtVal(capFin)}</td>
                     </tr>
                   `;
                 }
 
                 return `
                   <tr>
-                    <td class="text-center font-bold" style="background: #f8fafc; font-weight: 800;">${r.num || ''}</td>
-                    <td class="font-mono font-bold" style="font-weight: 700; font-size: 5.8pt;">${r.id_certificado}</td>
-                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">${r.inversionista}</td>
-                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(r.capital)}</td>
-                    <td class="text-right text-blue-600" style="color: #0284c7; font-weight: 700;">${fmtVal(r.bruto)}</td>
-                    <td class="text-right text-red-600" style="color: #dc2626;">${fmtVal(r.impuesto)}</td>
-                    <td class="text-right">${fmtVal(r.bruto && r.impuesto ? r.bruto - r.impuesto : r.neto)}</td>
-                    <td class="text-right">${fmtVal(r.capitalizacion)}</td>
-                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(r.reparto)}</td>
-                    <td class="text-right" style="color: #64748b;">${fmtVal(r.deducciones)}</td>
-                    <td class="text-right" style="color: #dc2626;">${fmtVal(r.penalidad)}</td>
-                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(r.neto)}</td>
-                    <td class="text-right text-red-600" style="color: #dc2626; font-weight: 700;">${fmtVal(r.rescate)}</td>
-                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(r.monto_transferir)}</td>
-                    <td class="text-right font-bold text-slate-900" style="font-weight: 800;">${fmtVal(r.capital_final)}</td>
+                    <td class="text-center font-bold" style="background: #f8fafc; font-weight: 800;">${nOrden}</td>
+                    <td class="font-mono font-bold" style="font-weight: 700; font-size: 5.8pt;">${certId}</td>
+                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">${titular}</td>
+                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(capBase)}</td>
+                    <td class="text-right text-blue-600" style="color: #0284c7; font-weight: 700;">${fmtVal(intBruto)}</td>
+                    <td class="text-right text-red-600" style="color: #dc2626;">${fmtVal(irImp)}</td>
+                    <td class="text-right">${fmtVal(baseNeta)}</td>
+                    <td class="text-right">${fmtVal(capZ)}</td>
+                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(repVal)}</td>
+                    <td class="text-right" style="color: #64748b;">${fmtVal(deducTot)}</td>
+                    <td class="text-right" style="color: #dc2626;">${fmtVal(penResc)}</td>
+                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(netoFin)}</td>
+                    <td class="text-right text-red-600" style="color: #dc2626; font-weight: 700;">${fmtVal(rescatesTot)}</td>
+                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(transfTot)}</td>
+                    <td class="text-right font-bold text-slate-900" style="font-weight: 800;">${fmtVal(capFin)}</td>
                   </tr>
                 `;
               }).join('')}
@@ -235,7 +276,7 @@ export function generateReporteBelloPdfHtml(
                   <td class="text-right">${fmtVal(totals.capital)}</td>
                   <td class="text-right">${fmtVal(totals.bruto_total)}</td>
                   <td class="text-right">${fmtVal(totals.impuesto_total)}</td>
-                  <td class="text-right">${fmtVal(totals.bruto_total - totals.impuesto_total)}</td>
+                  <td class="text-right">${fmtVal(totals.base_neta !== undefined ? totals.base_neta : totals.bruto_total - totals.impuesto_total)}</td>
                   <td class="text-right">${fmtVal(totals.capitalizacion_valor)}</td>
                   <td class="text-right">${fmtVal(totals.reparto_valor)}</td>
                   <td class="text-right">${fmtVal(totals.deducciones_total)}</td>
@@ -297,6 +338,7 @@ export function generateReporteBelloPdfHtml(
             width: 100%; border-collapse: collapse; margin-bottom: 2px;
           }
           .top-header-table td { border: none; padding: 0; }
+          .logo-geeksoft { height: 26px; width: auto; object-fit: contain; }
           .logo-inandes { height: 24px; width: auto; object-fit: contain; }
           .report-main-title {
             font-weight: 900; font-size: 10pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
