@@ -73,9 +73,9 @@ CREATE POLICY "Permitir eliminacion anon de valor cuota" ON public.crm_valor_cuo
 +------------------------------------+--------------------------------+-----------------------------+
 | 1. FILTROS DEL PERÍODO             | 2. AUDITORÍA & REPORTES        | 3. PERSISTENCIA & ROLLBACK  |
 | • 📅 Mes de Cierre / Período       | • [📊 Descargar Excel V27]     | • [💾 Oficializar Cierre]   |
-|   [ Febrero (Ene-Feb · Bimestre 1) ]| • [📑 Imprimir / PDF Oficial]  | • [🔄 Reabrir / Rollback]   |
+|   [ Febrero (Ene-Feb · Bimestre 1) ]| • [📑 Descargar PDF Oficial V27]  | • [🔄 Reabrir / Rollback]   |
 | • 🎯 Fondo a Liquidar              |                                |                             |
-|   [ TODOS LOS FONDOS (5 Fondos)   ]| • Matriz Homologada V27        | • Tabla: crm_valor_cuota... |
+|   [ TODOS LOS FONDOS (5 Fondos)   ]| • Matriz Homologada V27 (1:1)  | • Tabla: crm_valor_cuota... |
 +------------------------------------+--------------------------------+-----------------------------+
 | 📊 MATRIZ CONTINUA TRANSPUESTA NAV V27 (Auditoría Día a Día con 17 Filas Contables)                |
 +---------------------------------------------------------------------------------------------------+
@@ -87,7 +87,7 @@ CREATE POLICY "Permitir eliminacion anon de valor cuota" ON public.crm_valor_cuo
    * Badges de estado en tiempo real (`● REGISTRADO` vs `● POR REGISTRAR`) consultados dinámicamente desde `crm_valor_cuota_eventos`.
 2. **Panel en 3 Columnas Horizontales**:
    * **Columna 1**: Desplegables inteligentes contextualmente filtrados.
-   * **Columna 2**: Generación multi-pestaña en ExcelJS y exportación formal en PDF.
+   * **Columna 2**: Generación multi-pestaña en ExcelJS y exportación formal en PDF A4 Landscape 1:1 (`pdfGeneratorValorCuotaV27.ts`).
    * **Columna 3**: Oficialización con inserción masiva en base de datos y Rollback con eliminación transaccional por fecha de corte.
 
 ---
@@ -100,7 +100,7 @@ CREATE POLICY "Permitir eliminacion anon de valor cuota" ON public.crm_valor_cuo
 | **`CLON`** | Creación de módulos espejo y servicios de persistencia | `src/services/fondosService.ts` |
 | **`DIFF`** | Rediseño de `FondosPage.tsx` eliminando controles obsoletos | Commit `7918b7a` |
 | **`QC`** | Compilación TypeScript limpia | `npm run build` (`✓ 0 errores, 3.19s`) |
-| **`NOTA`** | Caso Pericial N° 04 registrado | `11.Metodo.Benoit.NAV.Retornos.md` |
+| **`NOTA`** | Casos Periciales N° 04, 05, 06 y 07 registrados | `11.Metodo.Benoit.NAV.Retornos.md` |
 
 ---
 
@@ -108,23 +108,25 @@ CREATE POLICY "Permitir eliminacion anon de valor cuota" ON public.crm_valor_cuo
 
 * **Servidor**: Contabo VPS (`169.58.168.107` / Coolify).
 * **Contenedor**: `yjttbctaekty8zb5ode0hiu4` (`inandes.geeksoft.tech`).
-* **Commit**: `7918b7a` (*feat(fondos): reingenieria integral UI de cierres y persistencia de valor cuota NAV V27*).
+* **Commit Actual**: `b3596f6` (*fix(pdf): cuadratura perfecta 1:1 A4 Landscape, margin 0 y paginacion mensual para retornos y valor cuota*).
 
 ---
 
-## 🛠️ 6. Inventario de Scripts Forenses y de Convergencia
+## 🛠️ 6. Inventario de Scripts Forenses y Módulos de Generación
 
-Para certificar la fidelidad matemática, la creación de la base de datos y la comparación con el Excel de Ricardo Gallo, se desarrollaron y ejecutaron los siguientes scripts en el workspace:
+Para certificar la fidelidad matemática, la creación de la base de datos, la comparación con el Excel de Ricardo Gallo y la exportación gráfica, se desarrollaron los siguientes módulos y scripts:
 
-| Script | Propósito / Función | Resultado / Métrica |
+| Script / Módulo | Propósito / Función | Resultado / Métrica |
 | :--- | :--- | :--- |
+| [`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts) | **Generador Formal PDF Valor Cuota NAV V27**: Renderiza en A4 Landscape 1:1 cada bloque mensual con matriz contable diaria, tipografía Consolas y formato Dark Navy (#0F172A). | Paginación mensual perfecta sin desbordes. |
+| [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) | **Helper Universal de Descarga PDF**: Conecta con backend FastAPI y cuenta con timeout AbortController (2.5s) y fallback garantizado en iframe con `html2pdf.js`. | Descarga instantánea (<3s) en cliente y servidor. |
 | [`scripts/qc_motor_nav_v27_convergence.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/qc_motor_nav_v27_convergence.py) | **Calibración Matemática del Motor NAV V27**: Compara día a día los 5 fondos contra el Excel manual de Ricardo Gallo (`REPORTE VC FDO NSG TODOS 1BIM 2026 - 2026 08 24.xlsx`) aplicando la fórmula de equilibrio contable ($P\&L = 0$). | **295 / 295 Aserciones Aprobadas** (100.00% convergencia, $\Delta = 0.000000$). |
 | [`scripts/qc_compare_excels.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/qc_compare_excels.py) | **Auditoría Comparativa de Excels**: Contrasta celda por celda el archivo exportado desde producción (`Reporte_NAV_V27_Export_2026_20260829_180714.xlsx`) versus el benchmark de Ricardo Gallo, analizando bases de días (360 vs 365) y tamaño de cartera. | Identifica y certifica que la diferencia numérica proviene de la cartera viva real de Supabase vs corte manual estático. |
 | [`scripts/execute_ddl_vps.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/execute_ddl_vps.py) | **Ejecución DDL Remota por SSH**: Conecta al VPS Contabo (`169.58.168.107`) y ejecuta el script de creación de `crm_valor_cuota_eventos` dentro del contenedor PostgreSQL (`supabase-db-3tnh2d2coj2iajith0gw3e07`). | Tabla, índices y políticas RLS creados con éxito. |
 | [`scripts/check_vps_deploy.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/check_vps_deploy.py) | **Monitoreo de Despliegue en VPS**: Inspecciona el estado de los contenedores Docker en Contabo y verifica la salida de logs y salud de Coolify. | Certifica contenedores activos y versión de commit en producción. |
-| [`scripts/convert_md_to_pdf.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/convert_md_to_pdf.py) | **Compilador Markdown a PDF Ejecutivo**: Convierte automáticamente las notas técnicas de Obsidian a documentos PDF formateados con CSS corporativo. | Generación de PDFs oficiales del proyecto. |
 | [`audio_transcrip/transcribe_whisper.py`](file:///c:/Users/rguti/Inandes.ERP.React/audio_transcrip/transcribe_whisper.py) | **Transcriptor de Audio con IA**: Transcribe audios `.ogg` a texto para extraer requerimientos directos del usuario. | Transcripción de `UI.CIERRES.NAV27.ogg`. |
 
 ---
 
-*Documentación oficializada y registrada por Detective Benoit Blanc - 29 de Agosto de 2026.*
+*Documentación oficializada y actualizada por Detective Benoit Blanc - 29 de Agosto de 2026.*
+
