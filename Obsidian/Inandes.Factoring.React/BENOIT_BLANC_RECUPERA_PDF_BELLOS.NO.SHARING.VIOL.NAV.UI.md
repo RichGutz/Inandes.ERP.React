@@ -82,12 +82,20 @@ for (const r of rawRows) {
 
 ---
 
-## 🧪 3. Control de Calidad (`QC`)
-* **Compilación Frontend**: `npm run build` (`✓ 0 errores, 3.32s`).
-* **Despliegue Contabo**: Commit `aa75652` en `origin/main`.
-* **Guardián Systemd VPS**: **`HTTP 200 OK`**.
+## 🚀 4. Despliegue en Producción y Puntos de Control (Branch Tags)
+
+* **Servidor de Producción**: Contabo VPS (`169.58.168.107` / Coolify).
+* **Rama de Trabajo Activa**: `main` (Reglas 9 y 11).
+* **Último Commit**: `e2f8c59`.
+
+### 🏷️ Safe-Points Registrados en Git Web:
+
+| Branch Tag / Tag | Commit SHA | Hito Pericial / Funcionalidad Protegida |
+| :--- | :---: | :--- |
+| **`PDF.NAV.100.PERCENT`** | `e2f8c59` | Generación de Excel Maestro V27 y PDF WeasyPrint quincenal en 2 páginas con altura calibrada (-7%) y sin centavos en $\ge 100\text{k}$. |
 
 ---
 
 *Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
+
 
