@@ -17,6 +17,7 @@ Investigar, diagnosticar y resolver de forma quirúrgica los problemas que afect
 4. El error de *Sharing Violation / Acceso Denegado* en Windows al interactuar con popups `about:blank`.
 5. La reconexión oficial con el microservicio backend de **WeasyPrint** en el VPS Contabo Coolify (`169.58.168.107`).
 6. El enigma de la **desconexión del alias de red Docker** tras cada despliegue de Coolify.
+7. El caso del **encabezado huérfano** separado del banner, cards y grilla contable en WeasyPrint.
 
 ---
 
@@ -186,14 +187,82 @@ def probe_worker_health(host_ip, ssh_key_pass):
 
 ---
 
-## 📝 CASO PERICIAL V: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
+## 📄 CASO PERICIAL VII: El Enigma del Encabezado Huérfano y el Desbordamiento por Flexbox en WeasyPrint
+
+### 7.1. La Escena del Crimen (Captura de Pantalla del Usuario)
+* **Evidencia Visual**: En el PDF generado, la página comenzaba abruptamente con el **Banner Azul del Fondo** (`FONDO FDO NSG MIPYME PEN 01...`), seguido de las tarjetas KPI y la grilla contable, pero **el Encabezado Institucional (Logos Geeksoft e InAndes, Título Principal y Período) había desaparecido o quedado en una hoja anterior en blanco**.
+
+### 7.2. Autopsia de la Causa Raíz
+1. **La Incompatibilidad de WeasyPrint con `justify-content: space-between`**:
+   * En `pdfGeneratorBelloConDesglose.ts` se había definido:
+     ```css
+     .report-page {
+       width: 297mm;
+       min-height: 209mm;
+       max-height: 209mm;
+       padding: 6mm 8mm;
+       display: flex;
+       flex-direction: column;
+       justify-content: space-between;
+     }
+     ```
+   * **El Diagnóstico**: WeasyPrint es un motor de renderizado basado en CSS Paged Media. Al procesar `display: flex` con `justify-content: space-between` sobre un contenedor con `min-height: 209mm`, el algoritmo de salto de página de WeasyPrint calculaba que el bloque del encabezado institucional ocupaba suficiente espacio como para que la tabla contable de 25 filas desbordara los 209mm.
+   * **La Ruptura**: WeasyPrint partía el documento en dos: colocaba la tabla de logos y títulos en la Página 1, e iniciaba forzosamente la Página 2 con el banner azul y la grilla contable.
+
+2. **Falla de Imagen por Ruta Relativa en Backend**:
+   * La etiqueta `<img src="/Logo.Geeksoft.png">` fallaba porque WeasyPrint corre en el backend `/opt/erp_inandes/backend` y no tiene acceso al árbol público de archivos de Vite.
+
+### 7.3. La Solución Quirúrgica Aplicada (Fórmula A4 Landscape Continua)
+
+```mermaid
+graph TD
+    A[Eliminar display: flex y alturas fijas mm] --> B[Establecer @page margin: 4mm 6mm]
+    B --> C[Compactar paddings: Header, Banner, KPIs y 25 Rows]
+    C --> D[Incrustar Logos en Base64 / SVG inline]
+    D --> E[Renderizado 1:1 en Hoja Única A4 Landscape]
+```
+
+1. **Eliminación Total de Flexbox y Alturas Forzadas**:
+   ```css
+   @page {
+     size: A4 landscape;
+     margin: 4mm 6mm !important;
+   }
+   .report-page {
+     width: 100%;
+     margin: 0;
+     padding: 0;
+     page-break-after: always;
+     page-break-inside: avoid;
+     box-sizing: border-box;
+   }
+   ```
+2. **Compactación Vertical Milimétrica (Regla de los 200mm)**:
+   * **Encabezado Top**: Título 10pt (`line-height: 1.1`), subtítulo 6.8pt.
+   * **Banner Fondo**: Padding vertical 2px, tipografía 7.2pt.
+   * **Tarjetas KPI**: Tabla nativa `<table class="kpi-cards-table">` con padding de celda 2px 3px.
+   * **Grilla Contable**: Exacto 25 filas contables con `padding: 1.2px 2px; font-size: 6pt; line-height: 1.1;`.
+   * **Pie de Página**: Margen superior 2px, padding 1.5px.
+3. **Logos Nativos en Vector / Base64**:
+   * Geeksoft renderizado con tipografía HTML/SVG nativa sin peticiones de red.
+   * InAndes incrustado mediante Base64 (`data:image/jpeg;base64,...`).
+
+### 7.4. Protocolo para Replicar este Diseño en Cualquier Reporte Futuro
+Para garantizar que cualquier nuevo reporte PDF en WeasyPrint encaje al 100% sin saltos de página huérfanos:
+1. **Regla 1**: NUNCA usar `display: flex`, `flex-direction: column` o `justify-content: space-between` en `.report-page`. Usar siempre flujo de bloque (`display: block`) y tablas HTML nativas (`table-layout: fixed`).
+2. **Regla 2**: Usar siempre `@page { size: A4 landscape; margin: 4mm 6mm !important; }`.
+3. **Regla 3**: Limitar estrictamente a **25 filas por hoja** con altura de celda $\le 14\text{px}$ (`padding: 1.2px 2px`).
+
+---
+
+## 📝 CASO PERICIAL VIII: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
 
 ### 📌 Resumen de Archivos Clave del Ecosistema PDF:
 
 | Archivo | Responsabilidad |
 | :--- | :--- |
 | [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) | **Helper Único de Descarga**: Conecta con WeasyPrint en `/api/inversionistas/generate-pdf` y descarga el binario `.pdf`. |
-| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Maqueta la tabla contable A4 Landscape con 25 filas/hoja y cajas KPI nativas. |
+| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Maqueta la tabla contable A4 Landscape continua con 25 filas/hoja y cajas KPI nativas. |
 | [`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts) | **Plantilla HTML Valor Cuota**: Maqueta 1 hoja A4 Landscape por cada mes del período con matriz contable diaria. |
 | [`src/services/fondosService.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/services/fondosService.ts) | **Consumo Directo**: Jala el capital de apertura, aumentos e intereses diarios directo de `generateRetornosV40`. |
 | [`backend/routers/inversionistas.py`](file:///c:/Users/rguti/Inandes.ERP.React/backend/routers/inversionistas.py) | **Microservicio Backend**: Endpoint `/api/inversionistas/generate-pdf` con WeasyPrint. |
@@ -202,7 +271,7 @@ def probe_worker_health(host_ip, ssh_key_pass):
 
 ## 🚀 Despliegue en Producción
 * **Servidor**: Contabo VPS (`169.58.168.107` / Coolify).
-* **Commit Oficial**: `497744a` (*fix(pdf): restaurar conexion 100% al worker oficial WeasyPrint del backend segun commit 0b6d67b*).
+* **Commit Oficial**: `8f382b3` (*fix(pdf): unificar cabecera institucional, banner, cards y grilla contable en una sola hoja continua A4 landscape*).
 * **Rama**: `main` (Reglas 9 y 11).
 
 ---
