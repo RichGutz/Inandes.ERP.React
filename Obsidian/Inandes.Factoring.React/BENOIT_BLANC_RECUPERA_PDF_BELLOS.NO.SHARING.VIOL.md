@@ -22,6 +22,7 @@ Investigar, diagnosticar y resolver de forma quirúrgica los problemas que afect
 9. El misterio de la **grilla contable vacía ("0 Inversionistas")** y la restitución del **Logo Oficial Geeksoft en Base64**.
 10. El diseño del **Compaginador Inteligente Dinámico ($\le 50$ filas por hoja A4 Landscape)**.
 11. La autopsia del **PDF dañado/lento** mediante la **optimización al 95.8% de la Bóveda Base64 y validación de integridad binaria**.
+12. La homologación y **paridad matemática 1:1 de las 15 columnas Excel vs. PDF (Transferencias, Rescates y Neto Final)**, **burbujas KPI inteligentes** y el **aumento del +10% en el alto de filas**.
 
 ---
 
@@ -81,6 +82,8 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 - 4. window.open('about:blank'): Provocaba Sharing Violation en Windows al guardar.
 - 5. Traefik Proxy: Sin enrutamiento /api/ al contenedor FastAPI (Error 502 Bad Gateway).
 - 6. Logos Base64 gigantescos (455 KB por página) saturaban el payload JSON (2.4 MB) y causaban timeouts/archivos corruptos.
+- 7. Discrepancia en Transferencias/Rescates: El PDF no calculaba rTransferencia ni totTransferencia como el Excel.
+- 8. Cajas KPI rígidas mostraban bloques en 0 aunque no hubiera rescates o deducciones.
 
 + [NUEVO: ARQUITECTURA BENOIT BLANC RESTAURADA Y BLINDADA]
 + 1. src/config/apiConfig.ts:
@@ -92,8 +95,9 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 +    • Descarga directa de archivo binario %PDF-1.7 (CERO Sharing Violation).
 +
 + 3. src/utils/pdfGeneratorBelloConDesglose.ts & pdfGeneratorValorCuotaV27.ts:
-+    • Cajas KPI maquetadas en <table class="kpi-cards-table"> nativa.
-+    • 15 columnas contables con anchos fijos en píxeles (width: 75px, 60px, etc.).
++    • Paridad 1:1 con Excel Maestro: rTransferencia = rNetoFinal + rRescatesNetos.
++    • Cajas KPI inteligentes de cabecera: Se ocultan automáticamente si su valor es 0.
++    • Alto de filas +10% (padding: 1.2px 2px; font-size: 5.8pt; line-height: 1.15).
 +    • Compaginador Inteligente Dinámico: si Total Filas <= 50 -> 1 sola hoja A4 Landscape.
 +    • Bóveda Base64 Optimizada: InAndes (19 KB) y Geeksoft (6 KB) -> 95.8% de reducción de peso.
 +
@@ -177,32 +181,55 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
    * Ese volumen saturaba el buffer de red y forzaba a WeasyPrint a decodificar imágenes masivas en cada hoja, provocando un *timeout* intermedio. Traefik devolvía un cuerpo truncado o un error HTML `504 Gateway Timeout` que el navegador guardaba como `.pdf`. Al abrirlo, el visor de PDF reportaba archivo dañado.
 
 ### 15.3. La Solución Quirúrgica de Alto Rendimiento
-
-```mermaid
-graph TD
-    A[Logo InAndes: 455 KB -> 19 KB] --> C[Payload JSON pasa de 2.4 MB a 221 KB]
-    B[Logo Geeksoft: 126 KB -> 6 KB] --> C
-    C --> D[WeasyPrint compila 5 fondos en 5.5s]
-    D --> E[Descarga binaria %PDF-1.7 100% íntegra]
-```
-
-1. **Compresión y Optimización LANCZOS con PIL**:
-   * `LOGO_INANDES_BASE64`: Reducido de 455,704 chars a **19,120 chars (95.8% de ahorro)** manteniendo nitidez vectorial.
-   * `LOGO_GEEKSOFT_BASE64`: Reducido a **6,020 chars**.
-   * **Tamaño Total del Payload**: Pasó de **2,367 KB a solo 221 KB** (10 veces más ligero).
-2. **Blindaje de Integridad en `pdfDownloadHelper.ts`**:
-   * Si la respuesta del servidor es menor a 500 bytes (indicador de error HTTP/HTML), se cancela la descarga y se arroja la excepción detallada, impidiendo que el navegador descargue archivos vacíos o corruptos.
+1. **Compresión LANCZOS con PIL**: `LOGO_INANDES_BASE64` reducido a **19,120 chars** (95.8% ahorro) y `LOGO_GEEKSOFT_BASE64` a **6,020 chars**. Payload global pasó de **2.4 MB a 221 KB**.
+2. **Validación de Integridad**: Control en `pdfDownloadHelper.ts` que bloquea descargas si el blob mide menos de 500 bytes.
 
 ---
 
-## 📝 CASO PERICIAL XVI: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
+## 🔍 CASO PERICIAL XVII: Paridad Matemática 1:1 Excel vs. PDF (Transferencias y Rescates), Burbujas KPI Inteligentes y Alto de Filas +10%
+
+### 17.1. La Escena del Crimen
+* **Evidencia**: Columnas como `TRANSFERENCIAS`, `RESCATES` y `NETO FINAL` calculadas en el Excel no cuadraban o no aparecían en el PDF. Además, las burbujas KPI de cabecera se mostraban estáticas incluso cuando un fondo no tenía rescates o deducciones, y el usuario requería mayor aire visual (+10% de alto de fila).
+
+### 17.2. Fórmulas de Paridad Homologadas 1:1
+
+```typescript
+// 1. En cada fila contable regular:
+const rNetoFinal = isAumento ? 0 : (r.neto_total !== undefined ? r.neto_total : Math.round(((repVal || 0) - (deducTot || 0)) * 100) / 100);
+const rDevolucionCap = isAumento ? 0 : (r.devolucion_capital !== undefined ? r.devolucion_capital : (r.rescate || 0));
+const rRescatesNetos = isAumento ? 0 : Math.round(((rDevolucionCap || 0) - (penResc || 0)) * 100) / 100;
+const rTransferencia = isAumento ? 0 : Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+
+// 2. En la fila de totales del fondo:
+const totNetoFinal = totals.neto_total !== undefined ? totals.neto_total : Math.round(((totals.reparto_valor || 0) - (totals.deducciones_total || 0)) * 100) / 100;
+const totRescatesNetos = Math.round(((totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0)) * 100) / 100;
+const totTransferencia = Math.round((totNetoFinal + totRescatesNetos) * 100) / 100;
+```
+
+### 17.3. Comportamiento Inteligente de Burbujas KPI
+* `CAPITAL BASE INICIAL`: Siempre visible.
+* `INTERÉS BRUTO DEVENGADO`: Siempre visible.
+* `RETENCIÓN IR 5%`: Visible solo si `totals.impuesto_total > 0`.
+* `REPARTO EN EFECTIVO`: Visible solo si `totals.reparto_valor > 0`.
+* `DEDUCCIONES TOTALES`: Visible solo si `totals.deducciones_total > 0`.
+* `PENALIDADES RESCATE`: Visible solo si `totals.penalidad_rescate > 0`.
+* `DEVOLUCIÓN DE CAPITAL / RESCATES`: Visible solo si `totals.devolucion_capital > 0`.
+* `TOTAL TRANSFERENCIAS`: Visible solo si `totTransferencia > 0`.
+* `CAPITAL FINAL VIGENTE`: Siempre visible.
+
+### 17.4. Ajuste Visual de Altura (+10%)
+* Se incrementó el padding de celda a `padding: 1.2px 2px; font-size: 5.8pt; line-height: 1.15;`, aportando exacto un **+10% de altura y legibilidad** por fila sin quebrar el techo de 50 filas por hoja A4 Landscape.
+
+---
+
+## 📝 CASO PERICIAL XVIII: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
 
 ### 📌 Resumen de Archivos Clave del Ecosistema PDF:
 
 | Archivo | Responsabilidad |
 | :--- | :--- |
 | [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) | **Helper Único de Descarga**: Validación de integridad binaria (>500 bytes) y descarga directa `.pdf`. |
-| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Compaginador Inteligente ($\le 50$ filas/hoja) y logos ultraligeros. |
+| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Paridad 1:1 con Excel, burbujas KPI inteligentes, compaginador $\le 50$ filas y alto +10%. |
 | [`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts) | **Plantilla HTML Valor Cuota**: Maqueta 1 hoja A4 Landscape por cada mes del período con matriz contable diaria. |
 | [`src/assets/base64Images.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/assets/base64Images.ts) | **Bóveda de Assets Base64**: Logos optimizados con reducción del 95.8% (`LOGO_INANDES_BASE64` y `LOGO_GEEKSOFT_BASE64`). |
 | [`backend/routers/inversionistas.py`](file:///c:/Users/rguti/Inandes.ERP.React/backend/routers/inversionistas.py) | **Microservicio Backend**: Endpoint `/api/inversionistas/generate-pdf` con WeasyPrint. |
@@ -214,7 +241,7 @@ graph TD
 
 * **Servidor de Producción**: Contabo VPS (`169.58.168.107` / Coolify).
 * **Rama de Trabajo Activa**: `main` (Reglas 9 y 11).
-* **Último Commit en Producción**: `e0e45ed` (*docs: actualizar bitacora Benoit Blanc con Caso XV*).
+* **Último Commit en Producción**: `bfbf91f` (*feat(pdf): paridad total Excel vs PDF 15 columnas, burbujas inteligentes y +10% alto de filas*).
 
 ### 🏷️ Safe-Points y Branch Tags Registrados en Git Web:
 
@@ -226,4 +253,3 @@ graph TD
 ---
 
 *Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
-
