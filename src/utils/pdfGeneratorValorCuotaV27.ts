@@ -29,6 +29,10 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
     if (isVc) {
       return n.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
     }
+    // Si el número tiene 6 o 7 dígitos enteros (>= 100,000), omitir centavos
+    if (Math.abs(n) >= 100000) {
+      return Math.round(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
@@ -82,17 +86,22 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
           const isComision = row.id.includes('COM.') || row.id.includes('(-)');
           const isPatrimonioCierre = row.id === 'PATRIMONIO TOTAL CIERRE';
           const isGananciaOperativa = row.id === 'GANANCIA OPERATIVA (Neta)';
+          const isCapitalApertura = row.id === 'TOTAL CAPITAL (Apertura)' || row.id === 'CUOTAS APERTURA' || row.id === 'PATRIMONIO TOTAL (Pre-Aportes)';
           const numVal = isAumento ? '-' : (row.num || '');
 
           const dailyCells = (row.cells || []).slice(chunk.startIdx, chunk.endIdx);
           
           // Cálculo del acumulado / total de cierre para la última columna en la Parte 2
-          let totalCierreVal = 0;
+          let totalCierreVal: any = '-';
           if (isSecondPart) {
             const allVals = (row.cells || []).map((c: any) => Number(c.val) || 0);
             if (isVc) {
               totalCierreVal = allVals.length > 0 ? allVals[allVals.length - 1] : 1.0;
+            } else if (isCapitalApertura) {
+              // No tiene sentido sumar saldos de apertura horizontalmente
+              totalCierreVal = '-';
             } else if (isPatrimonioCierre || row.id === '(=) CAPITAL ACUMULADO' || row.id === '(=) CUOTAS TOTALES CIERRE') {
+              // Mostrar el saldo exacto de cierre al final del mes
               totalCierreVal = allVals.length > 0 ? allVals[allVals.length - 1] : 0;
             } else {
               totalCierreVal = allVals.reduce((acc: number, v: number) => acc + v, 0);
@@ -106,7 +115,6 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
           if (isGananciaOperativa) rowClass += ' ganancia-row';
           if (isPatrimonioCierre) rowClass += ' patrimonio-row';
           if (isVc) rowClass += ' vc-row';
-
 
           const cellsHtml = dailyCells.map((c) => {
             const valStr = formatNumber(c.val, isVc);
@@ -122,7 +130,7 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
               ${cellsHtml}
               ${isSecondPart ? `
                 <td class="text-right font-bold col-total ${isVc ? 'text-blue-800' : (isPatrimonioCierre ? 'text-amber-900' : '')}">
-                  ${formatNumber(totalCierreVal, isVc)}
+                  ${totalCierreVal === '-' ? '-' : formatNumber(totalCierreVal, isVc)}
                 </td>
               ` : ''}
             </tr>
@@ -156,7 +164,7 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
             <table class="matrix-table">
               <thead>
                 <tr>
-                  <th class="text-center" style="width: 25px;">#</th>
+                  <th class="text-center" style="width: 24px;">#</th>
                   <th class="text-left" style="width: 180px;">CERTIFICADO / CONCEPTO</th>
                   ${chunkDays.map(d => `<th class="text-right col-day">${d}</th>`).join('')}
                   ${isSecondPart ? `<th class="text-right col-total-header" style="width: 65px;">TOTAL / CIERRE</th>` : ''}
@@ -199,7 +207,7 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
             padding: 0 !important; 
             background-color: #ffffff !important; 
             color: #0f172a; 
-            font-size: 5.8pt;
+            font-size: 5.4pt;
           }
           .report-page {
             width: 100%;
@@ -216,44 +224,46 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
             width: 100%; border-collapse: collapse; margin-bottom: 1.5px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 30px; width: auto; object-fit: contain; }
-          .logo-inandes { height: 25px; width: auto; object-fit: contain; }
+          .logo-geeksoft { height: 28px; width: auto; object-fit: contain; }
+          .logo-inandes { height: 24px; width: auto; object-fit: contain; }
           .report-main-title {
-            font-weight: 900; font-size: 9.5pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
+            font-weight: 900; font-size: 9.2pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
           }
           .report-sub-title {
-            font-size: 6.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
+            font-size: 6.2pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
           }
           .fund-badge-banner {
-            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.8pt; text-transform: uppercase; padding: 1.5px 8px; border-radius: 3px; text-align: center; margin: 1.5px auto 2px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
+            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.5pt; text-transform: uppercase; padding: 1.2px 8px; border-radius: 3px; text-align: center; margin: 1.2px auto 2px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
           }
           
-          /* Tabla Matriz Diaria Oxigenada */
+          /* Tabla Matriz Diaria Oxigenada (Reducida 7% en Altura) */
           table.matrix-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 5.8pt; line-height: 1.18; table-layout: fixed;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.4pt; line-height: 1.10; table-layout: fixed;
           }
           table.matrix-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 2px 1.5px; border: 1px solid #0f172a;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5pt; padding: 1.6px 1.2px; border: 1px solid #0f172a;
           }
           table.matrix-table td {
-            border: 1px solid #cbd5e1; padding: 1.4px 2px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            border: 1px solid #cbd5e1; padding: 1.1px 1.8px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           table.matrix-table tr:nth-child(even) { background-color: #f8fafc; }
           
           /* Filas Especiales */
           .col-num { font-weight: 800; background: #f1f5f9; }
-          .col-id { font-family: monospace; font-weight: 700; font-size: 5.5pt; }
+          .col-id { font-family: monospace; font-weight: 700; font-size: 5.2pt; }
           .aumento-row { color: #059669; font-style: italic; background-color: #f0fdf4 !important; }
           .aumento-id { padding-left: 6px !important; color: #059669 !important; border-left: 2.5px solid #10b981; }
           .totals-row { background-color: #f8fafc !important; font-weight: 800; border-top: 1px solid #94a3b8; }
           .totals-row td { color: #0f172a; font-weight: 800; }
+          .comision-row td { color: #dc2626 !important; background-color: #fff1f2 !important; }
+          .ganancia-row td { color: #059669 !important; background-color: #ecfdf5 !important; }
           .patrimonio-row { background-color: #fef3c7 !important; border-top: 1.5px solid #d97706; border-bottom: 1.5px solid #d97706; }
-          .patrimonio-row td { color: #78350f !important; font-weight: 900; font-size: 6.2pt; }
+          .patrimonio-row td { color: #78350f !important; font-weight: 900; font-size: 5.8pt; }
           .vc-row { background-color: #eff6ff !important; border-top: 1.5px solid #2563eb; border-bottom: 1.5px solid #2563eb; }
-          .vc-row td { color: #1e3a8a !important; font-weight: 900; font-size: 6.2pt; }
+          .vc-row td { color: #1e3a8a !important; font-weight: 900; font-size: 5.8pt; }
           .col-total-header { background-color: #1e3a8a !important; }
           .col-total { background-color: #f1f5f9; }
-          .spacer-row td { height: 5px; background: #f8fafc; border: none; }
+          .spacer-row td { height: 4px; background: #f8fafc; border: none; }
 
           .text-right { text-align: right; }
           .text-center { text-align: center; }
