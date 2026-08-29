@@ -52,7 +52,7 @@ export interface FundReportData {
     penalidad_rescate: number;
     devolucion_capital: number;
     neto_total: number;
-    monto_transferir_total: number;
+    monto_transferir_total?: number;
     capital_final: number;
   };
   blocks?: any[];
@@ -109,6 +109,13 @@ export function generateReporteBelloPdfHtml(
       monto_transferir_total: 0, capital_final: 0
     };
 
+    // Cálculos de Paridad Idénticos a Excel Maestro
+    const totNetoFinal = totals.neto_total !== undefined 
+      ? totals.neto_total 
+      : Math.round(((totals.reparto_valor || 0) - (totals.deducciones_total || 0)) * 100) / 100;
+    const totRescatesNetos = Math.round(((totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0)) * 100) / 100;
+    const totTransferencia = Math.round((totNetoFinal + totRescatesNetos) * 100) / 100;
+
     const certCount = allRows.filter(r => r.tipo === 'PADRE' || (!r.tipo && !r.is_aumento)).length;
 
     // 🎯 ALGORITMO COMPAGINADOR INTELIGENTE (<= 50 Filas por Hoja A4 Landscape)
@@ -149,7 +156,7 @@ export function generateReporteBelloPdfHtml(
                 <div class="report-sub-title">Período: ${fStartFund} al ${fEndFund} (${diasBaseFund} Días Base 365)</div>
               </td>
               <td style="width: 180px; text-align: right; vertical-align: middle;">
-                <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                <img src="data:image/png;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
               </td>
             </tr>
           </table>
@@ -159,7 +166,7 @@ export function generateReporteBelloPdfHtml(
             FONDO ${fData.fondo.nombre_fondo || fData.fondo.id_fondo} (${fData.fondo.id_fondo}) — MONEDA: ${moneda} &nbsp;|&nbsp; ${certCount} INVERSIONISTAS${parteStr}
           </div>
 
-          <!-- 3. Cajas KPI de Cabecera (Tabla Nativa Compacta) -->
+          <!-- 3. Cajas KPI de Cabecera Inteligentes (Solo se muestran si tienen valor > 0) -->
           <table class="kpi-cards-table">
             <tr>
               <td class="kpi-card">
@@ -170,14 +177,16 @@ export function generateReporteBelloPdfHtml(
                 <div class="kpi-title">INTERÉS BRUTO DEVENGADO</div>
                 <div class="kpi-value kpi-value-blue">${fmtValCurrency(totals.bruto_total, moneda)}</div>
               </td>
+              ${(totals.impuesto_total && totals.impuesto_total > 0) ? `
               <td class="kpi-card">
                 <div class="kpi-title">RETENCIÓN IR 5% (2DA CAT)</div>
                 <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.impuesto_total, moneda)}</div>
-              </td>
+              </td>` : ''}
+              ${(totals.reparto_valor && totals.reparto_valor > 0) ? `
               <td class="kpi-card">
                 <div class="kpi-title">REPARTO EN EFECTIVO</div>
                 <div class="kpi-value kpi-value-green">${fmtValCurrency(totals.reparto_valor, moneda)}</div>
-              </td>
+              </td>` : ''}
               ${(totals.deducciones_total && totals.deducciones_total > 0) ? `
               <td class="kpi-card">
                 <div class="kpi-title">DEDUCCIONES TOTALES</div>
@@ -193,6 +202,11 @@ export function generateReporteBelloPdfHtml(
                 <div class="kpi-title">DEVOLUCIÓN DE CAPITAL</div>
                 <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.devolucion_capital, moneda)}</div>
               </td>` : ''}
+              ${(totTransferencia && totTransferencia > 0) ? `
+              <td class="kpi-card">
+                <div class="kpi-title">TOTAL TRANSFERENCIAS</div>
+                <div class="kpi-value kpi-value-green">${fmtValCurrency(totTransferencia, moneda)}</div>
+              </td>` : ''}
               <td class="kpi-card">
                 <div class="kpi-title">CAPITAL FINAL VIGENTE</div>
                 <div class="kpi-value kpi-value-darkblue">${fmtValCurrency(totals.capital_final, moneda)}</div>
@@ -200,7 +214,7 @@ export function generateReporteBelloPdfHtml(
             </tr>
           </table>
 
-          <!-- 4. Grilla Contable Oficial (15 Columnas Estrictas) -->
+          <!-- 4. Grilla Contable Oficial (15 Columnas Estrictas con Alto +10%) -->
           <table class="data-table">
             <thead>
               <tr>
@@ -235,9 +249,12 @@ export function generateReporteBelloPdfHtml(
                 const repVal = r.reparto_valor !== undefined ? r.reparto_valor : (r.reparto || 0);
                 const deducTot = r.deducciones_total !== undefined ? r.deducciones_total : (r.deducciones || 0);
                 const penResc = r.penalidad_rescate !== undefined ? r.penalidad_rescate : (r.penalidad || 0);
-                const netoFin = r.neto_total !== undefined ? r.neto_total : (r.neto !== undefined ? r.neto : (repVal - deducTot));
-                const rescatesTot = r.devolucion_capital !== undefined ? r.devolucion_capital : (r.rescate || 0);
-                const transfTot = r.monto_transferir !== undefined ? r.monto_transferir : (r.monto_transferido || 0);
+                
+                // Mapeo Paritario 1:1 con Excel Maestro
+                const rNetoFinal = isAumento ? 0 : (r.neto_total !== undefined ? r.neto_total : Math.round(((repVal || 0) - (deducTot || 0)) * 100) / 100);
+                const rDevolucionCap = isAumento ? 0 : (r.devolucion_capital !== undefined ? r.devolucion_capital : (r.rescate || 0));
+                const rRescatesNetos = isAumento ? 0 : Math.round(((rDevolucionCap || 0) - (penResc || 0)) * 100) / 100;
+                const rTransferencia = isAumento ? 0 : Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
                 const capFin = r.capital_final || 0;
 
                 if (isAumento) {
@@ -248,16 +265,16 @@ export function generateReporteBelloPdfHtml(
                       <td style="font-style: italic; color: #0284c7;">└─ Incremento de Capital</td>
                       <td class="text-right" style="color: #64748b;">-</td>
                       <td class="text-right" style="color: #0284c7; font-weight: 700;">${fmtVal(intBruto)}</td>
-                      <td class="text-right" style="color: #dc2626;">${fmtVal(irImp)}</td>
-                      <td class="text-right">${fmtVal(baseNeta)}</td>
-                      <td class="text-right">${fmtVal(capZ)}</td>
-                      <td class="text-right" style="color: #059669; font-weight: 700;">${fmtVal(repVal)}</td>
-                      <td class="text-right">${fmtVal(deducTot)}</td>
-                      <td class="text-right">${fmtVal(penResc)}</td>
-                      <td class="text-right" style="font-weight: 700;">${fmtVal(netoFin)}</td>
-                      <td class="text-right">${fmtVal(rescatesTot)}</td>
-                      <td class="text-right">${fmtVal(transfTot)}</td>
-                      <td class="text-right" style="font-weight: 700;">${fmtVal(capFin)}</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
+                      <td class="text-right" style="color: #64748b;">-</td>
                     </tr>
                   `;
                 }
@@ -275,9 +292,9 @@ export function generateReporteBelloPdfHtml(
                     <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(repVal)}</td>
                     <td class="text-right" style="color: #64748b;">${fmtVal(deducTot)}</td>
                     <td class="text-right" style="color: #dc2626;">${fmtVal(penResc)}</td>
-                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(netoFin)}</td>
-                    <td class="text-right text-red-600" style="color: #dc2626; font-weight: 700;">${fmtVal(rescatesTot)}</td>
-                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(transfTot)}</td>
+                    <td class="text-right font-bold" style="font-weight: 700;">${fmtVal(rNetoFinal)}</td>
+                    <td class="text-right text-red-600" style="color: #dc2626; font-weight: 700;">${fmtVal(rDevolucionCap)}</td>
+                    <td class="text-right text-emerald-600" style="color: #059669; font-weight: 700;">${fmtVal(rTransferencia)}</td>
                     <td class="text-right font-bold text-slate-900" style="font-weight: 800;">${fmtVal(capFin)}</td>
                   </tr>
                 `;
@@ -294,9 +311,9 @@ export function generateReporteBelloPdfHtml(
                   <td class="text-right">${fmtVal(totals.reparto_valor)}</td>
                   <td class="text-right">${fmtVal(totals.deducciones_total)}</td>
                   <td class="text-right">${fmtVal(totals.penalidad_rescate)}</td>
-                  <td class="text-right">${fmtVal(totals.neto_total)}</td>
+                  <td class="text-right">${fmtVal(totNetoFinal)}</td>
                   <td class="text-right">${fmtVal(totals.devolucion_capital)}</td>
-                  <td class="text-right">${fmtVal(totals.monto_transferir_total)}</td>
+                  <td class="text-right">${fmtVal(totTransferencia)}</td>
                   <td class="text-right">${fmtVal(totals.capital_final)}</td>
                 </tr>
               ` : ''}
@@ -351,7 +368,7 @@ export function generateReporteBelloPdfHtml(
             width: 100%; border-collapse: collapse; margin-bottom: 1.5px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 34px; width: auto; object-fit: contain; }
+          .logo-geeksoft { height: 32px; width: auto; object-fit: contain; }
           .logo-inandes { height: 26px; width: auto; object-fit: contain; }
           .report-main-title {
             font-weight: 900; font-size: 9.5pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
@@ -363,9 +380,9 @@ export function generateReporteBelloPdfHtml(
             background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.8pt; text-transform: uppercase; padding: 1.5px 8px; border-radius: 3px; text-align: center; margin: 1.5px auto 2px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
           }
           
-          /* Cajas KPI de EL BELLO */
+          /* Cajas KPI Inteligentes de EL BELLO */
           table.kpi-cards-table {
-            width: 100%; border-collapse: separate; border-spacing: 2.5px 0; margin-bottom: 2px; table-layout: fixed;
+            width: 100%; border-collapse: separate; border-spacing: 2.5px 0; margin-bottom: 2.5px; table-layout: fixed;
           }
           table.kpi-cards-table td.kpi-card {
             background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1.5px 2px; text-align: center; vertical-align: middle;
@@ -381,20 +398,20 @@ export function generateReporteBelloPdfHtml(
           .kpi-value-blue { color: #0284c7; }
           .kpi-value-darkblue { color: #1e3a8a; }
 
-          /* Tabla Contable Bello - Soporta hasta 50 Filas por Hoja */
+          /* Tabla Contable Bello - Alto +10% para Mayor Legibilidad */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.5pt; line-height: 1.05;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.8pt; line-height: 1.15;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 1.5px 1px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 1.8px 1.2px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 1px solid #cbd5e1; padding: 0.8px 1.5px; vertical-align: middle;
+            border: 1px solid #cbd5e1; padding: 1.2px 2px; vertical-align: middle;
           }
           table.data-table tr:nth-child(even) { background-color: #f8fafc; }
           table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
           table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 1.5px solid #059669; border-bottom: 1.5px solid #059669; }
-          table.data-table tr.totals-row td { color: #064e3b; font-size: 5.8pt; font-weight: 900; }
+          table.data-table tr.totals-row td { color: #064e3b; font-size: 6pt; font-weight: 900; }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
 
