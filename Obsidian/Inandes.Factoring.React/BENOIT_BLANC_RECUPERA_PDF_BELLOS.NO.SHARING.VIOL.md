@@ -20,6 +20,7 @@ Investigar, diagnosticar y resolver de forma quirúrgica los problemas que afect
 7. El caso del **encabezado huérfano** separado del banner, cards y grilla contable en WeasyPrint.
 8. La identificación del **"Asesino del Worker"** y la creación del **Guardián Inmortal de Red Systemd**.
 9. El misterio de la **grilla contable vacía ("0 Inversionistas")** y la restitución del **Logo Oficial Geeksoft en Base64**.
+10. El diseño del **Compaginador Inteligente Dinámico ($\le 50$ filas por hoja A4 Landscape)**.
 
 ---
 
@@ -79,7 +80,7 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 - 4. window.open('about:blank'): Provocaba Sharing Violation en Windows al guardar.
 - 5. Traefik Proxy: Sin enrutamiento /api/ al contenedor FastAPI (Error 502 Bad Gateway).
 - 6. pdfGeneratorBelloConDesglose.ts: Buscaba fData.rows inexistente (0 inversionistas).
-- 7. Logo Geeksoft: Texto HTML simulado en lugar de imagen oficial.
+- 7. Paginación rígida fija de 25 filas partía fondos de 36 filas innecesariamente en 2 hojas.
 
 + [NUEVO: ARQUITECTURA BENOIT BLANC RESTAURADA Y BLINDADA]
 + 1. src/config/apiConfig.ts:
@@ -95,7 +96,7 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 +    • 15 columnas contables con anchos fijos en píxeles (width: 75px, 60px, etc.).
 +    • Extracción robusta de filas: fData.rows || fData.blocks?.[0]?.rows || [].
 +    • Incrustación de Logo Oficial Geeksoft Base64 (LOGO_GEEKSOFT_BASE64) e InAndes.
-+    • Paginación mensual independiente (1 página A4 Landscape por mes en Valor Cuota).
++    • Compaginador Inteligente Dinámico: si Total Filas <= 50 -> 1 sola hoja A4 Landscape.
 +
 + 4. Infraestructura VPS Contabo Coolify (169.58.168.107):
 +    • inandes-alias-guardian.service (Daemon Systemd 24/7 vigilando y reconectando en <=1s).
@@ -128,21 +129,6 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 | **`NSGPEN03`** | Corte en Tránsito | Corte en Tránsito | **`0.00`** | 58 | 58 | ✅ 100% Homologado |
 | **`NSGUSD01`** | `$ 561,235.10` | `$ 561,235.10` | **`$ 0.00`** | 17 | 8 (Vigentes) | ✅ 100% Homologado |
 | **`NSGUSD02`** | `$ 2,862,366.87` | `$ 2,862,366.87` | **`$ 0.00`** | 52 | 52 | ✅ 100% Homologado |
-
----
-
-## 📄 CASO PERICIAL VII: El Enigma del Encabezado Huérfano y el Desbordamiento por Flexbox en WeasyPrint
-
-### 7.1. La Escena del Crimen (Captura de Pantalla del Usuario)
-* **Evidencia Visual**: En el PDF generado, la página comenzaba abruptamente con el **Banner Azul del Fondo** (`FONDO FDO NSG MIPYME PEN 01...`), seguido de las tarjetas KPI y la grilla contable, pero **el Encabezado Institucional (Logos Geeksoft e InAndes, Título Principal y Período) había desaparecido o quedado en una hoja anterior en blanco**.
-
-### 7.2. Autopsia de la Causa Raíz
-1. **La Incompatibilidad de WeasyPrint con `justify-content: space-between`**:
-   * Al procesar `display: flex` con `justify-content: space-between` sobre un contenedor con `min-height: 209mm`, WeasyPrint calculaba que el bloque superior ocupaba espacio suficiente para que las 25 filas desbordaran los 209mm, quebrando la página en dos.
-2. **La Solución (Regla de los 200mm A4 Landscape)**:
-   * Erradicación de flexbox (`display: block`).
-   * `@page { size: A4 landscape; margin: 4mm 6mm !important; }`.
-   * Compactación milimétrica de espaciados (título 10pt, banner 7.2pt, celdas `padding: 1.2px 2px`).
 
 ---
 
@@ -181,14 +167,61 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 
 ---
 
-## 📝 CASO PERICIAL XII: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
+## 📐 CASO PERICIAL XIII: Algoritmo de Compaginación Inteligente Dinámica ($\le 50$ Filas por Hoja)
+
+### 13.1. Requerimiento y Principio Financiero
+* En una hoja A4 Landscape (210mm alto x 297mm ancho), descontando el encabezado superior institucional, banner del fondo, tarjetas KPI de cabecera y pie de página, existe espacio vertical disponible para alojar hasta **50 filas contables continuas**.
+* **El Problema Previo**: Se usaba una partición rígida fija de 25 filas por hoja, provocando que fondos de 33 a 36 partícipes (como `NSGPEN01` o `NSGPEN02`) se partieran innecesariamente en dos páginas (`Parte 1 de 2` y `Parte 2 de 2`), dejando la segunda hoja semivacía.
+
+### 13.2. El Algoritmo Smart Paginator (Compaginación Inteligente)
+
+```mermaid
+graph TD
+    A[Contar total de filas del fondo N: Padres + Aumentos] --> B{¿N <= 50 Filas?}
+    B -- Sí --> C[Generar 1 Sola Hoja Completa A4 Landscape]
+    B -- No --> D[Dividir equitativamente en hojas de ~40 filas]
+    C --> E[Banner sin sufijo de parte + Totales en Hoja 1]
+    D --> F[Banner Parte k de M + Totales en Última Hoja]
+```
+
+```typescript
+// 🎯 Algoritmo de Compaginación Inteligente
+const MAX_ROWS_SINGLE_PAGE = 50;
+const ROWS_PER_PAGE_SPLIT = 40;
+
+let chunks: CertRow[][] = [];
+if (allRows.length <= MAX_ROWS_SINGLE_PAGE) {
+  // Cabe holgadamente en 1 sola hoja continua
+  chunks = [allRows];
+} else {
+  // Dividir equitativamente en páginas balanceadas
+  const numPages = Math.ceil(allRows.length / ROWS_PER_PAGE_SPLIT);
+  const chunkSize = Math.ceil(allRows.length / numPages);
+  for (let i = 0; i < allRows.length; i += chunkSize) {
+    chunks.push(allRows.slice(i, i + chunkSize));
+  }
+}
+
+const totalPagesFund = chunks.length;
+// Si totalPagesFund === 1, no imprime sufijo 'PARTE 1 DE 1'
+```
+
+### 13.3. Prueba Forense de Compaginación en Terminal VPS ([`test_smart_paginator_50rows.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/test_smart_paginator_50rows.py))
+* **Fondo `NSGPEN01` (36 Filas)**: Compaginado automáticamente en **1 sola página A4 Landscape** ($\le 50$).
+* **Fondo `NSGPEN02` (29 Filas)**: Compaginado automáticamente en **1 sola página A4 Landscape** ($\le 50$).
+* **Fondo `NSGPEN03` (58 Filas)**: Compaginado automáticamente en **2 páginas equilibradas de 29 y 29 filas** ($> 50$).
+* **Resultado WeasyPrint**: **`HTTP 200 OK`** (Cero desbordes, espaciado compacto con `font-size: 5.5pt; padding: 0.8px 1.5px;`).
+
+---
+
+## 📝 CASO PERICIAL XIV: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
 
 ### 📌 Resumen de Archivos Clave del Ecosistema PDF:
 
 | Archivo | Responsabilidad |
 | :--- | :--- |
 | [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) | **Helper Único de Descarga**: Conecta con WeasyPrint en `/api/inversionistas/generate-pdf` y descarga el binario `.pdf`. |
-| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Maqueta la tabla contable A4 Landscape continua con 25 filas/hoja, logo Geeksoft PNG y cajas KPI. |
+| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Compaginador Inteligente ($\le 50$ filas/hoja), logo Geeksoft PNG y cajas KPI. |
 | [`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts) | **Plantilla HTML Valor Cuota**: Maqueta 1 hoja A4 Landscape por cada mes del período con matriz contable diaria. |
 | [`src/assets/base64Images.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/assets/base64Images.ts) | **Bóveda de Assets Base64**: Contiene `LOGO_INANDES_BASE64` y `LOGO_GEEKSOFT_BASE64`. |
 | [`backend/routers/inversionistas.py`](file:///c:/Users/rguti/Inandes.ERP.React/backend/routers/inversionistas.py) | **Microservicio Backend**: Endpoint `/api/inversionistas/generate-pdf` con WeasyPrint. |
@@ -198,8 +231,9 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 
 ## 🚀 Despliegue en Producción
 * **Servidor**: Contabo VPS (`169.58.168.107` / Coolify).
-* **Commit Oficial**: `6b632dd` (*fix(pdf): renderizar logo oficial Geeksoft Base64 y mapear filas contables desde blocks[0].rows*).
+* **Commit Oficial**: `a769c45` (*feat(pdf): compaginador inteligente con limite dinamico de 50 filas por hoja A4 landscape y logo oficial Geeksoft*).
 * **Rama**: `main` (Reglas 9 y 11).
+* **Tag de Seguridad**: `PDF.RET.REN.PERFECTO` (Commit `98e0403`).
 
 ---
 
