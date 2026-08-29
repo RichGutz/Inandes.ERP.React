@@ -398,20 +398,20 @@ export function generateReporteBelloPdfHtml(
           .kpi-value-blue { color: #0284c7; }
           .kpi-value-darkblue { color: #1e3a8a; }
 
-          /* Tabla Contable Bello - Alto +10% para Mayor Legibilidad */
+          /* Tabla Contable Bello - Alto Oxigenado (+20% Total) para Máxima Legibilidad */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.8pt; line-height: 1.15;
+            width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 6.2pt; line-height: 1.22;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 1.8px 1.2px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.5pt; padding: 2.2px 1.5px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 1px solid #cbd5e1; padding: 1.2px 2px; vertical-align: middle;
+            border: 1px solid #cbd5e1; padding: 1.8px 2.5px; vertical-align: middle;
           }
           table.data-table tr:nth-child(even) { background-color: #f8fafc; }
           table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
           table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 1.5px solid #059669; border-bottom: 1.5px solid #059669; }
-          table.data-table tr.totals-row td { color: #064e3b; font-size: 6pt; font-weight: 900; }
+          table.data-table tr.totals-row td { color: #064e3b; font-size: 6.4pt; font-weight: 900; padding: 2px 2.5px; }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
 
