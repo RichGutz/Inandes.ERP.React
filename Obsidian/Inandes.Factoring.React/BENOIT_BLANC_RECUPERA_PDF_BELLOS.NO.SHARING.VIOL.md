@@ -210,12 +210,20 @@ graph TD
 
 ---
 
-## 🚀 Despliegue en Producción
-* **Servidor**: Contabo VPS (`169.58.168.107` / Coolify).
-* **Commit Oficial**: `7b2ee4b` (*perf(pdf): optimizar boveda base64 de logos (95% reduccion) y anadir validacion de integridad en pdfDownloadHelper*).
-* **Rama**: `main` (Reglas 9 y 11).
-* **Branch Tag de Respaldo**: `PDF.RET.REN.PERFECTO` (Commit `98e0403`).
+## 🚀 Despliegue en Producción y Puntos de Control (Branch Tags)
+
+* **Servidor de Producción**: Contabo VPS (`169.58.168.107` / Coolify).
+* **Rama de Trabajo Activa**: `main` (Reglas 9 y 11).
+* **Último Commit en Producción**: `e0e45ed` (*docs: actualizar bitacora Benoit Blanc con Caso XV*).
+
+### 🏷️ Safe-Points y Branch Tags Registrados en Git Web:
+
+| Branch Tag / Tag | Commit SHA | Estado / Hito Pericial |
+| :--- | :---: | :--- |
+| **`PDF.RET.REN.PERFECTO`** | `98e0403` | Generación de PDF WeasyPrint, grilla contable 15 cols, logo Geeksoft y guardián inmortal systemd. |
+| **`PDF.50FILAS.ULTRALIGERO.PERFECTO`** | `e0e45ed` | Compaginador inteligente ($\le 50$ filas/hoja), optimización de logos al 95.8% (221 KB) y descarga en 5.5s sin corrupción. |
 
 ---
 
 *Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
+
