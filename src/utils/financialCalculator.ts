@@ -528,7 +528,7 @@ export const generateRetornosV40 = async (
           "Payload_JSON_Audit": "",
           "Inversionista": "└─ Incremento de Capital",
           "Moneda": r.moneda,
-          "Capital Base": h.monto
+          "Capital Base": "-"
         };
         for (let k = 0; k < h.v_dias.length; k++) {
           hx[columnasFechasFund[k]] = Math.round(h.v_dias[k] * 1000000) / 1000000;
@@ -581,7 +581,7 @@ export const generateRetornosV40 = async (
       }
 
       // Actualizar acumuladores totales
-      fTotals.capital += (r.capital_base + aum_v);
+      fTotals.capital += r.capital_base;
       fTotals.bruto_total += bruto;
       fTotals.impuesto_total += imp;
       fTotals.base_neta += neta;

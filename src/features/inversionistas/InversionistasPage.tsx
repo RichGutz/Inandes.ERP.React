@@ -894,7 +894,7 @@ export const InversionistasPage: React.FC = () => {
             "-",
             r.id,
             "   └─ Incremento de Capital",
-            r.capital || 0,
+            "-",
             ...vDias,
             r.bruto_total || 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0

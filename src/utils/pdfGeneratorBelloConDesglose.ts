@@ -158,7 +158,7 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
                     <td class="text-center">-</td>
                     <td style="font-weight: 700;">${r.id}</td>
                     <td>└─ Incremento de Capital</td>
-                    <td class="text-right" style="font-weight: 700;">${fmtNum(r.capital)}</td>
+                    <td class="text-right">-</td>
                     <td class="text-right" style="font-weight: 700;">${fmtNum(r.bruto_total)}</td>
                     <td class="text-right">-</td>
                     <td class="text-right">-</td>
