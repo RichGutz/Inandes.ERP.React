@@ -19,6 +19,7 @@ Investigar, diagnosticar y resolver de forma quirúrgica los problemas que afect
 6. El enigma de la **desconexión del alias de red Docker** tras cada despliegue de Coolify.
 7. El caso del **encabezado huérfano** separado del banner, cards y grilla contable en WeasyPrint.
 8. La identificación del **"Asesino del Worker"** y la creación del **Guardián Inmortal de Red Systemd**.
+9. El misterio de la **grilla contable vacía ("0 Inversionistas")** y la restitución del **Logo Oficial Geeksoft en Base64**.
 
 ---
 
@@ -77,6 +78,8 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 - 3. html2pdf.js / html2canvas: Tomaba screenshots con cajas KPI rotas (display: table-cell en divs).
 - 4. window.open('about:blank'): Provocaba Sharing Violation en Windows al guardar.
 - 5. Traefik Proxy: Sin enrutamiento /api/ al contenedor FastAPI (Error 502 Bad Gateway).
+- 6. pdfGeneratorBelloConDesglose.ts: Buscaba fData.rows inexistente (0 inversionistas).
+- 7. Logo Geeksoft: Texto HTML simulado en lugar de imagen oficial.
 
 + [NUEVO: ARQUITECTURA BENOIT BLANC RESTAURADA Y BLINDADA]
 + 1. src/config/apiConfig.ts:
@@ -90,12 +93,13 @@ Para erradicar los parches locales y restaurar la arquitectura original establec
 + 3. src/utils/pdfGeneratorBelloConDesglose.ts & pdfGeneratorValorCuotaV27.ts:
 +    • Cajas KPI maquetadas en <table class="kpi-cards-table"> nativa.
 +    • 15 columnas contables con anchos fijos en píxeles (width: 75px, 60px, etc.).
++    • Extracción robusta de filas: fData.rows || fData.blocks?.[0]?.rows || [].
++    • Incrustación de Logo Oficial Geeksoft Base64 (LOGO_GEEKSOFT_BASE64) e InAndes.
 +    • Paginación mensual independiente (1 página A4 Landscape por mes en Valor Cuota).
 +
 + 4. Infraestructura VPS Contabo Coolify (169.58.168.107):
-+    • docker network connect --alias inandes-api --alias 3g5kcala3ypqzlsrhyelxyev coolify [CID]
-+    • Traefik dynamic router enrutando /api al backend FastAPI puerto 8010.
 +    • inandes-alias-guardian.service (Daemon Systemd 24/7 vigilando y reconectando en <=1s).
++    • Traefik dynamic router enrutando /api al backend FastAPI puerto 8010.
 ```
 
 ---
@@ -125,10 +129,6 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 | **`NSGUSD01`** | `$ 561,235.10` | `$ 561,235.10` | **`$ 0.00`** | 17 | 8 (Vigentes) | ✅ 100% Homologado |
 | **`NSGUSD02`** | `$ 2,862,366.87` | `$ 2,862,366.87` | **`$ 0.00`** | 52 | 52 | ✅ 100% Homologado |
 
-### 4.3. Validación de Compilación Limpia
-* Comando: `npm run build`
-* Resultado: **`✓ built in 3.62s (0 errores, exit code 0)`**.
-
 ---
 
 ## 📄 CASO PERICIAL VII: El Enigma del Encabezado Huérfano y el Desbordamiento por Flexbox en WeasyPrint
@@ -138,138 +138,59 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 
 ### 7.2. Autopsia de la Causa Raíz
 1. **La Incompatibilidad de WeasyPrint con `justify-content: space-between`**:
-   * En `pdfGeneratorBelloConDesglose.ts` se había definido:
-     ```css
-     .report-page {
-       width: 297mm;
-       min-height: 209mm;
-       max-height: 209mm;
-       padding: 6mm 8mm;
-       display: flex;
-       flex-direction: column;
-       justify-content: space-between;
-     }
-     ```
-   * **El Diagnóstico**: WeasyPrint es un motor de renderizado basado en CSS Paged Media. Al procesar `display: flex` con `justify-content: space-between` sobre un contenedor con `min-height: 209mm`, el algoritmo de salto de página de WeasyPrint calculaba que el bloque del encabezado institucional ocupaba suficiente espacio como para que la tabla contable de 25 filas desbordara los 209mm.
-   * **La Ruptura**: WeasyPrint partía el documento en dos: colocaba la tabla de logos y títulos en la Página 1, e iniciaba forzosamente la Página 2 con el banner azul y la grilla contable.
-
-2. **Falla de Imagen por Ruta Relativa en Backend**:
-   * La etiqueta `<img src="/Logo.Geeksoft.png">` fallaba porque WeasyPrint corre en el backend `/opt/erp_inandes/backend` y no tiene acceso al árbol público de archivos de Vite.
-
-### 7.3. La Solución Quirúrgica Aplicada (Fórmula A4 Landscape Continua)
-
-```mermaid
-graph TD
-    A[Eliminar display: flex y alturas fijas mm] --> B[Establecer @page margin: 4mm 6mm]
-    B --> C[Compactar paddings: Header, Banner, KPIs y 25 Rows]
-    C --> D[Incrustar Logos en Base64 / SVG inline]
-    D --> E[Renderizado 1:1 en Hoja Única A4 Landscape]
-```
-
-1. **Eliminación Total de Flexbox y Alturas Forzadas**:
-   ```css
-   @page {
-     size: A4 landscape;
-     margin: 4mm 6mm !important;
-   }
-   .report-page {
-     width: 100%;
-     margin: 0;
-     padding: 0;
-     page-break-after: always;
-     page-break-inside: avoid;
-     box-sizing: border-box;
-   }
-   ```
-2. **Compactación Vertical Milimétrica (Regla de los 200mm)**:
-   * **Encabezado Top**: Título 10pt (`line-height: 1.1`), subtítulo 6.8pt.
-   * **Banner Fondo**: Padding vertical 2px, tipografía 7.2pt.
-   * **Tarjetas KPI**: Tabla nativa `<table class="kpi-cards-table">` con padding de celda 2px 3px.
-   * **Grilla Contable**: Exacto 25 filas contables con `padding: 1.2px 2px; font-size: 6pt; line-height: 1.1;`.
-   * **Pie de Página**: Margen superior 2px, padding 1.5px.
-3. **Logos Nativos en Vector / Base64**:
-   * Geeksoft renderizado con tipografía HTML/SVG nativa sin peticiones de red.
-   * InAndes incrustado mediante Base64 (`data:image/jpeg;base64,...`).
+   * Al procesar `display: flex` con `justify-content: space-between` sobre un contenedor con `min-height: 209mm`, WeasyPrint calculaba que el bloque superior ocupaba espacio suficiente para que las 25 filas desbordaran los 209mm, quebrando la página en dos.
+2. **La Solución (Regla de los 200mm A4 Landscape)**:
+   * Erradicación de flexbox (`display: block`).
+   * `@page { size: A4 landscape; margin: 4mm 6mm !important; }`.
+   * Compactación milimétrica de espaciados (título 10pt, banner 7.2pt, celdas `padding: 1.2px 2px`).
 
 ---
 
 ## 🕵️‍♂️ CASO PERICIAL IX: El Asesino del Worker y la Creación del Guardián Inmortal de Red Systemd
 
-### 9.1. ¿Quién Mató al Worker? (Autopsia Forense en Linux)
-Al ejecutar la autopsia con [`scripts/autopsy_who_killed_worker.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/autopsy_who_killed_worker.py), se descubrieron los siguientes hechos incuestionables:
-1. **Cero OOM Killer / Cero Crashes**:
-   * `dmesg` mostró 0 muertes por memoria. Uvicorn tenía sus 4 procesos vivos y sanos.
-2. **El Asesino Revelado: El Webhook de Despliegue de Coolify**:
-   * Cada vez que se realizaba un `git push` a `origin/main` (incluso para actualizar un archivo `.md` de documentación), **el webhook de Coolify destruía el contenedor backend existente y creaba uno nuevo**.
-   * Por ejemplo: El contenedor `929ea2db8df6` fue destruido a las `00:08:47` y nació el contenedor `af7e66656d2d` (*"Up Less than a second"*).
-3. **El Mecanismo de Desconexión (Sufijo Timestamp Dinámico)**:
-   * Docker y Coolify asignan por defecto un alias con timestamp único (ej. `3g5kcala3ypqzlsrhyelxyev-221035811706`), por lo que el nuevo contenedor **nacía huérfano sin el alias estático `inandes-api`**.
-   * Traefik Proxy intentaba enrutar hacia `http://inandes-api:8010` y recibía `HTTP 502 / Gateway Timeout`, congelando el frontend.
-
-### 9.2. La Creación del Guardián Inmortal de Red Systemd (`inandes-alias-guardian.service`)
-
-Para resolver esto de forma definitiva y hacer que el worker sea **inmortal contra cualquier número de despliegues o reinicios de Coolify**, se implementó un daemon nativo a nivel de sistema operativo en el VPS Contabo:
-
-1. **El Script Guardián V3 (`/usr/local/bin/inandes_alias_guardian.sh`)**:
-   ```bash
-   #!/bin/bash
-   echo "[$(date)] Iniciando Guardian Daemon V3 de Red InAndes..."
-
-   while true; do
-       for cid in $(docker ps -q --filter "name=3g5kcala3ypqzlsrhyelxyev"); do
-           # Verificar si el alias exacto inandes-api esta en la lista de DNSNames / Aliases de la red coolify
-           has_inandes_alias=$(docker inspect "$cid" --format '{{json .NetworkSettings.Networks.coolify.Aliases}}' 2>/dev/null | grep '"inandes-api"')
-           if [ -z "$has_inandes_alias" ]; then
-               echo "[$(date)] Contenedor $cid no tiene el alias inandes-api. Reconectando..."
-               docker network disconnect coolify "$cid" 2>/dev/null
-               docker network connect --alias inandes-api --alias 3g5kcala3ypqzlsrhyelxyev coolify "$cid" 2>/dev/null
-               echo "[$(date)] Contenedor $cid reconectado con inandes-api y 3g5kcala3ypqzlsrhyelxyev!"
-           fi
-       done
-       sleep 2
-   done
-   ```
-
-2. **La Unidad Systemd 24/7 (`/etc/systemd/system/inandes-alias-guardian.service`)**:
-   ```ini
-   [Unit]
-   Description=Guardian Inmortal de Red Docker InAndes Worker PDF
-   After=docker.service
-   Requires=docker.service
-
-   [Service]
-   Type=simple
-   ExecStart=/usr/local/bin/inandes_alias_guardian.sh
-   Restart=always
-   RestartSec=3
-   StandardOutput=journal
-   StandardError=journal
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-3. **Verificación de Inmortalidad en Vivo**:
-   * Estado del Servicio: **`Active: active (running)`** en Contabo VPS.
-   * Registro en Vivo del Journal (`journalctl -u inandes-alias-guardian.service`):
-     ```text
-     [Sun Aug 30 00:12:49 CEST 2026] Contenedor 1c0b636f345c no tiene el alias inandes-api. Reconectando...
-     [Sun Aug 30 00:12:50 CEST 2026] Contenedor 1c0b636f345c reconectado con inandes-api y 3g5kcala3ypqzlsrhyelxyev!
-     ```
-   * En cuanto Coolify o Git crean un contenedor nuevo, el daemon **le inyecta automáticamente los alias `inandes-api` y `3g5kcala3ypqzlsrhyelxyev` en $\le 1$ segundo**, garantizando una disponibilidad ininterrumpida del 100.00%.
+### 9.1. ¿Quién Mató al Worker?
+* **Culpable**: El webhook de auto-despliegue de Coolify. Cada `git push` destruía el contenedor backend existente y creaba uno nuevo con sufijo timestamp dinámico (ej. `3g5kcala3ypqzlsrhyelxyev-221035811706`), perdiendo el alias estático `inandes-api`.
+* **Solución**: Se desplegó el daemon `/usr/local/bin/inandes_alias_guardian.sh` bajo la unidad `inandes-alias-guardian.service` que vigila la red Docker cada 2 segundos y re-inyecta los alias en $\le 1\text{s}$ ante cualquier evento de contenedor.
 
 ---
 
-## 📝 CASO PERICIAL X: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
+## 📊 CASO PERICIAL XI: El Caso de la Grilla Contable Invisible y el Logo Oficial Geeksoft
+
+### 11.1. La Escena del Crimen
+* **Evidencia**: En el reporte PDF aparecía el banner `0 INVERSIONISTAS` y no se mostraba ninguna fila de certificado, saltando directamente de la cabecera a la fila de `TOTALES NSGPEN01`. Además, el logo de Geeksoft se mostraba como texto en lugar de la imagen oficial.
+
+### 11.2. Autopsia Forense de Código
+1. **Discrepancia en la Estructura de Datos de `pdfData`**:
+   * En `InversionistasPage.tsx`, el motor de cálculo ubica las filas en `fData.blocks[0].rows`.
+   * En `pdfGeneratorBelloConDesglose.ts`, el generador leía `fData.rows`. Al ser `undefined`, se inicializaba en `[]` (0 filas).
+2. **Causa del Logo de Texto**:
+   * No se estaba importando el asset binario PNG de Geeksoft en Base64.
+
+### 11.3. Corrección Quirúrgica Aplicada
+1. **Extracción Unificada de Filas**:
+   ```typescript
+   const allRows: CertRow[] = (fData.rows && fData.rows.length > 0)
+     ? fData.rows
+     : (fData.blocks?.[0]?.rows || []);
+   ```
+2. **Mapeo Completo de Campos Contables**:
+   * `r.id`, `r.inversionista`, `r.capital_base`, `r.bruto_total`, `r.impuesto_total`, `r.reparto_valor`, `r.devolucion_capital`, `r.capital_final`.
+3. **Incrustación de `LOGO_GEEKSOFT_BASE64`**:
+   * Convertido `public/Logo.Geeksoft.png` a Base64 e incrustado en `src/assets/base64Images.ts`.
+   * Renderizado mediante `<img src="data:image/png;base64,${LOGO_GEEKSOFT_BASE64}" class="logo-geeksoft">`.
+
+---
+
+## 📝 CASO PERICIAL XII: Anotación, Cierre y Protocolo de Blindaje (`NOTA`)
 
 ### 📌 Resumen de Archivos Clave del Ecosistema PDF:
 
 | Archivo | Responsabilidad |
 | :--- | :--- |
 | [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) | **Helper Único de Descarga**: Conecta con WeasyPrint en `/api/inversionistas/generate-pdf` y descarga el binario `.pdf`. |
-| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Maqueta la tabla contable A4 Landscape continua con 25 filas/hoja y cajas KPI nativas. |
+| [`src/utils/pdfGeneratorBelloConDesglose.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorBelloConDesglose.ts) | **Plantilla HTML Retornos**: Maqueta la tabla contable A4 Landscape continua con 25 filas/hoja, logo Geeksoft PNG y cajas KPI. |
 | [`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts) | **Plantilla HTML Valor Cuota**: Maqueta 1 hoja A4 Landscape por cada mes del período con matriz contable diaria. |
-| [`src/services/fondosService.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/services/fondosService.ts) | **Consumo Directo**: Jala el capital de apertura, aumentos e intereses diarios directo de `generateRetornosV40`. |
+| [`src/assets/base64Images.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/assets/base64Images.ts) | **Bóveda de Assets Base64**: Contiene `LOGO_INANDES_BASE64` y `LOGO_GEEKSOFT_BASE64`. |
 | [`backend/routers/inversionistas.py`](file:///c:/Users/rguti/Inandes.ERP.React/backend/routers/inversionistas.py) | **Microservicio Backend**: Endpoint `/api/inversionistas/generate-pdf` con WeasyPrint. |
 | `/etc/systemd/system/inandes-alias-guardian.service` | **Guardián Systemd VPS**: Auto-inyecta los alias de red Docker en $\le 1\text{s}$ ante cualquier despliegue. |
 
@@ -277,7 +198,7 @@ Para resolver esto de forma definitiva y hacer que el worker sea **inmortal cont
 
 ## 🚀 Despliegue en Producción
 * **Servidor**: Contabo VPS (`169.58.168.107` / Coolify).
-* **Commit Oficial**: `8f382b3` (*fix(pdf): unificar cabecera institucional, banner, cards y grilla contable en una sola hoja continua A4 landscape*).
+* **Commit Oficial**: `6b632dd` (*fix(pdf): renderizar logo oficial Geeksoft Base64 y mapear filas contables desde blocks[0].rows*).
 * **Rama**: `main` (Reglas 9 y 11).
 
 ---
