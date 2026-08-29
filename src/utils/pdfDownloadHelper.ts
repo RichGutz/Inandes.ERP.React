@@ -45,8 +45,8 @@ export async function downloadReportPdf(
   iframe.style.position = 'fixed';
   iframe.style.left = '0';
   iframe.style.top = '0';
-  iframe.style.width = orientation === 'landscape' ? '1200px' : '850px';
-  iframe.style.height = '1000px';
+  iframe.style.width = orientation === 'landscape' ? '1122px' : '794px';
+  iframe.style.height = orientation === 'landscape' ? '794px' : '1122px';
   iframe.style.zIndex = '-99999';
   iframe.style.opacity = '0.01';
   iframe.style.pointerEvents = 'none';
@@ -61,11 +61,11 @@ export async function downloadReportPdf(
     iframeDoc.close();
 
     // Esperar a que el navegador procese los estilos y assets base64
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 450));
 
     const targetEl = iframeDoc.body;
     const opt = {
-      margin: orientation === 'landscape' ? [5, 5, 5, 5] : [8, 8, 8, 8],
+      margin: 0,
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -73,7 +73,7 @@ export async function downloadReportPdf(
         useCORS: true, 
         letterRendering: true, 
         logging: false,
-        windowWidth: orientation === 'landscape' ? 1200 : 850
+        windowWidth: orientation === 'landscape' ? 1122 : 794
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
     };

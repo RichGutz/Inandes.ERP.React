@@ -26,9 +26,11 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const pagesHtml = filteredReports.map((rep, fundIdx) => {
+  const pagesHtml: string[] = [];
+
+  filteredReports.forEach((rep) => {
     const f = rep.fondo;
-    const blocksHtml = rep.blocks.map((block) => {
+    rep.blocks.forEach((block, bIdx) => {
       const days = block.days;
 
       const rowsHtml = block.rows.map((row) => {
@@ -64,68 +66,62 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
         `;
       }).join('');
 
-      return `
-        <div class="month-block">
-          <div class="month-header">
-            <span>📅 BLOQUE CONTABLE: ${block.monthName.toUpperCase()}</span>
-            <span class="dias-badge">${days.length} DÍAS AUDITADOS</span>
-          </div>
-          <table class="matrix-table">
-            <thead>
+      pagesHtml.push(`
+        <div class="report-page">
+          <div>
+            <!-- Top Header -->
+            <table class="top-header-table">
               <tr>
-                <th class="col-item">CONCEPTO / DÍA</th>
-                ${days.map(d => `<th class="text-right col-day">${d}</th>`).join('')}
+                <td style="width: 130px;">
+                  <img src="/Logo.Geeksoft.png" class="logo-geeksoft" alt="Geeksoft">
+                </td>
+                <td class="text-center">
+                  <div class="report-main-title">REPORTE MAESTRO DE VALOR CUOTA · MOTOR NAV V27</div>
+                  <div class="report-sub-title">Período: ${fStart} al ${fEnd} · Año ${anio} · Base 365 / 360 Homologada</div>
+                </td>
+                <td style="width: 130px;" class="text-right">
+                  <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }).join('');
+            </table>
 
-    return `
-      <div class="report-page ${fundIdx > 0 ? 'page-break' : ''}">
-        <!-- Top Header -->
-        <table class="top-header-table">
-          <tr>
-            <td style="width: 140px;">
-              <img src="/Logo.Geeksoft.png" class="logo-geeksoft" alt="Geeksoft">
-            </td>
-            <td class="text-center">
-              <div class="report-main-title">REPORTE OFICIAL DE VALOR CUOTA · MOTOR NAV V27</div>
-              <div class="report-sub-title">Período: ${fStart} al ${fEnd} · Año Contable ${anio} · Base 365 / 360 Homologada</div>
-            </td>
-            <td style="width: 140px;" class="text-right">
-              <img src="data:image/jpeg;base64,${LOGO_INANDES_BASE64}" class="logo-inandes" alt="InAndes">
-            </td>
-          </tr>
-        </table>
+            <!-- Fund Banner -->
+            <div class="fund-banner">
+              <div class="fund-title">
+                FONDO: <strong>${f.nombre_fondo.toUpperCase()}</strong> (${f.id_fondo}) &nbsp;|&nbsp; MONEDA: <strong>${f.moneda || 'PEN'}</strong>
+              </div>
+              <div class="fund-params">
+                <span>TASA ACTIVA: <strong>${rep.vars.activa}%</strong></span>
+                <span>COM. ADMIN: <strong>${rep.vars.admin}%</strong></span>
+                <span>MES: <strong>${block.monthName.toUpperCase()}</strong> (Pág ${bIdx + 1} de ${rep.blocks.length})</span>
+              </div>
+            </div>
 
-        <!-- Fund Banner -->
-        <div class="fund-banner">
-          <div class="fund-title">
-            FONDO: <strong>${f.nombre_fondo.toUpperCase()}</strong> (${f.id_fondo}) &nbsp;|&nbsp; MONEDA: <strong>${f.moneda || 'PEN'}</strong>
+            <!-- Month Table -->
+            <div class="table-container">
+              <table class="matrix-table">
+                <thead>
+                  <tr>
+                    <th class="col-item">CONCEPTO / DÍA</th>
+                    ${days.map(d => `<th class="text-right col-day">${d}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="fund-params">
-            <span>TASA ACTIVA: <strong>${rep.vars.activa}%</strong></span>
-            <span>COM. ADMIN: <strong>${rep.vars.admin}%</strong></span>
-            <span>BALANCE: <strong>P&L = 0 (EQUILIBRIO NEUTRO)</strong></span>
+
+          <!-- Footer -->
+          <div class="page-footer">
+            <span>InAndes ERP · Sistema Oficial de Valor Cuota NAV V27 · Balance P&L = 0</span>
+            <span>Fecha de Emisión: ${new Date().toLocaleDateString('es-PE')} ${new Date().toLocaleTimeString('es-PE')}</span>
           </div>
         </div>
-
-        <!-- Matrix Content -->
-        ${blocksHtml}
-
-        <!-- Footer -->
-        <div class="page-footer">
-          <span>InAndes ERP · Sistema Oficial de Valor Cuota NAV V27 · APEFAC & SMV Compliant</span>
-          <span>Fecha de Emisión: ${new Date().toLocaleDateString('es-PE')} ${new Date().toLocaleTimeString('es-PE')}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+      `);
+    });
+  });
 
   return `
     <!DOCTYPE html>
@@ -136,142 +132,129 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
       <style>
         @page {
           size: A4 landscape;
-          margin: 8mm 8mm 8mm 8mm;
+          margin: 0mm !important;
         }
         * {
           box-sizing: border-box;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        body {
-          font-family: 'Helvetica Neue', Arial, sans-serif;
-          font-size: 7pt;
-          line-height: 1.15;
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background-color: #ffffff !important;
+          font-family: Arial, Helvetica, sans-serif;
           color: #0f172a;
-          background: #ffffff;
-          margin: 0;
-          padding: 0;
-        }
-        .page-break {
-          page-break-before: always;
-          margin-top: 15px;
         }
         .report-page {
-          width: 100%;
+          width: 297mm;
+          min-height: 209mm;
+          max-height: 209mm;
+          padding: 7mm 9mm;
+          margin: 0 auto;
+          page-break-after: always;
+          page-break-inside: avoid;
+          box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          justify-content: space-between;
         }
         .top-header-table {
           width: 100%;
           border-collapse: collapse;
           border-bottom: 2px solid #0f172a;
-          padding-bottom: 4px;
+          padding-bottom: 3px;
           margin-bottom: 4px;
         }
         .top-header-table td {
           vertical-align: middle;
           border: none;
-          padding: 2px 4px;
+          padding: 1px 4px;
         }
         .logo-geeksoft {
-          height: 24px;
+          height: 22px;
           object-fit: contain;
         }
         .logo-inandes {
-          height: 24px;
+          height: 22px;
           object-fit: contain;
         }
         .report-main-title {
-          font-size: 11pt;
+          font-size: 10.5pt;
           font-weight: 900;
           color: #0f172a;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.3px;
           text-transform: uppercase;
         }
         .report-sub-title {
-          font-size: 7.5pt;
+          font-size: 7pt;
           font-weight: 600;
           color: #475569;
-          margin-top: 1px;
         }
         .fund-banner {
           background: #0f172a;
           color: #ffffff;
-          padding: 4px 8px;
-          border-radius: 4px;
+          padding: 3px 6px;
+          border-radius: 3px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 7.5pt;
+          font-size: 7pt;
+          margin-bottom: 4px;
         }
         .fund-title {
-          font-weight: 600;
-          letter-spacing: 0.3px;
+          font-weight: 700;
         }
         .fund-params {
           display: flex;
-          gap: 12px;
-          font-size: 7pt;
-        }
-        .month-block {
-          margin-top: 4px;
-          border: 1px solid #cbd5e1;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .month-header {
-          background: #f1f5f9;
-          color: #0f172a;
-          font-size: 7pt;
-          font-weight: 800;
-          padding: 3px 6px;
-          border-bottom: 1px solid #cbd5e1;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .dias-badge {
-          background: #e2e8f0;
-          padding: 1px 4px;
-          border-radius: 3px;
+          gap: 10px;
           font-size: 6.5pt;
-          font-family: 'Consolas', monospace;
+        }
+        .table-container {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 3px;
+          overflow: hidden;
         }
         .matrix-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 6pt;
+          table-layout: fixed;
+          font-size: 5.5pt;
           font-family: 'Consolas', monospace;
         }
         .matrix-table th, .matrix-table td {
-          border: 1px solid #e2e8f0;
-          padding: 2px 3px;
+          border: 1px solid #cbd5e1;
+          padding: 1.5px 1px;
           white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .matrix-table thead th {
           background: #1e293b;
           color: #ffffff;
           font-weight: 800;
-          font-size: 6pt;
+          font-size: 5.5pt;
+          text-align: center;
         }
         .col-item {
-          text-align: left;
-          width: 180px;
-          max-width: 180px;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          text-align: left !important;
+          width: 120px !important;
+          min-width: 120px;
+          max-width: 120px;
+          padding-left: 3px !important;
         }
         .col-day {
           text-align: right;
-          min-width: 32px;
+          width: calc((100% - 120px) / 31);
         }
         .row-label {
           text-align: left;
-          font-family: 'Helvetica Neue', Arial, sans-serif;
+          font-family: Arial, sans-serif;
           font-weight: 600;
           color: #1e293b;
           background: #f8fafc;
+          padding-left: 3px !important;
         }
         .row-vc {
           background: #eff6ff !important;
@@ -306,18 +289,18 @@ export function generatePdfValorCuotaV27(options: VcPdfOptions): string {
           text-align: center;
         }
         .page-footer {
-          margin-top: 4px;
-          padding-top: 3px;
+          margin-top: 3px;
+          padding-top: 2px;
           border-top: 1px solid #cbd5e1;
           display: flex;
           justify-content: space-between;
-          font-size: 6pt;
+          font-size: 5.5pt;
           color: #64748b;
         }
       </style>
     </head>
     <body>
-      ${pagesHtml}
+      ${pagesHtml.join('')}
     </body>
     </html>
   `;

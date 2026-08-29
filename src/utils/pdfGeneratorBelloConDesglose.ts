@@ -243,49 +243,62 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
         <style>
           @page {
             size: A4 landscape;
-            margin: 6mm 8mm 8mm 8mm;
+            margin: 0mm !important;
           }
-          * { box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-          body {
-            margin: 0; padding: 0; background-color: #ffffff; color: #0f172a; font-size: 7pt;
+          * { 
+            box-sizing: border-box; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .report-page {
-            width: 100%;
-            page-break-after: always;
+          html, body {
+            margin: 0 !important; 
+            padding: 0 !important; 
+            background-color: #ffffff !important; 
+            color: #0f172a; 
+            font-size: 7pt;
           }
-          .report-page:last-child {
-            page-break-after: auto;
+          .report-page {
+            width: 297mm;
+            min-height: 209mm;
+            max-height: 209mm;
+            padding: 6mm 8mm;
+            margin: 0 auto;
+            page-break-after: always;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
           }
           .top-header-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 4px;
+            width: 100%; border-collapse: collapse; margin-bottom: 2px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 67px; width: auto; }
-          .logo-inandes { height: 38px; width: auto; }
+          .logo-geeksoft { height: 26px; width: auto; object-fit: contain; }
+          .logo-inandes { height: 26px; width: auto; object-fit: contain; }
           .report-main-title {
-            font-weight: 900; font-size: 13pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.5px;
+            font-weight: 900; font-size: 11pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.3px;
           }
           .report-sub-title {
-            font-size: 8.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
+            font-size: 7.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
           }
           .fund-badge-banner {
-            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 8.5pt; text-transform: uppercase; padding: 4px 12px; border-radius: 6px; text-align: center; margin: 6px auto 8px auto; width: fit-content; max-width: 95%; letter-spacing: 0.3px;
+            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 7.5pt; text-transform: uppercase; padding: 2px 10px; border-radius: 4px; text-align: center; margin: 3px auto 4px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
           }
           
           /* Cajas KPI de EL BELLO */
           .kpi-cards-grid {
-            display: table; width: 100%; margin-bottom: 8px; border-spacing: 3px 0; table-layout: fixed;
+            display: table; width: 100%; margin-bottom: 4px; border-spacing: 2px 0; table-layout: fixed;
           }
           .kpi-card {
-            display: table-cell; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 4px; text-align: center; vertical-align: middle;
+            display: table-cell; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 3px; text-align: center; vertical-align: middle;
           }
           .kpi-title {
-            font-size: 5.2pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 5pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           .kpi-value {
-            font-size: 7.8pt; font-weight: 900; color: #0f172a; white-space: nowrap;
+            font-size: 7.2pt; font-weight: 900; color: #0f172a; white-space: nowrap;
           }
           .kpi-value-green { color: #059669; }
           .kpi-value-red { color: #dc2626; }
@@ -294,24 +307,24 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
 
           /* Tabla Contable Bello - Exacto 25 Filas por Hoja */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 6.4pt; line-height: 1.12;
+            width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 6.2pt; line-height: 1.1;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.9pt; padding: 3.5px 1.5px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.6pt; padding: 2.5px 1.5px; border: 1px solid #0f172a; text-align: left; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 1px solid #cbd5e1; padding: 2px 2px; vertical-align: middle;
+            border: 1px solid #cbd5e1; padding: 1.5px 2px; vertical-align: middle;
           }
           table.data-table tr:nth-child(even) { background-color: #f8fafc; }
           table.data-table tr.aumento-row { color: #0284c7; font-style: italic; background-color: #f0f9ff !important; }
-          table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #059669; border-bottom: 3px double #059669; }
-          table.data-table tr.totals-row td { color: #064e3b; font-size: 6.8pt; font-weight: 900; }
+          table.data-table tr.totals-row { background-color: #ecfdf5 !important; font-weight: bold; border-top: 2px solid #059669; border-bottom: 2px solid #059669; }
+          table.data-table tr.totals-row td { color: #064e3b; font-size: 6.5pt; font-weight: 900; }
           .text-right { text-align: right; }
           .text-center { text-align: center; }
 
           /* Pie de Página Oficial */
           .page-footer {
-            width: 100%; margin-top: 6px; border-top: 1px solid #cbd5e1; padding-top: 3px; font-size: 6.5pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
+            width: 100%; margin-top: 2px; border-top: 1px solid #cbd5e1; padding-top: 2px; font-size: 6pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
           }
           .page-footer-left { display: table-cell; text-align: left; text-transform: uppercase; }
           .page-footer-right { display: table-cell; text-align: right; }
