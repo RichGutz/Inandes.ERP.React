@@ -164,32 +164,57 @@ export const calculateValorCuotaV26 = async (
     const pCap    = Number(fondo.comision_captacion_fondo || 0) / 100;
     const pMisc   = Number(fondo.comision_miscelaneos_fondo || 0) / 100;
 
-    // Obtener datos calculados desde el motor oficial de Retornos
+    // Obtener datos calculados desde el motor oficial de Retornos V40
     const fondoRetornoData = retornosCalc.pdfData.find((p: any) => p.fondo?.id_fondo === fid);
-    const certsRetorno = fondoRetornoData?.rows || [];
-    if (certsRetorno.length === 0) continue;
+    const rawRows = (fondoRetornoData?.rows && fondoRetornoData.rows.length > 0)
+      ? fondoRetornoData.rows
+      : (fondoRetornoData?.blocks?.[0]?.rows || []);
+    if (rawRows.length === 0) continue;
 
-    // Inicializar filas de contratos mapeadas desde Retornos
-    const certRows: any[] = certsRetorno.map((r: any) => {
-      const capIni = Number(r.capital_base || 0);
-      return {
-        tipo: 'CERT',
-        id: r.id || r.id_contrato,
-        capital: capIni,
-        cuotas: capIni,
-        emision: r.emision ? new Date(r.emision) : new Date(startDate),
-        interes_acum: Number(r.interes_bruto || 0),
-        valores_dia: (r.valores_dia_padre || []).slice(),
-        hijos: (r.hijos || []).map((h: any) => ({
+    // Inicializar filas de contratos mapeadas desde Retornos V40
+    const certRows: any[] = [];
+    let currentPadre: any = null;
+
+    for (const r of rawRows) {
+      if (r.tipo === 'AUMENTO') {
+        const aumentoObj = {
           tipo: 'AUMENTO',
-          id: h.id || `Aumento (${h.fecha ? new Date(h.fecha).getDate() : ''}/${h.fecha ? new Date(h.fecha).getMonth() + 1 : ''})`,
-          monto: Number(h.monto || 0),
-          fecha_ingreso: h.fecha ? new Date(h.fecha) : new Date(startDate),
-          valores_dia: (h.v_dias || []).slice(),
-          interes_acum: Number(h.interes_acum || 0)
-        }))
-      };
-    });
+          id: r.id || 'Aumento',
+          monto: Number(r.capital || 0),
+          fecha_ingreso: r.fecha ? new Date(r.fecha) : (r.fecha_inicio ? new Date(r.fecha_inicio) : new Date(startDate)),
+          valores_dia: (r.valores || []).slice(),
+          interes_acum: Number(r.bruto_total || 0)
+        };
+        if (currentPadre) {
+          currentPadre.hijos.push(aumentoObj);
+        } else {
+          certRows.push({
+            tipo: 'CERT',
+            id: r.id,
+            capital: Number(r.capital || 0),
+            cuotas: Number(r.capital || 0),
+            emision: new Date(startDate),
+            interes_acum: Number(r.bruto_total || 0),
+            valores_dia: (r.valores || []).slice(),
+            hijos: [aumentoObj]
+          });
+        }
+      } else {
+        const capIni = Number(r.capital || r.capital_base || 0);
+        currentPadre = {
+          tipo: 'CERT',
+          id: r.id || r.id_contrato,
+          capital: capIni,
+          cuotas: capIni,
+          emision: r.emision ? new Date(r.emision) : new Date(startDate),
+          interes_acum: Number(r.bruto_total || r.interes_bruto || 0),
+          valores_dia: (r.valores || r.valores_dia_padre || []).slice(),
+          hijos: []
+        };
+        certRows.push(currentPadre);
+      }
+    }
+
 
     // Configurar filas de totales de resumen con distribución clara
     const summaryDefs = [
