@@ -1,11 +1,12 @@
 import { getApiBaseUrl } from '../config/apiConfig';
+import html2pdf from 'html2pdf.js';
 
 export async function downloadReportPdf(
   htmlDoc: string, 
   filename: string, 
-  _orientation: 'portrait' | 'landscape' = 'portrait'
+  orientation: 'portrait' | 'landscape' = 'portrait'
 ): Promise<void> {
-  // 1. Intentar Backend FastAPI de alta velocidad (si está disponible y responde en <2s)
+  // 1. Intentar Backend FastAPI Weasyprint (si responde en <2s)
   const API_BASE = getApiBaseUrl();
   if (API_BASE) {
     const controller = new AbortController();
@@ -32,30 +33,50 @@ export async function downloadReportPdf(
         return;
       }
     } catch (err) {
-      console.warn("Backend PDF no disponible. Usando visor/impresor nativo del navegador:", err);
+      console.warn("Backend PDF no disponible. Usando generador binario local:", err);
     } finally {
       clearTimeout(timeoutId);
     }
   }
 
-  // 2. Motor Nativo del Navegador: Renderizado vectorial 100% fiel a CSS @page y tipografía contable
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert("Por favor habilite las ventanas emergentes (popups) en el navegador para generar el reporte PDF.");
-    return;
-  }
+  // 2. Motor Binario Client-Side (html2pdf.js) - CERO Sharing Violation en Windows
+  // Renderiza en contenedor aislado e inyecta la descarga directa del archivo binario .pdf
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.width = orientation === 'landscape' ? '1122px' : '794px';
+  container.style.zIndex = '-99999';
+  container.style.opacity = '0.01';
+  container.style.pointerEvents = 'none';
+  container.innerHTML = htmlDoc;
+  document.body.appendChild(container);
 
-  printWindow.document.open();
-  printWindow.document.write(htmlDoc);
-  printWindow.document.close();
+  try {
+    // Esperar a que el motor DOM procese estilos y tablas
+    await new Promise(r => setTimeout(r, 350));
 
-  // Esperar a que el navegador procese los estilos e imágenes base64
-  setTimeout(() => {
-    printWindow.focus();
-    try {
-      printWindow.print();
-    } catch (e) {
-      console.error("Error al abrir diálogo de impresión nativo:", e);
+    const opt = {
+      margin: 0,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        logging: false,
+        windowWidth: orientation === 'landscape' ? 1122 : 794
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
+    };
+
+    await (html2pdf() as any).set(opt).from(container).save();
+  } catch (clientErr) {
+    console.error("Error en renderizado PDF cliente:", clientErr);
+    throw clientErr;
+  } finally {
+    if (container.parentNode) {
+      document.body.removeChild(container);
     }
-  }, 350);
+  }
 }
