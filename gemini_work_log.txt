@@ -368,10 +368,10 @@
 2. Probada la ejecucion completa del script por terminal contra Contabo y Hostinger (salida consolidada en C:\Users\rguti\VPS_Health_Logs).
 3. Actualizada la documentacion en Obsidian/Mudanza.Contabo/Mudanza.Contabo/11.CRON.JOB.SALUD.VPS.md con la nueva matriz de control y umbrales criticos.
 
-[2026-08-29 11:50:00-05:00] TAREA: Metodo Benoit Blanc Caso 01 - Purificar Capital Base Inicial de apertura excluyendo aumentos posteriores en Auditoria y Retornos.
-[2026-08-29 11:50:00-05:00] ESTADO: Completado con exito.
-1. Corregida la acumulacion en `src/utils/financialCalculator.ts`: `fTotals.capital += r.capital_base`.
-2. Las filas de aumento ahora muestran '-' en la Columna D (Capital Base) tanto en `src/features/inversionistas/InversionistasPage.tsx` como en `src/utils/pdfGeneratorBelloConDesglose.ts`.
-3. Verificada la convergencia de Capital Base de Apertura al 100.00% en todos los fondos (ej. NSGPEN01: S/ 10,434,753.14).
-4. Compilacion limpia con `npm run build` (0 errores) y publicado en `origin/main` (commit `fd996b8`) para auto-despliegue en VPS Contabo.
+[2026-08-29 12:30:00-05:00] TAREA: Despliegue oficial de Motor NAV V27 con formato homologado de Auditoria y Retornos.
+[2026-08-29 12:30:00-05:00] ESTADO: Completado con exito.
+1. Calibrado el motor contable en `src/services/fondosService.ts` bajo la formula de equilibrio puro y Base 365.
+2. Homologado el formato Excel en `src/features/fondos/FondosPage.tsx` con estilos Consolas, Dark Navy, inmovilizacion de paneles y marcas de tiempo.
+3. Actualizadas las etiquetas UI de v26 a v27.
+4. Compilacion limpia con `npm run build` (0 errores) y publicado en `origin/main` (commit `be3ef2c`) con auto-despliegue en VPS Contabo.
 
