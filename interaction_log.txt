@@ -192,6 +192,12 @@
 4. Columna ITEM con anchos automáticos (40ch), colores semánticos por concepto (Verde para aportes, Rojo para comisiones, Azul para ganancias, Oro para patrimonio de cierre) y sangría en aumentos de capital.
 5. Actualizados `FondosPage.tsx`, `fondosService.ts` y generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx`. Compilación limpia validada con `npm run build` (0 errores).
 [2026-08-22 13:30:00-05:00] TIPOGRAFÍA MONOSPACED CONSOLAS EN EXCEL NAV: Actualizada la fuente tipográfica de todas las celdas, cabeceras, contratos y resúmenes a 'Consolas' en `FondosPage.tsx` y `generate_styled_nav_excel.js`. Re-generado `reports/Reporte_NAV_QC_Ene_Feb_2026_Styled.xlsx` y validada compilación limpia con `npm run build` (0 errores).
+[2026-08-29 11:50:00-05:00] MÉTODO BENOIT BLANC CASO N° 01 - PURIFICACIÓN DE CAPITAL BASE INICIAL EN AUDITORÍA Y RETORNOS:
+1. Identificada causa raíz en `financialCalculator.ts`, `InversionistasPage.tsx` y `pdfGeneratorBelloConDesglose.ts`: la variable acumuladora `fTotals.capital` sumaba los aumentos de capital posteriores `aum_v`.
+2. Corregida acumulación: `fTotals.capital += r.capital_base` (excluyendo aumentos posteriores de la Columna D y total de apertura).
+3. Filas de aumento ahora muestran '-' en la Columna D (Capital Base).
+4. Verificada convergencia al 100.00% con `scripts/qc_benoit_case_01_capital_base.js`.
+5. Compilado con `npm run build` (0 errores) y publicado en `origin/main` (commit `fd996b8`) para auto-despliegue automático vía Coolify en VPS Contabo.
 [2026-08-22 13:35:00-05:00] HOMOLOGACIÓN DE FORMATO PROFESIONAL EN EXCEL DE AUDITORÍA Y RETORNOS (EXCELJS + CONSOLAS):
 1. Actualizado `handleExportExcelV40` en `InversionistasPage.tsx` con `ExcelJS`.
 2. Aplicada tipografía monoespaciada `Consolas` en todas las celdas, cabeceras y totales.
