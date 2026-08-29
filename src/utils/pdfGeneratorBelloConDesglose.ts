@@ -91,63 +91,65 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
             FONDO ${fData.fondo.nombre_fondo || fData.fondo.id_fondo} (${fData.fondo.id_fondo}) — MONEDA: ${moneda} &nbsp;|&nbsp; ${certCount} INVERSIONISTAS${parteStr}
           </div>
 
-          <!-- Cajas KPI del BELLO -->
-          <div class="kpi-cards-grid">
-            <div class="kpi-card">
-              <div class="kpi-title">CAPITAL BASE INICIAL</div>
-              <div class="kpi-value">${fmtValCurrency(totals.capital, moneda)}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-title">INTERÉS BRUTO DEVENGADO</div>
-              <div class="kpi-value kpi-value-blue">${fmtValCurrency(totals.bruto_total, moneda)}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-title">RETENCIÓN IR 5% (2DA CAT)</div>
-              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.impuesto_total, moneda)}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-title">REPARTO EN EFECTIVO</div>
-              <div class="kpi-value kpi-value-green">${fmtValCurrency(totals.reparto_valor, moneda)}</div>
-            </div>
-            ${(totals.deducciones_total && totals.deducciones_total > 0) ? `
-            <div class="kpi-card">
-              <div class="kpi-title">DEDUCCIONES TOTALES</div>
-              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.deducciones_total, moneda)}</div>
-            </div>` : ''}
-            ${(totals.penalidad_rescate && totals.penalidad_rescate > 0) ? `
-            <div class="kpi-card">
-              <div class="kpi-title">PENALIDADES RESCATE</div>
-              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.penalidad_rescate, moneda)}</div>
-            </div>` : ''}
-            ${(totals.devolucion_capital && totals.devolucion_capital > 0) ? `
-            <div class="kpi-card">
-              <div class="kpi-title">DEVOLUCIÓN DE CAPITAL</div>
-              <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.devolucion_capital, moneda)}</div>
-            </div>` : ''}
-            <div class="kpi-card">
-              <div class="kpi-title">CAPITAL FINAL VIGENTE</div>
-              <div class="kpi-value kpi-value-darkblue">${fmtValCurrency(totals.capital_final, moneda)}</div>
-            </div>
-          </div>
+          <!-- Cajas KPI del BELLO (Tabla Nativa para compatibilidad total de renderizado) -->
+          <table class="kpi-cards-table">
+            <tr>
+              <td class="kpi-card">
+                <div class="kpi-title">CAPITAL BASE INICIAL</div>
+                <div class="kpi-value">${fmtValCurrency(totals.capital, moneda)}</div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">INTERÉS BRUTO DEVENGADO</div>
+                <div class="kpi-value kpi-value-blue">${fmtValCurrency(totals.bruto_total, moneda)}</div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">RETENCIÓN IR 5% (2DA CAT)</div>
+                <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.impuesto_total, moneda)}</div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">REPARTO EN EFECTIVO</div>
+                <div class="kpi-value kpi-value-green">${fmtValCurrency(totals.reparto_valor, moneda)}</div>
+              </td>
+              ${(totals.deducciones_total && totals.deducciones_total > 0) ? `
+              <td class="kpi-card">
+                <div class="kpi-title">DEDUCCIONES TOTALES</div>
+                <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.deducciones_total, moneda)}</div>
+              </td>` : ''}
+              ${(totals.penalidad_rescate && totals.penalidad_rescate > 0) ? `
+              <td class="kpi-card">
+                <div class="kpi-title">PENALIDADES RESCATE</div>
+                <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.penalidad_rescate, moneda)}</div>
+              </td>` : ''}
+              ${(totals.devolucion_capital && totals.devolucion_capital > 0) ? `
+              <td class="kpi-card">
+                <div class="kpi-title">DEVOLUCIÓN DE CAPITAL</div>
+                <div class="kpi-value kpi-value-red">${fmtValCurrency(totals.devolucion_capital, moneda)}</div>
+              </td>` : ''}
+              <td class="kpi-card">
+                <div class="kpi-title">CAPITAL FINAL VIGENTE</div>
+                <div class="kpi-value kpi-value-darkblue">${fmtValCurrency(totals.capital_final, moneda)}</div>
+              </td>
+            </tr>
+          </table>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th class="text-center" style="width: 20px;">#</th>
-                <th style="width: 135px;">CERTIFICADO</th>
-                <th>INVERSIONISTA</th>
-                <th class="text-right">CAPITAL BASE</th>
-                <th class="text-right">INT. BRUTO</th>
-                <th class="text-right">IR (5%)</th>
-                <th class="text-right">BASE NETA</th>
-                <th class="text-right">CAPITALIZ.</th>
-                <th class="text-right">REPARTO</th>
-                <th class="text-right">DEDUCC.</th>
-                <th class="text-right">PENALID.</th>
-                <th class="text-right">NETO FINAL</th>
-                <th class="text-right">RESCATES</th>
-                <th class="text-right">TRANSFER.</th>
-                <th class="text-right">CAPITAL FINAL</th>
+                <th class="text-center" style="width: 25px;">#</th>
+                <th style="width: 105px;">CERTIFICADO</th>
+                <th style="width: 170px;">INVERSIONISTA</th>
+                <th class="text-right" style="width: 75px;">CAPITAL BASE</th>
+                <th class="text-right" style="width: 60px;">INT. BRUTO</th>
+                <th class="text-right" style="width: 50px;">IR (5%)</th>
+                <th class="text-right" style="width: 60px;">BASE NETA</th>
+                <th class="text-right" style="width: 60px;">CAPITALIZ.</th>
+                <th class="text-right" style="width: 60px;">REPARTO</th>
+                <th class="text-right" style="width: 50px;">DEDUCC.</th>
+                <th class="text-right" style="width: 50px;">PENALID.</th>
+                <th class="text-right" style="width: 65px;">NETO FINAL</th>
+                <th class="text-right" style="width: 60px;">RESCATES</th>
+                <th class="text-right" style="width: 70px;">TRANSFER.</th>
+                <th class="text-right" style="width: 75px;">CAPITAL FINAL</th>
               </tr>
             </thead>
             <tbody>
@@ -288,11 +290,11 @@ export function generatePdfBelloConDesglose(options: PdfGeneratorOptions): strin
           }
           
           /* Cajas KPI de EL BELLO */
-          .kpi-cards-grid {
-            display: table; width: 100%; margin-bottom: 4px; border-spacing: 2px 0; table-layout: fixed;
+          table.kpi-cards-table {
+            width: 100%; border-collapse: separate; border-spacing: 3px 0; margin-bottom: 4px; table-layout: fixed;
           }
-          .kpi-card {
-            display: table-cell; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 3px; text-align: center; vertical-align: middle;
+          table.kpi-cards-table td.kpi-card {
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 3px; text-align: center; vertical-align: middle;
           }
           .kpi-title {
             font-size: 5pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
