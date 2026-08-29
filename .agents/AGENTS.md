@@ -73,10 +73,17 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
 1. Cero modificaciones "creativas" o no solicitadas: Queda estrictamente PROHIBIDO reemplazar, rediseñar, recrear en SVG o alterar componentes visuales, logos, archivos de marca o logica preexistente.
 2. Ajustes literales y puntuales: Ante peticiones de cambio de tamaño, posicionamiento o diseño, las modificaciones deben limitarse UNICAMENTE a cambiar las propiedades de estilo CSS (ancho, alto, margenes, saltos de pagina) sobre los elementos de imagen o plantilla exactos ya establecidos, sin alterar sus fuentes ni crear sustitutos.
 
-## Regla 9 - PROHIBIDO Crear Branches en Git (Trabajo Exclusivo en MAIN)
+## Regla 9 - PROHIBIDO Crear Branches en Git (Trabajo Exclusivo en MAIN) y Definicion de BRANCH TAG
 
-1. Uso Exclusivo de MAIN: Queda estrictamente PROHIBIDO crear nuevas ramas (branches) en Git. Todo el desarrollo, commits y pushes se realizan UNICAMENTE en la rama `main`.
-2. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o tags asignados directamente por el usuario.
+1. Uso Exclusivo de MAIN: Todo el desarrollo activo, commits y pruebas continuas se realizan UNICAMENTE en la rama `main`.
+2. Definicion Estricta de "BRANCH TAG" (Orden del Usuario):
+   - Cuando el usuario solicite un "BRANCH TAG <NOMBRE>" o un punto de control / safepoint:
+     a) Significa crear la rama local: `git branch <NOMBRE>`
+     b) Hacer push explícito de la rama al repositorio remoto: `git push origin refs/heads/<NOMBRE>`
+     c) Crear opcionalmente el tag homónimo: `git tag -a <NOMBRE> -m "..." ; git push origin <NOMBRE>`
+     d) Regresar INMEDIATAMENTE a `main` (`git checkout main`) para mantener el trabajo 100% en `main`.
+3. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o branches/tags asignados directamente por el usuario.
+
 
 ## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO (EXCLUSIVO CONTABO)
 1. Lectura Obligatoria de Procedimientos: El agente DEBE consultar y seguir estrictamente lo estipulado en `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md`.
