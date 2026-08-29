@@ -118,9 +118,9 @@ export function generateReporteBelloPdfHtml(
 
     const certCount = allRows.filter(r => r.tipo === 'PADRE' || (!r.tipo && !r.is_aumento)).length;
 
-    // 🎯 ALGORITMO COMPAGINADOR INTELIGENTE (<= 50 Filas por Hoja A4 Landscape)
-    const MAX_ROWS_SINGLE_PAGE = 50;
-    const ROWS_PER_PAGE_SPLIT = 40; // Cuando supera 50 filas, divide equitativamente
+    // 🎯 ALGORITMO COMPAGINADOR INTELIGENTE (<= 40 Filas Útiles por Hoja A4 Landscape)
+    const MAX_ROWS_SINGLE_PAGE = 40;
+    const ROWS_PER_PAGE_SPLIT = 35; // Cuando supera 40 filas, divide equitativamente
 
     let chunks: CertRow[][] = [];
     if (allRows.length <= MAX_ROWS_SINGLE_PAGE) {
