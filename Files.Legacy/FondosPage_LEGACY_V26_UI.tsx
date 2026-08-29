@@ -1,14 +1,6 @@
 // src/features/fondos/FondosPage.tsx
 import React, { useEffect, useState } from 'react';
-import { 
-  getFondos, 
-  upsertFondos, 
-  calculateValorCuotaV26,
-  getValorCuotaEvents,
-  fetchValorCuotaDashboard,
-  oficializarCierreValorCuota,
-  rollbackCierreValorCuota
-} from '../../services/fondosService';
+import { getFondos, upsertFondos, calculateValorCuotaV26 } from '../../services/fondosService';
 import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Fondo, V26FondoReport } from '../../services/fondosService';
 import * as XLSX from 'xlsx';
@@ -18,7 +10,7 @@ import html2pdf from 'html2pdf.js';
 import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../../assets/base64Images';
 import { 
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
-  Plus, Search, Building2, X, Calendar, Trash2
+  Plus, Search, Building2, X
 } from 'lucide-react';
 
 export const FondosPage: React.FC = () => {
@@ -78,7 +70,7 @@ export const FondosPage: React.FC = () => {
   const [plazoSubmitSuccess, setPlazoSubmitSuccess] = useState<boolean>(false);
   const [plazoSubmitError, setPlazoSubmitError] = useState<string | null>(null);
 
-  // Estados del seguimiento y oficialización de Valor Cuota V27
+  // Estados del seguimiento de Valor Cuota
   const [vcSelFondo, setVcSelFondo] = useState<string>('TODOS');
   const [vcSelYear, setVcSelYear] = useState<number>(2026);
   const [vcSelTipo, setVcSelTipo] = useState<'Bimestre' | 'Trimestre'>('Bimestre');
@@ -87,45 +79,6 @@ export const FondosPage: React.FC = () => {
   const [vcLoading, setVcLoading] = useState<boolean>(false);
   const [vcExportingExcel, setVcExportingExcel] = useState<boolean>(false);
   const [vcExcelDownloaded, setVcExcelDownloaded] = useState<boolean>(false);
-  const [vcDashboard, setVcDashboard] = useState<any>({ B: {}, Q: {} });
-  const [vcClosedCount, setVcClosedCount] = useState<number>(0);
-  const [vcOficializarLoading, setVcOficializarLoading] = useState<boolean>(false);
-  const [vcRollbackLoading, setVcRollbackLoading] = useState<boolean>(false);
-  const [vcSuccessMsg, setVcSuccessMsg] = useState<string | null>(null);
-
-  const PERIODOS_CIERRE = [
-    { id: 'B1', m: 2, mes: 'Febrero', rango: 'Ene - Feb', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', cNum: 1, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'Q1', m: 3, mes: 'Marzo', rango: 'Ene - Mar', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', cNum: 1, cType: 'Trimestre' as const, funds: ['NSLCON01'] },
-    { id: 'B2', m: 4, mes: 'Abril', rango: 'Mar - Abr', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', cNum: 2, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'B3_Q2', m: 6, mes: 'Junio', rango: 'May - Jun / Q2', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', cNum: 3, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'] },
-    { id: 'B4', m: 8, mes: 'Agosto', rango: 'Jul - Ago', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', cNum: 4, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'Q3', m: 9, mes: 'Septiembre', rango: 'Jul - Sep', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', cNum: 3, cType: 'Trimestre' as const, funds: ['NSLCON01'] },
-    { id: 'B5', m: 10, mes: 'Octubre', rango: 'Sep - Oct', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', cNum: 5, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'B6_Q4', m: 12, mes: 'Diciembre', rango: 'Nov - Dic / Q4', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', cNum: 6, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'] }
-  ];
-
-  const currentCierre = PERIODOS_CIERRE.find(p => p.cType === vcSelTipo && p.cNum === vcSelNum) || PERIODOS_CIERRE[0];
-
-  const getDates = (y: number, t: 'Bimestre' | 'Trimestre', n: number) => {
-    let s_m = 1;
-    let e_m = 2;
-    if (t === 'Bimestre') {
-      s_m = (n - 1) * 2 + 1;
-      e_m = s_m + 1;
-    } else {
-      s_m = (n - 1) * 3 + 1;
-      e_m = s_m + 2;
-    }
-    const formatD = (year: number, month: number, day: number) => {
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    };
-    const s_d = formatD(y, s_m, 1);
-    const lastDay = new Date(y, e_m, 0).getDate();
-    const e_d = formatD(y, e_m, lastDay);
-    return { fStart: s_d, fEnd: e_d };
-  };
-
-  const { fStart, fEnd } = getDates(vcSelYear, vcSelTipo, vcSelNum);
 
   const fetchFondos = async () => {
     setLoading(true);
@@ -140,31 +93,15 @@ export const FondosPage: React.FC = () => {
     }
   };
 
-  const loadVcDashboard = async (year: number) => {
-    const dash = await fetchValorCuotaDashboard(year);
-    setVcDashboard(dash);
-  };
-
-  const checkClosedStatus = async (endDate: string) => {
-    const res = await getValorCuotaEvents(endDate);
-    setVcClosedCount(res.count);
-  };
-
   useEffect(() => {
     fetchFondos();
   }, []);
-
-  useEffect(() => {
-    if (activeSubTab === 'valorCuota') {
-      loadVcDashboard(vcSelYear);
-      checkClosedStatus(fEnd);
-    }
-  }, [activeSubTab, vcSelYear, fEnd]);
 
   // Carga automática del cálculo de Valor Cuota
   const handleCalculateValorCuota = async () => {
     setVcLoading(true);
     try {
+      // Calcular rango de fechas contables
       let startMonth = 0;
       let endMonth = 0;
       if (vcSelTipo === 'Bimestre') {
@@ -193,117 +130,6 @@ export const FondosPage: React.FC = () => {
       handleCalculateValorCuota();
     }
   }, [activeSubTab, vcSelFondo, vcSelYear, vcSelTipo, vcSelNum]);
-
-  // Handlers para Oficialización y Rollback
-  const handleOficializarCierre = async () => {
-    if (vcReportData.length === 0) {
-      alert("No hay reportes de valor cuota para oficializar.");
-      return;
-    }
-    if (!confirm(`¿Está seguro de oficializar y guardar el cierre de Valor Cuota para el período ${fStart} al ${fEnd}?`)) {
-      return;
-    }
-    setVcOficializarLoading(true);
-    setVcSuccessMsg(null);
-    try {
-      const payloads: any[] = [];
-      for (const rep of vcReportData) {
-        const f = rep.fondo;
-        const bFirst = rep.blocks[0];
-        const bLast = rep.blocks[rep.blocks.length - 1];
-
-        const getRowCellVal = (block: any, rowId: string, isLast: boolean = false) => {
-          const row = block?.rows?.find((r: any) => r.id === rowId);
-          if (!row || !row.cells || row.cells.length === 0) return 0;
-          return isLast ? Number(row.cells[row.cells.length - 1]?.val || 0) : Number(row.cells[0]?.val || 0);
-        };
-
-        const vcIni = getRowCellVal(bFirst, 'VAL CUOTA INICIAL', false) || 1.0;
-        const vcFin = getRowCellVal(bLast, 'VAL CUOTA FINAL', true) || 1.0;
-        const patApertura = getRowCellVal(bFirst, 'TOTAL CAPITAL (Apertura)', false);
-        const patCierre = getRowCellVal(bLast, 'PATRIMONIO TOTAL CIERRE', true);
-        const cuotasApertura = getRowCellVal(bFirst, 'CUOTAS APERTURA', false);
-        const cuotasCierre = getRowCellVal(bLast, '(=) CUOTAS TOTALES CIERRE', true);
-        const capAdicional = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === '(+) CAPITAL ADICIONAL (Hoy)');
-          return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
-        }, 0);
-        const ingBrutos = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'GANANCIA TOTAL BRUTA (Base 360)');
-          return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
-        }, 0);
-        const comAdmin = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'COM. ADMIN (-) (Base 365)');
-          return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
-        }, 0);
-        const comCapt = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'COM. CAPT. (-) (Base 365)');
-          return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
-        }, 0);
-        const comMisc = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'COM. MISC. (-)');
-          return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
-        }, 0);
-
-        payloads.push({
-          id_fondo: f.id_fondo,
-          nombre_fondo: f.nombre_fondo,
-          fecha_corte: fEnd,
-          anio: vcSelYear,
-          ciclo: vcSelTipo,
-          num_periodo: vcSelNum,
-          fecha_inicio_periodo: fStart,
-          fecha_fin_periodo: fEnd,
-          valor_cuota_inicial: vcIni,
-          valor_cuota_final: vcFin,
-          patrimonio_apertura: patApertura,
-          patrimonio_cierre: patCierre,
-          cuotas_apertura: cuotasApertura,
-          cuotas_totales_cierre: cuotasCierre,
-          capital_adicional_periodo: capAdicional,
-          ingresos_brutos_periodo: ingBrutos,
-          pago_inversionistas_periodo: 0,
-          comision_admin_periodo: comAdmin,
-          comision_captacion_periodo: comCapt,
-          comision_misc_periodo: comMisc,
-          tasa_activa_anual: Number(f.tasa_activa || 14.0),
-          payload_resumen: { blocksCount: rep.blocks.length }
-        });
-      }
-
-      await oficializarCierreValorCuota(payloads);
-      setVcSuccessMsg(`✓ Período ${fStart} al ${fEnd} oficializado con éxito (${payloads.length} fondos registrados).`);
-      await loadVcDashboard(vcSelYear);
-      await checkClosedStatus(fEnd);
-    } catch (err: any) {
-      alert(`Error al oficializar cierre: ${err.message}`);
-    } finally {
-      setVcOficializarLoading(false);
-    }
-  };
-
-  const handleRollbackCierre = async () => {
-    if (!confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar los asientos de Valor Cuota al corte ${fEnd} y reabrir el período? Esta acción es irreversible.`)) {
-      return;
-    }
-    setVcRollbackLoading(true);
-    setVcSuccessMsg(null);
-    try {
-      await rollbackCierreValorCuota(fEnd);
-      setVcSuccessMsg(`✓ Período al corte ${fEnd} reabierto con éxito (asientos eliminados).`);
-      await loadVcDashboard(vcSelYear);
-      await checkClosedStatus(fEnd);
-    } catch (err: any) {
-      alert(`Error al reabrir período: ${err.message}`);
-    } finally {
-      setVcRollbackLoading(false);
-    }
-  };
-
-  const uniqueFondosList = Array.from(
-    new Map(fondos.map(f => [f.id_fondo, f])).values()
-  );
-  const fondosDelCierre = uniqueFondosList.filter(f => currentCierre.funds.includes(f.id_fondo));
 
   // Crear Nuevo Fondo y auto-generar sus 4 plazos estándar
   const handleCreateFondoSubmit = async (e: React.FormEvent) => {
@@ -499,6 +325,16 @@ export const FondosPage: React.FC = () => {
       groupedFondos[code].push(f);
     }
   }
+
+  // Lista única de fondos en el mismo orden que la pestaña Fondos (Variables)
+  const uniqueFondosList = Array.from(
+    new Map(
+      fondos.map(f => [
+        f.id_fondo,
+        { id_fondo: f.id_fondo, nombre_fondo: f.nombre_fondo, moneda: f.moneda }
+      ])
+    ).values()
+  );
 
   // Navegar al detalle
   const handleNavigateDetail = (code: string) => {
@@ -1350,366 +1186,139 @@ export const FondosPage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* --- SUB-PESTAÑA 2: SEGUIMIENTO Y CIERRES DE VALOR CUOTA NAV V27 --- */}
+      {/* --- SUB-PESTAÑA 2: SEGUIMIENTO DE VALOR CUOTA --- */}
       {activeSubTab === 'valorCuota' && (
         <div className="flex flex-col gap-6 w-full animate-fadeIn">
           
-          {/* SECCIÓN 1: TABLERO ANUAL DE 12 MESES (CALENDARIO DE CIERRES VALOR CUOTA) */}
-          <div className="glass-card p-6 flex flex-col gap-5 border-l-4 border-l-[#0284c7]">
-            
-            {/* Header del Calendario y Selector de Año */}
-            <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-[#e2e8f0] dark:border-[#334155]">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0284c7]/30 shadow-xs flex items-center justify-center">
-                  <Calendar size={22} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2">
-                    <span>Cronograma Anual de Cierres · Valor Cuota NAV V27</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#f0f9ff] text-[#0284c7] dark:bg-[#0284c7]/20 dark:text-[#38bdf8] border border-[#bae6fd]">
-                      {vcSelYear}
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold mt-0.5">
-                    Supervisión y oficialización de cierres bimestrales (B1-B6) y trimestrales (Q1-Q4) de Valor Cuota.
-                  </p>
-                </div>
-              </div>
-
-              {/* Selector de Año con Pill Buttons */}
-              <div className="flex items-center gap-1.5 bg-[#f8fafc] dark:bg-[#0b0f19] p-1 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
-                {[2024, 2025, 2026, 2027].map(year => (
-                  <button
-                    key={year}
-                    type="button"
-                    onClick={() => setVcSelYear(year)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                      vcSelYear === year
-                        ? 'bg-[#0284c7] text-white shadow-xs'
-                        : 'text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc] hover:bg-white dark:hover:bg-[#1e293b]'
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
-              </div>
+          {/* Panel Ejecutivo de Filtros y Acciones Oficiales */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+            <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+              <h3 className="text-base font-black text-slate-850 dark:text-slate-100 tracking-tight uppercase flex items-center gap-2">
+                <span>📊 Seguimiento y Simulación de Valor Cuota v27 (NAV)</span>
+              </h3>
+              <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
+                Selecciona el fondo y el periodo para generar y descargar los reportes oficiales transpuestos en PDF o Excel.
+              </p>
             </div>
 
-            {/* Grid de 12 Meses Ejecutivo */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-              {[
-                { m: 1, name: 'Enero', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 2, name: 'Febrero', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 1, cType: 'Bimestre' },
-                { m: 3, name: 'Marzo', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', funds: ['NSLCON01'], cNum: 1, cType: 'Trimestre' },
-                { m: 4, name: 'Abril', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 2, cType: 'Bimestre' },
-                { m: 5, name: 'Mayo', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 6, name: 'Junio', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 3, cType: 'Bimestre' },
-                { m: 7, name: 'Julio', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 8, name: 'Agosto', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 4, cType: 'Bimestre' },
-                { m: 9, name: 'Septiembre', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', funds: ['NSLCON01'], cNum: 3, cType: 'Trimestre' },
-                { m: 10, name: 'Octubre', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'], cNum: 5, cType: 'Bimestre' },
-                { m: 11, name: 'Noviembre', cycle: null, label: 'Sin Cierres', corte: '-', funds: [] },
-                { m: 12, name: 'Diciembre', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'], cNum: 6, cType: 'Bimestre' }
-              ].map(item => {
-                let isClosedInDb = false;
-                if (item.m === 2) isClosedInDb = (vcDashboard.B?.[1]?.length || 0) > 0;
-                else if (item.m === 3) isClosedInDb = (vcDashboard.Q?.[1]?.length || 0) > 0;
-                else if (item.m === 4) isClosedInDb = (vcDashboard.B?.[2]?.length || 0) > 0;
-                else if (item.m === 6) isClosedInDb = (vcDashboard.B?.[3]?.length || 0) > 0;
-                else if (item.m === 8) isClosedInDb = (vcDashboard.B?.[4]?.length || 0) > 0;
-                else if (item.m === 9) isClosedInDb = (vcDashboard.Q?.[3]?.length || 0) > 0;
-                else if (item.m === 10) isClosedInDb = (vcDashboard.B?.[5]?.length || 0) > 0;
-                else if (item.m === 12) isClosedInDb = (vcDashboard.B?.[6]?.length || 0) > 0;
-
-                const hasCycle = item.funds.length > 0;
-                const isSelected = (item.cType === vcSelTipo && item.cNum === vcSelNum);
-
-                return (
-                  <div
-                    key={item.m}
-                    onClick={() => {
-                      if (item.cType && item.cNum) {
-                        setVcSelTipo(item.cType as any);
-                        setVcSelNum(item.cNum);
-                        setVcSelFondo('TODOS');
-                      }
-                    }}
-                    className={`rounded-2xl p-3.5 border transition-all flex flex-col justify-between min-h-[160px] ${
-                      !hasCycle
-                        ? 'bg-slate-50/40 dark:bg-slate-900/20 border-dashed border-[#e2e8f0] dark:border-[#334155] opacity-50'
-                        : isSelected
-                        ? 'bg-white dark:bg-[#1e293b] border-2 border-[#0284c7] shadow-md shadow-[#0284c7]/20 scale-[1.02] cursor-pointer'
-                        : 'bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] hover:shadow-sm cursor-pointer'
-                    }`}
-                  >
-                    {/* Cabecera del Mes */}
-                    <div className="flex items-start justify-between gap-1">
-                      <div>
-                        <span className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] font-bold block">
-                          MES {String(item.m).padStart(2, '0')}
-                        </span>
-                        <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wide">
-                          {item.name}
-                        </span>
-                      </div>
-
-                      {hasCycle && (
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-black uppercase shadow-xs ${
-                          isClosedInDb
-                            ? 'bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] dark:bg-[#059669]/20 dark:text-[#34d399]'
-                            : 'bg-[#fff1f2] text-[#e11d48] border border-[#fecdd3] dark:bg-[#e11d48]/20 dark:text-[#fb7185]'
-                        }`}>
-                          {isClosedInDb ? '● REGISTRADO' : '● POR REGISTRAR'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Ciclo y Badges de Fondos */}
-                    <div className="my-2 flex flex-col gap-1.5">
-                      {hasCycle ? (
-                        <>
-                          <div className="flex items-center justify-between text-[10.5px]">
-                            <span className="font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
-                              {item.cycle}
-                            </span>
-                            <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono font-bold">
-                              {item.corte}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-1">
-                            {item.funds.map(f => (
-                              <span 
-                                key={f} 
-                                className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-100 dark:bg-slate-800/80 text-[#334155] dark:text-[#cbd5e1] border border-slate-200 dark:border-slate-700/60"
-                              >
-                                {f}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="py-2 text-center text-[10px] font-medium text-slate-400 italic">
-                          Sin cierres
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Footer del Mes */}
-                    <div className="border-t border-[#e2e8f0] dark:border-[#334155] pt-1.5 flex justify-between items-center text-[9.5px] text-[#64748b] dark:text-[#94a3b8] font-bold">
-                      <span>{item.label}</span>
-                      {hasCycle && (
-                        <span className="font-mono text-[#0284c7] dark:text-[#38bdf8]">
-                          {isSelected ? '✓ Activo' : 'Seleccionar'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SECCIÓN 2: PANEL OPERATIVO COMPACTO EN 3 COLUMNAS HORIZONTALES */}
-          <div className="glass-card p-5 flex flex-col gap-4">
-            
-            {/* Header del Panel y Modo Activo */}
-            <div className="flex items-center justify-between gap-4 flex-wrap pb-3 border-b border-[#e2e8f0] dark:border-[#334155]">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                  ⚙️ Panel Operativo de Valor Cuota NAV ({fStart} al {fEnd})
-                </h3>
+            {/* Filtros de Selección */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-slate-50/50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-150 dark:border-slate-800">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">🎯 Fondo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelFondo}
+                  onChange={(e) => setVcSelFondo(e.target.value)}
+                >
+                  <option value="TODOS">TODOS LOS FONDOS</option>
+                  {uniqueFondosList.map(f => (
+                    <option key={f.id_fondo} value={f.id_fondo}>
+                      {f.nombre_fondo} ({f.id_fondo})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black tracking-wider uppercase border flex items-center gap-1.5 shadow-xs ${
-                  vcClosedCount > 0 
-                    ? 'bg-[#ecfdf5] dark:bg-[#059669]/15 text-[#059669] dark:text-[#34d399] border-[#a7f3d0] dark:border-[#059669]/30' 
-                    : 'bg-[#fff1f2] dark:bg-[#e11d48]/15 text-[#e11d48] dark:text-[#fb7185] border-[#fecdd3] dark:border-[#e11d48]/30'
-                }`}>
-                  {vcClosedCount > 0 ? (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">📅 Año</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelYear}
+                  onChange={(e) => setVcSelYear(Number(e.target.value))}
+                >
+                  <option value={2024}>2024</option>
+                  <option value={2025}>2025</option>
+                  <option value={2026}>2026</option>
+                  <option value={2027}>2027</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">⚙️ Ciclo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelTipo}
+                  onChange={(e) => setVcSelTipo(e.target.value as any)}
+                >
+                  <option value="Bimestre">Bimestre</option>
+                  <option value="Trimestre">Trimestre</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">📌 N° Periodo</label>
+                <select
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-2 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none shadow-xs"
+                  value={vcSelNum}
+                  onChange={(e) => setVcSelNum(Number(e.target.value))}
+                >
+                  {vcSelTipo === 'Bimestre' ? (
                     <>
-                      <CheckCircle size={13} />
-                      <span>🟢 PERÍODO REGISTRADO ({vcClosedCount} FONDOS OFICIALIZADOS)</span>
+                      <option value={1}>1: Ene - Feb</option>
+                      <option value={2}>2: Mar - Abr</option>
+                      <option value={3}>3: May - Jun</option>
+                      <option value={4}>4: Jul - Ago</option>
+                      <option value={5}>5: Sep - Oct</option>
+                      <option value={6}>6: Nov - Dic</option>
                     </>
                   ) : (
                     <>
-                      <AlertCircle size={13} />
-                      <span>🔴 PERÍODO POR REGISTRAR / SIMULACIÓN</span>
+                      <option value={1}>1: Ene - Mar</option>
+                      <option value={2}>2: Abr - Jun</option>
+                      <option value={3}>3: Jul - Sep</option>
+                      <option value={4}>4: Oct - Dic</option>
                     </>
                   )}
-                </span>
+                </select>
               </div>
             </div>
 
-            {/* Banner de Mensaje de Éxito */}
-            {vcSuccessMsg && (
-              <div className="bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-xl p-3 text-xs font-bold text-[#059669] dark:text-[#34d399] flex items-center justify-between">
-                <span>{vcSuccessMsg}</span>
-                <button onClick={() => setVcSuccessMsg(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                  <X size={14} />
-                </button>
+            {/* Banner de Progreso de Exportación a Excel */}
+            {vcExportingExcel && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl p-3.5 flex items-center gap-3 animate-pulse shadow-sm">
+                <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                    📊 Exportando Matriz Completa Valor Cuota a Excel v27 (Pestaña por Fondo)...
+                  </span>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                    Generando matriz continua horizontal (Fila 1) para auditoría y fórmulas avanzadas. La descarga iniciará en breve.
+                  </span>
+                </div>
               </div>
             )}
 
-            {/* GRID DE 3 COLUMNAS HORIZONTALES (WORKFLOW VALOR CUOTA) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-              
-              {/* COLUMNA 1: FILTROS DEL PERÍODO */}
-              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
-                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                    1. Filtros del Período
-                  </span>
-                  <span className="text-[9.5px] font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
-                    {currentCierre.cycle}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2.5">
-                  {/* DESPLEGABLE 1: MES DE CIERRE / PERÍODO */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-                      📅 Mes de Cierre / Período
-                    </label>
-                    <select
-                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                      value={`${vcSelTipo}_${vcSelNum}`}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const found = PERIODOS_CIERRE.find(p => `${p.cType}_${p.cNum}` === val);
-                        if (found) {
-                          setVcSelTipo(found.cType);
-                          setVcSelNum(found.cNum);
-                          setVcSelFondo('TODOS');
-                        }
-                      }}
-                    >
-                      {PERIODOS_CIERRE.map(p => (
-                        <option key={p.id} value={`${p.cType}_${p.cNum}`}>
-                          {p.mes} ({p.rango} · {p.label})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* DESPLEGABLE 2: FONDO A LIQUIDAR */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-                      🎯 Fondo a Liquidar
-                    </label>
-                    <select
-                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                      value={vcSelFondo}
-                      onChange={(e) => setVcSelFondo(e.target.value)}
-                    >
-                      <option value="TODOS">TODOS LOS FONDOS ({fondosDelCierre.length} Fondos)</option>
-                      {fondosDelCierre.map(f => (
-                        <option key={f.id_fondo} value={f.id_fondo}>
-                          {f.nombre_fondo} ({f.id_fondo})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-right flex justify-between items-center">
-                  <span className="text-[9px] text-slate-400 font-mono">
-                    {currentCierre.rango}
-                  </span>
-                  <span>
-                    Corte: <strong className="text-[#0284c7] dark:text-[#38bdf8]">{fEnd}</strong>
-                  </span>
-                </div>
-              </div>
-
-              {/* COLUMNA 2: AUDITORÍA & REPORTES */}
-              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
-                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                    2. Auditoría & Reportes
-                  </span>
-                  <span className="text-[9.5px] font-mono font-bold text-[#059669] dark:text-[#34d399]">
-                    NAV V27
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <button
-                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] transition-all disabled:opacity-60"
-                    disabled={vcLoading || vcExportingExcel || vcReportData.length === 0}
-                    onClick={handleExportVcExcel}
-                  >
-                    {vcExportingExcel ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : vcExcelDownloaded ? (
-                      <CheckCircle size={16} className="text-[#059669]" />
-                    ) : (
-                      <FileSpreadsheet size={16} />
-                    )}
-                    <span>{vcExcelDownloaded ? '✓ Excel V27 Listo' : 'Descargar Excel Maestro V27'}</span>
-                  </button>
-
-                  <button
-                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all disabled:opacity-60"
-                    onClick={() => window.print()}
-                    disabled={vcLoading || vcReportData.length === 0}
-                  >
-                    <FileText size={16} />
-                    <span>Imprimir / PDF Oficial</span>
-                  </button>
-                </div>
-
-                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-center">
-                  Matriz Transpuesta 100% Homologada
-                </div>
-              </div>
-
-              {/* COLUMNA 3: PERSISTENCIA & ROLLBACK */}
-              <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
-                <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
-                  <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                    3. Persistencia & Rollback
-                  </span>
-                  <span className="text-[9.5px] font-mono font-bold text-[#e11d48] dark:text-[#fb7185]">
-                    DB Ledger
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <button
-                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0f172a] hover:bg-[#1e293b] text-white transition-all disabled:opacity-50"
-                    disabled={vcLoading || vcOficializarLoading || vcReportData.length === 0 || vcClosedCount > 0}
-                    onClick={handleOficializarCierre}
-                  >
-                    {vcOficializarLoading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <CheckCircle size={16} className="text-emerald-400" />
-                    )}
-                    <span>{vcClosedCount > 0 ? '✓ Período Ya Oficializado' : 'Oficializar Cierre Valor Cuota'}</span>
-                  </button>
-
-                  <button
-                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#fff1f2] dark:bg-[#e11d48]/15 border border-[#fecdd3] dark:border-[#e11d48]/30 text-[#e11d48] dark:text-[#fb7185] hover:bg-[#ffe4e6] transition-all disabled:opacity-50"
-                    disabled={vcRollbackLoading || vcClosedCount === 0}
-                    onClick={handleRollbackCierre}
-                  >
-                    {vcRollbackLoading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={16} />
-                    )}
-                    <span>Reabrir Período (Rollback)</span>
-                  </button>
-                </div>
-
-                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-center">
-                  Tabla: <code>crm_valor_cuota_eventos</code>
-                </div>
-              </div>
-
+            {/* Único Botón de Exportación a Excel Prominente a Ancho Completo */}
+            <div className="flex items-center justify-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <button
+                className={`w-full h-12 px-6 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all disabled:opacity-50 ${
+                  vcExcelDownloaded
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+                onClick={handleExportVcExcel}
+                disabled={vcLoading || vcExportingExcel || vcReportData.length === 0}
+              >
+                {vcExportingExcel ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Compilando Matriz Pura a Excel v27...</span>
+                  </>
+                ) : vcExcelDownloaded ? (
+                  <>
+                    <CheckCircle size={18} className="text-emerald-200" />
+                    <span>✓ Excel v27 Descargado (Clic para Re-descargar)</span>
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet size={18} />
+                    <span>📊 Exportar Matriz Completa a Excel v27 (Un Tab por Fondo - Continuidad Diaria)</span>
+                  </>
+                )}
+              </button>
             </div>
+
+
 
           </div>
 

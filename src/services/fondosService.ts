@@ -442,3 +442,77 @@ export const calculateValorCuotaV26 = async (
 
   return reports;
 };
+
+// =========================================================================
+// PERSISTENCIA Y ROLLBACK DE CIERRES DE VALOR CUOTA (NAV V27)
+// =========================================================================
+
+export const getValorCuotaEvents = async (endDate: string) => {
+  try {
+    const { data, error, count } = await supabase
+      .from('crm_valor_cuota_eventos')
+      .select('*', { count: 'exact' })
+      .eq('fecha_fin_periodo', endDate);
+    if (error) throw error;
+    return { data: data || [], count: count || 0 };
+  } catch (err: any) {
+    console.error('Error consultando crm_valor_cuota_eventos:', err.message);
+    return { data: [], count: 0 };
+  }
+};
+
+export const fetchValorCuotaDashboard = async (year: number) => {
+  try {
+    const { data, error } = await supabase
+      .from('crm_valor_cuota_eventos')
+      .select('id_fondo, fecha_fin_periodo, anio, ciclo, num_periodo')
+      .eq('anio', year);
+    if (error) throw error;
+
+    const dash: any = {
+      B: { 1: [] as string[], 2: [] as string[], 3: [] as string[], 4: [] as string[], 5: [] as string[], 6: [] as string[] },
+      Q: { 1: [] as string[], 2: [] as string[], 3: [] as string[], 4: [] as string[] }
+    };
+
+    if (data) {
+      for (const r of data) {
+        if (r.ciclo === 'Bimestre' && dash.B[r.num_periodo]) {
+          dash.B[r.num_periodo].push(r.id_fondo);
+        } else if (r.ciclo === 'Trimestre' && dash.Q[r.num_periodo]) {
+          dash.Q[r.num_periodo].push(r.id_fondo);
+        }
+      }
+    }
+
+    for (let i = 1; i <= 6; i++) {
+      dash.B[i] = Array.from(new Set(dash.B[i])).sort();
+    }
+    for (let i = 1; i <= 4; i++) {
+      dash.Q[i] = Array.from(new Set(dash.Q[i])).sort();
+    }
+
+    return dash;
+  } catch (err: any) {
+    console.error('Error consultando dashboard de valor cuota:', err.message);
+    return { B: {}, Q: {} };
+  }
+};
+
+export const oficializarCierreValorCuota = async (payloads: any[]) => {
+  const { data, error } = await supabase
+    .from('crm_valor_cuota_eventos')
+    .insert(payloads)
+    .select();
+  if (error) throw error;
+  return data;
+};
+
+export const rollbackCierreValorCuota = async (endDate: string) => {
+  const { data, error } = await supabase
+    .from('crm_valor_cuota_eventos')
+    .delete()
+    .eq('fecha_fin_periodo', endDate)
+    .select();
+  if (error) throw error;
+  return data;
+};
