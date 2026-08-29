@@ -25,8 +25,13 @@ export async function downloadReportPdf(
     throw new Error(`Error al generar PDF en el servidor (HTTP ${response.status}): ${errText}`);
   }
 
-  // 3. Descarga binaria del archivo PDF (.pdf) directamente al disco
+  // 3. Descarga binaria del archivo PDF (.pdf) directamente al disco con validación de integridad
   const blob = await response.blob();
+  if (blob.size < 500) {
+    const errText = await blob.text();
+    throw new Error(`Respuesta anómala del servidor (${blob.size} bytes): ${errText}`);
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
