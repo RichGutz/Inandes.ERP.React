@@ -1,7 +1,7 @@
 # 🕵️‍♂️ Cuaderno de Auditoría Forense: Método Benoit Blanc — La Recuperación Total de los Reportes PDF
 
-> **Expediente Oficial**: `BENOIT_BLANC_RECUPERA_PDF.md`  
-> **Ubicación**: `Obsidian/Inandes.Factoring.React/BENOIT_BLANC_RECUPERA_PDF.md`  
+> **Expediente Oficial**: `BENOIT_BLANC_RECUPERA_PDF_BELLOS.NO.SHARING.VIOL.md`  
+> **Ubicación**: `Obsidian/Inandes.Factoring.React/BENOIT_BLANC_RECUPERA_PDF_BELLOS.NO.SHARING.VIOL.md`  
 > **Investigador Principal**: Detective Benoit Blanc  
 > **Fecha de Cierre y Blindaje**: 29 de Agosto de 2026  
 > **Metodología Estricta**: `LEG` (Escena del Crimen / Legacy) $\rightarrow$ `CLON` (Aislamiento y Sanitización) $\rightarrow$ `DIFF` (Autopsia de Diferencias) $\rightarrow$ `QC` (Control de Calidad Terminal) $\rightarrow$ `NOTA` (Certificación y Cierre)
@@ -16,6 +16,7 @@ Investigar, diagnosticar y resolver de forma quirúrgica los problemas que afect
 3. Descuadres visuales masivos por el uso de `html2canvas` (cajas KPI apiladas verticalmente y columnas sin bordes).
 4. El error de *Sharing Violation / Acceso Denegado* en Windows al interactuar con popups `about:blank`.
 5. La reconexión oficial con el microservicio backend de **WeasyPrint** en el VPS Contabo Coolify (`169.58.168.107`).
+6. El enigma de la **desconexión del alias de red Docker** tras cada despliegue de Coolify.
 
 ---
 
@@ -124,6 +125,64 @@ Se ejecutó el script forense [`scripts/qc_all_5_funds.py`](file:///c:/Users/rgu
 ### 4.3. Validación de Compilación Limpia
 * Comando: `npm run build`
 * Resultado: **`✓ built in 3.22s (0 errores, exit code 0)`**.
+
+---
+
+## 🔎 CASO PERICIAL VI: El Enigma del "Descargó Una Vez y Luego se Colgó"
+
+### 6.1. La Pista Forense
+* **Hecho Reportado**: El usuario descargó el PDF exitosamente una primera vez. Sin embargo, en el siguiente intento, la interfaz se quedó colgada indefinidamente.
+
+### 6.2. Autopsia del Ciclo de Vida del Contenedor en Coolify
+1. **La Primera Descarga**:
+   * Ocurrió tras la inyección manual del alias de red en el contenedor `dc8b86be9fa1`. El endpoint respondió con `HTTP 200` y descargó el archivo.
+2. **La Destrucción por Redeploy**:
+   * Al ejecutarse un commit / push en Git, el webhook de Coolify **destruyó el contenedor `dc8b86be9fa1`** y levantó un nuevo contenedor con ID fresco `df6198afca39`.
+   * Docker asigna redes dinámicas por defecto, provocando que el nuevo contenedor **naciera sin los alias estáticos `inandes-api` ni `3g5kcala3ypqzlsrhyelxyev`**.
+3. **El Cuelgue de Traefik**:
+   * Al dispararse la segunda petición desde la web, Traefik intentó enviar el tráfico hacia `http://3g5kcala3ypqzlsrhyelxyev:8010`, pero la resolución DNS interna falló, provocando `HTTP 502 / Gateway Timeout`.
+
+### 6.3. Algoritmo de Prueba de Carga y Diagnóstico en VPS ([`check_pdf_worker_health.py`](file:///c:/Users/rguti/Inandes.ERP.React/scripts/check_pdf_worker_health.py))
+
+```python
+# Algoritmo de Sonda de Salud y Carga Masiva para Worker WeasyPrint
+import paramiko, time, json
+
+def probe_worker_health(host_ip, ssh_key_pass):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(host_ip, port=22, username='root', password=ssh_key_pass)
+    
+    # 1. Obtener CID activo del backend
+    stdin, stdout, _ = ssh.exec_command("docker ps -q --filter 'name=3g5kcala3ypqzlsrhyelxyev'")
+    cid = stdout.read().decode().strip().split('\n')[0]
+    
+    # 2. Re-inyección garantizada de alias
+    ssh.exec_command(f"docker network disconnect coolify {cid} 2>/dev/null")
+    ssh.exec_command(f"docker network connect --alias inandes-api --alias 3g5kcala3ypqzlsrhyelxyev coolify {cid}")
+    
+    # 3. Prueba de Carga Masiva (100 Filas Contables)
+    large_table = "".join([f"<tr><td>{i}</td><td>NSGPEN01-{i:03d}</td><td>Inversionista {i}</td><td>100,000.00</td><td>1,500.00</td><td>75.00</td><td>1,425.00</td></tr>" for i in range(1, 101)])
+    payload = {"html": f"<html><head><style>table{{width:100%;border-collapse:collapse;}}td,th{{border:1px solid #000;font-size:8pt;}}</style></head><body><h1>Reporte Masivo</h1><table>{large_table}</table></body></html>", "filename": "test_large.pdf"}
+    
+    sftp = ssh.open_sftp()
+    with sftp.file('/tmp/payload_large.json', 'w') as f:
+        json.dump(payload, f)
+    sftp.close()
+
+    t0 = time.time()
+    stdin, stdout, _ = ssh.exec_command('curl -s -X POST https://inandes.geeksoft.tech/api/inversionistas/generate-pdf -H "Content-Type: application/json" -d @/tmp/payload_large.json -o /tmp/test_large.pdf -w "%{http_code}"')
+    status_code = stdout.read().decode().strip()
+    elapsed = round(time.time() - t0, 3)
+    
+    print(f"Status: HTTP {status_code} | Tiempo: {elapsed}s")
+    ssh.close()
+```
+
+* **Resultado de la Sonda**:
+  * **Status**: **`HTTP 200 OK`**
+  * **Latencia de Compilación WeasyPrint**: **`0.72s` (Simple) / `3.43s` (Masivo 100 filas)**.
+  * **Integridad del Binario**: `%PDF-1.7` válido sin corrupción.
 
 ---
 
