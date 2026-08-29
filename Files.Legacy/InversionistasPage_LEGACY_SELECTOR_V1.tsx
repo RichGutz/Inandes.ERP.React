@@ -285,20 +285,6 @@ export const InversionistasPage: React.FC = () => {
 
   const { fStart, fEnd } = getDates(v40SelYear, v40SelCiclo, v40SelNum);
 
-  const PERIODOS_CIERRE = [
-    { id: 'B1', m: 2, mes: 'Febrero', rango: 'Ene - Feb', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', cNum: 1, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'Q1', m: 3, mes: 'Marzo', rango: 'Ene - Mar', cycle: 'Q1', label: 'Trimestre 1', corte: '31 Mar', cNum: 1, cType: 'Trimestre' as const, funds: ['NSLCON01'] },
-    { id: 'B2', m: 4, mes: 'Abril', rango: 'Mar - Abr', cycle: 'B2', label: 'Bimestre 2', corte: '30 Abr', cNum: 2, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'B3_Q2', m: 6, mes: 'Junio', rango: 'May - Jun / Q2', cycle: 'B3 / Q2', label: 'Bim. 3 / Q2', corte: '30 Jun', cNum: 3, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'] },
-    { id: 'B4', m: 8, mes: 'Agosto', rango: 'Jul - Ago', cycle: 'B4', label: 'Bimestre 4', corte: '31 Ago', cNum: 4, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'Q3', m: 9, mes: 'Septiembre', rango: 'Jul - Sep', cycle: 'Q3', label: 'Trimestre 3', corte: '30 Sep', cNum: 3, cType: 'Trimestre' as const, funds: ['NSLCON01'] },
-    { id: 'B5', m: 10, mes: 'Octubre', rango: 'Sep - Oct', cycle: 'B5', label: 'Bimestre 5', corte: '31 Oct', cNum: 5, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
-    { id: 'B6_Q4', m: 12, mes: 'Diciembre', rango: 'Nov - Dic / Q4', cycle: 'B6 / Q4', label: 'Bim. 6 / Q4', corte: '31 Dic', cNum: 6, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02', 'NSLCON01'] }
-  ];
-
-  const currentCierre = PERIODOS_CIERRE.find(p => p.cType === v40SelCiclo && p.cNum === v40SelNum) || PERIODOS_CIERRE[0];
-  const fondosDelCierre = fondosDisponibles.filter(f => currentCierre.funds.includes(f.id_fondo));
-
   // Verificar colisiones de fecha en DB
   const verificarColision = async (endDate: string) => {
     try {
@@ -2099,7 +2085,6 @@ export const InversionistasPage: React.FC = () => {
                       if (item.cType && item.cNum) {
                         setV40SelCiclo(item.cType as any);
                         setV40SelNum(item.cNum);
-                        setV40SelFondo('TODOS');
                       }
                     }}
                     className={`rounded-2xl p-3.5 border transition-all flex flex-col justify-between min-h-[160px] ${
@@ -2213,71 +2198,76 @@ export const InversionistasPage: React.FC = () => {
             {/* GRID DE 4 COLUMNAS HORIZONTALES (WORKFLOW COMPLETO) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
               
-              {/* COLUMNA 1: CONFIGURACIÓN DEL CORTE (2 DESPLEGABLES INTELIGENTES) */}
+              {/* COLUMNA 1: CONFIGURACIÓN DEL CORTE */}
               <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
                 <div className="flex items-center justify-between border-b border-[#e2e8f0] dark:border-[#334155] pb-2">
                   <span className="text-[11px] font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
                     1. Filtros del Período
                   </span>
                   <span className="text-[9.5px] font-mono font-bold text-[#0284c7] dark:text-[#38bdf8]">
-                    {currentCierre.cycle}
+                    Configuración
                   </span>
                 </div>
 
                 <div className="flex flex-col gap-2.5">
-                  {/* DESPLEGABLE 1: MES DE CIERRE / PERÍODO */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-                      📅 Mes de Cierre / Período
-                    </label>
+                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Liquidar</label>
                     <select
-                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                      value={`${v40SelCiclo}_${v40SelNum}`}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const found = PERIODOS_CIERRE.find(p => `${p.cType}_${p.cNum}` === val);
-                        if (found) {
-                          setV40SelCiclo(found.cType);
-                          setV40SelNum(found.cNum);
-                          setV40SelFondo('TODOS');
-                        }
-                      }}
-                    >
-                      {PERIODOS_CIERRE.map(p => (
-                        <option key={p.id} value={`${p.cType}_${p.cNum}`}>
-                          {p.mes} ({p.rango} · {p.label})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* DESPLEGABLE 2: FONDO A LIQUIDAR (FILTRADO POR EL MES SELECCIONADO) */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-                      🎯 Fondo a Liquidar
-                    </label>
-                    <select
-                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
+                      className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
                       value={v40SelFondo}
                       onChange={(e) => setV40SelFondo(e.target.value)}
                     >
-                      <option value="TODOS">TODOS LOS FONDOS ({fondosDelCierre.length} Fondos)</option>
-                      {fondosDelCierre.map(f => (
-                        <option key={f.id_fondo} value={f.id_fondo}>
-                          {f.nombre_fondo} ({f.id_fondo})
-                        </option>
+                      <option value="TODOS">TODOS LOS FONDOS</option>
+                      {fondosDisponibles.map(f => (
+                        <option key={f.id_fondo} value={f.id_fondo}>{f.nombre_fondo}</option>
                       ))}
                     </select>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Ciclo</label>
+                      <select
+                        className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
+                        value={v40SelCiclo}
+                        onChange={(e) => setV40SelCiclo(e.target.value as any)}
+                      >
+                        <option value="Bimestre">Bimestre</option>
+                        <option value="Trimestre">Trimestre</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">N° Período</label>
+                      <select
+                        className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs"
+                        value={v40SelNum}
+                        onChange={(e) => setV40SelNum(Number(e.target.value))}
+                      >
+                        {v40SelCiclo === 'Bimestre' ? (
+                          <>
+                            <option value={1}>1: Ene-Feb (Feb 28)</option>
+                            <option value={2}>2: Mar-Abr (Abr 30)</option>
+                            <option value={3}>3: May-Jun (Jun 30)</option>
+                            <option value={4}>4: Jul-Ago (Ago 31)</option>
+                            <option value={5}>5: Sep-Oct (Oct 31)</option>
+                            <option value={6}>6: Nov-Dic (Dic 31)</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value={1}>1: Ene-Mar (Mar 31)</option>
+                            <option value={2}>2: Abr-Jun (Jun 30)</option>
+                            <option value={3}>3: Jul-Sep (Sep 30)</option>
+                            <option value={4}>4: Oct-Dic (Dic 31)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-right flex justify-between items-center">
-                  <span className="text-[9px] text-slate-400 font-mono">
-                    {currentCierre.rango}
-                  </span>
-                  <span>
-                    Corte: <strong className="text-[#0284c7] dark:text-[#38bdf8]">{fEnd}</strong>
-                  </span>
+                <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-right">
+                  Corte: <strong className="text-[#0284c7] dark:text-[#38bdf8]">{fEnd}</strong>
                 </div>
               </div>
 
