@@ -7,25 +7,16 @@ export async function downloadReportPdf(
   filename: string, 
   orientation: 'portrait' | 'landscape' = 'portrait'
 ): Promise<void> {
-  // 1. Limpiar y estructurar HTML
-  const bodyContent = htmlDoc
-    .replace(/^[\s\S]*?<body[^>]*>/i, '')
-    .replace(/<\/body>[\s\S]*$/i, '');
-  const headStyles = (htmlDoc.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
-  const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
-
-  // 2. Intentar backend con Timeout de 2.5 segundos
-  let backendSuccess = false;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-  try {
-    const API_BASE = getApiBaseUrl();
-    if (API_BASE !== undefined) {
+  // 1. Intentar Backend FastAPI de alta velocidad (si existe y responde en <2.5s)
+  const API_BASE = getApiBaseUrl();
+  if (API_BASE) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    try {
       const response = await fetch(`${API_BASE}/api/inversionistas/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: printHtml, filename }),
+        body: JSON.stringify({ html: htmlDoc, filename }),
         signal: controller.signal
       });
 
@@ -40,45 +31,62 @@ export async function downloadReportPdf(
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 10000);
-        backendSuccess = true;
         return;
       }
+    } catch (err) {
+      console.warn("Backend PDF endpoint no disponible. Activando motor local con iframe:", err);
+    } finally {
+      clearTimeout(timeoutId);
     }
-  } catch (err) {
-    console.warn("Backend PDF endpoint no disponible o excedió timeout (2.5s). Usando motor local html2pdf:", err);
-  } finally {
-    clearTimeout(timeoutId);
   }
 
-  if (backendSuccess) return;
-
-  // 3. Fallback infalible en cliente con html2pdf.js
-  const container = document.createElement('div');
-  container.innerHTML = printHtml;
-  container.style.position = 'fixed';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  container.style.width = orientation === 'landscape' ? '297mm' : '210mm';
-  container.style.background = '#ffffff';
-  container.style.zIndex = '-9999';
-  document.body.appendChild(container);
+  // 2. Motor Local en Cliente: Iframe aislado que garantiza 100% render de estilos, fuentes e imagenes
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '0';
+  iframe.style.top = '0';
+  iframe.style.width = orientation === 'landscape' ? '1200px' : '850px';
+  iframe.style.height = '1000px';
+  iframe.style.zIndex = '-99999';
+  iframe.style.opacity = '0.01';
+  iframe.style.pointerEvents = 'none';
+  document.body.appendChild(iframe);
 
   try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) throw new Error("No se pudo inicializar el motor de renderizado PDF.");
+
+    iframeDoc.open();
+    iframeDoc.write(htmlDoc);
+    iframeDoc.close();
+
+    // Esperar a que el navegador procese los estilos y assets base64
+    await new Promise(r => setTimeout(r, 400));
+
+    const targetEl = iframeDoc.body;
     const opt = {
       margin: orientation === 'landscape' ? [5, 5, 5, 5] : [8, 8, 8, 8],
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        logging: false,
+        windowWidth: orientation === 'landscape' ? 1200 : 850
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
     };
-    await (html2pdf() as any).set(opt).from(container).save();
+
+    await (html2pdf() as any).set(opt).from(targetEl).save();
   } catch (clientErr) {
-    console.error("Error en motor cliente html2pdf:", clientErr);
+    console.error("Error en renderizado PDF local:", clientErr);
     throw clientErr;
   } finally {
-    if (container.parentNode) {
-      document.body.removeChild(container);
+    if (iframe.parentNode) {
+      document.body.removeChild(iframe);
     }
   }
 }
+
 
