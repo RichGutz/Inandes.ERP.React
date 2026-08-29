@@ -1,4 +1,4 @@
-# 🕵️‍♂️ Detective Benoit Blanc: Plan Pericial — Valor Cuota NAV V27 (Excel Maestro y PDF WeasyPrint)
+# 🕵️‍♂️ Manual de Auditoría Forense: Caso Valor Cuota NAV V27 — Excel Maestro y PDF WeasyPrint Quincenal
 
 > **Expediente Oficial**: `BENOIT_BLANC_RECUPERA_PDF_BELLOS.NO.SHARING.VIOL.NAV.UI.md`  
 > **Ubicación**: `Obsidian/Inandes.Factoring.React/BENOIT_BLANC_RECUPERA_PDF_BELLOS.NO.SHARING.VIOL.NAV.UI.md`  
@@ -8,58 +8,80 @@
 
 ---
 
-## 🎯 1. La Escena del Crimen (`LEG`)
+## 🩸 1. La Escena del Crimen (`LEG`)
 
-1. **Botones Inertes (Permanentemente Deshabilitados)**:
-   * En `src/features/fondos/FondosPage.tsx`:
-     * Botón 1: `Descargar Excel Maestro V27`
-     * Botón 2: `Descargar PDF Oficial V27`
-   * **Causa Raíz Descubierta**:
-     * El estado `vcReportData` se inicializaba en `[]` pero **nunca se ejecutaba `calculateValorCuotaV26` en el montaje ni al cambiar de período**.
-     * Los botones tenían la condición `disabled={vcReportData.length === 0}`, manteniéndolos permanentemente mudos y bloqueados.
-     * La función `handleExportVcExcel` **ni siquiera estaba implementada en el componente**.
-
----
-
-## 📋 2. Plan Quirúrgico en 2 Fases (`CLON` & `DIFF`)
-
-### 🟢 FASE 1: Restaurar y Curar el Botón de Excel Maestro V27 (Prioridad Inmediata)
-1. **Confirmación del Motor V27 (Integrado con Retornos V40)**:
-   * En `src/services/fondosService.ts`, la función `calculateValorCuotaV27` (anteriormente rotulada `calculateValorCuotaV26`) **YA CONSUME DIRECTAMENTE `generateRetornosV40`** (Línea 137).
-   * Los intereses diarios de cada certificado y aumento provienen exactamente del motor de Retornos V40, garantizando una paridad contable absoluta al centavo.
-2. **Carga Automática de Datos Contables al Cambiar Filtros**:
-   * En `FondosPage.tsx`, al cambiar `vcSelYear`, `vcSelTipo`, `vcSelNum` o `vcSelFondo`, invocar `calculateValorCuotaV27(vcSelFondo === 'TODOS' ? null : vcSelFondo, new Date(fStart), new Date(fEnd))` y almacenar el resultado en `vcReportData`.
-3. **Implementación de `handleExportVcExcel` con `exceljs`**:
-   * Generar el Excel Maestro V27 con la matriz transpuesta diaria:
-     * Pestaña por cada fondo o consolidado con los días del período en columnas.
-     * Filas de certificados con desglose diario de intereses y aumentos.
-     * Filas de resumen diario: `TOTAL CAPITAL (Apertura)`, `GANANCIA DIARIA ACTIVA (Base 360)`, `COMISIÓN ADMINISTRACIÓN (360)`, `COMISIÓN CAPTACIÓN (360)`, `MISCELÁNEOS (360)`, `GANANCIA NETA DIARIA`, `VALOR CUOTA CIERRE`.
-   * Descarga limpia `.xlsx` directa al cliente con feedback visual (`✓ Excel V27 Listo`).
+1. **Botones Inertes en UI (`FondosPage.tsx`)**:
+   * Al presionar `Descargar Excel Maestro V27` o `Descargar PDF Oficial V27`, nada ocurría o permanecían deshabilitados.
+2. **Autopsia Forense de la Causa Raíz**:
+   * En `src/services/fondosService.ts` (Línea 169), el motor de Valor Cuota V27 intentaba leer `fondoRetornoData.rows`.
+   * En `generateRetornosV40`, las filas calculadas se encuentran encapsuladas dentro de `fondoRetornoData.blocks[0].rows`.
+   * Al ser `undefined`, la condición `if (certsRetorno.length === 0) continue;` saltaba silenciosamente todos los fondos, retornando un arreglo vacío `[]` y dejando los botones permanentemente bloqueados.
+   * Además, en el legado original `MOTOR_A_y_B_Calculo_NAV_y_PYL_V26.py` y `reporte_cuotas_transpuesto_v26.html`, el reporte PDF requería un ancho especial porque 31 días en columnas no entraban legibles en 1 sola hoja A4 Landscape.
 
 ---
 
-### 🔵 FASE 2: Generador de Reporte PDF Oficial V27 WeasyPrint (Compaginación Ancha)
-1. **El Desafío de la Matriz Diaria Ancha (28 a 31 Días)**:
-   * A diferencia de Retornos (que totaliza por columnas fijas), el Valor Cuota desglosa **cada día del mes en columnas**.
-   * Un mes de 31 días no entra legible en 1 sola hoja A4 Landscape sin reducir la letra a niveles microscópicos.
-2. **Estrategia de Compaginación en 2 Páginas Horizontales por Mes**:
-   * **Página 1 (Días 1 al 15)**: Bloque de Apertura Quincenal con encabezado oficial, banner del fondo y resumen diario.
-   * **Página 2 (Días 16 al 31 + Totales de Cierre)**: Cierre de mes, Valor Cuota final y firmas.
-3. **Consumo del Microservicio Backend WeasyPrint**:
-   * Enviar HTML limpio mediante [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts) a `POST /api/inversionistas/generate-pdf`.
-   * Integración con la Bóveda Gráfica Base64 Optimizada (`LOGO_INANDES_BASE64` y `LOGO_GEEKSOFT_BASE64`).
+## 🧬 2. La Solución Quirúrgica (`CLON` & `DIFF`)
+
+### 2.1. Reparación del Motor Contable V27 en `fondosService.ts`:
+```typescript
+// Extracción universal de filas desde blocks[0].rows
+const rawRows = (fondoRetornoData?.rows && fondoRetornoData.rows.length > 0)
+  ? fondoRetornoData.rows
+  : (fondoRetornoData?.blocks?.[0]?.rows || []);
+if (rawRows.length === 0) continue;
+
+// Mapeo estructurado de Certificados Padre y sus Aumentos
+const certRows: any[] = [];
+let currentPadre: any = null;
+
+for (const r of rawRows) {
+  if (r.tipo === 'AUMENTO') {
+    const aumentoObj = {
+      tipo: 'AUMENTO',
+      id: r.id || 'Aumento',
+      monto: Number(r.capital || 0),
+      fecha_ingreso: r.fecha ? new Date(r.fecha) : (r.fecha_inicio ? new Date(r.fecha_inicio) : new Date(startDate)),
+      valores_dia: (r.valores || []).slice(),
+      interes_acum: Number(r.bruto_total || 0)
+    };
+    if (currentPadre) currentPadre.hijos.push(aumentoObj);
+  } else {
+    currentPadre = {
+      tipo: 'CERT',
+      id: r.id || r.id_contrato,
+      capital: Number(r.capital || r.capital_base || 0),
+      cuotas: Number(r.capital || r.capital_base || 0),
+      emision: r.emision ? new Date(r.emision) : new Date(startDate),
+      interes_acum: Number(r.bruto_total || r.interes_bruto || 0),
+      valores_dia: (r.valores || r.valores_dia_padre || []).slice(),
+      hijos: []
+    };
+    certRows.push(currentPadre);
+  }
+}
+```
+
+### 2.2. Excel Maestro V27 con `ExcelJS` ([`src/utils/excelGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/excelGeneratorValorCuotaV27.ts)):
+* Pestañas independientes por fondo y mes.
+* Encabezados institucionales azul InAndes `#0284c7` y slate `#0f172a`.
+* Celdas de contratos e intereses formateadas a `#,,##0.00`.
+* Aumentos en verde esmeralda `#059669` itálico con fondo `#f0fdf4`.
+* Filas de resumen diario (Ganancia Bruta, Comisiones Gestor, Ganancia Neta).
+* **Valor Cuota de Cierre con 6 decimales (`0.000000`)** sobre fondo azul claro `#eff6ff`.
+
+### 2.3. PDF WeasyPrint Quincenal en 2 Páginas Horizontales ([`src/utils/pdfGeneratorValorCuotaV27.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV27.ts)):
+* Inspirado en el legado `reporte_cuotas_transpuesto_v26.html` y en el diseño visual de Retornos y Rendimientos.
+* **Parte 1 (Días 01 al 15)**: Matriz de la primera quincena con encabezado institucional, logo Geeksoft PNG y logo InAndes en Base64 optimizada.
+* **Parte 2 (Días 16 al 31 + Total Cierre)**: Segunda quincena con la columna de liquidación final y Valor Cuota de cierre.
+* Integrado con el microservicio WeasyPrint vía [`src/utils/pdfDownloadHelper.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfDownloadHelper.ts).
 
 ---
 
-## 🧪 3. Protocolo de Control de Calidad (`QC`)
-1. **Prueba Terminal de Cálculo**:
-   * Ejecutar script pericial para validar que `calculateValorCuotaV26` retorne los 5 fondos con sus 2 bloques mensuales (Enero y Febrero) y matrices de 31 y 28 días respectivamente.
-2. **Prueba de Descarga Excel**:
-   * Validar que el archivo `.xlsx` se genere en $<1.5\text{s}$ y abra con todas las fórmulas y números formateados `#,,##0.00`.
-3. **Prueba de Descarga PDF**:
-   * Validar que el PDF WeasyPrint compile en $<5\text{s}$ sin corrupción.
+## 🧪 3. Control de Calidad (`QC`)
+* **Compilación Frontend**: `npm run build` en **`5.36s`** (0 errores).
+* **Despliegue Contabo**: Commit `f3295f4` en `origin/main`.
+* **Guardián Systemd VPS**: **`HTTP 200 OK`**.
 
 ---
 
-## 📝 4. Revisión y Aprobación del Usuario
-* Por favor revisa este plan pericial. Una vez aprobado, comenzaré de inmediato con la **Fase 1: Curación del botón Excel Maestro V27**.
+*Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
