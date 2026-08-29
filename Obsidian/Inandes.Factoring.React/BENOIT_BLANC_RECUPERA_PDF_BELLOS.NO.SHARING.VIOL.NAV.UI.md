@@ -24,9 +24,12 @@
 ## 📋 2. Plan Quirúrgico en 2 Fases (`CLON` & `DIFF`)
 
 ### 🟢 FASE 1: Restaurar y Curar el Botón de Excel Maestro V27 (Prioridad Inmediata)
-1. **Carga Automática de Datos Contables (`calculateValorCuotaV26`)**:
-   * En `FondosPage.tsx`, al cambiar `vcSelYear`, `vcSelTipo`, `vcSelNum` o `vcSelFondo`, invocar `calculateValorCuotaV26(vcSelFondo === 'TODOS' ? null : vcSelFondo, new Date(fStart), new Date(fEnd))` y guardar el resultado en `vcReportData`.
-2. **Implementación de `handleExportVcExcel` con `exceljs`**:
+1. **Confirmación del Motor V27 (Integrado con Retornos V40)**:
+   * En `src/services/fondosService.ts`, la función `calculateValorCuotaV27` (anteriormente rotulada `calculateValorCuotaV26`) **YA CONSUME DIRECTAMENTE `generateRetornosV40`** (Línea 137).
+   * Los intereses diarios de cada certificado y aumento provienen exactamente del motor de Retornos V40, garantizando una paridad contable absoluta al centavo.
+2. **Carga Automática de Datos Contables al Cambiar Filtros**:
+   * En `FondosPage.tsx`, al cambiar `vcSelYear`, `vcSelTipo`, `vcSelNum` o `vcSelFondo`, invocar `calculateValorCuotaV27(vcSelFondo === 'TODOS' ? null : vcSelFondo, new Date(fStart), new Date(fEnd))` y almacenar el resultado en `vcReportData`.
+3. **Implementación de `handleExportVcExcel` con `exceljs`**:
    * Generar el Excel Maestro V27 con la matriz transpuesta diaria:
      * Pestaña por cada fondo o consolidado con los días del período en columnas.
      * Filas de certificados con desglose diario de intereses y aumentos.
