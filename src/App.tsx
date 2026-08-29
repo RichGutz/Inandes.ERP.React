@@ -125,7 +125,7 @@ function App() {
     
     // CRM
     crm_asesores: { title: 'Gestión de Asesores', subtitle: 'Liquidación de Comisiones v2' },
-    crm_fondos: { title: 'Gestión de Fondos', subtitle: 'Tasas Pasivas y Simulación v26' },
+    crm_fondos: { title: 'Gestión de Fondos', subtitle: 'Tasas Pasivas y Simulación v27' },
     crm_inversionistas: { title: 'Gestión de Inversionistas', subtitle: 'Fichas de Partícipes y Compliance' },
     crm_contratos: { title: 'Gestión de Contratos', subtitle: 'Tickets e Inversiones Permanentes' },
     crm_certificados: { title: 'Gestión de Certificados', subtitle: 'Emisión de Certificados de Participación' },

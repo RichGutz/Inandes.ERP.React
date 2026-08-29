@@ -580,7 +580,8 @@ export const FondosPage: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Reporte_NAV_V26_Export_${vcSelYear}.xlsx`;
+      const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
+      a.download = `Reporte_NAV_V27_Export_${vcSelYear}_${nowStamp}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1193,7 +1194,7 @@ export const FondosPage: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/80 pb-4">
               <h3 className="text-base font-black text-slate-850 dark:text-slate-100 tracking-tight uppercase flex items-center gap-2">
-                <span>📊 Seguimiento y Simulación de Valor Cuota v26 (NAV)</span>
+                <span>📊 Seguimiento y Simulación de Valor Cuota v27 (NAV)</span>
               </h3>
               <p className="text-xs text-slate-450 dark:text-slate-500 font-medium">
                 Selecciona el fondo y el periodo para generar y descargar los reportes oficiales transpuestos en PDF o Excel.
@@ -1278,7 +1279,7 @@ export const FondosPage: React.FC = () => {
                 <Loader2 size={20} className="animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
-                    📊 Exportando Matriz Completa Valor Cuota a Excel v26 (Pestaña por Fondo)...
+                    📊 Exportando Matriz Completa Valor Cuota a Excel v27 (Pestaña por Fondo)...
                   </span>
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
                     Generando matriz continua horizontal (Fila 1) para auditoría y fórmulas avanzadas. La descarga iniciará en breve.
@@ -1301,17 +1302,17 @@ export const FondosPage: React.FC = () => {
                 {vcExportingExcel ? (
                   <>
                     <Loader2 size={18} className="animate-spin" />
-                    <span>Compilando Matriz Pura a Excel v26...</span>
+                    <span>Compilando Matriz Pura a Excel v27...</span>
                   </>
                 ) : vcExcelDownloaded ? (
                   <>
                     <CheckCircle size={18} className="text-emerald-200" />
-                    <span>✓ Excel v26 Descargado (Clic para Re-descargar)</span>
+                    <span>✓ Excel v27 Descargado (Clic para Re-descargar)</span>
                   </>
                 ) : (
                   <>
                     <FileSpreadsheet size={18} />
-                    <span>📊 Exportar Matriz Completa a Excel v26 (Un Tab por Fondo - Continuidad Diaria)</span>
+                    <span>📊 Exportar Matriz Completa a Excel v27 (Un Tab por Fondo - Continuidad Diaria)</span>
                   </>
                 )}
               </button>

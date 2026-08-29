@@ -252,7 +252,7 @@ export const calculateValorCuotaV26 = async (
       valores_dia: [] as number[]
     }));
 
-    // Simulación día a día
+    // Simulación día a día V27 (Homologada con modelo Ricardo Gallo)
     let patAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
     let cuotasAyer = certRows.reduce((acc, c) => acc + c.cuotas, 0);
     let fInvAcu = patAyer;
@@ -261,45 +261,43 @@ export const calculateValorCuotaV26 = async (
     for (const d of diasPeriodo) {
       const dStr = d.toISOString().split('T')[0];
 
-      // Devengue diario con las 3 comisiones Base 365
-      const iBrutoD = patAyer * (tActiva / 360);
-      const gAdmD   = patAyer * (pAdmin / 365);
-      const gCapD   = patAyer * (pCap / 365);
-      const gMiscD  = patAyer * (pMisc / 365);
-      const uNetaD  = iBrutoD - (gAdmD + gCapD + gMiscD);
+      // 1. Devengos de Comisiones Gestor (Base 365)
+      const gAdmD  = patAyer * (pAdmin / 365.0);
+      const gCapD  = patAyer * (pCap / 365.0);
+      const gMiscD = patAyer * (pMisc / 365.0);
 
-      // Valor Cuota Final de hoy
-      const vCuoH = cuotasAyer > 0 ? (patAyer + uNetaD) / cuotasAyer : 1.0;
-
-      // Calcular intereses por certificado e hijo
+      // 2. Calcular devengos individuales de cada contrato
+      let pagoInvD = 0.0;
       for (const r of certRows) {
         const isEmitted = d >= r.emision;
-        const vD = isEmitted ? r.capital * (tActiva / 360) : 0.0;
+        const vD = isEmitted ? r.capital * (tActiva / 365.0) : 0.0;
         r.valores_dia.push(vD);
         r.interes_acum += vD;
+        pagoInvD += vD;
 
         for (const h of r.hijos) {
           const isHijoEmitted = d >= h.fecha_ingreso;
-          const vDh = isHijoEmitted ? h.monto * (tActiva / 360) : 0.0;
+          const vDh = isHijoEmitted ? h.monto * (tActiva / 365.0) : 0.0;
           h.valores_dia.push(vDh);
           h.interes_acum += vDh;
+          pagoInvD += vDh;
         }
       }
 
-      // Procesar aumentos de capital que ocurren hoy (si d > startDate)
+      // 3. Procesar aumentos de capital que ocurren hoy (si d > startDate)
       let apD = 0.0;
       let nuevasCuotasD = 0.0;
       if (dStr !== startDateStr) {
         for (const r of certRows) {
           const aumentosHoy = (aumMap[r.id] || []).filter(a => a.fecha.toISOString().split('T')[0] === dStr);
           for (const a of aumentosHoy) {
-            const nuevasCuotas = a.monto / vCuoH;
+            const nuevasCuotas = Math.trunc(a.monto / vCuoAyer);
             const nuevoHijo = {
               tipo: 'AUMENTO',
               id: `Aumento (${a.fecha.getDate()}/${a.fecha.getMonth() + 1})`,
               monto: a.monto,
               fecha_ingreso: a.fecha,
-              valores_dia: new Array(diasPeriodo.indexOf(d)).fill(0.0), // rellenar ceros para los días anteriores
+              valores_dia: new Array(diasPeriodo.indexOf(d)).fill(0.0),
               interes_acum: 0.0
             };
             r.hijos.push(nuevoHijo);
@@ -313,6 +311,15 @@ export const calculateValorCuotaV26 = async (
 
       fInvAcu += apD;
 
+      // 4. Ingreso Bruto Activo Diario (Equilibrado para cubrir pasiva + comisiones en Base 365)
+      const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+      const iBrutoD = patAyer * (tActiva / 365.0);
+
+      // 5. Cierre Contable Diario
+      const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
+      const patCierre = patAyer + apD + iBrutoD;
+      const vCuoH = cuotasTotalesCierre > 0 ? patCierre / cuotasTotalesCierre : 1.0;
+
       // Guardar valores en las filas de resumen
       const setSummaryVal = (label: string, value: number) => {
         const sRow = summaryRows.find(s => s.id === label);
@@ -324,22 +331,20 @@ export const calculateValorCuotaV26 = async (
       setSummaryVal('(=) CAPITAL ACUMULADO', fInvAcu);
       setSummaryVal('CUOTAS APERTURA', cuotasAyer);
       setSummaryVal('(+) CUOTAS ADICIONALES (Hoy)', nuevasCuotasD);
-      setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasAyer + nuevasCuotasD);
+      setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasTotalesCierre);
       setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
       setSummaryVal('GANANCIA TOTAL BRUTA (Base 360)', iBrutoD);
-      setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + uNetaD);
+      setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + iBrutoD);
       setSummaryVal('COM. ADMIN (-) (Base 365)', gAdmD);
       setSummaryVal('COM. CAPT. (-) (Base 365)', gCapD);
       setSummaryVal('COM. MISC. (-)', gMiscD);
-      setSummaryVal('GANANCIA OPERATIVA (Neta)', uNetaD);
-      
-      const patCierre = patAyer + uNetaD + apD;
+      setSummaryVal('GANANCIA OPERATIVA (Neta)', iBrutoD - egresosD);
       setSummaryVal('PATRIMONIO TOTAL CIERRE', patCierre);
       setSummaryVal('VAL CUOTA FINAL', vCuoH);
 
       // Actualizar saldos para el día siguiente
       patAyer = patCierre;
-      cuotasAyer += (apD / vCuoH);
+      cuotasAyer = cuotasTotalesCierre;
       vCuoAyer = vCuoH;
     }
 
