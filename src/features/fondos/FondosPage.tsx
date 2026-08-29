@@ -20,6 +20,8 @@ import {
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
   Plus, Search, Building2, X, Calendar, Trash2
 } from 'lucide-react';
+import { generatePdfValorCuotaV27 } from '../../utils/pdfGeneratorValorCuotaV27';
+import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 
 export const FondosPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'variables' | 'valorCuota'>('variables');
@@ -87,11 +89,37 @@ export const FondosPage: React.FC = () => {
   const [vcLoading, setVcLoading] = useState<boolean>(false);
   const [vcExportingExcel, setVcExportingExcel] = useState<boolean>(false);
   const [vcExcelDownloaded, setVcExcelDownloaded] = useState<boolean>(false);
+  const [vcExportingPdf, setVcExportingPdf] = useState<boolean>(false);
+  const [vcPdfDownloaded, setVcPdfDownloaded] = useState<boolean>(false);
   const [vcDashboard, setVcDashboard] = useState<any>({ B: {}, Q: {} });
   const [vcClosedCount, setVcClosedCount] = useState<number>(0);
   const [vcOficializarLoading, setVcOficializarLoading] = useState<boolean>(false);
   const [vcRollbackLoading, setVcRollbackLoading] = useState<boolean>(false);
   const [vcSuccessMsg, setVcSuccessMsg] = useState<string | null>(null);
+
+  const handleExportPDFVc = async () => {
+    setVcExportingPdf(true);
+    try {
+      if (vcReportData.length === 0) {
+        alert("No hay reportes de valor cuota calculados para exportar en PDF.");
+        return;
+      }
+      const htmlContent = generatePdfValorCuotaV27({
+        reports: vcReportData,
+        fStart,
+        fEnd,
+        selFondo: vcSelFondo,
+        anio: vcSelYear
+      });
+      const filename = `REPORTE_VALOR_CUOTA_NAV_V27_${fEnd}.pdf`;
+      await downloadReportPdf(htmlContent, filename, 'landscape');
+      setVcPdfDownloaded(true);
+    } catch (err: any) {
+      alert(`Error generando PDF de Valor Cuota: ${err.message}`);
+    } finally {
+      setVcExportingPdf(false);
+    }
+  };
 
   const PERIODOS_CIERRE = [
     { id: 'B1', m: 2, mes: 'Febrero', rango: 'Ene - Feb', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', cNum: 1, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
@@ -1651,12 +1679,18 @@ export const FondosPage: React.FC = () => {
                   </button>
 
                   <button
-                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all disabled:opacity-60"
-                    onClick={() => window.print()}
-                    disabled={vcLoading || vcReportData.length === 0}
+                    className="h-11 text-xs font-black uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-xs bg-[#0284c7] hover:bg-[#0369a1] text-white transition-all disabled:opacity-60"
+                    onClick={handleExportPDFVc}
+                    disabled={vcLoading || vcExportingPdf || vcReportData.length === 0}
                   >
-                    <FileText size={16} />
-                    <span>Imprimir / PDF Oficial</span>
+                    {vcExportingPdf ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : vcPdfDownloaded ? (
+                      <CheckCircle size={16} className="text-white" />
+                    ) : (
+                      <FileText size={16} />
+                    )}
+                    <span>{vcPdfDownloaded ? '✓ Reporte PDF Listo' : 'Descargar PDF Oficial V27'}</span>
                   </button>
                 </div>
 

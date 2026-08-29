@@ -5,6 +5,7 @@ import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Inversionista } from '../../services/inversionistasService';
 import { generateRetornosV40 } from '../../utils/financialCalculator';
 import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
+import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 import { supabase } from '../../services/supabaseClient';
 import ExcelJS from 'exceljs';
 import { generateBcpTelecreditoTxt, downloadBcpTxtFile, generateBcpTelecreditoExcel } from '../../services/bcpTelecreditoService';
@@ -116,31 +117,7 @@ export const InversionistasPage: React.FC = () => {
   const handleDownloadFastPdf = async (htmlDoc: string, filename: string) => {
     setDownloadingPdf(filename);
     try {
-      // Patron EXACTO de Forecast: extraer body+styles, reconstruir HTML limpio
-      const bodyContent = htmlDoc
-        .replace(/^[\s\S]*?<body[^>]*>/i, '')
-        .replace(/<\/body>[\s\S]*$/i, '');
-      let headStyles = (htmlDoc.match(/<style[\s\S]*?<\/style>/gi) || []).join('\n');
-
-      // Conservar imagenes, logos y firmas para el PDF oficial
-      const printHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">${headStyles}</head><body>${bodyContent}</body></html>`;
-
-      const API_BASE = getApiBaseUrl();
-      const response = await fetch(`${API_BASE}/api/inversionistas/generate-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: printHtml, filename })
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      await downloadReportPdf(htmlDoc, filename, 'landscape');
     } catch (err: any) {
       alert(`Error descargando PDF: ${err.message}`);
     } finally {
