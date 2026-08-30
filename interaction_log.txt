@@ -355,3 +355,10 @@
 2. Creado 'src/utils/pdfGeneratorValorCuotaV32.ts' con la cabecera institucional de 3 columnas (Logo Geeksoft izq, Titulo central, Logo InAndes der usando base64 puro), banner azul del fondo, tarjetas KPI oxigenadas para tasas/comisiones y footer institucional.
 3. Actualizado 'src/features/fondos/FondosPage.tsx' para consumir 'generatePdfValorCuotaV32'.
 4. Ejecutado 'npm run build' con resultado exitoso (codigo 0) y cero errores de TypeScript.
+
+[2026-08-30 12:52:00-05:00] CALIBRACION ESTETICA Y LOGICA DE VALOR CUOTA V32:
+1. Ajustada la tasa activa implicita a 4 decimales exactos.
+2. Anadida la suma monetaria acumulada a cada una de las comisiones de administracion, captacion y miscelaneos.
+3. Configuradas las tarjetas KPI exclusivamente en la Pagina 1 (Quincena 1) como ficha tecnica maestra de cierre.
+4. Reducida la altura de filas de la tabla (-2% padding y line-height) para ajuste perfecto en 1 pagina horizontal.
+5. Validado con 'npm run build' (exito en 3.73s, 0 errores).

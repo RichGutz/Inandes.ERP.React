@@ -11,10 +11,11 @@ export interface VcPdfOptions {
 
 /**
  * Generador Oficial de Reporte PDF para Valor Cuota NAV V32 (Homologado con "El Bello")
- * Incorpora la secuencia contable canónica V26/V31 (Pre-Aportes, Cierre y Goal Seek P&L = 0.00),
- * partición quincenal en 2 páginas horizontales A4 Landscape,
- * encabezado institucional de 3 columnas (GeekSoft izq, Título centro, InAndes der),
- * banner azul del fondo, cajas KPI para parámetros y pie de página formal estandarizado.
+ * - Encabezado institucional de 3 columnas (GeekSoft izq, Título centro, InAndes der).
+ * - Banner azul oficial del fondo.
+ * - Burbujas KPI únicamente en la Página 1 (Quincena 1) con Tasa Activa a 4 decimales y comisiones en % y monto acumulado.
+ * - Grilla con altura compacta (-2%) para ajuste perfecto en 1 hoja por quincena.
+ * - Pie de página formal institucional.
  */
 export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
   const { reports, fStart, fEnd, selFondo } = options;
@@ -38,6 +39,11 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const fmtCurrency = (n: number, mon: string) => {
+    const prefix = mon === 'USD' ? '$ ' : 'S/ ';
+    return `${prefix}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   let pagesHtml = '';
   let globalPageIdx = 0;
 
@@ -56,8 +62,8 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
       const totalDays = block.days.length;
       const midPoint = Math.min(15, totalDays);
 
-      // Obtener el VC de cierre oficial de este bloque para la tarjeta KPI
-      const vcRow = block.rows.find((r: any) => r.is_vc || (r.id && r.id.includes('VAL CUOTA')));
+      // Obtener el VC de cierre oficial del bloque
+      const vcRow = block.rows.find((r: any) => r.is_vc || (r.id && r.id.includes('VAL CUOTA FINAL')));
       let finalVcStr = '-';
       if (vcRow && vcRow.cells && vcRow.cells.length > 0) {
         const lastVal = vcRow.cells[vcRow.cells.length - 1];
@@ -66,6 +72,19 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
           finalVcStr = numVal.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
         }
       }
+
+      // Obtener montos monetarios acumulados de comisiones del período completo
+      const getAcumRowVal = (exactLabel: string) => {
+        const r = block.rows.find((x: any) => x.id === exactLabel);
+        if (!r || !r.cells || r.cells.length === 0) return 0;
+        const lastVal = r.cells[r.cells.length - 1];
+        const num = parseFloat(String(lastVal).replace(/,/g, '').replace('$', '').replace('S/', '').trim());
+        return isNaN(num) ? 0 : num;
+      };
+
+      const totAdminMoney = getAcumRowVal('COM. ADMIN ACUM. (-)');
+      const totCapMoney = getAcumRowVal('COM. CAPT. ACUM. (-)');
+      const totMiscMoney = getAcumRowVal('COM. MISC. ACUM. (-)');
 
       const renderPagePart = (
         startDayIdx: number,
@@ -76,6 +95,8 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
         globalPageIdx++;
         const partDays = block.days.slice(startDayIdx, endDayIdx);
         const pMiscPct = ((Number(report.fondo.comision_miscelaneos_fondo) || 0)).toFixed(2);
+        const pAdminPct = ((Number(report.vars.admin) || 0)).toFixed(2);
+        const pActivaPct = ((Number(report.vars.activa) || 0)).toFixed(4); // 4 decimales exactos
 
         let tableHeaders = `
           <thead>
@@ -150,6 +171,38 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
         }
         tableBody += '</tbody>';
 
+        // Cajas KPI: solo en la Página 1 (Quincena 1)
+        const kpiCardsHtml = !isSecondPart ? `
+          <table class="kpi-cards-table">
+            <tr>
+              <td class="kpi-card">
+                <div class="kpi-title">TASA ACTIVA IMPLÍCITA</div>
+                <div class="kpi-value kpi-value-blue">${pActivaPct}% <span style="font-size: 4.5pt; font-weight: 700; color: #64748b;">(Base 365)</span></div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">COM. ADMINISTRACIÓN</div>
+                <div class="kpi-value">${pAdminPct}% <span class="kpi-money">(${fmtCurrency(totAdminMoney, moneda)})</span></div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">COM. CAPTACIÓN</div>
+                <div class="kpi-value">2.00% <span class="kpi-money">(${fmtCurrency(totCapMoney, moneda)})</span></div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">COM. MISCELÁNEOS</div>
+                <div class="kpi-value">${pMiscPct}% <span class="kpi-money">(${fmtCurrency(totMiscMoney, moneda)})</span></div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">GANANCIA OPERATIVA (P&amp;L)</div>
+                <div class="kpi-value kpi-value-green">$ 0.00 <span style="font-size: 4.5pt; font-weight: 700; color: #059669;">(CERO NEUTRO)</span></div>
+              </td>
+              <td class="kpi-card">
+                <div class="kpi-title">VALOR CUOTA CIERRE</div>
+                <div class="kpi-value kpi-value-darkblue">${finalVcStr}</div>
+              </td>
+            </tr>
+          </table>
+        ` : '';
+
         return `
           <div class="report-page">
             <!-- 1. Encabezado Superior Institucional (Idéntico a El Bello) -->
@@ -173,37 +226,10 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
               FONDO ${report.fondo.nombre_fondo || report.fondo.id_fondo} (${report.fondo.id_fondo}) &mdash; MONEDA: ${moneda} &nbsp;|&nbsp; MOTOR NAV V31 (GOAL SEEK P&amp;L = 0.00) &nbsp;|&nbsp; ${partTitle.toUpperCase()}
             </div>
 
-            <!-- 3. Cajas KPI de Parámetros del Fondo (Idéntico a El Bello) -->
-            <table class="kpi-cards-table">
-              <tr>
-                <td class="kpi-card">
-                  <div class="kpi-title">TASA ACTIVA IMPLÍCITA</div>
-                  <div class="kpi-value kpi-value-blue">${report.vars.activa}% <span style="font-size: 4.5pt; font-weight: 700; color: #64748b;">(Base 365)</span></div>
-                </td>
-                <td class="kpi-card">
-                  <div class="kpi-title">COM. ADMINISTRACIÓN</div>
-                  <div class="kpi-value">${report.vars.admin}%</div>
-                </td>
-                <td class="kpi-card">
-                  <div class="kpi-title">COM. CAPTACIÓN</div>
-                  <div class="kpi-value">2.00%</div>
-                </td>
-                <td class="kpi-card">
-                  <div class="kpi-title">COM. MISCELÁNEOS</div>
-                  <div class="kpi-value">${pMiscPct}%</div>
-                </td>
-                <td class="kpi-card">
-                  <div class="kpi-title">GANANCIA OPERATIVA (P&amp;L)</div>
-                  <div class="kpi-value kpi-value-green">$ 0.00 <span style="font-size: 4.5pt; font-weight: 700; color: #059669;">(CERO NEUTRO)</span></div>
-                </td>
-                <td class="kpi-card">
-                  <div class="kpi-title">VALOR CUOTA CIERRE</div>
-                  <div class="kpi-value kpi-value-darkblue">${finalVcStr}</div>
-                </td>
-              </tr>
-            </table>
+            <!-- 3. Cajas KPI de Parámetros del Fondo (Exclusivas de Página 1) -->
+            ${kpiCardsHtml}
 
-            <!-- 4. Grilla Contable Oficial -->
+            <!-- 4. Grilla Contable Oficial (-2% altura compacta) -->
             <table class="data-table">
               ${tableHeaders}
               ${tableBody}
@@ -233,7 +259,7 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
         <style>
           @page {
             size: A4 landscape;
-            margin: 3.5mm 5mm !important;
+            margin: 3.2mm 5mm !important;
           }
           * { 
             box-sizing: border-box; 
@@ -246,8 +272,8 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
             padding: 0 !important; 
             background-color: #ffffff !important; 
             color: #0f172a; 
-            font-size: 5.4pt;
-            line-height: 1.10;
+            font-size: 5.2pt;
+            line-height: 1.08;
           }
           .report-page {
             width: 100%;
@@ -261,48 +287,51 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
             page-break-after: avoid;
           }
           .top-header-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 1.5px;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.2px;
           }
           .top-header-table td { border: none; padding: 0; vertical-align: middle; }
-          .logo-geeksoft { height: 32px; width: auto; object-fit: contain; }
-          .logo-inandes { height: 26px; width: auto; object-fit: contain; }
+          .logo-geeksoft { height: 30px; width: auto; object-fit: contain; }
+          .logo-inandes { height: 24px; width: auto; object-fit: contain; }
           .report-main-title {
-            font-weight: 900; font-size: 9.5pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.1;
+            font-weight: 900; font-size: 9.2pt; color: #0f172a; margin: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.2px; line-height: 1.05;
           }
           .report-sub-title {
-            font-size: 6.5pt; font-weight: 700; color: #334155; text-align: center; margin-top: 1px;
+            font-size: 6.2pt; font-weight: 700; color: #334155; text-align: center; margin-top: 0.5px;
           }
           .fund-badge-banner {
-            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.8pt; text-transform: uppercase; padding: 1.5px 8px; border-radius: 3px; text-align: center; margin: 1.5px auto 2px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
+            background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 6.5pt; text-transform: uppercase; padding: 1.2px 8px; border-radius: 3px; text-align: center; margin: 1.2px auto 1.8px auto; width: fit-content; max-width: 95%; letter-spacing: 0.2px;
           }
           
           /* Cajas KPI Inteligentes */
           table.kpi-cards-table {
-            width: 100%; border-collapse: separate; border-spacing: 2.5px 0; margin-bottom: 2.5px; table-layout: fixed;
+            width: 100%; border-collapse: separate; border-spacing: 2.5px 0; margin-bottom: 2px; table-layout: fixed;
           }
           table.kpi-cards-table td.kpi-card {
-            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1.5px 2px; text-align: center; vertical-align: middle;
+            background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1.2px 2px; text-align: center; vertical-align: middle;
           }
           .kpi-title {
-            font-size: 4.5pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 4.4pt; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 0.8px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           }
           .kpi-value {
-            font-size: 6.8pt; font-weight: 900; color: #0f172a; white-space: nowrap;
+            font-size: 6.5pt; font-weight: 900; color: #0f172a; white-space: nowrap;
+          }
+          .kpi-money {
+            font-size: 5.2pt; font-weight: 700; color: #475569;
           }
           .kpi-value-green { color: #059669; }
           .kpi-value-red { color: #dc2626; }
           .kpi-value-blue { color: #0284c7; }
           .kpi-value-darkblue { color: #1e3a8a; }
 
-          /* Tabla Contable Oficial */
+          /* Tabla Contable Oficial (-2% Altura Compacta) */
           table.data-table {
-            width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 5.4pt; line-height: 1.15; table-layout: fixed;
+            width: 100%; border-collapse: collapse; margin-bottom: 1.5px; font-size: 5.2pt; line-height: 1.08; table-layout: fixed;
           }
           table.data-table th {
-            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.2pt; padding: 2px 1.5px; border: 0.5px solid #0f172a; text-align: center; letter-spacing: 0.05px;
+            background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; text-transform: uppercase; font-size: 5.0pt; padding: 1.6px 1.2px; border: 0.5px solid #0f172a; text-align: center; letter-spacing: 0.05px;
           }
           table.data-table td {
-            border: 0.5px solid #cbd5e1; padding: 1.2px 1.8px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            border: 0.5px solid #cbd5e1; padding: 0.95px 1.5px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
           }
           .concepto-cell {
             font-weight: 600;
@@ -313,7 +342,7 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
           table.data-table tr.total-row { background-color: #f1f5f9 !important; font-weight: 700; }
           table.data-table tr.vc-row { background-color: #eef2ff !important; font-weight: 800; color: #1d4ed8; }
           table.data-table tr.spacer-row td {
-            height: 3px;
+            height: 2px;
             background: #ffffff;
             border: none;
           }
@@ -328,7 +357,7 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
 
           /* Pie de Página Oficial */
           .page-footer {
-            width: 100%; margin-top: 1px; border-top: 1px solid #cbd5e1; padding-top: 1px; font-size: 5pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
+            width: 100%; margin-top: 1px; border-top: 1px solid #cbd5e1; padding-top: 1px; font-size: 4.8pt; font-weight: 700; color: #64748b; display: table; table-layout: fixed;
           }
         </style>
       </head>

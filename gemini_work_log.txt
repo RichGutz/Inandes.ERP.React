@@ -384,3 +384,9 @@
    - Tipografia Helvetica Neue, margenes `@page { size: A4 landscape; margin: 3.5mm 5mm !important; }` y footer formal de 3 celdas.
 2. Actualizado `src/features/fondos/FondosPage.tsx` para importar y ejecutar `generatePdfValorCuotaV32`.
 3. Verificado con `npm run build` (codigo de salida 0, compilacion exitosa sin errores).
+
+[2026-08-30 12:52:00-05:00] TAREA: Calibracion de altura (-2%), tasa activa (4 decimales) y montos de comisiones en Valor Cuota V32.
+[2026-08-30 12:52:00-05:00] ESTADO: Completado con exito.
+1. Actualizado `src/utils/pdfGeneratorValorCuotaV32.ts` con tasa activa a 4 decimales, suma monetaria en comisiones y cajas KPI exclusivas de Pagina 1.
+2. Reducida la altura de filas de la tabla (-2%) para evitar desbordes en impresion.
+3. Compilacion limpia con `npm run build` (0 errores en 3.73s).
