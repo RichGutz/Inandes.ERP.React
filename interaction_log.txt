@@ -377,3 +377,8 @@
 1. Incorporado el documento maestro 'Obsidian/Inandes.Inversionistas.React/00.J.Inyeccion.NAV.Inversionistas&Certificados.md'.
 2. Actualizada y regrabada la rama 'PDF.NAV.RET.REN.100.PERCENT' y su tag homonimo en GitHub.
 3. Trabajo activo mantenido al 100% en la rama 'main'.
+
+[2026-08-30 14:29:00-05:00] CREACION FISICA DE TABLA crm_valor_cuota_eventos EN SUPABASE CLOUD:
+1. Conectado directamente a PostgreSQL de Supabase Cloud ('egvcinsbyropumybatdf') en Virginia (aws-0-us-east-1).
+2. Ejecutado el DDL con indices, columnas para auditoria y politicas RLS publicas (lectura, insercion, eliminacion).
+3. Notificado PostgREST ('reload schema') y validada la respuesta HTTP 200 via Supabase REST API.

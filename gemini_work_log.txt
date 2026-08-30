@@ -408,3 +408,9 @@
 1. Anadido `Obsidian/Inandes.Inversionistas.React/00.J.Inyeccion.NAV.Inversionistas&Certificados.md`.
 2. Actualizada la rama remota `PDF.NAV.RET.REN.100.PERCENT` y su tag con `git push -f`.
 3. Trabajo 100% activo en rama `main`.
+
+[2026-08-30 14:29:00-05:00] TAREA: Creacion de tabla `crm_valor_cuota_eventos` en Supabase Cloud `egvcinsbyropumybatdf`.
+[2026-08-30 14:29:00-05:00] ESTADO: Completado con exito.
+1. Ejecutado DDL en PostgreSQL (aws-0-us-east-1.pooler.supabase.com:5432).
+2. Tabla, indices y politicas RLS creados y activos.
+3. PostgREST schema cache recargado y probado con exito.
