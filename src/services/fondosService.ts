@@ -94,6 +94,8 @@ export interface V26FondoReport {
   vars: {
     activa: string;
     admin: string;
+    capt?: string;
+    misc?: string;
   };
 }
 
@@ -419,6 +421,52 @@ export const calculateValorCuotaV26 = async (
 
 export const calculateValorCuotaV27 = calculateValorCuotaV26;
 
+const parseFechaIngreso = (r: any, defaultDate: Date): Date => {
+  if (r.fecha_exacta) {
+    const d = new Date(r.fecha_exacta);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (r.fecha) {
+    const d = new Date(r.fecha);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (r.fecha_ingreso) {
+    const d = new Date(r.fecha_ingreso);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (r.fecha_inicio && r.fecha_inicio.includes('-')) {
+    const d = new Date(r.fecha_inicio);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (r.id) {
+    const m = String(r.id).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+      const day = parseInt(m[1], 10);
+      const month = parseInt(m[2], 10) - 1;
+      let year = parseInt(m[3], 10);
+      if (year < 100) year += 2000;
+      return new Date(year, month, day);
+    }
+  }
+  if (r.fecha_inicio) {
+    const m2 = String(r.fecha_inicio).match(/(\d{1,2})\/(\d{1,2})/);
+    if (m2) {
+      const day = parseInt(m2[1], 10);
+      const month = parseInt(m2[2], 10) - 1;
+      const year = defaultDate.getFullYear();
+      return new Date(year, month, day);
+    }
+  }
+  return new Date(defaultDate);
+};
+
+const isSameDay = (d1: Date, d2: Date): boolean => {
+  if (!d1 || !d2) return false;
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+};
+
 // =========================================================================
 // MOTOR V28: GOAL SEEK DE TASA ACTIVA IMPLÍCITA MENSUAL (P&L OPERATIVO = 0)
 // =========================================================================
@@ -493,12 +541,12 @@ export const calculateValorCuotaV28 = async (
     let currentPadre: any = null;
 
     for (const r of rawRows) {
-      if (r.tipo === 'AUMENTO') {
+      if (r.tipo === 'AUMENTO' || (r.inversionista && r.inversionista.includes('Incremento'))) {
         const aumentoObj = {
           tipo: 'AUMENTO',
           id: r.id || 'Aumento',
           monto: Number(r.capital || 0),
-          fecha_ingreso: r.fecha ? new Date(r.fecha) : (r.fecha_inicio ? new Date(r.fecha_inicio) : new Date(startDate)),
+          fecha_ingreso: parseFechaIngreso(r, startDate),
           valores_dia: (r.valores || []).slice(),
           interes_acum: Number(r.bruto_total || 0)
         };
@@ -599,7 +647,7 @@ export const calculateValorCuotaV28 = async (
         let apD = 0.0;
         for (const r of certRows) {
           for (const h of r.hijos) {
-            if (h.fecha_ingreso && h.fecha_ingreso.getTime() === d.getTime()) {
+            if (h.fecha_ingreso && isSameDay(h.fecha_ingreso, d)) {
               apD += h.monto;
             }
           }
@@ -637,7 +685,7 @@ export const calculateValorCuotaV28 = async (
         let nuevasCuotasD = 0.0;
         for (const r of certRows) {
           for (const h of r.hijos) {
-            if (h.fecha_ingreso && h.fecha_ingreso.getTime() === d.getTime()) {
+            if (h.fecha_ingreso && isSameDay(h.fecha_ingreso, d)) {
               const nuevasCuotas = Math.trunc(h.monto / vCuoAyer);
               apD += h.monto;
               nuevasCuotasD += nuevasCuotas;
@@ -768,6 +816,379 @@ export const calculateValorCuotaV28 = async (
 
   return reports;
 };
+
+// =========================================================================
+// MOTOR NAV V30: Identidad Cero P&L Diario y Mensual (Pass-Through Puro)
+// =========================================================================
+
+export const calculateValorCuotaV30 = async (
+  codigoFondo: string | null,
+  startDate: Date,
+  endDate: Date
+): Promise<V26FondoReport[]> => {
+  const { data: fondosData, error: fondosErr } = await supabase
+    .from('crm_fondos')
+    .select('*')
+    .order('vigencia_tasa', { ascending: false })
+    .order('nombre_fondo', { ascending: true });
+
+  if (fondosErr) throw new Error(`Error en crm_fondos: ${fondosErr.message}`);
+
+  const fondosUnicosMap: Record<string, Fondo> = {};
+  if (fondosData) {
+    for (const f of fondosData) {
+      if (!fondosUnicosMap[f.id_fondo]) {
+        fondosUnicosMap[f.id_fondo] = f;
+      }
+    }
+  }
+
+  if (codigoFondo && codigoFondo !== 'TODOS') {
+    for (const k of Object.keys(fondosUnicosMap)) {
+      if (k !== codigoFondo) delete fondosUnicosMap[k];
+    }
+  }
+
+  const formatYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const fStartStr = formatYMD(startDate);
+  const fEndStr = formatYMD(endDate);
+
+  const retornosCalc = await generateRetornosV40(codigoFondo, fStartStr, fEndStr);
+
+  const diasPeriodo: Date[] = [];
+  const curr = new Date(startDate);
+  curr.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  while (curr <= end) {
+    diasPeriodo.push(new Date(curr));
+    curr.setDate(curr.getDate() + 1);
+  }
+
+  const reports: V26FondoReport[] = [];
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+  for (const fId of Object.keys(fondosUnicosMap)) {
+    const fondo = fondosUnicosMap[fId];
+    const pAdmin = (Number(fondo.comision_administracion_fondo) || 0) / 100.0;
+    const pCap   = (Number(fondo.comision_captacion_fondo) || 0) / 100.0;
+    const pMisc  = (Number(fondo.comision_miscelaneos_fondo) || 0) / 100.0;
+
+    const fondoRetornoData = (retornosCalc.pdfData || []).find(
+      (p: any) => p.fondo?.id_fondo === fId || p.fondo_codigo === fId || p.fondo_nombre === fondo.nombre_fondo
+    );
+
+    if (!fondoRetornoData) continue;
+
+    const rawRows = (fondoRetornoData as any).rows || (fondoRetornoData as any).blocks?.[0]?.rows || [];
+    if (rawRows.length === 0) continue;
+
+    const certRows: any[] = [];
+    let currentPadre: any = null;
+
+    for (const r of rawRows) {
+      if (r.tipo === 'AUMENTO' || (r.inversionista && r.inversionista.includes('Incremento'))) {
+        const aumentoObj = {
+          tipo: 'AUMENTO',
+          id: r.id || r.id_contrato,
+          monto: Number(r.capital || 0),
+          fecha_ingreso: parseFechaIngreso(r, startDate),
+          valores_dia: (r.valores || []).slice(),
+          interes_acum: Number(r.bruto_total || 0)
+        };
+        if (currentPadre) {
+          currentPadre.hijos.push(aumentoObj);
+        } else {
+          certRows.push({
+            tipo: 'CERT',
+            id: r.id,
+            capital: Number(r.capital || 0),
+            cuotas: Number(r.capital || 0),
+            emision: new Date(startDate),
+            interes_acum: Number(r.bruto_total || 0),
+            valores_dia: (r.valores || []).slice(),
+            hijos: [aumentoObj]
+          });
+        }
+      } else {
+        const capIni = Number(r.capital_base || r.capital || 0);
+        currentPadre = {
+          tipo: 'CERT',
+          id: r.id || r.id_contrato,
+          capital: capIni,
+          cuotas: capIni,
+          emision: r.emision ? new Date(r.emision) : new Date(startDate),
+          interes_acum: Number(r.bruto_total || r.interes_bruto || 0),
+          valores_dia: (r.valores || r.valores_dia_padre || []).slice(),
+          hijos: []
+        };
+        certRows.push(currentPadre);
+      }
+    }
+
+    const summaryDefs = [
+      { id: 'TOTAL CAPITAL (Apertura)', css: 'summary-row font-black' },
+      { id: 'SPACER_1', css: 'spacer-row' },
+      { id: '(+) CAPITAL ADICIONAL (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CAPITAL ACUMULADO', css: 'summary-row' },
+      { id: 'CUOTAS APERTURA', css: 'summary-row' },
+      { id: '(+) CUOTAS ADICIONALES (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CUOTAS TOTALES CIERRE', css: 'summary-row' },
+      { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
+      { id: 'SPACER_2', css: 'spacer-row' },
+      { id: 'GANANCIA TOTAL BRUTA (Base 360)', css: 'summary-row' },
+      { id: 'PATRIMONIO TOTAL (Pre-Aportes)', css: 'summary-row' },
+      { id: 'COM. ADMIN (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'COM. MISC. (-)', css: 'summary-row text-rose-600' },
+      { id: 'GANANCIA OPERATIVA (Neta)', css: 'summary-row font-black' },
+      { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row font-black' },
+      { id: 'VAL CUOTA FINAL', css: 'vc-cell' }
+    ];
+
+    const summaryRows: any[] = summaryDefs.map(def => ({
+      tipo: def.id.startsWith('SPACER') ? 'SPACER' : 'TOTAL',
+      id: def.id,
+      css_class: def.css,
+      valores_dia: [] as number[]
+    }));
+
+    const monthsGroup: Record<string, number[]> = {};
+    for (let i = 0; i < diasPeriodo.length; i++) {
+      const d = diasPeriodo[i];
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!monthsGroup[key]) monthsGroup[key] = [];
+      monthsGroup[key].push(i);
+    }
+
+    let patAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
+    let cuotasAyer = certRows.reduce((acc, c) => acc + c.cuotas, 0);
+    let fInvAcu = patAyer;
+    let vCuoAyer = 1.0;
+    let ultimaTasaActivaMensual = 0.14;
+
+    for (const [, idxs] of Object.entries(monthsGroup)) {
+      let sumEgresosMes = 0.0;
+      let sumCapitalPonderadoMes = 0.0;
+      let tempPat = patAyer;
+
+      for (const dayIdx of idxs) {
+        const d = diasPeriodo[dayIdx];
+        const gAdmD  = tempPat * (pAdmin / 365.0);
+        const gCapD  = tempPat * (pCap / 365.0);
+        const gMiscD = tempPat * (pMisc / 365.0);
+
+        let pagoInvD = 0.0;
+        for (const r of certRows) {
+          pagoInvD += r.valores_dia[dayIdx] || 0.0;
+          for (const h of r.hijos) {
+            pagoInvD += h.valores_dia[dayIdx] || 0.0;
+          }
+        }
+
+        let apD = 0.0;
+        for (const r of certRows) {
+          for (const h of r.hijos) {
+            if (h.fecha_ingreso && isSameDay(h.fecha_ingreso, d)) {
+              apD += h.monto;
+            }
+          }
+        }
+
+        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+        sumEgresosMes += egresosD;
+        sumCapitalPonderadoMes += tempPat;
+        tempPat += apD + egresosD;
+      }
+
+      const tActivaMes = sumCapitalPonderadoMes > 0
+        ? (sumEgresosMes / sumCapitalPonderadoMes) * 365.0
+        : 0.14;
+      ultimaTasaActivaMensual = tActivaMes;
+
+      for (const dayIdx of idxs) {
+        const d = diasPeriodo[dayIdx];
+
+        const gAdmD  = patAyer * (pAdmin / 365.0);
+        const gCapD  = patAyer * (pCap / 365.0);
+        const gMiscD = patAyer * (pMisc / 365.0);
+
+        let pagoInvD = 0.0;
+        for (const r of certRows) {
+          pagoInvD += r.valores_dia[dayIdx] || 0.0;
+          for (const h of r.hijos) {
+            pagoInvD += h.valores_dia[dayIdx] || 0.0;
+          }
+        }
+
+        let apD = 0.0;
+        let nuevasCuotasD = 0.0;
+        for (const r of certRows) {
+          for (const h of r.hijos) {
+            if (h.fecha_ingreso && isSameDay(h.fecha_ingreso, d)) {
+              const nuevasCuotas = Math.trunc(h.monto / vCuoAyer);
+              apD += h.monto;
+              nuevasCuotasD += nuevasCuotas;
+            }
+          }
+        }
+
+        fInvAcu += apD;
+
+        // V30: Identidad Cero P&L Diario
+        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+        const iBrutoD = egresosD;
+        const gananciaOperativa = 0.00;
+
+        const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
+        const patCierre = patAyer + apD + iBrutoD;
+        const vCuoH = cuotasTotalesCierre > 0 ? patCierre / cuotasTotalesCierre : 1.0;
+
+        const setSummaryVal = (label: string, value: number) => {
+          const sRow = summaryRows.find(s => s.id === label);
+          if (sRow) sRow.valores_dia.push(value);
+        };
+
+        setSummaryVal('TOTAL CAPITAL (Apertura)', patAyer);
+        setSummaryVal('(+) CAPITAL ADICIONAL (Hoy)', apD);
+        setSummaryVal('(=) CAPITAL ACUMULADO', fInvAcu);
+        setSummaryVal('CUOTAS APERTURA', cuotasAyer);
+        setSummaryVal('(+) CUOTAS ADICIONALES (Hoy)', nuevasCuotasD);
+        setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasTotalesCierre);
+        setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
+        setSummaryVal('GANANCIA TOTAL BRUTA (Base 360)', iBrutoD);
+        setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + iBrutoD);
+        setSummaryVal('COM. ADMIN (-) (Base 365)', gAdmD);
+        setSummaryVal('COM. CAPT. (-) (Base 365)', gCapD);
+        setSummaryVal('COM. MISC. (-)', gMiscD);
+        setSummaryVal('GANANCIA OPERATIVA (Neta)', gananciaOperativa);
+        setSummaryVal('PATRIMONIO TOTAL CIERRE', patCierre);
+        setSummaryVal('VAL CUOTA FINAL', vCuoH);
+
+        patAyer = patCierre;
+        cuotasAyer = cuotasTotalesCierre;
+        vCuoAyer = vCuoH;
+      }
+    }
+
+    const blockRowsMeta: any[] = [];
+    let numCert = 1;
+    for (const r of certRows) {
+      blockRowsMeta.push({
+        tipo: 'CERT',
+        num: numCert++,
+        id: r.id,
+        css_class: 'font-bold text-slate-800',
+        label_class: '',
+        capital: r.capital,
+        cuotas: r.cuotas,
+        interes_acum: r.interes_acum,
+        valores_dia: r.valores_dia,
+        is_aumento: false
+      });
+      for (const h of r.hijos) {
+        const dStr = h.fecha_ingreso ? `${String(h.fecha_ingreso.getDate()).padStart(2, '0')}/${String(h.fecha_ingreso.getMonth() + 1).padStart(2, '0')}/${String(h.fecha_ingreso.getFullYear()).substring(2)}` : '';
+        blockRowsMeta.push({
+          tipo: 'AUMENTO',
+          num: '',
+          id: `Aumento (${dStr})`,
+          css_class: 'italic text-emerald-700 bg-emerald-50/50',
+          label_class: 'text-emerald-700 font-medium pl-4',
+          capital: h.monto,
+          cuotas: h.monto,
+          interes_acum: h.interes_acum,
+          valores_dia: h.valores_dia,
+          is_aumento: true
+        });
+      }
+    }
+
+    for (const s of summaryRows) {
+      blockRowsMeta.push({
+        tipo: s.tipo,
+        num: '',
+        id: s.id,
+        css_class: s.css_class,
+        label_class: '',
+        capital: null,
+        cuotas: null,
+        interes_acum: null,
+        valores_dia: s.valores_dia,
+        is_aumento: false
+      });
+    }
+
+    const blocks: any[] = [];
+    let blockIdx = 1;
+    for (const [key, idxs] of Object.entries(monthsGroup)) {
+      const [y, m] = key.split('-').map(Number);
+      const monthName = monthNames[m] + ' ' + y;
+      const blockDays = idxs.map(i => {
+        const d = diasPeriodo[i];
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      });
+
+      const blockRows: any[] = [];
+      for (const r of blockRowsMeta) {
+        if (r.tipo === 'SPACER') {
+          blockRows.push({ tipo: 'SPACER', num: '', id: '', cells: [] });
+          continue;
+        }
+
+        const isVc = r.id && r.id.includes('VAL CUOTA');
+        const dailyCells = idxs.map(dayIdx => {
+          const val = r.valores_dia[dayIdx];
+          if (val === undefined || val === null) return '-';
+          if (isVc) return Number(val).toFixed(6);
+          if (r.id === 'GANANCIA OPERATIVA (Neta)') return '$ 0.00';
+          if (Number(val) === 0) return '$ 0.00';
+          return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
+
+        blockRows.push({
+          tipo: r.tipo,
+          id: r.id,
+          num: r.num,
+          css_class: r.css_class,
+          label_class: r.label_class,
+          is_vc: isVc,
+          capital: r.tipo === 'CERT' ? r.capital : r.monto,
+          cuotas: r.cuotas,
+          interes_acum: r.interes_acum,
+          cells: dailyCells
+        });
+      }
+
+      blocks.push({
+        idx: blockIdx++,
+        monthName,
+        days: blockDays,
+        rows: blockRows
+      });
+    }
+
+    reports.push({
+      fondo,
+      blocks,
+      vars: {
+        activa: (ultimaTasaActivaMensual * 100).toFixed(2),
+        admin: (pAdmin * 100).toFixed(2),
+        capt: (pCap * 100).toFixed(2),
+        misc: (pMisc * 100).toFixed(2)
+      }
+    });
+  }
+
+  return reports;
+};
+
 
 
 // =========================================================================

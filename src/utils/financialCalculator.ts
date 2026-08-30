@@ -575,6 +575,9 @@ export const generateRetornosV40 = async (
           bruto_total: Math.round(h.interes_acum * 100) / 100,
           n_dias: nDiasH,
           int_diario: intDiarioH,
+          fecha: h.fecha.toISOString(),
+          fecha_exacta: h.fecha.toISOString(),
+          fecha_ingreso: h.fecha.toISOString(),
           fecha_inicio: formatDateMD(h.fecha),
           fecha_fin: formatDateMD(fechaFin)
         });
