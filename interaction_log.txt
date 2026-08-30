@@ -367,3 +367,8 @@
 1. Asegurado que las burbujas maestras se muestren unicamente en la Quincena 1 del Mes 1 (Pagina 1 del fondo) para periodos de 2, 4 o 6 quincenas.
 2. Extraccion de cifras definitivas (Valor Cuota de cierre y comisiones acumuladas) desde el ultimo bloque mensual del ciclo.
 3. Compilado con 'npm run build' (exito en 2.81s).
+
+[2026-08-30 13:03:00-05:00] CREACION DE BRANCH TAG Y SAFEPOINT:
+1. Creado el branch 'PDF.NAV.RET.REN.100.PERCENT' y subido a GitHub ('origin refs/heads/PDF.NAV.RET.REN.100.PERCENT').
+2. Creado el tag anotado 'PDF.NAV.RET.REN.100.PERCENT' y subido a GitHub ('origin refs/tags/PDF.NAV.RET.REN.100.PERCENT').
+3. Regreso inmediato a la rama 'main' (working tree 100% limpio).
