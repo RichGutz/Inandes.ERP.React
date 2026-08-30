@@ -938,15 +938,15 @@ export const calculateValorCuotaV31 = async (
     const summaryDefs = [
       { id: 'TOTAL CAPITAL', css: 'summary-row font-black' },
       { id: 'SPACER_1', css: 'spacer-row' },
-      { id: 'INVERSIONES ORIGINALES', css: 'summary-row text-emerald-600' },
-      { id: 'INV. ORIGINALES ACUMULADAS', css: 'summary-row' },
-      { id: 'CUOTAS ORIGINALES', css: 'summary-row text-emerald-600' },
-      { id: 'CUOTAS ORIGINALES ACUMULADAS', css: 'summary-row' },
+      { id: 'INVERSIONES ADICIONALES', css: 'summary-row text-emerald-600' },
+      { id: 'INV. ACUMULADAS', css: 'summary-row' },
+      { id: 'CUOTAS ADICIONALES', css: 'summary-row text-emerald-600' },
+      { id: 'CUOTAS ACUMULADAS', css: 'summary-row' },
       { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
       { id: 'SPACER_2', css: 'spacer-row' },
       { id: 'GANANCIA TOTAL BRUTA', css: 'summary-row' },
       { id: 'GANANCIA TOTAL ACUMULADA', css: 'summary-row' },
-      { id: 'PATRIMONO TOTAL', css: 'summary-row' },
+      { id: 'PATRIMONIO TOTAL', css: 'summary-row' },
       { id: 'SPACER_3', css: 'spacer-row' },
       { id: 'COM. ADMIN (-)', css: 'summary-row text-rose-600' },
       { id: 'COM. ADMIN ACUM. (-)', css: 'summary-row text-rose-600' },
@@ -1084,14 +1084,14 @@ export const calculateValorCuotaV31 = async (
         };
 
         setSummaryVal('TOTAL CAPITAL', patrimonioAyer);
-        setSummaryVal('INVERSIONES ORIGINALES', aportesDia);
-        setSummaryVal('INV. ORIGINALES ACUMULADAS', fTotalInvOrigAcum);
-        setSummaryVal('CUOTAS ORIGINALES', nuevasCuotasDia);
-        setSummaryVal('CUOTAS ORIGINALES ACUMULADAS', cuotasTotalCierre);
+        setSummaryVal('INVERSIONES ADICIONALES', aportesDia);
+        setSummaryVal('INV. ACUMULADAS', fTotalInvOrigAcum);
+        setSummaryVal('CUOTAS ADICIONALES', nuevasCuotasDia);
+        setSummaryVal('CUOTAS ACUMULADAS', cuotasTotalCierre);
         setSummaryVal('VAL CUOTA INICIAL', valCuotaAyer);
         setSummaryVal('GANANCIA TOTAL BRUTA', ingresoBrutoDia);
         setSummaryVal('GANANCIA TOTAL ACUMULADA', fAcumUtilidad);
-        setSummaryVal('PATRIMONO TOTAL', fTotalInvOrigAcum + fAcumUtilidad);
+        setSummaryVal('PATRIMONIO TOTAL', fTotalInvOrigAcum + fAcumUtilidad);
         setSummaryVal('COM. ADMIN (-)', gAdmD);
         setSummaryVal('COM. ADMIN ACUM. (-)', fAcumAdmin);
         setSummaryVal('COM. CAPT. (-)', gCapD);

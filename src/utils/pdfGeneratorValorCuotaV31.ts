@@ -81,7 +81,7 @@ export function generatePdfValorCuotaV31(options: VcPdfOptions): string {
           const isTotal = row.tipo === 'TOTAL';
           const isVc = Boolean(row.is_vc || (row.id && row.id.includes('VAL CUOTA')));
           const isGananciaOp = Boolean(row.id && row.id.includes('GANANCIA OPERATIVA'));
-          const isTotalApertura = row.id === 'TOTAL CAPITAL' || row.id === 'CUOTAS APERTURA' || row.id === 'PATRIMONO TOTAL';
+          const isTotalApertura = row.id === 'TOTAL CAPITAL' || row.id === 'CUOTAS APERTURA' || row.id === 'PATRIMONIO TOTAL';
 
           let trClass = isAumento ? 'aumento-row' : (isTotal ? 'total-row' : 'cert-row');
           if (isVc) trClass += ' vc-row';

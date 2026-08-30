@@ -103,7 +103,7 @@ export async function generateValorCuotaExcelV31(options: VcExcelOptions): Promi
       const isTotal = sampleRow.tipo === 'TOTAL';
       const isVc = sampleRow.is_vc || sampleRow.id.includes('VAL CUOTA');
       const isGananciaOp = sampleRow.id && sampleRow.id.includes('GANANCIA OPERATIVA');
-      const isTotalApertura = sampleRow.id === 'TOTAL CAPITAL' || sampleRow.id === 'CUOTAS APERTURA' || sampleRow.id === 'PATRIMONO TOTAL';
+      const isTotalApertura = sampleRow.id === 'TOTAL CAPITAL' || sampleRow.id === 'CUOTAS APERTURA' || sampleRow.id === 'PATRIMONIO TOTAL';
 
       const dailyValues: (number | string)[] = [];
       let sumHoriz = 0;
