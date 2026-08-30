@@ -350,3 +350,8 @@
 2. Ejecutado test integral contra Contabo y Hostinger con volcado de logs a C:\Users\rguti\VPS_Health_Logs.
 3. Actualizada la documentacion tecnica en Obsidian/Mudanza.Contabo/Mudanza.Contabo/11.CRON.JOB.SALUD.VPS.md.
 
+[2026-08-30 12:40:00-05:00] HOMOLOGACION DEL GENERADOR PDF DE VALOR CUOTA CON DISENO INSTITUCIONAL (V32):
+1. Aplicada la metodologia LEG, DIFF y QC para estandarizar el PDF de Valor Cuota con el diseno institucional 'El Bello' de Retornos y Rendimientos.
+2. Creado 'src/utils/pdfGeneratorValorCuotaV32.ts' con la cabecera institucional de 3 columnas (Logo Geeksoft izq, Titulo central, Logo InAndes der usando base64 puro), banner azul del fondo, tarjetas KPI oxigenadas para tasas/comisiones y footer institucional.
+3. Actualizado 'src/features/fondos/FondosPage.tsx' para consumir 'generatePdfValorCuotaV32'.
+4. Ejecutado 'npm run build' con resultado exitoso (codigo 0) y cero errores de TypeScript.

@@ -19,7 +19,7 @@ import {
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
   Plus, Search, Building2, X, Calendar, Trash2
 } from 'lucide-react';
-import { generatePdfValorCuotaV31 } from '../../utils/pdfGeneratorValorCuotaV31';
+import { generatePdfValorCuotaV32 } from '../../utils/pdfGeneratorValorCuotaV32';
 import { generateValorCuotaExcelV31 } from '../../utils/excelGeneratorValorCuotaV31';
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 
@@ -150,18 +150,18 @@ export const FondosPage: React.FC = () => {
         setVcReportData(reportsToUse);
       }
 
-      const htmlContent = generatePdfValorCuotaV31({
+      const htmlContent = generatePdfValorCuotaV32({
         reports: reportsToUse,
         fStart,
         fEnd,
         selFondo: vcSelFondo,
         anio: vcSelYear
       });
-      const filename = `REPORTE_VALOR_CUOTA_NAV_V31_${fEnd}.pdf`;
+      const filename = `REPORTE_VALOR_CUOTA_NAV_V32_${fEnd}.pdf`;
       await downloadReportPdf(htmlContent, filename, 'landscape');
       setVcPdfDownloaded(true);
     } catch (err: any) {
-      alert(`Error generando PDF de Valor Cuota V31: ${err.message}`);
+      alert(`Error generando PDF de Valor Cuota V32: ${err.message}`);
     } finally {
       setVcExportingPdf(false);
     }

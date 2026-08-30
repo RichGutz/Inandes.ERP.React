@@ -375,3 +375,12 @@
 3. Actualizadas las etiquetas UI de v26 a v27.
 4. Compilacion limpia con `npm run build` (0 errores) y publicado en `origin/main` (commit `be3ef2c`) con auto-despliegue en VPS Contabo.
 
+[2026-08-30 12:40:00-05:00] TAREA: Homologacion del Generador de PDF de Valor Cuota con el formato institucional 'El Bello' (V32).
+[2026-08-30 12:40:00-05:00] ESTADO: Completado con exito.
+1. Creado `src/utils/pdfGeneratorValorCuotaV32.ts` incorporando:
+   - Encabezado institucional de 3 columnas (Logo Geeksoft 32px izq, Titulo central, Logo InAndes 26px der con base64 puro `data:image/png;base64`).
+   - Banner azul oficial del fondo `#0284c7`.
+   - Cajas KPI oxigenadas para parametros (Tasa Activa Implicita, Com. Administracion, Com. Captacion, Com. Miscelaneos, Ganancia Operativa = $0.00 y Valor Cuota Cierre).
+   - Tipografia Helvetica Neue, margenes `@page { size: A4 landscape; margin: 3.5mm 5mm !important; }` y footer formal de 3 celdas.
+2. Actualizado `src/features/fondos/FondosPage.tsx` para importar y ejecutar `generatePdfValorCuotaV32`.
+3. Verificado con `npm run build` (codigo de salida 0, compilacion exitosa sin errores).
