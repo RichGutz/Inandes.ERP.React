@@ -647,14 +647,14 @@ export const calculateValorCuotaV28 = async (
 
         fInvAcu += apD;
 
-        // Ingreso Bruto Activo Diario Goal Seek
+        // Ingreso Bruto Activo Diario Goal Seek (Base 365)
         const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
-        const iBrutoD = patAyer * (tActivaMes / 360.0);
+        const iBrutoD = patAyer * (tActivaMes / 365.0);
         const gananciaOperativa = Math.round((iBrutoD - egresosD) * 100) / 100;
 
-        // Cierre Contable Diario
+        // Cierre Contable Diario (Benchmark Ricardo Gallo)
         const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
-        const patCierre = patAyer + apD + pagoInvD;
+        const patCierre = patAyer + apD + iBrutoD;
         const vCuoH = cuotasTotalesCierre > 0 ? patCierre / cuotasTotalesCierre : 1.0;
 
         const setSummaryVal = (label: string, value: number) => {
@@ -683,6 +683,7 @@ export const calculateValorCuotaV28 = async (
         vCuoAyer = vCuoH;
       }
     }
+
 
     const blockRowsMeta: any[] = [];
     let numCert = 1;
