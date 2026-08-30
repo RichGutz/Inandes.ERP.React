@@ -80,13 +80,23 @@ for (const r of rawRows) {
 * **Supresión de Centavos en Cifras $\ge 100,000$**: Números de 6 o 7 dígitos (ej. `10,434,753`) se muestran redondeados sin centavos para evitar saturación visual en las celdas diarias.
 * **Tratamiento de Saldos de Apertura en Totales Horizontales**: Filas como `TOTAL CAPITAL (Apertura)`, `CUOTAS APERTURA` y `PATRIMONIO PRE-APORTES` muestran `-` en la columna total horizontal (ya que sumar stocks diarios horizontalmente no tiene sentido financiero), mientras que filas de cierre muestran el saldo exacto final de cierre.
 
+### 2.5. MOTOR V28: Goal Seek de Tasa Activa Implícita Mensual (P&L Operativo = 0.00)
+* **Principio Pass-Through**: El fondo genera un ingreso bruto que calza exactamente con los intereses devengados para los partícipes y los costos de administración (`pagoInvD + gAdmD + gCapD + gMiscD`).
+* **Goal Seek Mensual**:
+  $$\text{Tasa Activa Implícita Mes} = \frac{\sum \text{Egresos Totales del Mes}}{\sum \text{Capital Fuera Diario}} \times 360$$
+* **Ganancia Operativa Identidad Cero**: Cada día y al cierre del período, la fila `GANANCIA OPERATIVA (Neta)` es **$0.00$**.
+* **Nuevos Módulos**:
+  * [`src/services/fondosService.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/services/fondosService.ts) $\rightarrow$ `calculateValorCuotaV28`.
+  * [`src/utils/excelGeneratorValorCuotaV28.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/excelGeneratorValorCuotaV28.ts) $\rightarrow$ `generateValorCuotaExcelV28`.
+  * [`src/utils/pdfGeneratorValorCuotaV28.ts`](file:///c:/Users/rguti/Inandes.ERP.React/src/utils/pdfGeneratorValorCuotaV28.ts) $\rightarrow$ `generatePdfValorCuotaV28`.
+
 ---
 
 ## 🚀 4. Despliegue en Producción y Puntos de Control (Branch Tags)
 
 * **Servidor de Producción**: Contabo VPS (`169.58.168.107` / Coolify).
 * **Rama de Trabajo Activa**: `main` (Reglas 9 y 11).
-* **Último Commit**: `e2f8c59`.
+* **Último Commit**: `6666446`.
 
 ### 🏷️ Safe-Points Registrados en Git Web:
 
@@ -97,5 +107,6 @@ for (const r of rawRows) {
 ---
 
 *Expediente cerrado, documentado y blindado por Detective Benoit Blanc — 29 de Agosto de 2026.*
+
 
 
