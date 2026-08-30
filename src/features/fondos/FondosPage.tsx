@@ -287,24 +287,24 @@ export const FondosPage: React.FC = () => {
 
         const vcIni = getRowCellVal(bFirst, 'VAL CUOTA INICIAL', false) || 1.0;
         const vcFin = getRowCellVal(bLast, 'VAL CUOTA FINAL', true) || 1.0;
-        const patApertura = getRowCellVal(bFirst, 'TOTAL CAPITAL (Apertura)', false);
+        const patApertura = getRowCellVal(bFirst, 'TOTAL CAPITAL', false);
         const patCierre = getRowCellVal(bLast, 'PATRIMONIO TOTAL CIERRE', true);
-        const cuotasApertura = getRowCellVal(bFirst, 'CUOTAS APERTURA', false);
-        const cuotasCierre = getRowCellVal(bLast, '(=) CUOTAS TOTALES CIERRE', true);
+        const cuotasApertura = getRowCellVal(bFirst, 'CUOTAS ACUMULADAS', false) || getRowCellVal(bFirst, 'CUOTA TOTAL CIERRE', false);
+        const cuotasCierre = getRowCellVal(bLast, 'CUOTA TOTAL CIERRE', true) || getRowCellVal(bLast, 'CUOTAS ACUMULADAS', true);
         const capAdicional = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === '(+) CAPITAL ADICIONAL (Hoy)');
+          const row = b.rows.find((r: any) => r.id === 'INVERSIONES ADICIONALES');
           return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
         }, 0);
         const ingBrutos = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'GANANCIA TOTAL BRUTA (Base 360)');
+          const row = b.rows.find((r: any) => r.id === 'GANANCIA TOTAL BRUTA');
           return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
         }, 0);
         const comAdmin = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'COM. ADMIN (-) (Base 365)');
+          const row = b.rows.find((r: any) => r.id === 'COM. ADMIN (-)');
           return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
         }, 0);
         const comCapt = rep.blocks.reduce((acc, b) => {
-          const row = b.rows.find((r: any) => r.id === 'COM. CAPT. (-) (Base 365)');
+          const row = b.rows.find((r: any) => r.id === 'COM. CAPT. (-)');
           return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
         }, 0);
         const comMisc = rep.blocks.reduce((acc, b) => {
@@ -336,7 +336,7 @@ export const FondosPage: React.FC = () => {
           cuotas_totales_cierre: cuotasCierre,
           capital_adicional_periodo: capAdicional,
           ingresos_brutos_periodo: ingBrutos,
-          pago_inversionistas_periodo: 0,
+          pago_inversionistas_periodo: Math.max(0, ingBrutos - (comAdmin + comCapt + comMisc)),
           comision_admin_periodo: comAdmin,
           comision_captacion_periodo: comCapt,
           comision_misc_periodo: comMisc,

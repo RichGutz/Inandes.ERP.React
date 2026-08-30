@@ -302,18 +302,27 @@ export const InversionistasPage: React.FC = () => {
     setCalcResult(null);
   }, [v40SelYear, v40SelCiclo, v40SelNum, v40SelFondo]);
 
+  const [docVcEvents, setDocVcEvents] = useState<any[]>([]);
+
   // Carga reactiva de eventos contables para visualización instantánea estilo Forecast
   useEffect(() => {
     if (activeSubTab === 'documentos') {
       const fetchDocEvents = async () => {
         setDocLoading(true);
         try {
-          const { data, error } = await supabase
-            .from('crm_certificados_eventos')
-            .select('*')
-            .eq('fecha_periodo_fin', fEnd);
-          if (error) throw error;
-          setDocEvents(data || []);
+          const [eventsRes, vcRes] = await Promise.all([
+            supabase
+              .from('crm_certificados_eventos')
+              .select('*')
+              .eq('fecha_periodo_fin', fEnd),
+            supabase
+              .from('crm_valor_cuota_eventos')
+              .select('*')
+              .eq('fecha_fin_periodo', fEnd)
+          ]);
+          if (eventsRes.error) throw eventsRes.error;
+          setDocEvents(eventsRes.data || []);
+          setDocVcEvents(vcRes.data || []);
         } catch (err: any) {
           console.error('Error cargando eventos para documentos:', err);
         } finally {
@@ -416,7 +425,8 @@ export const InversionistasPage: React.FC = () => {
       const fondoNombre = fInfo.nombre_fondo || fCode;
       const moneda = payload.moneda || fInfo.moneda || 'PEN';
       const inversionista = payload.inversionista || 'Inversionista';
-      const valorCuota = Number(fInfo.valor_cuota_cierre_periodo || payload.valor_cuota || 1.0);
+      const vcFondoEvent = docVcEvents.find(v => v.id_fondo === fCode);
+      const valorCuota = vcFondoEvent ? Number(vcFondoEvent.valor_cuota_final || 1.0) : Number(fInfo.valor_cuota_cierre_periodo || payload.valor_cuota || 1.0);
 
       return {
         fondo_nombre: fondoNombre,
@@ -573,7 +583,7 @@ export const InversionistasPage: React.FC = () => {
   `).join('')}
 </body>
 </html>`;
-  }, [docEvents, fondosDisponibles, docFondo, fStart, fEnd, docLoading]);
+  }, [docEvents, docVcEvents, fondosDisponibles, docFondo, fStart, fEnd, docLoading]);
 
   // Generador en Caliente de HTML para Retenciones (Estilo Forecast)
   const htmlRetencionesDoc = useMemo(() => {

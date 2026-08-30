@@ -196,6 +196,27 @@ export const CertificadosPage: React.FC = () => {
         invList = [{ name: masterCert?.titular_1 || 'INVERSIONISTA', dni: 'S/N' }];
       }
 
+      // 5.1 Consultar Valor Cuota oficial del NAV en Supabase
+      const fechaCorteFondo = latestEvent.fecha_periodo_fin || contract.fecha_inicio;
+      const fCode = certId.split('.')[0].split('-')[0];
+      let valorCuotaFondo = 1.0;
+      if (fechaCorteFondo && fCode) {
+        const { data: vcRow } = await supabase
+          .from('crm_valor_cuota_eventos')
+          .select('valor_cuota_final')
+          .eq('id_fondo', fCode)
+          .lte('fecha_corte', fechaCorteFondo)
+          .order('fecha_corte', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (vcRow && vcRow.valor_cuota_final) {
+          valorCuotaFondo = Number(vcRow.valor_cuota_final);
+        }
+      }
+
+      const montoActual = latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0;
+      const cuotasActual = valorCuotaFondo > 0 ? (montoActual / valorCuotaFondo) : montoActual;
+
       // 6. Generar HTML final
       const html = generateCertificateHtml({
         investors: invList,
@@ -216,8 +237,8 @@ export const CertificadosPage: React.FC = () => {
         cert_meta: {
           fecha_emision: contract.fecha_inicio || masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
           id_certificado: certId,
-          monto_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0,
-          cuotas_actual: latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0
+          monto_actual: montoActual,
+          cuotas_actual: cuotasActual
         }
       });
 
