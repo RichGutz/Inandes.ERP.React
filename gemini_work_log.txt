@@ -390,3 +390,9 @@
 1. Actualizado `src/utils/pdfGeneratorValorCuotaV32.ts` con tasa activa a 4 decimales, suma monetaria en comisiones y cajas KPI exclusivas de Pagina 1.
 2. Reducida la altura de filas de la tabla (-2%) para evitar desbordes en impresion.
 3. Compilacion limpia con `npm run build` (0 errores en 3.73s).
+
+[2026-08-30 12:59:00-05:00] TAREA: Restringir burbujas KPI a la Pagina 1 del Fondo en periodos de 2 o 3 meses (hasta 6 quincenas).
+[2026-08-30 12:59:00-05:00] ESTADO: Completado con exito.
+1. `src/utils/pdfGeneratorValorCuotaV32.ts` renderiza burbujas solo en `blockIdx === 0 && !isSecondPart`.
+2. Las quincenas 2, 3, 4, 5 y 6 se imprimen sin burbujas, dando maxima altura y legibilidad a la grilla contable.
+3. Compilacion exitosa con `npm run build` (0 errores en 2.81s).

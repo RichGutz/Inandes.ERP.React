@@ -13,7 +13,10 @@ export interface VcPdfOptions {
  * Generador Oficial de Reporte PDF para Valor Cuota NAV V32 (Homologado con "El Bello")
  * - Encabezado institucional de 3 columnas (GeekSoft izq, Título centro, InAndes der).
  * - Banner azul oficial del fondo.
- * - Burbujas KPI únicamente en la Página 1 (Quincena 1) con Tasa Activa a 4 decimales y comisiones en % y monto acumulado.
+ * - Burbujas KPI únicamente en la Página 1 de cada Fondo (Quincena 1 del Mes 1 del Período),
+ *   mostrando la Tasa Activa a 4 decimales, el Valor Cuota Oficial de Cierre del Período completo
+ *   y las sumas monetarias acumuladas definitivas de las comisiones del ciclo (2 o 3 meses).
+ * - Todas las demás páginas (quincenas 2, 3, 4, 5, 6) se imprimen oxigenadas sin burbujas.
  * - Grilla con altura compacta (-2%) para ajuste perfecto en 1 hoja por quincena.
  * - Pie de página formal institucional.
  */
@@ -51,20 +54,22 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
   let totalPagesOverall = 0;
   for (const rep of filteredReports) {
     for (const _blk of rep.blocks) {
-      totalPagesOverall += 2; // Quincena 1 y Quincena 2
+      totalPagesOverall += 2; // 2 páginas por mes (Quincena 1 y Quincena 2)
     }
   }
 
   for (const report of filteredReports) {
     const moneda = report.fondo.moneda || (report.fondo.id_fondo.includes('USD') ? 'USD' : 'PEN');
 
-    for (const block of report.blocks) {
-      const totalDays = block.days.length;
-      const midPoint = Math.min(15, totalDays);
+    // Identificar el último bloque del período (último mes del bimestre o trimestre)
+    const lastBlock = report.blocks && report.blocks.length > 0
+      ? report.blocks[report.blocks.length - 1]
+      : null;
 
-      // Obtener el VC de cierre oficial del bloque
-      const vcRow = block.rows.find((r: any) => r.is_vc || (r.id && r.id.includes('VAL CUOTA FINAL')));
-      let finalVcStr = '-';
+    // Obtener el VC de cierre oficial definitivo del ciclo completo (al final del último mes)
+    let finalVcStr = '-';
+    if (lastBlock) {
+      const vcRow = lastBlock.rows.find((r: any) => r.is_vc || (r.id && r.id.includes('VAL CUOTA FINAL')));
       if (vcRow && vcRow.cells && vcRow.cells.length > 0) {
         const lastVal = vcRow.cells[vcRow.cells.length - 1];
         const numVal = parseFloat(String(lastVal).replace(/,/g, ''));
@@ -72,19 +77,26 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
           finalVcStr = numVal.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
         }
       }
+    }
 
-      // Obtener montos monetarios acumulados de comisiones del período completo
-      const getAcumRowVal = (exactLabel: string) => {
-        const r = block.rows.find((x: any) => x.id === exactLabel);
-        if (!r || !r.cells || r.cells.length === 0) return 0;
-        const lastVal = r.cells[r.cells.length - 1];
-        const num = parseFloat(String(lastVal).replace(/,/g, '').replace('$', '').replace('S/', '').trim());
-        return isNaN(num) ? 0 : num;
-      };
+    // Obtener montos monetarios acumulados totales de comisiones del período completo (último mes)
+    const getAcumRowVal = (exactLabel: string) => {
+      if (!lastBlock) return 0;
+      const r = lastBlock.rows.find((x: any) => x.id === exactLabel);
+      if (!r || !r.cells || r.cells.length === 0) return 0;
+      const lastVal = r.cells[r.cells.length - 1];
+      const num = parseFloat(String(lastVal).replace(/,/g, '').replace('$', '').replace('S/', '').trim());
+      return isNaN(num) ? 0 : num;
+    };
 
-      const totAdminMoney = getAcumRowVal('COM. ADMIN ACUM. (-)');
-      const totCapMoney = getAcumRowVal('COM. CAPT. ACUM. (-)');
-      const totMiscMoney = getAcumRowVal('COM. MISC. ACUM. (-)');
+    const totAdminMoney = getAcumRowVal('COM. ADMIN ACUM. (-)');
+    const totCapMoney = getAcumRowVal('COM. CAPT. ACUM. (-)');
+    const totMiscMoney = getAcumRowVal('COM. MISC. ACUM. (-)');
+
+    for (let blockIdx = 0; blockIdx < report.blocks.length; blockIdx++) {
+      const block = report.blocks[blockIdx];
+      const totalDays = block.days.length;
+      const midPoint = Math.min(15, totalDays);
 
       const renderPagePart = (
         startDayIdx: number,
@@ -93,6 +105,7 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
         isSecondPart: boolean
       ) => {
         globalPageIdx++;
+        const isFirstPageOfFund = (blockIdx === 0 && !isSecondPart);
         const partDays = block.days.slice(startDayIdx, endDayIdx);
         const pMiscPct = ((Number(report.fondo.comision_miscelaneos_fondo) || 0)).toFixed(2);
         const pAdminPct = ((Number(report.vars.admin) || 0)).toFixed(2);
@@ -171,8 +184,8 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
         }
         tableBody += '</tbody>';
 
-        // Cajas KPI: solo en la Página 1 (Quincena 1)
-        const kpiCardsHtml = !isSecondPart ? `
+        // Cajas KPI: EXCLUSIVAS de la Página 1 de cada Fondo (Quincena 1 del Mes 1)
+        const kpiCardsHtml = isFirstPageOfFund ? `
           <table class="kpi-cards-table">
             <tr>
               <td class="kpi-card">
@@ -226,10 +239,10 @@ export function generatePdfValorCuotaV32(options: VcPdfOptions): string {
               FONDO ${report.fondo.nombre_fondo || report.fondo.id_fondo} (${report.fondo.id_fondo}) &mdash; MONEDA: ${moneda} &nbsp;|&nbsp; MOTOR NAV V31 (GOAL SEEK P&amp;L = 0.00) &nbsp;|&nbsp; ${partTitle.toUpperCase()}
             </div>
 
-            <!-- 3. Cajas KPI de Parámetros del Fondo (Exclusivas de Página 1) -->
+            <!-- 3. Cajas KPI Maestras del Período (Únicamente en Página 1 del Fondo) -->
             ${kpiCardsHtml}
 
-            <!-- 4. Grilla Contable Oficial (-2% altura compacta) -->
+            <!-- 4. Grilla Contable Oficial (-2% Altura Compacta) -->
             <table class="data-table">
               ${tableHeaders}
               ${tableBody}
