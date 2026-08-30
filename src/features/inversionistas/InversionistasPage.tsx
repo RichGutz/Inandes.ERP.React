@@ -2060,11 +2060,11 @@ export const InversionistasPage: React.FC = () => {
                 if (item.m === 2) isClosedInDb = (cycleDashboard.B?.[1]?.length || 0) > 0;
                 else if (item.m === 3) isClosedInDb = (cycleDashboard.Q?.[1]?.length || 0) > 0;
                 else if (item.m === 4) isClosedInDb = (cycleDashboard.B?.[2]?.length || 0) > 0;
-                else if (item.m === 6) isClosedInDb = (cycleDashboard.B?.[3]?.length || 0) > 0;
+                else if (item.m === 6) isClosedInDb = ((cycleDashboard.B?.[3]?.length || 0) > 0) || ((cycleDashboard.Q?.[2]?.length || 0) > 0);
                 else if (item.m === 8) isClosedInDb = (cycleDashboard.B?.[4]?.length || 0) > 0;
                 else if (item.m === 9) isClosedInDb = (cycleDashboard.Q?.[3]?.length || 0) > 0;
                 else if (item.m === 10) isClosedInDb = (cycleDashboard.B?.[5]?.length || 0) > 0;
-                else if (item.m === 12) isClosedInDb = (cycleDashboard.B?.[6]?.length || 0) > 0;
+                else if (item.m === 12) isClosedInDb = ((cycleDashboard.B?.[6]?.length || 0) > 0) || ((cycleDashboard.Q?.[4]?.length || 0) > 0);
 
                 const hasCycle = item.funds.length > 0;
                 const isSelected = (item.cType === v40SelCiclo && item.cNum === v40SelNum);

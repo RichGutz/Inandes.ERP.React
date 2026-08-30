@@ -173,7 +173,7 @@ export const generateRetornosV40 = async (
 
     // Determinar la fecha de inicio canónica exacta según la periodicidad del fondo
     let fStartFund: Date;
-    if (codigoFondo && codigoFondo !== 'TODOS' && fechaInicio) {
+    if (codigoFondo && codigoFondo !== 'TODOS' && fechaInicio && frecuencia === 2) {
       fStartFund = new Date(fechaInicio + 'T00:00:00');
     } else {
       const startMonth = monthFin - frecuencia + 1;

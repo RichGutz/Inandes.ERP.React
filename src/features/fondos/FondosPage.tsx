@@ -312,14 +312,21 @@ export const FondosPage: React.FC = () => {
           return acc + (row ? row.cells.reduce((sum: number, c: any) => sum + Number(c.val || 0), 0) : 0);
         }, 0);
 
+        const fondoFrec = Number(f.frecuencia_cupones_meses || 2);
+        const endMonth = new Date(fEnd + 'T00:00:00').getMonth() + 1;
+        const startMonth = endMonth - fondoFrec + 1;
+        const fondoStart = `${vcSelYear}-${String(startMonth).padStart(2, '0')}-01`;
+        const fondoCiclo = fondoFrec === 3 ? 'Trimestre' : 'Bimestre';
+        const fondoNum = fondoFrec === 3 ? Math.round(endMonth / 3) : Math.round(endMonth / 2);
+
         payloads.push({
           id_fondo: f.id_fondo,
           nombre_fondo: f.nombre_fondo,
           fecha_corte: fEnd,
           anio: vcSelYear,
-          ciclo: vcSelTipo,
-          num_periodo: vcSelNum,
-          fecha_inicio_periodo: fStart,
+          ciclo: fondoCiclo,
+          num_periodo: fondoNum,
+          fecha_inicio_periodo: fondoStart,
           fecha_fin_periodo: fEnd,
           valor_cuota_inicial: vcIni,
           valor_cuota_final: vcFin,
@@ -1309,11 +1316,11 @@ export const FondosPage: React.FC = () => {
                 if (item.m === 2) isClosedInDb = (vcDashboard.B?.[1]?.length || 0) > 0;
                 else if (item.m === 3) isClosedInDb = (vcDashboard.Q?.[1]?.length || 0) > 0;
                 else if (item.m === 4) isClosedInDb = (vcDashboard.B?.[2]?.length || 0) > 0;
-                else if (item.m === 6) isClosedInDb = (vcDashboard.B?.[3]?.length || 0) > 0;
+                else if (item.m === 6) isClosedInDb = ((vcDashboard.B?.[3]?.length || 0) > 0) || ((vcDashboard.Q?.[2]?.length || 0) > 0);
                 else if (item.m === 8) isClosedInDb = (vcDashboard.B?.[4]?.length || 0) > 0;
                 else if (item.m === 9) isClosedInDb = (vcDashboard.Q?.[3]?.length || 0) > 0;
                 else if (item.m === 10) isClosedInDb = (vcDashboard.B?.[5]?.length || 0) > 0;
-                else if (item.m === 12) isClosedInDb = (vcDashboard.B?.[6]?.length || 0) > 0;
+                else if (item.m === 12) isClosedInDb = ((vcDashboard.B?.[6]?.length || 0) > 0) || ((vcDashboard.Q?.[4]?.length || 0) > 0);
 
                 const hasCycle = item.funds.length > 0;
                 const isSelected = (item.cType === vcSelTipo && item.cNum === vcSelNum);

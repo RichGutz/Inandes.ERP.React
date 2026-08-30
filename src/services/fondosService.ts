@@ -861,22 +861,32 @@ export const calculateValorCuotaV31 = async (
 
   const retornosCalc = await generateRetornosV40(codigoFondo, fStartStr, fEndStr);
 
-  const diasPeriodo: Date[] = [];
-  const curr = new Date(startDate);
-  curr.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(0, 0, 0, 0);
-
-  while (curr <= end) {
-    diasPeriodo.push(new Date(curr));
-    curr.setDate(curr.getDate() + 1);
-  }
-
   const reports: V26FondoReport[] = [];
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   for (const fId of Object.keys(fondosUnicosMap)) {
     const fondo = fondosUnicosMap[fId];
+    const frecuencia = Number(fondo.frecuencia_cupones_meses || 2);
+    const endMonth = endDate.getMonth() + 1;
+    
+    // Si el mes de corte no corresponde a la periodicidad del fondo, omitir
+    if (endMonth % frecuencia !== 0) continue;
+
+    // Determinar la fecha de inicio exacta según la periodicidad del fondo
+    const startMonth = endMonth - frecuencia + 1;
+    const fondoStartDate = new Date(endDate.getFullYear(), startMonth - 1, 1);
+
+    const diasPeriodo: Date[] = [];
+    const curr = new Date(fondoStartDate);
+    curr.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+
+    while (curr <= end) {
+      diasPeriodo.push(new Date(curr));
+      curr.setDate(curr.getDate() + 1);
+    }
+
     const pAdmin = (Number(fondo.comision_administracion_fondo) || 0) / 100.0;
     const pCap   = (Number(fondo.comision_captacion_fondo) || 0) / 100.0;
     const pMisc  = (Number(fondo.comision_miscelaneos_fondo) || 0) / 100.0;
@@ -900,7 +910,7 @@ export const calculateValorCuotaV31 = async (
           id: r.id || r.id_contrato,
           monto: Number(r.capital || 0),
           cuotas: 0,
-          fecha_ingreso: parseFechaIngreso(r, startDate),
+          fecha_ingreso: parseFechaIngreso(r, fondoStartDate),
           valores_dia: (r.valores || []).slice(),
           interes_acum: Number(r.bruto_total || 0)
         };
@@ -912,7 +922,7 @@ export const calculateValorCuotaV31 = async (
             id: r.id,
             capital: Number(r.capital || 0),
             cuotas: Number(r.capital || 0),
-            emision: new Date(startDate),
+            emision: new Date(fondoStartDate),
             interes_acum: Number(r.bruto_total || 0),
             valores_dia: (r.valores || []).slice(),
             hijos: [aumentoObj]
@@ -925,7 +935,7 @@ export const calculateValorCuotaV31 = async (
           id: r.id || r.id_contrato,
           capital: capIni,
           cuotas: capIni,
-          emision: r.emision ? new Date(r.emision) : new Date(startDate),
+          emision: r.emision ? new Date(r.emision) : new Date(fondoStartDate),
           interes_acum: Number(r.bruto_total || r.interes_bruto || 0),
           valores_dia: (r.valores || r.valores_dia_padre || []).slice(),
           hijos: []

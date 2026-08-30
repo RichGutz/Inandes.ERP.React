@@ -414,3 +414,10 @@
 1. Ejecutado DDL en PostgreSQL (aws-0-us-east-1.pooler.supabase.com:5432).
 2. Tabla, indices y politicas RLS creados y activos.
 3. PostgREST schema cache recargado y probado con exito.
+
+[2026-08-30 14:52:00-05:00] TAREA: Soporte de 6 fondos en los periodos coincidentes de Junio (B3/Q2) y Diciembre (B6/Q4).
+[2026-08-30 14:52:00-05:00] ESTADO: Completado con exito.
+1. `src/services/fondosService.ts`: diasPeriodo dinamico por fondo segun frecuencia (Bimestral 2m vs Trimestral 3m).
+2. `src/utils/financialCalculator.ts`: calculo canonico de 3 meses para NSLCON01.
+3. `src/features/fondos/FondosPage.tsx` y `src/features/inversionistas/InversionistasPage.tsx`: integrados los 6 fondos.
+4. Compilacion limpia con `npm run build` (0 errores en 3.62s).
