@@ -388,3 +388,8 @@
 2. 'financialCalculator.ts': garantizado que los fondos trimestrales calculen sus 3 meses completos en Junio y Diciembre.
 3. 'FondosPage.tsx' e 'InversionistasPage.tsx': sincronizados los 6 fondos en los desplegables, badges de calendario y verificacion de estado cerrado en BD.
 4. Compilado con exito via 'npm run build' (0 errores en 3.62s).
+
+[2026-08-30 15:00:00-05:00] REGRABACION FINAL SAFEPOINT 'PDF.NAV.RET.REN.100.PERCENT':
+1. Sincronizada la rama remota 'origin/PDF.NAV.RET.REN.100.PERCENT' y tag homonimo con el commit 'de87605'.
+2. Incluye soporte completo de 6 fondos en meses combinados, persistencia en Supabase y tabla crm_valor_cuota_eventos.
+3. Retorno inmediato a la rama 'main' (working tree 100% limpio).
