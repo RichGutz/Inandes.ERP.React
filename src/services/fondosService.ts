@@ -608,12 +608,12 @@ export const calculateValorCuotaV28 = async (
         const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
         sumEgresosMes += egresosD;
         sumCapitalPonderadoMes += tempPat;
-        tempPat += apD + pagoInvD;
+        tempPat += apD + egresosD;
       }
 
-      // Tasa Activa Implícita Goal Seek del Mes (que hace Ganancia Operativa = 0)
+      // Tasa Activa Implícita Goal Seek del Mes (Base 365)
       const tActivaMes = sumCapitalPonderadoMes > 0
-        ? (sumEgresosMes / sumCapitalPonderadoMes) * 360.0
+        ? (sumEgresosMes / sumCapitalPonderadoMes) * 365.0
         : 0.14;
       ultimaTasaActivaMensual = tActivaMes;
 
