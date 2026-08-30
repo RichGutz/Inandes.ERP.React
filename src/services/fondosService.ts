@@ -818,10 +818,10 @@ export const calculateValorCuotaV28 = async (
 };
 
 // =========================================================================
-// MOTOR NAV V30: Identidad Cero P&L Diario y Mensual (Pass-Through Puro)
+// MOTOR NAV V31: LÓGICA DEFINITIVA (Base V26 + Retornos V40 + Goal Seek P&L = 0.00)
 // =========================================================================
 
-export const calculateValorCuotaV30 = async (
+export const calculateValorCuotaV31 = async (
   codigoFondo: string | null,
   startDate: Date,
   endDate: Date
@@ -899,6 +899,7 @@ export const calculateValorCuotaV30 = async (
           tipo: 'AUMENTO',
           id: r.id || r.id_contrato,
           monto: Number(r.capital || 0),
+          cuotas: 0,
           fecha_ingreso: parseFechaIngreso(r, startDate),
           valores_dia: (r.valores || []).slice(),
           interes_acum: Number(r.bruto_total || 0)
@@ -933,23 +934,32 @@ export const calculateValorCuotaV30 = async (
       }
     }
 
+    // Estructura Canónica Oficial de 25 Filas de Totales (V26 Legacy + Goal Seek)
     const summaryDefs = [
-      { id: 'TOTAL CAPITAL (Apertura)', css: 'summary-row font-black' },
+      { id: 'TOTAL CAPITAL', css: 'summary-row font-black' },
       { id: 'SPACER_1', css: 'spacer-row' },
-      { id: '(+) CAPITAL ADICIONAL (Hoy)', css: 'summary-row text-emerald-600' },
-      { id: '(=) CAPITAL ACUMULADO', css: 'summary-row' },
-      { id: 'CUOTAS APERTURA', css: 'summary-row' },
-      { id: '(+) CUOTAS ADICIONALES (Hoy)', css: 'summary-row text-emerald-600' },
-      { id: '(=) CUOTAS TOTALES CIERRE', css: 'summary-row' },
+      { id: 'INVERSIONES ORIGINALES', css: 'summary-row text-emerald-600' },
+      { id: 'INV. ORIGINALES ACUMULADAS', css: 'summary-row' },
+      { id: 'CUOTAS ORIGINALES', css: 'summary-row text-emerald-600' },
+      { id: 'CUOTAS ORIGINALES ACUMULADAS', css: 'summary-row' },
       { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
       { id: 'SPACER_2', css: 'spacer-row' },
-      { id: 'GANANCIA TOTAL BRUTA (Base 360)', css: 'summary-row' },
-      { id: 'PATRIMONIO TOTAL (Pre-Aportes)', css: 'summary-row' },
-      { id: 'COM. ADMIN (-) (Base 365)', css: 'summary-row text-rose-600' },
-      { id: 'COM. CAPT. (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'GANANCIA TOTAL BRUTA', css: 'summary-row' },
+      { id: 'GANANCIA TOTAL ACUMULADA', css: 'summary-row' },
+      { id: 'PATRIMONO TOTAL', css: 'summary-row' },
+      { id: 'SPACER_3', css: 'spacer-row' },
+      { id: 'COM. ADMIN (-)', css: 'summary-row text-rose-600' },
+      { id: 'COM. ADMIN ACUM. (-)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. (-)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. ACUM. (-)', css: 'summary-row text-rose-600' },
       { id: 'COM. MISC. (-)', css: 'summary-row text-rose-600' },
-      { id: 'GANANCIA OPERATIVA (Neta)', css: 'summary-row font-black' },
+      { id: 'COM. MISC. ACUM. (-)', css: 'summary-row text-rose-600' },
+      { id: 'SPACER_4', css: 'spacer-row' },
+      { id: 'GANANCIA OPERATIVA', css: 'summary-row font-black' },
+      { id: 'GANANCIA OPERATIVA ACUMULADA', css: 'summary-row font-black' },
+      { id: 'SPACER_5', css: 'spacer-row' },
       { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row font-black' },
+      { id: 'CUOTA TOTAL CIERRE', css: 'summary-row font-black' },
       { id: 'VAL CUOTA FINAL', css: 'vc-cell' }
     ];
 
@@ -968,16 +978,21 @@ export const calculateValorCuotaV30 = async (
       monthsGroup[key].push(i);
     }
 
-    let patAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
+    let patrimonioAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
     let cuotasAyer = certRows.reduce((acc, c) => acc + c.cuotas, 0);
-    let fInvAcu = patAyer;
-    let vCuoAyer = 1.0;
+    let fTotalInvOrigAcum = patrimonioAyer;
+    let fAcumUtilidad = 0.0;
+    let fAcumAdmin = 0.0;
+    let fAcumCap = 0.0;
+    let fAcumMisc = 0.0;
+    let valCuotaAyer = 1.0;
     let ultimaTasaActivaMensual = 0.14;
 
     for (const [, idxs] of Object.entries(monthsGroup)) {
+      // 1. Pre-cálculo de Goal Seek Mensual (Base 365 / 360)
       let sumEgresosMes = 0.0;
       let sumCapitalPonderadoMes = 0.0;
-      let tempPat = patAyer;
+      let tempPat = patrimonioAyer;
 
       for (const dayIdx of idxs) {
         const d = diasPeriodo[dayIdx];
@@ -1013,12 +1028,14 @@ export const calculateValorCuotaV30 = async (
         : 0.14;
       ultimaTasaActivaMensual = tActivaMes;
 
+      // 2. Simulación Diaria (Algoritmo Fiel V26)
       for (const dayIdx of idxs) {
         const d = diasPeriodo[dayIdx];
 
-        const gAdmD  = patAyer * (pAdmin / 365.0);
-        const gCapD  = patAyer * (pCap / 365.0);
-        const gMiscD = patAyer * (pMisc / 365.0);
+        // A) Rentabilidad Diaria Pre-Aportes
+        const gAdmD  = patrimonioAyer * (pAdmin / 365.0);
+        const gCapD  = patrimonioAyer * (pCap / 365.0);
+        const gMiscD = patrimonioAyer * (pMisc / 365.0);
 
         let pagoInvD = 0.0;
         for (const r of certRows) {
@@ -1028,53 +1045,69 @@ export const calculateValorCuotaV30 = async (
           }
         }
 
-        let apD = 0.0;
-        let nuevasCuotasD = 0.0;
+        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+        const ingresoBrutoDia = egresosD; // Goal Seek Identidad Cero (P&L = 0.00)
+        const utilidadNetaDia = ingresoBrutoDia - (gAdmD + gCapD + gMiscD); // = pagoInvD
+
+        fAcumUtilidad += ingresoBrutoDia;
+        fAcumAdmin    += gAdmD;
+        fAcumCap      += gCapD;
+        fAcumMisc     += gMiscD;
+
+        const patPre = patrimonioAyer + utilidadNetaDia;
+        const vCuotaHoy = cuotasAyer > 0 ? patPre / cuotasAyer : 1.0;
+
+        // B) Suscripciones / Aportes de Capital al Cierre del Día
+        let aportesDia = 0.0;
+        let nuevasCuotasDia = 0.0;
+
         for (const r of certRows) {
           for (const h of r.hijos) {
             if (h.fecha_ingreso && isSameDay(h.fecha_ingreso, d)) {
-              const nuevasCuotas = Math.trunc(h.monto / vCuoAyer);
-              apD += h.monto;
-              nuevasCuotasD += nuevasCuotas;
+              const nuevasCuotas = Math.trunc(h.monto / vCuotaHoy);
+              h.cuotas = nuevasCuotas;
+              r.cuotas += nuevasCuotas;
+              aportesDia += h.monto;
+              nuevasCuotasDia += nuevasCuotas;
             }
           }
         }
 
-        fInvAcu += apD;
-
-        // V30: Identidad Cero P&L Diario
-        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
-        const iBrutoD = egresosD;
-        const gananciaOperativa = 0.00;
-
-        const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
-        const patCierre = patAyer + apD + iBrutoD;
-        const vCuoH = cuotasTotalesCierre > 0 ? patCierre / cuotasTotalesCierre : 1.0;
+        // C) Actualización Contable de Cierre (El Patrimonio y Cuotas Suben)
+        fTotalInvOrigAcum += aportesDia;
+        const patTotalCierre = patPre + aportesDia;
+        const cuotasTotalCierre = cuotasAyer + nuevasCuotasDia;
 
         const setSummaryVal = (label: string, value: number) => {
           const sRow = summaryRows.find(s => s.id === label);
           if (sRow) sRow.valores_dia.push(value);
         };
 
-        setSummaryVal('TOTAL CAPITAL (Apertura)', patAyer);
-        setSummaryVal('(+) CAPITAL ADICIONAL (Hoy)', apD);
-        setSummaryVal('(=) CAPITAL ACUMULADO', fInvAcu);
-        setSummaryVal('CUOTAS APERTURA', cuotasAyer);
-        setSummaryVal('(+) CUOTAS ADICIONALES (Hoy)', nuevasCuotasD);
-        setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasTotalesCierre);
-        setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
-        setSummaryVal('GANANCIA TOTAL BRUTA (Base 360)', iBrutoD);
-        setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + iBrutoD);
-        setSummaryVal('COM. ADMIN (-) (Base 365)', gAdmD);
-        setSummaryVal('COM. CAPT. (-) (Base 365)', gCapD);
+        setSummaryVal('TOTAL CAPITAL', patrimonioAyer);
+        setSummaryVal('INVERSIONES ORIGINALES', aportesDia);
+        setSummaryVal('INV. ORIGINALES ACUMULADAS', fTotalInvOrigAcum);
+        setSummaryVal('CUOTAS ORIGINALES', nuevasCuotasDia);
+        setSummaryVal('CUOTAS ORIGINALES ACUMULADAS', cuotasTotalCierre);
+        setSummaryVal('VAL CUOTA INICIAL', valCuotaAyer);
+        setSummaryVal('GANANCIA TOTAL BRUTA', ingresoBrutoDia);
+        setSummaryVal('GANANCIA TOTAL ACUMULADA', fAcumUtilidad);
+        setSummaryVal('PATRIMONO TOTAL', fTotalInvOrigAcum + fAcumUtilidad);
+        setSummaryVal('COM. ADMIN (-)', gAdmD);
+        setSummaryVal('COM. ADMIN ACUM. (-)', fAcumAdmin);
+        setSummaryVal('COM. CAPT. (-)', gCapD);
+        setSummaryVal('COM. CAPT. ACUM. (-)', fAcumCap);
         setSummaryVal('COM. MISC. (-)', gMiscD);
-        setSummaryVal('GANANCIA OPERATIVA (Neta)', gananciaOperativa);
-        setSummaryVal('PATRIMONIO TOTAL CIERRE', patCierre);
-        setSummaryVal('VAL CUOTA FINAL', vCuoH);
+        setSummaryVal('COM. MISC. ACUM. (-)', fAcumMisc);
+        setSummaryVal('GANANCIA OPERATIVA', 0.00);
+        setSummaryVal('GANANCIA OPERATIVA ACUMULADA', 0.00);
+        setSummaryVal('PATRIMONIO TOTAL CIERRE', patTotalCierre);
+        setSummaryVal('CUOTA TOTAL CIERRE', cuotasTotalCierre);
+        setSummaryVal('VAL CUOTA FINAL', vCuotaHoy);
 
-        patAyer = patCierre;
-        cuotasAyer = cuotasTotalesCierre;
-        vCuoAyer = vCuoH;
+        // D) Preparar Mañana
+        patrimonioAyer = patTotalCierre;
+        cuotasAyer = cuotasTotalCierre;
+        valCuotaAyer = vCuotaHoy;
       }
     }
 
@@ -1102,7 +1135,7 @@ export const calculateValorCuotaV30 = async (
           css_class: 'italic text-emerald-700 bg-emerald-50/50',
           label_class: 'text-emerald-700 font-medium pl-4',
           capital: h.monto,
-          cuotas: h.monto,
+          cuotas: h.cuotas,
           interes_acum: h.interes_acum,
           valores_dia: h.valores_dia,
           is_aumento: true
@@ -1143,11 +1176,13 @@ export const calculateValorCuotaV30 = async (
         }
 
         const isVc = r.id && r.id.includes('VAL CUOTA');
+        const isGananciaOp = r.id && r.id.includes('GANANCIA OPERATIVA');
+
         const dailyCells = idxs.map(dayIdx => {
           const val = r.valores_dia[dayIdx];
           if (val === undefined || val === null) return '-';
           if (isVc) return Number(val).toFixed(6);
-          if (r.id === 'GANANCIA OPERATIVA (Neta)') return '$ 0.00';
+          if (isGananciaOp) return '$ 0.00';
           if (Number(val) === 0) return '$ 0.00';
           return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         });
@@ -1188,6 +1223,9 @@ export const calculateValorCuotaV30 = async (
 
   return reports;
 };
+
+// Aliases de compatibilidad
+export const calculateValorCuotaV30 = calculateValorCuotaV31;
 
 
 
