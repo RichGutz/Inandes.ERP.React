@@ -372,3 +372,8 @@
 1. Creado el branch 'PDF.NAV.RET.REN.100.PERCENT' y subido a GitHub ('origin refs/heads/PDF.NAV.RET.REN.100.PERCENT').
 2. Creado el tag anotado 'PDF.NAV.RET.REN.100.PERCENT' y subido a GitHub ('origin refs/tags/PDF.NAV.RET.REN.100.PERCENT').
 3. Regreso inmediato a la rama 'main' (working tree 100% limpio).
+
+[2026-08-30 14:20:00-05:00] REGRABACION DE BRANCH TAG Y DOCUMENTO MAESTRO NAV:
+1. Incorporado el documento maestro 'Obsidian/Inandes.Inversionistas.React/00.J.Inyeccion.NAV.Inversionistas&Certificados.md'.
+2. Actualizada y regrabada la rama 'PDF.NAV.RET.REN.100.PERCENT' y su tag homonimo en GitHub.
+3. Trabajo activo mantenido al 100% en la rama 'main'.
