@@ -420,6 +420,356 @@ export const calculateValorCuotaV26 = async (
 export const calculateValorCuotaV27 = calculateValorCuotaV26;
 
 // =========================================================================
+// MOTOR V28: GOAL SEEK DE TASA ACTIVA IMPLÍCITA MENSUAL (P&L OPERATIVO = 0)
+// =========================================================================
+
+export const calculateValorCuotaV28 = async (
+  codigoFondo: string | null,
+  startDate: Date,
+  endDate: Date
+): Promise<V26FondoReport[]> => {
+  const { data: fondosData, error: fondosErr } = await supabase
+    .from('crm_fondos')
+    .select('*')
+    .order('vigencia_tasa', { ascending: false })
+    .order('nombre_fondo', { ascending: true });
+
+  if (fondosErr) throw new Error(`Error en crm_fondos: ${fondosErr.message}`);
+
+  const fondosUnicosMap: Record<string, Fondo> = {};
+  if (fondosData) {
+    for (const f of fondosData) {
+      if (!fondosUnicosMap[f.id_fondo]) {
+        fondosUnicosMap[f.id_fondo] = f;
+      }
+    }
+  }
+
+  if (codigoFondo && codigoFondo !== 'TODOS') {
+    for (const k of Object.keys(fondosUnicosMap)) {
+      if (k !== codigoFondo) delete fondosUnicosMap[k];
+    }
+  }
+
+  const formatYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const fStartStr = formatYMD(startDate);
+  const fEndStr = formatYMD(endDate);
+
+  const retornosCalc = await generateRetornosV40(codigoFondo, fStartStr, fEndStr);
+
+  const diasPeriodo: Date[] = [];
+  const curr = new Date(startDate);
+  curr.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  while (curr <= end) {
+    diasPeriodo.push(new Date(curr));
+    curr.setDate(curr.getDate() + 1);
+  }
+
+  const reports: V26FondoReport[] = [];
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+  for (const fondo of Object.values(fondosUnicosMap)) {
+    const fid = fondo.id_fondo;
+    const pAdmin  = Number(fondo.comision_administracion_fondo || 0) / 100;
+    const pCap    = Number(fondo.comision_captacion_fondo || 0) / 100;
+    const pMisc   = Number(fondo.comision_miscelaneos_fondo || 0) / 100;
+
+    const fondoRetornoData = retornosCalc.pdfData.find((p: any) => p.fondo?.id_fondo === fid);
+    const rawRows = (fondoRetornoData?.rows && fondoRetornoData.rows.length > 0)
+      ? fondoRetornoData.rows
+      : (fondoRetornoData?.blocks?.[0]?.rows || []);
+    if (rawRows.length === 0) continue;
+
+    const certRows: any[] = [];
+    let currentPadre: any = null;
+
+    for (const r of rawRows) {
+      if (r.tipo === 'AUMENTO') {
+        const aumentoObj = {
+          tipo: 'AUMENTO',
+          id: r.id || 'Aumento',
+          monto: Number(r.capital || 0),
+          fecha_ingreso: r.fecha ? new Date(r.fecha) : (r.fecha_inicio ? new Date(r.fecha_inicio) : new Date(startDate)),
+          valores_dia: (r.valores || []).slice(),
+          interes_acum: Number(r.bruto_total || 0)
+        };
+        if (currentPadre) {
+          currentPadre.hijos.push(aumentoObj);
+        } else {
+          certRows.push({
+            tipo: 'CERT',
+            id: r.id,
+            capital: Number(r.capital || 0),
+            cuotas: Number(r.capital || 0),
+            emision: new Date(startDate),
+            interes_acum: Number(r.bruto_total || 0),
+            valores_dia: (r.valores || []).slice(),
+            hijos: [aumentoObj]
+          });
+        }
+      } else {
+        const capIni = Number(r.capital || r.capital_base || 0);
+        currentPadre = {
+          tipo: 'CERT',
+          id: r.id || r.id_contrato,
+          capital: capIni,
+          cuotas: capIni,
+          emision: r.emision ? new Date(r.emision) : new Date(startDate),
+          interes_acum: Number(r.bruto_total || r.interes_bruto || 0),
+          valores_dia: (r.valores || r.valores_dia_padre || []).slice(),
+          hijos: []
+        };
+        certRows.push(currentPadre);
+      }
+    }
+
+    // Configurar filas de totales de resumen con distribución clara
+    const summaryDefs = [
+      { id: 'TOTAL CAPITAL (Apertura)', css: 'summary-row font-black' },
+      { id: 'SPACER_1', css: 'spacer-row' },
+      { id: '(+) CAPITAL ADICIONAL (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CAPITAL ACUMULADO', css: 'summary-row' },
+      { id: 'CUOTAS APERTURA', css: 'summary-row' },
+      { id: '(+) CUOTAS ADICIONALES (Hoy)', css: 'summary-row text-emerald-600' },
+      { id: '(=) CUOTAS TOTALES CIERRE', css: 'summary-row' },
+      { id: 'VAL CUOTA INICIAL', css: 'vc-cell' },
+      { id: 'SPACER_2', css: 'spacer-row' },
+      { id: 'GANANCIA TOTAL BRUTA (Base 360)', css: 'summary-row' },
+      { id: 'PATRIMONIO TOTAL (Pre-Aportes)', css: 'summary-row' },
+      { id: 'COM. ADMIN (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'COM. CAPT. (-) (Base 365)', css: 'summary-row text-rose-600' },
+      { id: 'COM. MISC. (-)', css: 'summary-row text-rose-600' },
+      { id: 'GANANCIA OPERATIVA (Neta)', css: 'summary-row font-black' },
+      { id: 'PATRIMONIO TOTAL CIERRE', css: 'summary-row font-black' },
+      { id: 'VAL CUOTA FINAL', css: 'vc-cell' }
+    ];
+
+    const summaryRows: any[] = summaryDefs.map(def => ({
+      tipo: def.id.startsWith('SPACER') ? 'SPACER' : 'TOTAL',
+      id: def.id,
+      css_class: def.css,
+      valores_dia: [] as number[]
+    }));
+
+    // Agrupar fechas en meses para calcular Goal Seek mensual
+    const monthsGroup: Record<string, number[]> = {};
+    for (let i = 0; i < diasPeriodo.length; i++) {
+      const d = diasPeriodo[i];
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!monthsGroup[key]) monthsGroup[key] = [];
+      monthsGroup[key].push(i);
+    }
+
+    let patAyer = certRows.reduce((acc, c) => acc + c.capital, 0);
+    let cuotasAyer = certRows.reduce((acc, c) => acc + c.cuotas, 0);
+    let fInvAcu = patAyer;
+    let vCuoAyer = 1.0;
+    let ultimaTasaActivaMensual = 0.14;
+
+    // Ejecutar simulación mes por mes con Goal Seek exacto por mes
+    for (const [, idxs] of Object.entries(monthsGroup)) {
+      // 1. Pre-cálculo para Goal Seek del mes
+      let sumEgresosMes = 0.0;
+      let sumCapitalPonderadoMes = 0.0;
+      let tempPat = patAyer;
+
+      for (const dayIdx of idxs) {
+        const d = diasPeriodo[dayIdx];
+        const gAdmD  = tempPat * (pAdmin / 365.0);
+        const gCapD  = tempPat * (pCap / 365.0);
+        const gMiscD = tempPat * (pMisc / 365.0);
+
+        let pagoInvD = 0.0;
+        for (const r of certRows) {
+          pagoInvD += r.valores_dia[dayIdx] || 0.0;
+          for (const h of r.hijos) {
+            pagoInvD += h.valores_dia[dayIdx] || 0.0;
+          }
+        }
+
+        let apD = 0.0;
+        for (const r of certRows) {
+          for (const h of r.hijos) {
+            if (h.fecha_ingreso && h.fecha_ingreso.getTime() === d.getTime()) {
+              apD += h.monto;
+            }
+          }
+        }
+
+        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+        sumEgresosMes += egresosD;
+        sumCapitalPonderadoMes += tempPat;
+        tempPat += apD + pagoInvD;
+      }
+
+      // Tasa Activa Implícita Goal Seek del Mes (que hace Ganancia Operativa = 0)
+      const tActivaMes = sumCapitalPonderadoMes > 0
+        ? (sumEgresosMes / sumCapitalPonderadoMes) * 360.0
+        : 0.14;
+      ultimaTasaActivaMensual = tActivaMes;
+
+      // 2. Simulación día a día del mes
+      for (const dayIdx of idxs) {
+        const d = diasPeriodo[dayIdx];
+
+        const gAdmD  = patAyer * (pAdmin / 365.0);
+        const gCapD  = patAyer * (pCap / 365.0);
+        const gMiscD = patAyer * (pMisc / 365.0);
+
+        let pagoInvD = 0.0;
+        for (const r of certRows) {
+          pagoInvD += r.valores_dia[dayIdx] || 0.0;
+          for (const h of r.hijos) {
+            pagoInvD += h.valores_dia[dayIdx] || 0.0;
+          }
+        }
+
+        let apD = 0.0;
+        let nuevasCuotasD = 0.0;
+        for (const r of certRows) {
+          for (const h of r.hijos) {
+            if (h.fecha_ingreso && h.fecha_ingreso.getTime() === d.getTime()) {
+              const nuevasCuotas = Math.trunc(h.monto / vCuoAyer);
+              apD += h.monto;
+              nuevasCuotasD += nuevasCuotas;
+            }
+          }
+        }
+
+        fInvAcu += apD;
+
+        // Ingreso Bruto Activo Diario Goal Seek
+        const egresosD = pagoInvD + gAdmD + gCapD + gMiscD;
+        const iBrutoD = patAyer * (tActivaMes / 360.0);
+        const gananciaOperativa = Math.round((iBrutoD - egresosD) * 100) / 100;
+
+        // Cierre Contable Diario
+        const cuotasTotalesCierre = cuotasAyer + nuevasCuotasD;
+        const patCierre = patAyer + apD + pagoInvD;
+        const vCuoH = cuotasTotalesCierre > 0 ? patCierre / cuotasTotalesCierre : 1.0;
+
+        const setSummaryVal = (label: string, value: number) => {
+          const sRow = summaryRows.find(s => s.id === label);
+          if (sRow) sRow.valores_dia.push(value);
+        };
+
+        setSummaryVal('TOTAL CAPITAL (Apertura)', patAyer);
+        setSummaryVal('(+) CAPITAL ADICIONAL (Hoy)', apD);
+        setSummaryVal('(=) CAPITAL ACUMULADO', fInvAcu);
+        setSummaryVal('CUOTAS APERTURA', cuotasAyer);
+        setSummaryVal('(+) CUOTAS ADICIONALES (Hoy)', nuevasCuotasD);
+        setSummaryVal('(=) CUOTAS TOTALES CIERRE', cuotasTotalesCierre);
+        setSummaryVal('VAL CUOTA INICIAL', vCuoAyer);
+        setSummaryVal('GANANCIA TOTAL BRUTA (Base 360)', iBrutoD);
+        setSummaryVal('PATRIMONIO TOTAL (Pre-Aportes)', patAyer + iBrutoD);
+        setSummaryVal('COM. ADMIN (-) (Base 365)', gAdmD);
+        setSummaryVal('COM. CAPT. (-) (Base 365)', gCapD);
+        setSummaryVal('COM. MISC. (-)', gMiscD);
+        setSummaryVal('GANANCIA OPERATIVA (Neta)', gananciaOperativa);
+        setSummaryVal('PATRIMONIO TOTAL CIERRE', patCierre);
+        setSummaryVal('VAL CUOTA FINAL', vCuoH);
+
+        patAyer = patCierre;
+        cuotasAyer = cuotasTotalesCierre;
+        vCuoAyer = vCuoH;
+      }
+    }
+
+    const blockRowsMeta: any[] = [];
+    let numCert = 1;
+    for (const r of certRows) {
+      r.num = numCert++;
+      r.css_class = "";
+      r.label_class = "";
+      blockRowsMeta.push(r);
+      for (const h of r.hijos) {
+        h.css_class = "aumento-row";
+        h.label_class = "aumento-label text-slate-400 font-mono text-[9px] pl-2";
+        blockRowsMeta.push(h);
+      }
+    }
+    blockRowsMeta.push(...summaryRows);
+
+    const blocks: V26Block[] = [];
+    let blockIdx = 1;
+
+    for (const [key, idxs] of Object.entries(monthsGroup)) {
+      const [year, monthIdx] = key.split('-').map(Number);
+      const monthName = `${monthNames[monthIdx]} ${year}`;
+      const blockDays = idxs.map(i => {
+        const d = diasPeriodo[i];
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      });
+
+      const blockRows: V26Row[] = [];
+
+      for (const r of blockRowsMeta) {
+        if (r.tipo === 'SPACER') {
+          blockRows.push({
+            tipo: 'SPACER',
+            id: r.id,
+            css_class: 'spacer-row h-2 bg-slate-50 dark:bg-slate-900/50',
+            label_class: '',
+            is_vc: false,
+            cells: []
+          });
+          continue;
+        }
+
+        const isVc = r.id === 'VAL CUOTA INICIAL' || r.id === 'VAL CUOTA FINAL';
+        const startIdx = idxs[0];
+        const endIdx = idxs[idxs.length - 1] + 1;
+        const dailyCells = r.valores_dia.slice(startIdx, endIdx).map((val: number) => ({
+          val,
+          css: isVc ? 'font-black text-blue-600 dark:text-blue-400' : ''
+        }));
+
+        blockRows.push({
+          tipo: r.tipo,
+          id: r.id,
+          num: r.num,
+          css_class: r.css_class,
+          label_class: r.label_class,
+          is_vc: isVc,
+          capital: r.tipo === 'CERT' ? r.capital : r.monto,
+          cuotas: r.cuotas,
+          interes_acum: r.interes_acum,
+          cells: dailyCells
+        });
+      }
+
+      blocks.push({
+        idx: blockIdx++,
+        monthName,
+        days: blockDays,
+        rows: blockRows
+      });
+    }
+
+    reports.push({
+      fondo,
+      blocks,
+      vars: {
+        activa: (ultimaTasaActivaMensual * 100).toFixed(2),
+        admin: (pAdmin * 100).toFixed(2)
+      }
+    });
+  }
+
+  return reports;
+};
+
+
+// =========================================================================
 // PERSISTENCIA Y ROLLBACK DE CIERRES DE VALOR CUOTA (NAV V27)
 // =========================================================================
 

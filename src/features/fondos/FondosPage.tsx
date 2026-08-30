@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   getFondos, 
   upsertFondos, 
-  calculateValorCuotaV27,
+  calculateValorCuotaV28,
   getValorCuotaEvents,
   fetchValorCuotaDashboard,
   oficializarCierreValorCuota,
@@ -19,8 +19,8 @@ import {
   Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, FileText, CheckCircle, ChevronRight,
   Plus, Search, Building2, X, Calendar, Trash2
 } from 'lucide-react';
-import { generatePdfValorCuotaV27 } from '../../utils/pdfGeneratorValorCuotaV27';
-import { generateValorCuotaExcelV27 } from '../../utils/excelGeneratorValorCuotaV27';
+import { generatePdfValorCuotaV28 } from '../../utils/pdfGeneratorValorCuotaV28';
+import { generateValorCuotaExcelV28 } from '../../utils/excelGeneratorValorCuotaV28';
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 
 
@@ -108,7 +108,7 @@ export const FondosPage: React.FC = () => {
         const start = new Date(sParts[0], sParts[1] - 1, sParts[2]);
         const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
         const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
-        reportsToUse = await calculateValorCuotaV27(filterFondo, start, end);
+        reportsToUse = await calculateValorCuotaV28(filterFondo, start, end);
         if (reportsToUse.length === 0) {
           alert("No hay reportes de valor cuota para exportar en Excel.");
           return;
@@ -116,26 +116,16 @@ export const FondosPage: React.FC = () => {
         setVcReportData(reportsToUse);
       }
 
-      const blob = await generateValorCuotaExcelV27({
+      await generateValorCuotaExcelV28({
         reports: reportsToUse,
+        selYear: vcSelYear,
         fStart,
-        fEnd,
-        selFondo: vcSelFondo,
-        anio: vcSelYear
+        fEnd
       });
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
-      a.download = `EXCEL_MAESTRO_VALOR_CUOTA_NAV_V27_${fEnd}_${nowStamp}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       setVcExcelDownloaded(true);
     } catch (err: any) {
-      alert(`Error generando Excel Maestro de Valor Cuota: ${err.message}`);
+      alert(`Error generando Excel Maestro de Valor Cuota V28: ${err.message}`);
     } finally {
       setVcExportingExcel(false);
     }
@@ -151,7 +141,7 @@ export const FondosPage: React.FC = () => {
         const start = new Date(sParts[0], sParts[1] - 1, sParts[2]);
         const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
         const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
-        reportsToUse = await calculateValorCuotaV27(filterFondo, start, end);
+        reportsToUse = await calculateValorCuotaV28(filterFondo, start, end);
         if (reportsToUse.length === 0) {
           alert("No hay reportes de valor cuota calculados para exportar en PDF.");
           return;
@@ -159,22 +149,23 @@ export const FondosPage: React.FC = () => {
         setVcReportData(reportsToUse);
       }
 
-      const htmlContent = generatePdfValorCuotaV27({
+      const htmlContent = generatePdfValorCuotaV28({
         reports: reportsToUse,
         fStart,
         fEnd,
         selFondo: vcSelFondo,
         anio: vcSelYear
       });
-      const filename = `REPORTE_VALOR_CUOTA_NAV_V27_${fEnd}.pdf`;
+      const filename = `REPORTE_VALOR_CUOTA_NAV_V28_${fEnd}.pdf`;
       await downloadReportPdf(htmlContent, filename, 'landscape');
       setVcPdfDownloaded(true);
     } catch (err: any) {
-      alert(`Error generando PDF de Valor Cuota: ${err.message}`);
+      alert(`Error generando PDF de Valor Cuota V28: ${err.message}`);
     } finally {
       setVcExportingPdf(false);
     }
   };
+
 
   const PERIODOS_CIERRE = [
     { id: 'B1', m: 2, mes: 'Febrero', rango: 'Ene - Feb', cycle: 'B1', label: 'Bimestre 1', corte: '28 Feb', cNum: 1, cType: 'Bimestre' as const, funds: ['NSGPEN01', 'NSGPEN02', 'NSGPEN03', 'NSGUSD01', 'NSGUSD02'] },
@@ -245,6 +236,7 @@ export const FondosPage: React.FC = () => {
   }, [activeSubTab, vcSelYear, fEnd]);
 
   // Carga automática del cálculo de Valor Cuota V27
+  // Carga automática del cálculo de Valor Cuota V28 (Goal Seek P&L = 0)
   const handleCalculateValorCuota = async () => {
     setVcLoading(true);
     try {
@@ -254,14 +246,15 @@ export const FondosPage: React.FC = () => {
       const end = new Date(eParts[0], eParts[1] - 1, eParts[2]);
       
       const filterFondo = vcSelFondo === 'TODOS' ? null : vcSelFondo;
-      const reports = await calculateValorCuotaV27(filterFondo, start, end);
+      const reports = await calculateValorCuotaV28(filterFondo, start, end);
       setVcReportData(reports);
     } catch (err: any) {
-      console.error("Error al calcular Valor Cuota V27:", err);
+      console.error("Error al calcular Valor Cuota V28:", err);
     } finally {
       setVcLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (activeSubTab === 'valorCuota') {
@@ -1532,7 +1525,7 @@ export const FondosPage: React.FC = () => {
                     2. Auditoría & Reportes
                   </span>
                   <span className="text-[9.5px] font-mono font-bold text-[#059669] dark:text-[#34d399]">
-                    NAV V27
+                    NAV V28 (P&L = 0)
                   </span>
                 </div>
 
@@ -1549,7 +1542,7 @@ export const FondosPage: React.FC = () => {
                     ) : (
                       <FileSpreadsheet size={16} />
                     )}
-                    <span>{vcExcelDownloaded ? '✓ Excel V27 Listo' : 'Descargar Excel Maestro V27'}</span>
+                    <span>{vcExcelDownloaded ? '✓ Excel V28 Listo' : 'Descargar Excel Maestro V28'}</span>
                   </button>
 
                   <button
@@ -1564,14 +1557,15 @@ export const FondosPage: React.FC = () => {
                     ) : (
                       <FileText size={16} />
                     )}
-                    <span>{vcPdfDownloaded ? '✓ Reporte PDF Listo' : 'Descargar PDF Oficial V27'}</span>
+                    <span>{vcPdfDownloaded ? '✓ Reporte PDF Listo' : 'Descargar PDF Oficial V28'}</span>
                   </button>
                 </div>
 
                 <div className="pt-1 text-[9.5px] font-mono text-[#64748b] dark:text-[#94a3b8] text-center">
-                  Matriz Transpuesta 100% Homologada
+                  Goal Seek Mensual · Ganancia Operativa = 0.00
                 </div>
               </div>
+
 
               {/* COLUMNA 3: PERSISTENCIA & ROLLBACK */}
               <div className="p-4 bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl flex flex-col justify-between gap-3 shadow-xs">
