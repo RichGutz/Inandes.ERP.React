@@ -18,12 +18,13 @@ import {
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
+import { ComisionesAsesoresTab } from './ComisionesAsesoresTab';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo con persistencia en sessionStorage
-  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos'>(() => {
+  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos' | 'comisiones'>(() => {
     const saved = sessionStorage.getItem('inv_active_subtab');
-    return (saved as 'datos' | 'retornos_react' | 'documentos') || 'retornos_react';
+    return (saved as 'datos' | 'retornos_react' | 'documentos' | 'comisiones') || 'retornos_react';
   });
 
   useEffect(() => {
@@ -1677,6 +1678,16 @@ export const InversionistasPage: React.FC = () => {
             📄 EECC / Retenciones
           </button>
 
+          <button
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
+              activeSubTab === 'comisiones' 
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
+            }`}
+            onClick={() => setActiveSubTab('comisiones')}
+          >
+            💼 Comisiones de Asesores
+          </button>
         </div>
       </div>
 
@@ -2761,6 +2772,11 @@ export const InversionistasPage: React.FC = () => {
           </div>
 
         </div>
+      )}
+
+      {/* --- PESTAÑA D: COMISIONES DE ASESORES COMERCIALES --- */}
+      {activeSubTab === 'comisiones' && (
+        <ComisionesAsesoresTab />
       )}
 
       {/* --- FORMULARIO MODAL INTERACTIVO DE CREACIÓN / EDICIÓN (5 TABS) --- */}

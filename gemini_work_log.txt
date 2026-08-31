@@ -426,3 +426,10 @@
 [2026-08-30 15:00:00-05:00] ESTADO: Completado con exito.
 1. Actualizados rama remota y tag `PDF.NAV.RET.REN.100.PERCENT` a commit `de87605`.
 2. Trabajo activo 100% en rama `main`.
+
+[2026-08-30 20:20:00-05:00] TAREA: Creación del Módulo de Liquidación y Determinación de Comisiones de Asesores.
+[2026-08-30 20:20:00-05:00] ESTADO: Completado con éxito.
+1. `src/services/comisionesService.ts`: lógica de comisiones Base 365 para los 8 períodos canónicos de cierre.
+2. `src/features/inversionistas/ComisionesAsesoresTab.tsx`: interfaz de acordeones con drag-and-drop tipo Forecast.
+3. `src/features/inversionistas/InversionistasPage.tsx`: pestaña `💼 Comisiones de Asesores`.
+4. Compilación limpia `npm run build` (0 errores).
