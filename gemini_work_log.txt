@@ -453,4 +453,12 @@
 2. Armonizado tamaño del logo InAndes lateral a `h-[46px]`.
 3. Compilación validada `npm run build` (0 errores en 2.69s).
 
+[2026-08-31 10:13:00-05:00] TAREA: Segundo escalado de logos (+50% adicional) y ampliación de cabecera a 88px.
+[2026-08-31 10:13:00-05:00] ESTADO: Completado con éxito.
+1. Ampliada cabecera a `h-[88px]`.
+2. Logo DEFACTO horizontal central escalado a `h-[80px]` (max-w: 340px).
+3. Logo InAndes lateral escalado a `h-[54px]`.
+4. Compilación validada `npm run build` (0 errores en 2.97s).
+
+
 

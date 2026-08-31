@@ -113,16 +113,16 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
   return (
     <div className="min-h-screen bg-[var(--bg-app)] font-sans flex flex-col antialiased text-[var(--text-main)] transition-colors duration-200">
       
-      {/* Header Superior Corporativo Estilo APEFAC (74px) */}
-      <header className="bg-white dark:bg-[#111827] border-b border-[#e2e8f0] dark:border-[#1f2937] sticky top-0 z-50 px-6 h-[74px] flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      {/* Header Superior Corporativo Estilo APEFAC (88px) */}
+      <header className="bg-white dark:bg-[#111827] border-b border-[#e2e8f0] dark:border-[#1f2937] sticky top-0 z-50 px-6 h-[88px] flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         
         {/* Izquierda: Logo InAndes Transparente + Estado de Red en Vivo */}
         <div className="flex items-center gap-4">
           <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('home')} title="Ir al Inicio">
-            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes ERP" className="h-[46px] object-contain" />
+            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes ERP" className="h-[54px] object-contain" />
           </div>
 
-          <div className="w-[1px] h-8 bg-[#e2e8f0] dark:bg-[#334155] hidden sm:block" />
+          <div className="w-[1px] h-10 bg-[#e2e8f0] dark:bg-[#334155] hidden sm:block" />
 
           {/* Live Network Status Badge Estilo APEFAC */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 rounded-full">
@@ -133,12 +133,12 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
           </div>
         </div>
 
-        {/* Centro: Logo DEFACTO Horizontal (+50% tamaño) */}
+        {/* Centro: Logo DEFACTO Horizontal (Escala Mayor) */}
         <div className="hidden md:flex items-center justify-center">
           <img 
             src="/assets/LOGO.DEFACTO.LATERAL.png" 
             alt="DEFACTO" 
-            className="h-[56px] max-w-[270px] object-contain" 
+            className="h-[80px] max-w-[340px] object-contain" 
           />
         </div>
 

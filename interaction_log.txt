@@ -420,4 +420,11 @@
 2. Armonizado el logo InAndes lateral a 46px para equilibrio visual en la barra superior.
 3. Validada la compilacion limpia con 'npm run build' (0 errores en 2.69s).
 
+[2026-08-31 10:13:00-05:00] SEGUNDO ESCALADO DE LOGOS Y CABECERA INSTITUCIONAL (+50% ADICIONAL):
+1. Incrementada la altura de la cabecera a 88px (MasterTemplate.tsx) para dar soporte holgado al nuevo tamano.
+2. Elevado el logo DEFACTO horizontal central a 80px de altura (max-w: 340px, +50% adicional).
+3. Elevado el logo InAndes lateral a 54px de altura.
+4. Compilacion de produccion validada con 'npm run build' (0 errores en 2.97s).
+
+
 
