@@ -119,7 +119,7 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
         {/* Izquierda: Logo InAndes Transparente + Estado de Red en Vivo */}
         <div className="flex items-center gap-4">
           <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('home')} title="Ir al Inicio">
-            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes ERP" className="h-[38px] object-contain" />
+            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes ERP" className="h-[46px] object-contain" />
           </div>
 
           <div className="w-[1px] h-8 bg-[#e2e8f0] dark:bg-[#334155] hidden sm:block" />
@@ -133,12 +133,12 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
           </div>
         </div>
 
-        {/* Centro: Logo DEFACTO Horizontal */}
+        {/* Centro: Logo DEFACTO Horizontal (+50% tamaño) */}
         <div className="hidden md:flex items-center justify-center">
           <img 
             src="/assets/LOGO.DEFACTO.LATERAL.png" 
             alt="DEFACTO" 
-            className="h-[38px] max-w-[180px] object-contain" 
+            className="h-[56px] max-w-[270px] object-contain" 
           />
         </div>
 

@@ -415,3 +415,9 @@
 4. Actualizados logos en base64Images.ts, LoginPage.tsx, App.tsx, CertificadosPage.tsx, InversionesPage.tsx y tableExport.ts.
 5. Validada compilacion limpia con 'npm run build' (0 errores).
 
+[2026-08-31 10:08:00-05:00] ESCALADO DEL LOGO DEFACTO EN CABECERA (+50%):
+1. Incrementada la altura del logo DEFACTO horizontal en la cabecera central de 38px a 56px (+50% de escala visual, max-w: 270px).
+2. Armonizado el logo InAndes lateral a 46px para equilibrio visual en la barra superior.
+3. Validada la compilacion limpia con 'npm run build' (0 errores en 2.69s).
+
+

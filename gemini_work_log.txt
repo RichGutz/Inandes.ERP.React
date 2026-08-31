@@ -447,3 +447,10 @@
 4. Actualizados logos en `base64Images.ts`, `LoginPage.tsx`, `App.tsx`, `CertificadosPage.tsx`, `InversionesPage.tsx` y `tableExport.ts`.
 5. Compilación validada `npm run build` (0 errores).
 
+[2026-08-31 10:08:00-05:00] TAREA: Incremento de escala visual (+50%) de logos en la cabecera institucional.
+[2026-08-31 10:08:00-05:00] ESTADO: Completado con éxito.
+1. Incrementado tamaño del logo DEFACTO horizontal a `h-[56px]` (max-w: 270px).
+2. Armonizado tamaño del logo InAndes lateral a `h-[46px]`.
+3. Compilación validada `npm run build` (0 errores en 2.69s).
+
+
