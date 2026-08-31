@@ -426,5 +426,10 @@
 3. Elevado el logo InAndes lateral a 54px de altura.
 4. Compilacion de produccion validada con 'npm run build' (0 errores en 2.97s).
 
+[2026-08-31 10:28:00-05:00] ESCALADO DEL LOGO GEEKSOFT EN CABECERA (+50%):
+1. Incrementada la altura del logo Geeksoft de la derecha en MasterTemplate.tsx de 44px a 66px (+50% de escala visual).
+2. Mantenida la integracion armoniosa en la cabecera corporativa de 88px.
+3. Compilacion de produccion validada con 'npm run build' (0 errores en 3.00s).
+
 
 

@@ -460,5 +460,10 @@
 3. Logo InAndes lateral escalado a `h-[54px]`.
 4. Compilación validada `npm run build` (0 errores en 2.97s).
 
+[2026-08-31 10:28:00-05:00] TAREA: Escalado del logo Geeksoft de la derecha (+50%).
+[2026-08-31 10:28:00-05:00] ESTADO: Completado con éxito.
+1. Incrementada la altura del logo Geeksoft en MasterTemplate.tsx a `h-[66px]`.
+2. Compilación validada `npm run build` (0 errores en 3.00s).
+
 
 

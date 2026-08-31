@@ -230,8 +230,8 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
             <span className="hidden sm:inline">Salir</span>
           </button>
 
-          {/* Logo Geeksoft */}
-          <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-[44px] object-contain pl-1 hidden xl:block" />
+          {/* Logo Geeksoft (+50% tamaño) */}
+          <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-[66px] object-contain pl-1 hidden xl:block" />
 
         </div>
       </header>
