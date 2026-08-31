@@ -399,3 +399,8 @@
 2. 'ComisionesAsesoresTab.tsx': interfaz con acordeones interactivos drag-and-drop inspirada en Petral/Forecast, pastillas de determinacion matematica explicita y exportacion a Excel multi-hoja y PDF oficial.
 3. 'InversionistasPage.tsx': integrada como 4ta sub-pestaña '💼 Comisiones de Asesores'.
 4. Compilado con exito via 'npm run build' (0 errores).
+
+[2026-08-30 20:34:00-05:00] CREACION Y REGISTRO DE BRANCH TAG 'COMISIONES.ASESORES.DRAG.DROP':
+1. Creada rama remota 'origin/COMISIONES.ASESORES.DRAG.DROP' y tag homonimo apuntando a commit '7952e0b'.
+2. Modulo de comisiones integrado en Asesores e Inversionistas con acordeones Drag & Drop y formulas Base 365.
+3. Retorno inmediato a la rama 'main' (working tree 100% limpio).

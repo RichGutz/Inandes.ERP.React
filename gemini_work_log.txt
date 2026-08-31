@@ -433,3 +433,8 @@
 2. `src/features/inversionistas/ComisionesAsesoresTab.tsx`: interfaz de acordeones con drag-and-drop tipo Forecast.
 3. `src/features/inversionistas/InversionistasPage.tsx`: pestaña `💼 Comisiones de Asesores`.
 4. Compilación limpia `npm run build` (0 errores).
+
+[2026-08-30 20:34:00-05:00] TAREA: Creación de BRANCH TAG `COMISIONES.ASESORES.DRAG.DROP`.
+[2026-08-30 20:34:00-05:00] ESTADO: Completado con éxito.
+1. Rama remota `origin/COMISIONES.ASESORES.DRAG.DROP` y Tag `COMISIONES.ASESORES.DRAG.DROP` creados en GitHub en commit `7952e0b`.
+2. Trabajo activo 100% en rama `main`.
