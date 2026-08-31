@@ -42,7 +42,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         {/* Logos */}
         <div className="flex items-center justify-center gap-8 mb-8">
           <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-24 object-contain" />
-          <img src="/logo_inandes.png" alt="InAndes" className="h-16 object-contain" />
+          <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes" className="h-16 object-contain" />
         </div>
 
         {/* Text */}

@@ -404,3 +404,14 @@
 1. Creada rama remota 'origin/COMISIONES.ASESORES.DRAG.DROP' y tag homonimo apuntando a commit '7952e0b'.
 2. Modulo de comisiones integrado en Asesores e Inversionistas con acordeones Drag & Drop y formulas Base 365.
 3. Retorno inmediato a la rama 'main' (working tree 100% limpio).
+
+[2026-08-31 10:00:00-05:00] HOMOLOGACION DE LOGOS TRANSPARENTES RGBA, CABECERA Y FAVICON DEFACTO:
+1. Generadas imagenes con canal alfa transparente puro (RGBA) y anti-aliasing sin halos para: Logo.Inandes.MODERNO.png, LOGO.DEFACTO.LATERAL.png y LOGO.DEFACTO.VERTICAL.png.
+2. Actualizada la cabecera institucional en MasterTemplate.tsx:
+   - Reemplazado logo de InAndes por el nuevo PNG transparente.
+   - Retirado el bloque de texto duplicado al costado derecho del logo.
+   - Reemplazado el texto central por el logo DEFACTO horizontal transparente.
+3. Actualizado el favicon en index.html y assets raiz (favicon.ico / favicon.png) con el logo DEFACTO vertical.
+4. Actualizados logos en base64Images.ts, LoginPage.tsx, App.tsx, CertificadosPage.tsx, InversionesPage.tsx y tableExport.ts.
+5. Validada compilacion limpia con 'npm run build' (0 errores).
+

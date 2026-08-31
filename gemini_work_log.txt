@@ -438,3 +438,12 @@
 [2026-08-30 20:34:00-05:00] ESTADO: Completado con éxito.
 1. Rama remota `origin/COMISIONES.ASESORES.DRAG.DROP` y Tag `COMISIONES.ASESORES.DRAG.DROP` creados en GitHub en commit `7952e0b`.
 2. Trabajo activo 100% en rama `main`.
+
+[2026-08-31 10:00:00-05:00] TAREA: Extracción de transparencia RGBA de logos, cabecera con DEFACTO horizontal y favicon vertical.
+[2026-08-31 10:00:00-05:00] ESTADO: Completado con éxito.
+1. Generados `Logo.Inandes.MODERNO.png`, `LOGO.DEFACTO.LATERAL.png` y `LOGO.DEFACTO.VERTICAL.png` con canal alfa RGBA limpio y bordes suavizados.
+2. Actualizada cabecera en `MasterTemplate.tsx` con logo InAndes transparente, sin texto lateral y con logo DEFACTO horizontal al centro.
+3. Actualizado favicon en `index.html` a `LOGO.DEFACTO.VERTICAL.png` y creados `favicon.ico` / `favicon.png`.
+4. Actualizados logos en `base64Images.ts`, `LoginPage.tsx`, `App.tsx`, `CertificadosPage.tsx`, `InversionesPage.tsx` y `tableExport.ts`.
+5. Compilación validada `npm run build` (0 errores).
+

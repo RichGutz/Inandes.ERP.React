@@ -181,7 +181,7 @@ export function exportTableToPDF(title: string, columns: ExportColumn[], data: a
                 <!-- Cabecera de reporte -->
                 <div class="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-6">
                     <div class="flex items-center gap-3">
-                        <img src="/logo_inandes.png" alt="InAndes" class="h-10 object-contain" />
+                        <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes" class="h-10 object-contain" />
                         <div class="flex flex-col border-l border-slate-200 pl-3">
                             <span class="text-[10px] font-black text-slate-500 tracking-wider uppercase">INANDES ERP</span>
                             <h1 class="text-lg font-black text-slate-800 uppercase tracking-tight">${title}</h1>

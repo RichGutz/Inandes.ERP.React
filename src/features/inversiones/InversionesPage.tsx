@@ -324,7 +324,7 @@ export const InversionesPage: React.FC = () => {
       },
       percentages: formPercentages,
       deposits: formDeposits,
-      logo_path: '/logo_inandes.png'
+      logo_path: '/assets/Logo.Inandes.MODERNO.png'
     };
   };
 
@@ -540,7 +540,7 @@ export const InversionesPage: React.FC = () => {
       cycleResult: approveCycleResult,
       percentages: percs,
       deposits: deps,
-      logo_path: '/logo_inandes.png'
+      logo_path: '/assets/Logo.Inandes.MODERNO.png'
     };
   };
 
@@ -769,7 +769,7 @@ export const InversionesPage: React.FC = () => {
       },
       percentages: percs,
       deposits: deps,
-      logo_path: '/logo_inandes.png'
+      logo_path: '/assets/Logo.Inandes.MODERNO.png'
     };
   };
 

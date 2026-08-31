@@ -513,7 +513,7 @@ function App() {
             <div className="flex items-center gap-12">
               <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-16 object-contain opacity-50 hover:opacity-100 transition-opacity" />
               <div className="w-px h-16 bg-slate-200 dark:bg-slate-700"></div>
-              <img src="/logo_inandes.png" alt="InAndes" className="h-20 object-contain" />
+              <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes" className="h-20 object-contain" />
             </div>
             <h2 className="text-slate-400 dark:text-slate-500 font-bold tracking-widest text-sm uppercase">Seleccione un módulo en el menú lateral para comenzar</h2>
           </div>

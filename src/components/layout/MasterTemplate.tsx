@@ -43,8 +43,8 @@ interface MasterTemplateProps {
 }
 
 export const MasterTemplate: React.FC<MasterTemplateProps> = ({
-  title,
-  subtitle,
+  title: _title,
+  subtitle: _subtitle,
   children,
   activeTab,
   setActiveTab,
@@ -74,19 +74,6 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
   const toggleGroup = useCallback((g: string) => {
     setOpenGroup(prev => (prev === g ? null : g));
   }, []);
-
-  // Breadcrumb dinámico
-  const moduleMap: Record<string, string> = {
-    dashboard: 'ERP - CRM',
-    crm_asesores: 'ERP - CRM', crm_fondos: 'ERP - CRM',
-    crm_inversionistas: 'ERP - CRM', crm_contratos: 'ERP - CRM',
-    crm_certificados: 'ERP - CRM', crm_deducciones: 'ERP - CRM', crm_chat: 'ERP - CRM',
-    factoring_core: 'ERP - Factoring',
-    confirming_futuros: 'ERP - Confirming',
-    herramientas_calculadora: 'Herramientas', herramientas_agentes: 'Herramientas',
-    mantenimiento_limpieza: 'Mantenimiento', mantenimiento_roles: 'Mantenimiento',
-  };
-  const currentModule = moduleMap[activeTab] || 'InAndes ERP';
 
   // Estado para modal ficticio de cambio de contraseña
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -129,14 +116,10 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
       {/* Header Superior Corporativo Estilo APEFAC (74px) */}
       <header className="bg-white dark:bg-[#111827] border-b border-[#e2e8f0] dark:border-[#1f2937] sticky top-0 z-50 px-6 h-[74px] flex items-center justify-between shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         
-        {/* Izquierda: Logos + Estado de Red en Vivo */}
+        {/* Izquierda: Logo InAndes Transparente + Estado de Red en Vivo */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
-            <img src="/Logo.Inandes.jpeg" alt="InAndes ERP" className="h-[38px] rounded-lg object-contain shadow-xs" />
-            <div className="hidden sm:flex flex-col">
-              <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] tracking-tight uppercase">INANDES ERP</span>
-              <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8] tracking-wider uppercase">{currentModule}</span>
-            </div>
+          <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('home')} title="Ir al Inicio">
+            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes ERP" className="h-[38px] object-contain" />
           </div>
 
           <div className="w-[1px] h-8 bg-[#e2e8f0] dark:bg-[#334155] hidden sm:block" />
@@ -150,16 +133,13 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
           </div>
         </div>
 
-        {/* Centro: Título Central del Módulo */}
-        <div className="hidden md:flex flex-col items-center justify-center text-center">
-          <h2 className="text-sm font-black text-[#0f172a] dark:text-[#f8fafc] tracking-tight uppercase flex items-center gap-1.5">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-[10.5px] text-[#64748b] dark:text-[#94a3b8] font-bold uppercase tracking-wider mt-0.5">
-              {subtitle}
-            </p>
-          )}
+        {/* Centro: Logo DEFACTO Horizontal */}
+        <div className="hidden md:flex items-center justify-center">
+          <img 
+            src="/assets/LOGO.DEFACTO.LATERAL.png" 
+            alt="DEFACTO" 
+            className="h-[38px] max-w-[180px] object-contain" 
+          />
         </div>
 
         {/* Derecha: Acciones, Perfil, Dark Mode & Salir */}

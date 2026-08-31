@@ -232,7 +232,7 @@ export const CertificadosPage: React.FC = () => {
           fecha_inicio: contract.fecha_inicio || new Date().toISOString().split('T')[0],
           fecha_fin: contract.fecha_fin || new Date().toISOString().split('T')[0]
         },
-        logo_efi_path: '/assets/Logo.Inandes.MODERNO.jpeg',
+        logo_efi_path: '/assets/Logo.Inandes.MODERNO.png',
         firma_path: '/Firma.Ricardo.GALLO.png',
         cert_meta: {
           fecha_emision: contract.fecha_inicio || masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
