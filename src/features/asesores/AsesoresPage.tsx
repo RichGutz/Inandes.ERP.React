@@ -1,13 +1,13 @@
-// src/features/asesores/AsesoresPage.tsx
 import React, { useEffect, useState } from 'react';
-import { getAsesores, upsertAsesor, calculateComisionesProyeccion } from '../../services/asesoresService';
+import { getAsesores, upsertAsesor } from '../../services/asesoresService';
 import type { Asesor } from '../../services/asesoresService';
 import * as XLSX from 'xlsx';
 import { 
   Search, Loader2, AlertCircle, Edit2, UserPlus, 
-  FileSpreadsheet, FileText, CheckCircle, X
+  FileSpreadsheet, CheckCircle, X
 } from 'lucide-react';
 import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
+import { ComisionesAsesoresTab } from '../inversionistas/ComisionesAsesoresTab';
 
 export const AsesoresPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'datos' | 'comisiones'>('datos');
@@ -27,12 +27,6 @@ export const AsesoresPage: React.FC = () => {
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
   const [formSubmitSuccess, setFormSubmitSuccess] = useState<boolean>(false);
 
-  // Estado de Proyección de Comisiones
-  const [selectedAsesor, setSelectedAsesor] = useState<string>('TODOS');
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [projectionData, setProjectionData] = useState<any[]>([]);
-  const [projectionLoading, setProjectionLoading] = useState<boolean>(false);
-
   const fetchAsesores = async () => {
     setLoading(true);
     setError(null);
@@ -46,28 +40,9 @@ export const AsesoresPage: React.FC = () => {
     }
   };
 
-  const fetchProyeccion = async () => {
-    setProjectionLoading(true);
-    try {
-      const codAsesor = selectedAsesor === 'TODOS' ? null : selectedAsesor;
-      const data = await calculateComisionesProyeccion(codAsesor, selectedYear);
-      setProjectionData(data);
-    } catch (err: any) {
-      console.error('Error calculando proyección:', err.message);
-    } finally {
-      setProjectionLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchAsesores();
   }, []);
-
-  useEffect(() => {
-    if (activeSubTab === 'comisiones') {
-      fetchProyeccion();
-    }
-  }, [activeSubTab, selectedAsesor, selectedYear]);
 
   // Exportar asesores a Excel
   const handleExportAsesoresExcel = () => {
@@ -76,117 +51,6 @@ export const AsesoresPage: React.FC = () => {
     const ws = XLSX.utils.json_to_sheet(asesores);
     XLSX.utils.book_append_sheet(wb, ws, 'Asesores');
     XLSX.writeFile(wb, 'asesores_crm.xlsx');
-  };
-
-  // Exportar comisiones a Excel (con pestañas independientes por asesor si es consolidado)
-  const handleExportComisionesExcel = () => {
-    if (projectionData.length === 0) {
-      alert("No hay comisiones proyectadas para exportar.");
-      return;
-    }
-
-    const wb = XLSX.utils.book_new();
-    
-    if (selectedAsesor === 'TODOS') {
-      // 1. Agregar hoja Consolidado
-      const wsCons = XLSX.utils.json_to_sheet(projectionData);
-      XLSX.utils.book_append_sheet(wb, wsCons, 'Consolidado');
-
-      // 2. Agrupar por Asesor para crear pestañas independientes
-      const groups: Record<string, any[]> = {};
-      for (const r of projectionData) {
-        const name = r.Asesor || 'Asesor';
-        if (!groups[name]) groups[name] = [];
-        groups[name].push(r);
-      }
-
-      for (const [asName, data] of Object.entries(groups)) {
-        // Limpiar nombre de hoja para caracteres inválidos en excel
-        const cleanName = asName.replace(/[\\\/*?:\[\]]/g, '').slice(0, 31);
-        const wsGroup = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, wsGroup, cleanName || 'Asesor');
-      }
-    } else {
-      const ws = XLSX.utils.json_to_sheet(projectionData);
-      XLSX.utils.book_append_sheet(wb, ws, 'Comisiones');
-    }
-
-    XLSX.writeFile(wb, `Comisiones_${selectedAsesor === 'TODOS' ? 'CONSOLIDADO' : selectedAsesor.replace(/\s+/g, '_')}_${selectedYear}.xlsx`);
-  };
-
-  // Imprimir Liquidación PDF (Print Window)
-  const handleExportComisionesPDF = () => {
-    if (projectionData.length === 0) {
-      alert("No hay comisiones proyectadas para imprimir.");
-      return;
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes (popups) para imprimir.");
-      return;
-    }
-
-    const shortYear = String(selectedYear).slice(-2);
-    const meses = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => `${m}-${shortYear}`);
-
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Liquidación de Comisiones InAndes - ${selectedYear}</title>
-          <style>
-            body { font-family: 'Outfit', 'Inter', sans-serif; color: #1e293b; margin: 30px; font-size: 11px; }
-            h2 { color: #1e3a8a; margin-bottom: 2px; text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
-            .meta { font-size: 10px; color: #64748b; margin-bottom: 15px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; page-break-inside: avoid; }
-            th { background-color: #1e293b; color: white; font-weight: bold; text-transform: uppercase; font-size: 8px; padding: 6px 4px; text-align: left; }
-            td { border-bottom: 1px solid #e2e8f0; padding: 5px 4px; }
-            .totals-row { background-color: #f1f5f9; font-weight: bold; }
-            .text-right { text-align: right; }
-          </style>
-        </head>
-        <body>
-          <h2>INANDES CRM - REPORTE DE LIQUIDACIÓN DE COMISIONES</h2>
-          <div class="meta">Asesor: ${selectedAsesor === 'TODOS' ? 'CONSOLIDADO' : selectedAsesor} | Año: ${selectedYear}</div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>Asesor</th>
-                <th>Fondo</th>
-                <th>Certificado</th>
-                <th class="text-right">Capital</th>
-                <th>Capt.</th>
-                <th>Mant.</th>
-                <th>Unica</th>
-                ${meses.map(m => `<th class="text-right">${m}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${projectionData.map((r: any) => `
-                <tr>
-                  <td>${r.Asesor}</td>
-                  <td>${r.Fondo}</td>
-                  <td>${r.ID_Certificado}</td>
-                  <td class="text-right">${r.Capital.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                  <td>${r.Captacion || '-'}</td>
-                  <td>${r.Mantenimiento || '-'}</td>
-                  <td>${r.Unica || '-'}</td>
-                  ${meses.map(m => `<td class="text-right">${r[m] === '-' ? '-' : Number(r[m]).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>`).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
   };
 
   // Abrir Modal de Edición/Creación
@@ -476,123 +340,9 @@ export const AsesoresPage: React.FC = () => {
         </div>
       )}
 
-      {/* --- PESTAÑA B: CÁLCULO DE COMISIONES Estilo APEFAC --- */}
+      {/* --- PESTAÑA B: CÁLCULO DE COMISIONES (CANÓNICO 8 PERIODOS CON ACORDEONES) --- */}
       {activeSubTab === 'comisiones' && (
-        <div className="flex flex-col gap-6 w-full animate-fadeIn">
-          
-          {/* Selectores de Proyección Estilo APEFAC */}
-          <div className="glass-card p-5 flex flex-wrap gap-4 items-end">
-            <div className="flex flex-col gap-1.5 min-w-[250px] flex-1">
-              <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Seleccione el asesor para auditar comisiones</label>
-              <select
-                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
-                value={selectedAsesor}
-                onChange={(e) => setSelectedAsesor(e.target.value)}
-              >
-                <option value="TODOS">TODOS los asesores</option>
-                {asesores.map(a => (
-                  <option key={a.codigo} value={a.codigo || ''}>{a.nombre_completo}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5 w-[120px]">
-              <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Año</label>
-              <select
-                className="w-full bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-              >
-                <option value={2025}>2025</option>
-                <option value={2026}>2026</option>
-                <option value={2027}>2027</option>
-              </select>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                className="h-9 text-xs font-bold bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
-                onClick={handleExportComisionesExcel}
-                disabled={projectionLoading || projectionData.length === 0}
-              >
-                <FileSpreadsheet size={14} />
-                <span>Descargar Excel</span>
-              </button>
-
-              <button
-                className="h-9 text-xs font-bold bg-[#0284c7] hover:bg-[#0369a1] text-white px-4 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
-                onClick={handleExportComisionesPDF}
-                disabled={projectionLoading || projectionData.length === 0}
-              >
-                <FileText size={14} />
-                <span>PDF Liquidación</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Tabla de Resultados Proyectados Estilo APEFAC */}
-          <div className="glass-card overflow-hidden">
-            {projectionLoading ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-                <Loader2 className="animate-spin text-[#0284c7]" size={32} />
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Proyectando comisiones del periodo...</p>
-              </div>
-            ) : projectionData.length > 0 ? (
-              <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
-                  <thead>
-                    <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Asesor</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Fondo</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px]">Certificado</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-right">Capital</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Capt.</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Mant.</th>
-                      <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-center">Unica</th>
-                      
-                      {/* Columnas Mensuales */}
-                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => (
-                        <th key={m} className="font-bold text-[#64748b] dark:text-[#94a3b8] px-3.5 py-3 uppercase tracking-wider text-[10.5px] text-right font-mono">
-                          {m}-{String(selectedYear).slice(-2)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projectionData.map((r, idx) => (
-                      <tr key={idx} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
-                        <td className="px-3.5 py-3 font-semibold text-[#0f172a] dark:text-[#f8fafc]">{r.Asesor}</td>
-                        <td className="px-3.5 py-3 font-bold text-[#0284c7] dark:text-[#38bdf8]">{r.Fondo}</td>
-                        <td className="px-3.5 py-3 font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{r.ID_Certificado}</td>
-                        <td className="px-3.5 py-3 font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] text-right tabular-nums">
-                          {r.Capital.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Captacion || '-'}</td>
-                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Mantenimiento || '-'}</td>
-                        <td className="px-3.5 py-3 text-center font-mono text-slate-500">{r.Unica || '-'}</td>
-                        
-                        {/* Meses Proyectados */}
-                        {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => {
-                          const key = `${m}-${String(selectedYear).slice(-2)}`;
-                          const val = r[key];
-                          return (
-                            <td key={m} className={`px-3.5 py-3 text-right font-mono tabular-nums ${val !== '-' ? 'font-black text-[#059669] dark:text-[#34d399]' : 'text-slate-300 dark:text-slate-700'}`}>
-                              {val === '-' ? '-' : val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider">
-                No hay comisiones calculadas para el asesor y año seleccionados.
-              </div>
-            )}
-          </div>
-        </div>
+        <ComisionesAsesoresTab />
       )}
 
       {/* --- FORMULARIO MODAL (5 TABS) --- */}
