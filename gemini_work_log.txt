@@ -465,11 +465,23 @@
 1. Incrementada la altura del logo Geeksoft en MasterTemplate.tsx a `h-[66px]`.
 2. Compilación validada `npm run build` (0 errores en 3.00s).
 
-[2026-09-01 10:55:00-05:00] TAREA: Integración de Generador de Código QR en Vivo y Monitor de Conexión en Chat WhatsApp.
-[2026-09-01 10:55:00-05:00] ESTADO: Completado con éxito (0 errores en build).
-1. Añadido modal interactivo en 'ChatWhatsAppPage.tsx' que llama a 'GET /instance/connect/inandes_oficial' en Contabo, descarga el QR en base64 y permite escanearlo o actualizarlo con 1 clic.
-2. Integrado badge de estado ('Sesión Conectada' en verde con pulso / 'Desconectado').
-3. Compilación validada `npm run build` en 3.22s.
+[2026-09-01 12:12:00-05:00] TAREA: Documentación Técnica Exhaustiva del WhatsApp Bot en Obsidian (13.Whats.App.BOT.md).
+[2026-09-01 12:12:00-05:00] ESTADO: Completado con éxito.
+1. Documentados planos de arquitectura en Contabo (Traefik, Evolution API, inandes_wa_bot, Supabase Cloud).
+2. Detalladas todas las rutas locales y del servidor VPS con sus variables de entorno y código Python íntegro.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
