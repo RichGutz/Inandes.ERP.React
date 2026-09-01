@@ -49,7 +49,6 @@ interface TransferRecord {
   cuenta: string;
   fechaFin: string;
   statusEnvio: 'idle' | 'sending' | 'sent' | 'error' | 'no_phone';
-  errorMsg?: string;
 }
 
 interface BirthdayRecord {
@@ -151,66 +150,86 @@ export const ChatWhatsAppPage: React.FC = () => {
       const fondosMap = new Map<string, string>();
       (fondosData || []).forEach(f => fondosMap.set(f.id_fondo, f.nombre_fondo));
 
-      // 3. Contratos
-      const { data: conData } = await supabase.from('crm_contratos').select('*');
-      const conMap = new Map<string, any>();
-      (conData || []).forEach(c => conMap.set(c.id_contrato, c));
+      // 3. Contratos Emitidos / Vigentes (Solo contratos activos)
+      const { data: conData } = await supabase
+        .from('crm_contratos')
+        .select('*')
+        .in('estado', ['emitido', 'vigente']);
 
-      // 4. Certificados Eventos (Latest Payouts / Liquidaciones)
+      const contratosActivos = conData || [];
+
+      // 4. Certificados Eventos (Obtener el último evento cerrado por contrato)
       const { data: evtData } = await supabase
         .from('crm_certificados_eventos')
         .select('*')
         .order('fecha_periodo_fin', { ascending: false });
 
+      const allEvents = evtData || [];
+      
+      // Mapear el último evento por id_contrato
+      const latestEventByContract = new Map<string, any>();
+      allEvents.forEach(e => {
+        if (!latestEventByContract.has(e.id_contrato)) {
+          latestEventByContract.set(e.id_contrato, e);
+        }
+      });
+
+      // 5. Construir exactamente 1 registro de transferencia por Contrato Activo / Partícipe Principal (id_inversionista_1)
       const transfers: TransferRecord[] = [];
-      const seenCertificates = new Set<string>();
 
-      (evtData || []).forEach(e => {
-        if (seenCertificates.has(e.id_certificado)) return;
-        seenCertificates.add(e.id_certificado);
+      contratosActivos.forEach(c => {
+        // Partícipe Principal y titular de cuenta bancaria
+        const titularPrincipalId = c.id_inversionista_1 || c.id_inversionista_2;
+        const invPrincipal = invMap.get(titularPrincipalId);
+        if (!invPrincipal) return;
 
-        const contrato = conMap.get(e.id_contrato);
-        if (!contrato) return;
+        const evt = latestEventByContract.get(c.id_contrato);
+        
+        const montoReparto = evt ? (Number(evt.monto_reparto) || Number(evt.interes_neto_disponible) || 0) : 0;
+        const montoRescate = evt ? (Number(evt.monto_rescate) || 0) : 0;
+        let totalTransferencia = montoReparto + montoRescate;
 
-        const invId = contrato.id_inversionista_1 || contrato.id_inversionista_2;
-        const inv = invMap.get(invId) || invMap.get(contrato.id_inversionista_2);
+        // Si no hay evento de reparto explícito pero el contrato está vigente, calculamos el cupón contractual de referencia
+        if (totalTransferencia <= 0) {
+          const capital = Number(c.monto_inversion) || 0;
+          const tasa = Number(c.tasa_pactada) || 8.0;
+          const frecMeses = Number(c.frecuencia_cupones_meses) || 2;
+          const interesPeriodo = (capital * (tasa / 100) * (frecMeses * 30)) / 360;
+          const retencionIR = interesPeriodo * 0.05;
+          totalTransferencia = Math.round((interesPeriodo - retencionIR) * 100) / 100;
+        }
 
-        const montoReparto = Number(e.monto_reparto) || Number(e.interes_neto_disponible) || 0;
-        const montoRescate = Number(e.monto_rescate) || 0;
-        const totalTransferencia = montoReparto + montoRescate;
-
-        if (totalTransferencia <= 0 && (!e.interes_generado_bruto || Number(e.interes_generado_bruto) <= 0)) return;
-
-        const moneda = (contrato.moneda || 'USD') as 'USD' | 'PEN';
-        const banco = moneda === 'USD' ? (inv?.banco_nombre_usd || 'BCP') : (inv?.banco_nombre_pen || 'BCP');
-        const cuenta = moneda === 'USD' ? (inv?.numero_cuenta_usd || inv?.cci_usd || '193-00739120184') : (inv?.numero_cuenta_pen || inv?.cci_pen || '193-00739120184');
-        const telefono = inv?.telefono ? inv.telefono.replace(/\D/g, '') : '';
+        const moneda = (c.moneda || 'USD') as 'USD' | 'PEN';
+        const banco = moneda === 'USD' ? (invPrincipal.banco_nombre_usd || 'BCP') : (invPrincipal.banco_nombre_pen || 'BCP');
+        const cuenta = moneda === 'USD' ? (invPrincipal.numero_cuenta_usd || invPrincipal.cci_usd || '193-00739120184') : (invPrincipal.numero_cuenta_pen || invPrincipal.cci_pen || '193-00739120184');
+        const telefono = invPrincipal.telefono ? invPrincipal.telefono.replace(/\D/g, '') : '';
+        const certId = evt?.id_certificado || `${c.id_contrato}.20260630`;
 
         transfers.push({
-          idCertificado: e.id_certificado,
-          idContrato: e.id_contrato,
-          inversionistaNombre: inv?.nombre_completo || 'Partícipe InAndes',
-          documentoIdentidad: inv?.documento_identidad || '',
+          idCertificado: certId,
+          idContrato: c.id_contrato,
+          inversionistaNombre: invPrincipal.nombre_completo,
+          documentoIdentidad: invPrincipal.documento_identidad,
           telefono: telefono,
           moneda: moneda,
           montoTransferencia: totalTransferencia > 0 ? totalTransferencia : 635.07,
-          interesBruto: Number(e.interes_generado_bruto) || 668.49,
-          impuestoRenta: Number(e.impuestos_renta) || 33.42,
-          fondoNombre: fondosMap.get(contrato.id_fondo) || contrato.id_fondo || 'FDO NSG MIPYME USD 02',
+          interesBruto: evt ? (Number(evt.interes_generado_bruto) || 668.49) : 668.49,
+          impuestoRenta: evt ? (Number(evt.impuestos_renta) || 33.42) : 33.42,
+          fondoNombre: fondosMap.get(c.id_fondo) || c.id_fondo || 'FDO NSG MIPYME USD 02',
           banco: banco,
           cuenta: cuenta,
-          fechaFin: e.fecha_periodo_fin || '2026-06-30',
+          fechaFin: evt?.fecha_periodo_fin || '2026-06-30',
           statusEnvio: telefono ? 'idle' : 'no_phone'
         });
       });
 
       setTransferRecords(transfers);
-      // Pre-select all available with phone
+      // Pre-seleccionar transferencias con celular válido
       const initSelectedTransfers = new Set<string>();
       transfers.filter(t => t.telefono).forEach(t => initSelectedTransfers.add(t.idCertificado));
       setSelectedTransfers(initSelectedTransfers);
 
-      // 5. Procesar Cumpleaños
+      // 6. Procesar Cumpleaños (Partícipes del mes y de hoy)
       const today = new Date();
       const currentMonth = today.getMonth() + 1;
       const currentDay = today.getDate();
@@ -246,7 +265,7 @@ export const ChatWhatsAppPage: React.FC = () => {
         }
       });
 
-      // Ordenar: Cumpleañeros de hoy primero, luego por día del mes
+      // Ordenar: Cumpleañeros de hoy primero
       bdays.sort((a, b) => {
         if (a.esHoy && !b.esHoy) return -1;
         if (!a.esHoy && b.esHoy) return 1;
@@ -464,49 +483,47 @@ export const ChatWhatsAppPage: React.FC = () => {
   const totalMontoTransferenciasUSD = useMemo(() => transferRecords.filter(t => t.moneda === 'USD').reduce((acc, t) => acc + t.montoTransferencia, 0), [transferRecords]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-6 space-y-6">
-      {/* HEADER PRINCIPAL */}
-      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 md:p-6 shadow-xl backdrop-blur-sm">
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-6 space-y-6">
+      {/* HEADER PRINCIPAL CORPORATIVO LIGHT */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 md:p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-                <Smartphone className="w-7 h-7 text-emerald-400" />
-              </div>
+            <div className="w-13 h-13 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm p-3">
+              <Smartphone className="w-7 h-7" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
-                  Centro de Operaciones WhatsApp & Notificaciones Oficiales
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+                  Centro de Operaciones WhatsApp & Notificaciones
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
                   PRODUCCIÓN
                 </span>
               </div>
-              <p className="text-sm text-slate-400 mt-1">
-                Despacho masivo de liquidaciones Telecrédito BCP, saludos institucionales y motor determinista 3FA.
+              <p className="text-sm text-slate-500 mt-1">
+                Despacho de confirmaciones Telecrédito BCP al partícipe principal, saludos de cumpleaños y motor 3FA.
               </p>
             </div>
           </div>
 
           {/* STATUS & ACTIONS */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/80 border border-slate-700/60">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200">
               <div className={`w-2.5 h-2.5 rounded-full ${
                 connectionState === 'open' 
-                  ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' 
+                  ? 'bg-emerald-500 shadow-sm shadow-emerald-400' 
                   : connectionState === 'connecting'
-                  ? 'bg-amber-400 animate-ping'
+                  ? 'bg-amber-500 animate-ping'
                   : 'bg-rose-500'
               }`} />
-              <span className="text-xs font-mono font-medium text-slate-300 uppercase">
-                {connectionState === 'open' ? 'WhatsApp Online' : connectionState === 'connecting' ? 'Conectando...' : 'Desconectado'}
+              <span className="text-xs font-mono font-semibold text-slate-700 uppercase">
+                {connectionState === 'open' ? 'WhatsApp Conectado' : connectionState === 'connecting' ? 'Conectando...' : 'Desconectado'}
               </span>
             </div>
 
             <button
               onClick={fetchQrCode}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all active:scale-95"
             >
               <QrCode className="w-4 h-4" />
               Vincular QR / Estado
@@ -515,71 +532,71 @@ export const ChatWhatsAppPage: React.FC = () => {
             <button
               onClick={loadMasterData}
               disabled={loadingData}
-              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition-all active:scale-95"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition-all active:scale-95"
               title="Refrescar Datos"
             >
-              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin text-indigo-600' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* METRIC CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-6">
-          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
-            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-400">Transferencias Listas</div>
-              <div className="text-lg font-bold text-white mt-0.5">{transferRecords.length} partícipes</div>
+              <div className="text-xs font-medium text-slate-500">Contratos con Liquidación</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5">{transferRecords.length} partícipes</div>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
-            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-700">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-400">Total Liquidación USD</div>
-              <div className="text-lg font-bold text-white mt-0.5">${totalMontoTransferenciasUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              <div className="text-xs font-medium text-slate-500">Total Liquidación USD</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5">${totalMontoTransferenciasUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
-            <div className="p-2.5 rounded-lg bg-pink-500/10 text-pink-400">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-pink-100 text-pink-700">
               <Cake className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-400">Cumpleaños Hoy</div>
-              <div className="text-lg font-bold text-white mt-0.5">{cumpleanosHoyCount} partícipes</div>
+              <div className="text-xs font-medium text-slate-500">Cumpleaños Hoy</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5">{cumpleanosHoyCount} partícipes</div>
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
-            <div className="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-cyan-100 text-cyan-700">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-400">Padrón Verificado 3FA</div>
-              <div className="text-lg font-bold text-white mt-0.5">{inversionistas.length} registrados</div>
+              <div className="text-xs font-medium text-slate-500">Padrón Partícipes 3FA</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5">{inversionistas.length} registrados</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* TABS DE NAVEGACIÓN */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+      {/* TABS DE NAVEGACIÓN CORPORATIVO */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setActiveTab('depositos')}
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
             activeTab === 'depositos'
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
-              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <CreditCard className="w-4 h-4" />
           Confirmación de Depósitos / Telecrédito BCP
-          <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-900/60 text-slate-300">
+          <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-indigo-700 text-indigo-100">
             {transferRecords.length}
           </span>
         </button>
@@ -588,14 +605,14 @@ export const ChatWhatsAppPage: React.FC = () => {
           onClick={() => setActiveTab('cumpleanos')}
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
             activeTab === 'cumpleanos'
-              ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/25'
-              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-pink-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <Cake className="w-4 h-4" />
           Saludos de Cumpleaños
           {cumpleanosHoyCount > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-400 text-slate-900 font-bold animate-bounce">
+            <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-pink-100 text-pink-700 font-bold border border-pink-300">
               {cumpleanosHoyCount} Hoy!
             </span>
           )}
@@ -605,8 +622,8 @@ export const ChatWhatsAppPage: React.FC = () => {
           onClick={() => setActiveTab('participes')}
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
             activeTab === 'participes'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
-              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -617,8 +634,8 @@ export const ChatWhatsAppPage: React.FC = () => {
           onClick={() => setActiveTab('conexion')}
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
             activeTab === 'conexion'
-              ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/25'
-              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-teal-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <Bot className="w-4 h-4" />
@@ -628,16 +645,16 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       {/* LOG DE DESPACHO EN VIVO */}
       {dispatchLogs.length > 0 && (
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span>Historial de Despacho en Vivo</span>
-            <button onClick={() => setDispatchLogs([])} className="text-slate-500 hover:text-slate-300">Limpiar</button>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+            <span>Historial de Despacho en Tiempo Real</span>
+            <button onClick={() => setDispatchLogs([])} className="text-slate-400 hover:text-slate-600 text-xs">Limpiar</button>
           </div>
-          <div className="max-h-32 overflow-y-auto font-mono text-xs space-y-1 divide-y divide-slate-800/60">
+          <div className="max-h-32 overflow-y-auto font-mono text-xs space-y-1 divide-y divide-slate-100">
             {dispatchLogs.map((log, idx) => (
-              <div key={idx} className={`pt-1 flex items-center justify-between ${log.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <div key={idx} className={`pt-1 flex items-center justify-between ${log.success ? 'text-emerald-700' : 'text-rose-700'}`}>
                 <span>{log.text}</span>
-                <span className="text-slate-500 text-[10px]">{log.time}</span>
+                <span className="text-slate-400 text-[10px]">{log.time}</span>
               </div>
             ))}
           </div>
@@ -648,7 +665,7 @@ export const ChatWhatsAppPage: React.FC = () => {
       {activeTab === 'depositos' && (
         <div className="space-y-4">
           {/* BARRA DE ACCIÓN Y FILTRO */}
-          <div className="bg-slate-800/90 border border-slate-700/70 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -657,22 +674,22 @@ export const ChatWhatsAppPage: React.FC = () => {
                   placeholder="Buscar partícipe, DNI o certificado..."
                   value={filterSearch}
                   onChange={e => setFilterSearch(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-64"
+                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 w-64"
                 />
               </div>
 
               <select
                 value={filterFondo}
                 onChange={e => setFilterFondo(e.target.value)}
-                className="px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-indigo-500"
               >
                 <option value="TODOS">Todos los Fondos</option>
                 <option value="USD 02">FDO NSG MIPYME USD 02</option>
                 <option value="PEN 01">FDO NSG MIPYME PEN 01</option>
               </select>
 
-              <span className="text-xs text-slate-400">
-                Seleccionados: <b className="text-emerald-400">{selectedTransfers.size}</b> de {filteredTransfers.filter(t => t.telefono).length}
+              <span className="text-xs text-slate-500 font-medium">
+                Seleccionados: <b className="text-indigo-600">{selectedTransfers.size}</b> de {filteredTransfers.filter(t => t.telefono).length}
               </span>
             </div>
 
@@ -680,7 +697,7 @@ export const ChatWhatsAppPage: React.FC = () => {
               <button
                 onClick={handleDispatchDepositos}
                 disabled={isDispatching || selectedTransfers.size === 0 || connectionState !== 'open'}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg shadow-emerald-600/30 transition-all active:scale-95"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
               >
                 <Send className="w-4 h-4" />
                 {isDispatching ? `Enviando (${dispatchProgress.current}/${dispatchProgress.total})...` : `Despachar ${selectedTransfers.size} Alertas WhatsApp`}
@@ -690,12 +707,12 @@ export const ChatWhatsAppPage: React.FC = () => {
 
           {/* BARRA DE PROGRESO */}
           {isDispatching && (
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-2">
-              <div className="flex justify-between text-xs font-semibold text-slate-300">
+            <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+              <div className="flex justify-between text-xs font-semibold text-slate-700">
                 <span>Progreso de Despacho Secuencial</span>
                 <span>{dispatchProgress.current} de {dispatchProgress.total} ({Math.round((dispatchProgress.current / dispatchProgress.total) * 100)}%)</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-emerald-500 transition-all duration-300"
                   style={{ width: `${(dispatchProgress.current / dispatchProgress.total) * 100}%` }}
@@ -704,21 +721,21 @@ export const ChatWhatsAppPage: React.FC = () => {
             </div>
           )}
 
-          {/* TABLA DE TRANSFERENCIAS */}
-          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl overflow-hidden shadow-xl">
+          {/* TABLA DE TRANSFERENCIAS LIGHT */}
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-950/80 text-xs uppercase font-mono tracking-wider text-slate-400 border-b border-slate-800">
+              <table className="w-full text-left text-sm text-slate-700">
+                <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-4 w-10">
                       <input
                         type="checkbox"
                         checked={selectedTransfers.size === filteredTransfers.filter(t => t.telefono).length && filteredTransfers.length > 0}
                         onChange={toggleSelectAllTransfers}
-                        className="rounded bg-slate-900 border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
                       />
                     </th>
-                    <th className="p-4">Partícipe / Titular</th>
+                    <th className="p-4">Partícipe Principal (Titular Cuenta)</th>
                     <th className="p-4">Certificado & Fondo</th>
                     <th className="p-4 text-right">Monto Liquidado</th>
                     <th className="p-4">Cuenta Destino</th>
@@ -726,74 +743,74 @@ export const ChatWhatsAppPage: React.FC = () => {
                     <th className="p-4 text-center">Estado Envío</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-sans">
+                <tbody className="divide-y divide-slate-100">
                   {filteredTransfers.map(t => {
                     const isSelected = selectedTransfers.has(t.idCertificado);
                     const hasPhone = Boolean(t.telefono);
 
                     return (
-                      <tr key={t.idCertificado} className={`hover:bg-slate-750/40 transition-colors ${isSelected ? 'bg-emerald-500/5' : ''}`}>
+                      <tr key={t.idCertificado} className={`hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-indigo-50/30' : ''}`}>
                         <td className="p-4">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             disabled={!hasPhone}
                             onChange={() => toggleSelectTransfer(t.idCertificado)}
-                            className="rounded bg-slate-900 border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer disabled:opacity-30"
                           />
                         </td>
                         <td className="p-4">
-                          <div className="font-semibold text-white">{t.inversionistaNombre}</div>
-                          <div className="text-xs text-slate-400 font-mono">DNI: {t.documentoIdentidad || 'No registrado'}</div>
+                          <div className="font-bold text-slate-900">{t.inversionistaNombre}</div>
+                          <div className="text-xs text-slate-500 font-mono">DNI: {t.documentoIdentidad || 'No registrado'}</div>
                         </td>
                         <td className="p-4">
-                          <div className="font-mono text-xs text-emerald-400 font-medium">{t.idCertificado}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{t.fondoNombre}</div>
+                          <div className="font-mono text-xs text-indigo-600 font-semibold">{t.idCertificado}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{t.fondoNombre}</div>
                         </td>
                         <td className="p-4 text-right font-mono">
-                          <div className="font-bold text-white text-base">
+                          <div className="font-bold text-slate-900 text-base">
                             {t.moneda === 'USD' ? '$' : 'S/'} {t.montoTransferencia.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          <div className="text-[11px] text-slate-500">Bruto: {t.interesBruto.toFixed(2)} | IR 5%: {t.impuestoRenta.toFixed(2)}</div>
+                          <div className="text-[11px] text-slate-400">Bruto: {t.interesBruto.toFixed(2)} | IR 5%: {t.impuestoRenta.toFixed(2)}</div>
                         </td>
                         <td className="p-4">
-                          <div className="text-xs font-semibold text-slate-200">{t.banco}</div>
-                          <div className="text-xs font-mono text-slate-400">{t.cuenta}</div>
+                          <div className="text-xs font-semibold text-slate-800">{t.banco}</div>
+                          <div className="text-xs font-mono text-slate-500">{t.cuenta}</div>
                         </td>
                         <td className="p-4">
                           {hasPhone ? (
-                            <span className="font-mono text-xs text-slate-300 bg-slate-900/60 px-2 py-1 rounded border border-slate-700">
+                            <span className="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
                               +51 {t.telefono}
                             </span>
                           ) : (
-                            <span className="text-xs text-amber-400 flex items-center gap-1">
+                            <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
                               <AlertCircle className="w-3.5 h-3.5" /> Sin celular
                             </span>
                           )}
                         </td>
                         <td className="p-4 text-center">
                           {t.statusEnvio === 'idle' && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-700/50 text-slate-400">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                               Pendiente
                             </span>
                           )}
                           {t.statusEnvio === 'sending' && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 animate-pulse">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 animate-pulse">
                               Enviando...
                             </span>
                           )}
                           {t.statusEnvio === 'sent' && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 flex items-center justify-center gap-1">
                               <CheckCheck className="w-3.5 h-3.5" /> Enviado
                             </span>
                           )}
                           {t.statusEnvio === 'error' && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-400">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
                               Error
                             </span>
                           )}
                           {t.statusEnvio === 'no_phone' && (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-500">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-400">
                               No disponible
                             </span>
                           )}
@@ -811,14 +828,14 @@ export const ChatWhatsAppPage: React.FC = () => {
       {/* CONTENIDO PESTAÑA 2: CUMPLEAÑOS */}
       {activeTab === 'cumpleanos' && (
         <div className="space-y-4">
-          <div className="bg-slate-800/90 border border-slate-700/70 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Cake className="w-5 h-5 text-pink-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Cake className="w-5 h-5 text-pink-500" />
                 Nómina de Cumpleaños Institucionales
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Saludos formales automatizados con la identidad corporativa de InAndes Grupo Financiero.
+              <p className="text-xs text-slate-500 mt-0.5">
+                Saludos corporativos automatizados con la identidad de InAndes Grupo Financiero.
               </p>
             </div>
 
@@ -826,7 +843,7 @@ export const ChatWhatsAppPage: React.FC = () => {
               <button
                 onClick={handleDispatchBirthdays}
                 disabled={isDispatching || selectedBirthdays.size === 0 || connectionState !== 'open'}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg shadow-pink-600/30 transition-all active:scale-95"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
               >
                 <Cake className="w-4 h-4" />
                 {isDispatching ? 'Enviando Saludos...' : `Enviar ${selectedBirthdays.size} Saludos WhatsApp`}
@@ -841,14 +858,14 @@ export const ChatWhatsAppPage: React.FC = () => {
               return (
                 <div 
                   key={b.codigo}
-                  className={`border rounded-2xl p-5 transition-all relative overflow-hidden ${
+                  className={`border rounded-2xl p-5 transition-all relative overflow-hidden shadow-sm ${
                     b.esHoy 
-                      ? 'bg-gradient-to-b from-pink-950/40 to-slate-900 border-pink-500/50 shadow-lg shadow-pink-900/20' 
-                      : 'bg-slate-800/80 border-slate-700/80'
+                      ? 'bg-pink-50/50 border-pink-300 ring-1 ring-pink-200' 
+                      : 'bg-white border-slate-200'
                   }`}
                 >
                   {b.esHoy && (
-                    <div className="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
+                    <div className="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
                       🎉 ¡CUMPLE HOY!
                     </div>
                   )}
@@ -859,38 +876,38 @@ export const ChatWhatsAppPage: React.FC = () => {
                       checked={isSelected}
                       disabled={!b.telefono}
                       onChange={() => toggleSelectBirthday(b.codigo)}
-                      className="mt-1 rounded bg-slate-900 border-slate-700 text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                      className="mt-1 rounded border-slate-300 text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer disabled:opacity-30"
                     />
                     <div className="flex-1">
-                      <h3 className="font-bold text-white text-base leading-tight">{b.nombre}</h3>
-                      <div className="text-xs text-slate-400 font-mono mt-1">DNI: {b.documento}</div>
+                      <h3 className="font-bold text-slate-900 text-base leading-tight">{b.nombre}</h3>
+                      <div className="text-xs text-slate-500 font-mono mt-1">DNI: {b.documento}</div>
 
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-700/60 pt-3 text-xs">
-                        <div className="text-slate-400">
-                          Fecha: <b className="text-slate-200">{b.dia}/{b.mes}</b> ({b.edad} años)
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                        <div className="text-slate-500">
+                          Fecha: <b className="text-slate-800">{b.dia}/{b.mes}</b> ({b.edad} años)
                         </div>
                         <div>
                           {b.telefono ? (
-                            <span className="font-mono text-emerald-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
+                            <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                               +51 {b.telefono}
                             </span>
                           ) : (
-                            <span className="text-amber-400">Sin teléfono</span>
+                            <span className="text-amber-600 font-medium">Sin teléfono</span>
                           )}
                         </div>
                       </div>
 
                       <div className="mt-3 flex items-center justify-between">
                         {b.statusEnvio === 'sent' ? (
-                          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                          <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
                             <CheckCheck className="w-4 h-4" /> Saludo Enviado
                           </span>
                         ) : b.statusEnvio === 'sending' ? (
-                          <span className="text-xs text-amber-400 font-semibold animate-pulse">
+                          <span className="text-xs text-amber-700 font-semibold animate-pulse">
                             Enviando...
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-500">Pendiente</span>
+                          <span className="text-xs text-slate-400">Pendiente</span>
                         )}
                       </div>
                     </div>
@@ -904,25 +921,25 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       {/* CONTENIDO PESTAÑA 3: PADRÓN DE PARTÍCIPES & 3FA */}
       {activeTab === 'participes' && (
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-600" />
                 Padrón de Partícipes Registrados en Supabase
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Datos sincronizados para la autenticación 3FA y despacho automatizado.
               </p>
             </div>
-            <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+            <span className="text-xs font-mono text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 font-semibold">
               Total: {inversionistas.length} Partícipes
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950/80 uppercase font-mono text-slate-400 border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 uppercase font-semibold text-slate-600 border-b border-slate-200">
                 <tr>
                   <th className="p-3">Código</th>
                   <th className="p-3">Nombre Completo</th>
@@ -932,15 +949,15 @@ export const ChatWhatsAppPage: React.FC = () => {
                   <th className="p-3">F. Nacimiento</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-sans">
+              <tbody className="divide-y divide-slate-100">
                 {inversionistas.map(i => (
-                  <tr key={i.codigo_inversionista || i.documento_identidad} className="hover:bg-slate-750/30">
-                    <td className="p-3 font-mono text-indigo-400">{i.codigo_inversionista || '-'}</td>
-                    <td className="p-3 font-medium text-white">{i.nombre_completo}</td>
-                    <td className="p-3 font-mono">{i.documento_identidad}</td>
-                    <td className="p-3 font-mono text-emerald-400">{i.telefono ? `+51 ${i.telefono}` : <span className="text-slate-500">No asignado</span>}</td>
-                    <td className="p-3 text-slate-400">{i.email || '-'}</td>
-                    <td className="p-3 font-mono text-slate-400">{i.fecha_nacimiento || '-'}</td>
+                  <tr key={i.codigo_inversionista || i.documento_identidad} className="hover:bg-slate-50">
+                    <td className="p-3 font-mono text-indigo-600 font-medium">{i.codigo_inversionista || '-'}</td>
+                    <td className="p-3 font-semibold text-slate-900">{i.nombre_completo}</td>
+                    <td className="p-3 font-mono text-slate-600">{i.documento_identidad}</td>
+                    <td className="p-3 font-mono text-emerald-700 font-medium">{i.telefono ? `+51 ${i.telefono}` : <span className="text-slate-400">No asignado</span>}</td>
+                    <td className="p-3 text-slate-500">{i.email || '-'}</td>
+                    <td className="p-3 font-mono text-slate-500">{i.fecha_nacimiento || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -952,44 +969,44 @@ export const ChatWhatsAppPage: React.FC = () => {
       {/* CONTENIDO PESTAÑA 4: ARQUITECTURA & ESTADO */}
       {activeTab === 'conexion' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Bot className="w-5 h-5 text-cyan-400" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Bot className="w-5 h-5 text-teal-600" />
               Estado de Microservicios en Contabo VPS
             </h2>
 
             <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-300 font-medium">Evolution API v2.2.3</span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-700 font-medium">Evolution API v2.2.3</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                   {connectionState.toUpperCase()}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-300 font-medium">Microservicio Bot FastAPI</span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-700 font-medium">Microservicio Bot FastAPI</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                   PUERTO 8085 / ACTIVO
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-300 font-medium">Traefik Reverse Proxy SSL</span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-700 font-medium">Traefik Reverse Proxy SSL</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                   https://inandes.geeksoft.tech/wa-api
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-slate-300 font-medium">Instancia Oficial Conectada</span>
-                <span className="font-mono text-slate-300">{INSTANCE_NAME}</span>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-700 font-medium">Instancia Oficial Conectada</span>
+                <span className="font-mono text-slate-800 font-semibold">{INSTANCE_NAME}</span>
               </div>
             </div>
 
             <div className="pt-2">
               <button
                 onClick={fetchQrCode}
-                className="w-full py-3 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
               >
                 <QrCode className="w-4 h-4" />
                 Generar Código QR de Reconexión
@@ -997,12 +1014,12 @@ export const ChatWhatsAppPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
               Reglas Intangibles del Bot Inbound (3FA)
             </h2>
-            <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+            <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
               <p>• <b>Determinismo 100%:</b> Las respuestas de saldos, retenciones y certificados se calculan exclusivamente a partir del Ledger en Supabase.</p>
               <p>• <b>Anti-Link Formatting:</b> Los DNIs se muestran con prefijo <code>DNI-</code> y dummies de la serie <code>09</code> para prevenir auto-linking verde en WhatsApp Web.</p>
               <p>• <b>Compilación de PDFs Oficiales:</b> El motor ReportLab genera en memoria el EECC y el Certificado de Retención con la firma digital de Juan Ricardo Gallo Pizarro y el logo de InAndes.</p>
@@ -1012,46 +1029,46 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL DE QR (100% PRESERVADO Y ACCESIBLE) */}
+      {/* MODAL DE QR (100% PRESERVADO Y CON LOOK LIGHT) */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 relative animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 relative animate-in fade-in zoom-in duration-200">
             <button
               onClick={() => setShowQrModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-200">
                 <QrCode className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold text-white">Vincular Chip InAndes Oficial</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-xl font-bold text-slate-900">Vincular Chip InAndes Oficial</h3>
+              <p className="text-xs text-slate-500">
                 Abre WhatsApp en el celular corporativo &gt; Dispositivos Vinculados &gt; Escanear código QR.
               </p>
             </div>
 
-            <div className="flex items-center justify-center min-h-[260px] bg-slate-950 rounded-2xl border border-slate-800 p-4">
+            <div className="flex items-center justify-center min-h-[260px] bg-slate-50 rounded-2xl border border-slate-200 p-4">
               {loadingQr ? (
-                <div className="flex flex-col items-center gap-3 text-slate-400">
-                  <RefreshCw className="w-8 h-8 animate-spin text-emerald-400" />
+                <div className="flex flex-col items-center gap-3 text-slate-500">
+                  <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
                   <span className="text-xs">Generando código QR seguro...</span>
                 </div>
               ) : qrError ? (
-                <div className="flex flex-col items-center gap-2 text-rose-400 text-center px-4">
+                <div className="flex flex-col items-center gap-2 text-rose-600 text-center px-4">
                   <AlertTriangle className="w-8 h-8" />
                   <span className="text-xs">{qrError}</span>
                   <button
                     onClick={fetchQrCode}
-                    className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300"
                   >
                     Reintentar
                   </button>
                 </div>
               ) : qrBase64 ? (
-                <div className="p-3 bg-white rounded-xl shadow-inner">
+                <div className="p-3 bg-white rounded-xl shadow-md border border-slate-200">
                   <img
                     src={qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`}
                     alt="WhatsApp QR Code"
@@ -1059,7 +1076,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="text-xs text-slate-500">Sin código QR disponible.</div>
+                <div className="text-xs text-slate-400">Sin código QR disponible.</div>
               )}
             </div>
 
@@ -1067,7 +1084,7 @@ export const ChatWhatsAppPage: React.FC = () => {
               <span className="text-slate-500 font-mono">Instancia: {INSTANCE_NAME}</span>
               <button
                 onClick={checkConnectionState}
-                className="text-emerald-400 hover:underline font-semibold"
+                className="text-indigo-600 hover:underline font-semibold"
               >
                 Verificar Conexión
               </button>
