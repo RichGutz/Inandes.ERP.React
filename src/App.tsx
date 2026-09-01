@@ -20,6 +20,7 @@ import { getAsesores } from './services/asesoresService';
 import { getFondos } from './services/fondosService';
 import { getContratos } from './services/contratosService';
 import { FactoringPage } from './features/factoring/FactoringPage';
+import { ChatWhatsAppPage } from './features/chat/ChatWhatsAppPage';
 
 // Helpers globales para formato legible (human-chewable)
 const formatCurrency = (val: number | null | undefined, currency: string) => {
@@ -543,7 +544,7 @@ function App() {
       case 'crm_deducciones':
         return <DeduccionesPage />;
       case 'crm_chat':
-        return renderMigrationPlaceholder('Chat WhatsApp', 'modules/15_CRM_Chat.py');
+        return <ChatWhatsAppPage />;
 
       // Herramientas
       case 'herramientas_calculadora':

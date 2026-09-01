@@ -431,10 +431,24 @@
 2. Mantenida la integracion armoniosa en la cabecera corporativa de 88px.
 3. Compilacion de produccion validada con 'npm run build' (0 errores en 3.00s).
 
-[2026-08-31 10:55:00-05:00] CREACION Y REGISTRO DE BRANCH TAG 'LOGO.DEFACTO.COLOCADO':
-1. Creada rama remota 'origin/LOGO.DEFACTO.COLOCADO' y tag homonimo apuntando a commit '14da438'.
-2. Incluye: logos transparentes (InAndes, DEFACTO horizontal, DEFACTO vertical), cabecera ampliada a 88px con logos escalados y favicon vertical.
-3. Retorno inmediato a la rama 'main' (working tree 100% limpio).
+[2026-09-01 10:55:00-05:00] INTEGRACION DE MODAL QR EN VIVO Y MONITOR DE CONEXION EN CHAT WHATSAPP:
+1. Agregado el boton y modal 'Vincular WhatsApp (QR)' en 'src/features/chat/ChatWhatsAppPage.tsx'.
+2. El modal consulta en tiempo real a Evolution API en Contabo ('169.58.168.107:8084'), obtiene la imagen base64 del QR fresco, muestra instrucciones y detecta la vinculacion automatica.
+3. Indicador visual de estado de conexion ('Sesion Conectada' en verde vs 'Desconectado' en ambar) con polling automatico.
+4. Compilacion de produccion validada con 'npm run build' (0 errores en 3.22s).
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
