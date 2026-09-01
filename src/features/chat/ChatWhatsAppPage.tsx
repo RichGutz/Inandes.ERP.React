@@ -22,6 +22,7 @@ import {
 interface InversionistaData {
   codigo_inversionista: string;
   documento_identidad: string;
+  nombre_1?: string;
   nombre_completo: string;
   fecha_nacimiento?: string;
   telefono?: string;
@@ -54,6 +55,7 @@ interface TransferRecord {
 interface BirthdayRecord {
   codigo: string;
   nombre: string;
+  primerNombre: string;
   documento: string;
   fechaNacimiento: string;
   edad: number;
@@ -249,9 +251,11 @@ export const ChatWhatsAppPage: React.FC = () => {
           if (isThisMonth || isToday) {
             const age = today.getFullYear() - birthYear;
             const cleanPhone = i.telefono ? i.telefono.replace(/\D/g, '') : '';
+            const primerNombre = i.nombre_1 ? i.nombre_1.trim() : (i.nombre_completo.split(' ')[0] || i.nombre_completo);
             bdays.push({
               codigo: i.codigo_inversionista || i.documento_identidad,
               nombre: i.nombre_completo,
+              primerNombre: primerNombre,
               documento: i.documento_identidad,
               fechaNacimiento: i.fecha_nacimiento,
               edad: age,
@@ -416,10 +420,10 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       const msg = (
         `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂\n\n` +
-        `Estimado(a) *${b.nombre}*,\n\n` +
+        `Estimad@ *${b.primerNombre}*,\n\n` +
         `En este día tan especial, todo el equipo directivo y profesional de *InAndes Grupo Financiero* le hace llegar un cálido y afectuoso saludo de cumpleaños. 🌟\n\n` +
-        `Agradecemos profundamente su confianza continua como partícipe de nuestra institución y le deseamos un año lleno de salud, prosperidad y grandes satisfacciones personales y familiares. 🥂\n\n` +
-        `¡Que disfrute un excelente día!\n\n` +
+        `Agradecemos profundamente su confianza continua como partícipe de nuestra institución y le deseamos un año lleno de salud, bienestar, prosperidad y grandes satisfacciones personales y familiares. 🥂\n\n` +
+        `¡Que disfrute un excelente día en compañía de sus seres queridos!\n\n` +
         `Atentamente,\n*InAndes Grupo Financiero*`
       );
 
