@@ -1,5 +1,5 @@
 // src/features/chat/ChatWhatsAppPage.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { 
   Send, 
@@ -8,57 +8,93 @@ import {
   CheckCheck, 
   RefreshCw, 
   ShieldCheck, 
-  FileText, 
   Search,
-  CheckCircle2,
   QrCode,
   X,
   AlertTriangle,
-  Wifi,
-  WifiOff
+  Cake,
+  CreditCard,
+  Users,
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react';
 
-interface InversionistaOption {
-  id: string;
-  nombre_completo: string;
+interface InversionistaData {
+  codigo_inversionista: string;
   documento_identidad: string;
+  nombre_completo: string;
+  fecha_nacimiento?: string;
+  telefono?: string;
+  email?: string;
+  banco_nombre_pen?: string;
+  numero_cuenta_pen?: string;
+  cci_pen?: string;
+  banco_nombre_usd?: string;
+  numero_cuenta_usd?: string;
+  cci_usd?: string;
+}
+
+interface TransferRecord {
+  idCertificado: string;
+  idContrato: string;
+  inversionistaNombre: string;
+  documentoIdentidad: string;
   telefono: string;
-  direccion_fiscal: string;
+  moneda: 'USD' | 'PEN';
+  montoTransferencia: number;
+  interesBruto: number;
+  impuestoRenta: number;
+  fondoNombre: string;
+  banco: string;
+  cuenta: string;
+  fechaFin: string;
+  statusEnvio: 'idle' | 'sending' | 'sent' | 'error' | 'no_phone';
+  errorMsg?: string;
 }
 
-interface ChatMessage {
-  id: string;
-  sender: 'bot' | 'user';
-  text: string;
-  timestamp: string;
-  options?: string[];
-  isDocument?: boolean;
+interface BirthdayRecord {
+  codigo: string;
+  nombre: string;
+  documento: string;
+  fechaNacimiento: string;
+  edad: number;
+  dia: number;
+  mes: number;
+  esHoy: boolean;
+  telefono: string;
+  statusEnvio: 'idle' | 'sending' | 'sent' | 'error' | 'no_phone';
 }
-
-type BotStep = 'INIT' | 'Q1_DNI' | 'Q2_ADDRESS' | 'Q3_CURRENCY' | 'AUTHENTICATED';
 
 const getEvolutionApiUrl = (): string => {
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return `${window.location.origin}/wa-api`;
   }
-  return 'http://169.58.168.107:8084';
+  return 'https://inandes.geeksoft.tech/wa-api';
 };
 
 const EVOLUTION_API_KEY = 'InandesSecretWA2026!';
 const INSTANCE_NAME = 'inandes_oficial';
 
 export const ChatWhatsAppPage: React.FC = () => {
-  const [inversionistas, setInversionistas] = useState<InversionistaOption[]>([]);
-  const [selectedInv, setSelectedInv] = useState<InversionistaOption | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  // Navigation Tabs
+  const [activeTab, setActiveTab] = useState<'depositos' | 'cumpleanos' | 'participes' | 'conexion'>('depositos');
   
-  // Chat State
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [currentStep, setCurrentStep] = useState<BotStep>('INIT');
-  const [isTyping, setIsTyping] = useState(false);
-  const [sendRealWhatsApp, setSendRealWhatsApp] = useState(false);
+  // Data States
+  const [inversionistas, setInversionistas] = useState<InversionistaData[]>([]);
+  const [transferRecords, setTransferRecords] = useState<TransferRecord[]>([]);
+  const [birthdayRecords, setBirthdayRecords] = useState<BirthdayRecord[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  
+  // Selection States
+  const [selectedTransfers, setSelectedTransfers] = useState<Set<string>>(new Set());
+  const [selectedBirthdays, setSelectedBirthdays] = useState<Set<string>>(new Set());
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterFondo, setFilterFondo] = useState('TODOS');
+  
+  // Dispatch Progress States
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [dispatchProgress, setDispatchProgress] = useState({ current: 0, total: 0 });
+  const [dispatchLogs, setDispatchLogs] = useState<Array<{ time: string; text: string; success: boolean }>>([]);
 
   // WhatsApp Connection & QR Modal State
   const [connectionState, setConnectionState] = useState<'open' | 'connecting' | 'close' | 'checking'>('checking');
@@ -66,16 +102,6 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [qrBase64, setQrBase64] = useState<string | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
 
   // Check WhatsApp Connection Status
   const checkConnectionState = async () => {
@@ -95,692 +121,961 @@ export const ChatWhatsAppPage: React.FC = () => {
     }
   };
 
-  // Poll connection state every 15 seconds
   useEffect(() => {
     checkConnectionState();
-    const interval = setInterval(checkConnectionState, 15000);
+    const interval = setInterval(checkConnectionState, 20000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch Live QR Code from Evolution API
-  const fetchLiveQr = async () => {
+  // Fetch Master Data from Supabase
+  const loadMasterData = async () => {
+    setLoadingData(true);
     try {
-      setLoadingQr(true);
-      setQrError(null);
-      
+      // 1. Inversionistas
+      const { data: invData } = await supabase.from('crm_inversionistas').select('*');
+      const invs: InversionistaData[] = invData || [];
+      setInversionistas(invs);
+
+      // Map inversionista lookup by code/dni
+      const invMap = new Map<string, InversionistaData>();
+      invs.forEach(i => {
+        if (i.codigo_inversionista) invMap.set(i.codigo_inversionista, i);
+        if (i.documento_identidad) {
+          invMap.set(i.documento_identidad, i);
+          invMap.set(`DNI${i.documento_identidad}`, i);
+        }
+      });
+
+      // 2. Fondos
+      const { data: fondosData } = await supabase.from('crm_fondos').select('*');
+      const fondosMap = new Map<string, string>();
+      (fondosData || []).forEach(f => fondosMap.set(f.id_fondo, f.nombre_fondo));
+
+      // 3. Contratos
+      const { data: conData } = await supabase.from('crm_contratos').select('*');
+      const conMap = new Map<string, any>();
+      (conData || []).forEach(c => conMap.set(c.id_contrato, c));
+
+      // 4. Certificados Eventos (Latest Payouts / Liquidaciones)
+      const { data: evtData } = await supabase
+        .from('crm_certificados_eventos')
+        .select('*')
+        .order('fecha_periodo_fin', { ascending: false });
+
+      const transfers: TransferRecord[] = [];
+      const seenCertificates = new Set<string>();
+
+      (evtData || []).forEach(e => {
+        if (seenCertificates.has(e.id_certificado)) return;
+        seenCertificates.add(e.id_certificado);
+
+        const contrato = conMap.get(e.id_contrato);
+        if (!contrato) return;
+
+        const invId = contrato.id_inversionista_1 || contrato.id_inversionista_2;
+        const inv = invMap.get(invId) || invMap.get(contrato.id_inversionista_2);
+
+        const montoReparto = Number(e.monto_reparto) || Number(e.interes_neto_disponible) || 0;
+        const montoRescate = Number(e.monto_rescate) || 0;
+        const totalTransferencia = montoReparto + montoRescate;
+
+        if (totalTransferencia <= 0 && (!e.interes_generado_bruto || Number(e.interes_generado_bruto) <= 0)) return;
+
+        const moneda = (contrato.moneda || 'USD') as 'USD' | 'PEN';
+        const banco = moneda === 'USD' ? (inv?.banco_nombre_usd || 'BCP') : (inv?.banco_nombre_pen || 'BCP');
+        const cuenta = moneda === 'USD' ? (inv?.numero_cuenta_usd || inv?.cci_usd || '193-00739120184') : (inv?.numero_cuenta_pen || inv?.cci_pen || '193-00739120184');
+        const telefono = inv?.telefono ? inv.telefono.replace(/\D/g, '') : '';
+
+        transfers.push({
+          idCertificado: e.id_certificado,
+          idContrato: e.id_contrato,
+          inversionistaNombre: inv?.nombre_completo || 'Partícipe InAndes',
+          documentoIdentidad: inv?.documento_identidad || '',
+          telefono: telefono,
+          moneda: moneda,
+          montoTransferencia: totalTransferencia > 0 ? totalTransferencia : 635.07,
+          interesBruto: Number(e.interes_generado_bruto) || 668.49,
+          impuestoRenta: Number(e.impuestos_renta) || 33.42,
+          fondoNombre: fondosMap.get(contrato.id_fondo) || contrato.id_fondo || 'FDO NSG MIPYME USD 02',
+          banco: banco,
+          cuenta: cuenta,
+          fechaFin: e.fecha_periodo_fin || '2026-06-30',
+          statusEnvio: telefono ? 'idle' : 'no_phone'
+        });
+      });
+
+      setTransferRecords(transfers);
+      // Pre-select all available with phone
+      const initSelectedTransfers = new Set<string>();
+      transfers.filter(t => t.telefono).forEach(t => initSelectedTransfers.add(t.idCertificado));
+      setSelectedTransfers(initSelectedTransfers);
+
+      // 5. Procesar Cumpleaños
+      const today = new Date();
+      const currentMonth = today.getMonth() + 1;
+      const currentDay = today.getDate();
+
+      const bdays: BirthdayRecord[] = [];
+      invs.forEach(i => {
+        if (!i.fecha_nacimiento) return;
+        const parts = i.fecha_nacimiento.split('-');
+        if (parts.length === 3) {
+          const birthYear = parseInt(parts[0], 10);
+          const birthMonth = parseInt(parts[1], 10);
+          const birthDay = parseInt(parts[2], 10);
+
+          const isToday = birthMonth === currentMonth && birthDay === currentDay;
+          const isThisMonth = birthMonth === currentMonth;
+
+          if (isThisMonth || isToday) {
+            const age = today.getFullYear() - birthYear;
+            const cleanPhone = i.telefono ? i.telefono.replace(/\D/g, '') : '';
+            bdays.push({
+              codigo: i.codigo_inversionista || i.documento_identidad,
+              nombre: i.nombre_completo,
+              documento: i.documento_identidad,
+              fechaNacimiento: i.fecha_nacimiento,
+              edad: age,
+              dia: birthDay,
+              mes: birthMonth,
+              esHoy: isToday,
+              telefono: cleanPhone,
+              statusEnvio: cleanPhone ? 'idle' : 'no_phone'
+            });
+          }
+        }
+      });
+
+      // Ordenar: Cumpleañeros de hoy primero, luego por día del mes
+      bdays.sort((a, b) => {
+        if (a.esHoy && !b.esHoy) return -1;
+        if (!a.esHoy && b.esHoy) return 1;
+        return a.dia - b.dia;
+      });
+
+      setBirthdayRecords(bdays);
+      const initBdays = new Set<string>();
+      bdays.filter(b => b.esHoy && b.telefono).forEach(b => initBdays.add(b.codigo));
+      setSelectedBirthdays(initBdays);
+
+    } catch (err) {
+      console.error('Error cargando datos de WhatsApp Ops:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMasterData();
+  }, []);
+
+  // Fetch QR Code from Evolution API
+  const fetchQrCode = async () => {
+    setLoadingQr(true);
+    setQrError(null);
+    setShowQrModal(true);
+    try {
       const res = await fetch(`${getEvolutionApiUrl()}/instance/connect/${INSTANCE_NAME}`, {
         headers: { 'apikey': EVOLUTION_API_KEY }
       });
-      
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: No se pudo obtener el QR`);
-      }
-      
-      const data = await res.json();
-      const b64 = data?.base64;
-      if (b64) {
-        setQrBase64(b64.startsWith('data:image') ? b64 : `data:image/png;base64,${b64}`);
-      } else if (data?.instance?.state === 'open') {
-        setConnectionState('open');
-        setQrBase64(null);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.base64) {
+          setQrBase64(data.base64);
+        } else if (data?.code) {
+          setQrBase64(data.code);
+        } else {
+          setQrError('No se recibió imagen QR. Verifica si la instancia ya está conectada.');
+        }
       } else {
-        throw new Error('No se recibió imagen QR en base64');
+        setQrError(`Error al solicitar QR: HTTP ${res.status}`);
       }
     } catch (err: any) {
-      console.error('Error al generar QR:', err);
-      setQrError(err.message || 'Error al conectar con Evolution API');
+      setQrError(`Error de red: ${err.message}`);
     } finally {
       setLoadingQr(false);
     }
   };
 
-  const handleOpenQrModal = () => {
-    setShowQrModal(true);
-    fetchLiveQr();
-  };
-
-  // Load Inversionistas from Supabase
-  useEffect(() => {
-    const fetchInversionistas = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('crm_inversionistas')
-          .select('id, nombre_completo, documento_identidad, telefono, direccion_fiscal')
-          .order('nombre_completo');
-        if (!error && data) {
-          setInversionistas(data);
-          if (data.length > 0) {
-            setSelectedInv(data[0]);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching inversionistas:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInversionistas();
-  }, []);
-
-  // Initialize chat when an inversionista is selected
-  useEffect(() => {
-    if (selectedInv) {
-      resetChat(selectedInv);
-    }
-  }, [selectedInv]);
-
-  const generateDummyDnis = (realDni: string) => {
-    const dummies = [
-      String(Math.floor(10000000 + Math.random() * 89999999)),
-      String(Math.floor(10000000 + Math.random() * 89999999))
-    ];
-    const opts = [realDni, ...dummies].sort(() => Math.random() - 0.5);
-    const correctIdx = String(opts.indexOf(realDni) + 1);
-    return { options: opts, correctIdx };
-  };
-
-  const generateDummyAddresses = (realAddr: string) => {
-    const dummyPool = [
-      'Av. Javier Prado Este 2450, San Borja',
-      'Calle Las Begonias 441, San Isidro',
-      'Av. Republica de Panama 3030, Miraflores',
-      'Jr. San Martin 789, Magdalena del Mar',
-      'Av. Benavides 1250, Miraflores'
-    ];
-    const pool = dummyPool.filter(a => a !== realAddr).slice(0, 2);
-    const opts = [realAddr || 'Av. Principal 123, Lima', ...pool].sort(() => Math.random() - 0.5);
-    const correctIdx = String(opts.indexOf(realAddr || 'Av. Principal 123, Lima') + 1);
-    return { options: opts, correctIdx };
-  };
-
-  const resetChat = (inv: InversionistaOption) => {
-    const { options: dniOpts } = generateDummyDnis(inv.documento_identidad || '00000000');
-    setCurrentStep('Q1_DNI');
-
-    const initialGreeting: ChatMessage = {
-      id: 'init-1',
-      sender: 'bot',
-      text: `👋 ¡Hola *${inv.nombre_completo}*! Bienvenido al canal oficial de *InAndes Grupo Financiero*.\n\n🔒 Por motivos de seguridad financiera, por favor selecciona tu número de *DNI / Documento de Identidad*:`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      options: dniOpts.map((d, i) => `${i + 1}. ${d}`)
-    };
-
-    setMessages([initialGreeting]);
-  };
-
-  const handleUserMessage = async (textToSend?: string) => {
-    const text = (textToSend !== undefined ? textToSend : inputText).trim();
-    if (!text) return;
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    if (sendRealWhatsApp && selectedInv?.telefono) {
-      sendEvolutionWhatsApp(selectedInv.telefono, `[ERP Chat Bot] ${text}`);
-    }
-
-    setTimeout(async () => {
-      await processBotResponse(text);
-      setIsTyping(false);
-    }, 700);
-  };
-
-  const processBotResponse = async (userInput: string) => {
-    if (!selectedInv) return;
-
-    const cleaned = userInput.trim();
-
-    if (cleaned.toLowerCase() === 'hola' || cleaned.toLowerCase() === 'reiniciar' || cleaned.toLowerCase() === 'menu') {
-      resetChat(selectedInv);
-      return;
-    }
-
-    if (currentStep === 'Q1_DNI') {
-      if (['1', '2', '3'].includes(cleaned)) {
-        const { options: addrOpts } = generateDummyAddresses(selectedInv.direccion_fiscal);
-        setCurrentStep('Q2_ADDRESS');
-
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `✅ Documento verificado.\n\nAhora, por favor confirma tu *dirección fiscal registrada*:`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          options: addrOpts.map((a, i) => `${i + 1}. ${a}`)
-        };
-        setMessages(prev => [...prev, botReply]);
-      } else {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `❌ Por favor responde escribiendo **1**, **2** o **3**.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, botReply]);
-      }
-      return;
-    }
-
-    if (currentStep === 'Q2_ADDRESS') {
-      if (['1', '2', '3'].includes(cleaned)) {
-        setCurrentStep('Q3_CURRENCY');
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `✅ Dirección confirmada.\n\nÚltimo paso de validación: ¿En qué moneda mantienes tus fondos en InAndes?`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          options: ['1. Soles (PEN)', '2. Dólares (USD)', '3. Ambas Monedas']
-        };
-        setMessages(prev => [...prev, botReply]);
-      } else {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `❌ Por favor responde escribiendo **1**, **2** o **3**.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, botReply]);
-      }
-      return;
-    }
-
-    if (currentStep === 'Q3_CURRENCY') {
-      if (['1', '2', '3'].includes(cleaned)) {
-        setCurrentStep('AUTHENTICATED');
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `🔓 *¡AUTENTICACIÓN EXITOSA!*\n\nEstimado(a) *${selectedInv.nombre_completo}*, ¿en qué podemos ayudarte hoy?`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          options: [
-            '1️⃣ Estado de Cuenta (EECC)',
-            '2️⃣ Último Abono / Rendimiento Recibido',
-            '3️⃣ Certificado Retención Renta (2da cat)',
-            '4️⃣ Contactar a mi Asesor Financiero'
-          ]
-        };
-        setMessages(prev => [...prev, botReply]);
-      } else {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `❌ Por favor responde escribiendo **1**, **2** o **3**.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, botReply]);
-      }
-      return;
-    }
-
-    if (currentStep === 'AUTHENTICATED') {
-      if (cleaned === '1' || cleaned.toLowerCase().includes('estado') || cleaned.toLowerCase().includes('eecc')) {
-        let totalSaldo = 0;
-        try {
-          const { data: contratos } = await supabase
-            .from('crm_contratos')
-            .select('monto_inversion, moneda, estado_contrato')
-            .eq('id_inversionista', selectedInv.id);
-          if (contratos && contratos.length > 0) {
-            totalSaldo = contratos.reduce((acc, c) => acc + Number(c.monto_inversion || 0), 0);
-          }
-        } catch (e) {
-          console.error(e);
-        }
-
-        const saldoDisplay = totalSaldo > 0 ? `S/ ${totalSaldo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : 'S/ 125,400.00';
-
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `📊 *ESTADO DE CUENTA CONSOLIDADO*\n\n👤 *Partícipe:* ${selectedInv.nombre_completo}\n💰 *Capital Invertido Activo:* ${saldoDisplay}\n📅 *Corte:* ${new Date().toLocaleDateString('es-PE')}\n📈 *Estado:* Vigente / Rentabilidad al día\n\n¿Deseas consultar algo más? Selecciona una opción del menú o escribe *'Salir'* para finalizar.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          options: ['1️⃣ Estado de Cuenta', '2️⃣ Último Abono', '3️⃣ Certificado Retención', '4️⃣ Salir']
-        };
-        setMessages(prev => [...prev, botReply]);
-        return;
-      }
-
-      if (cleaned === '2' || cleaned.toLowerCase().includes('abono') || cleaned.toLowerCase().includes('deposito')) {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `💳 *ÚLTIMO ABONO REGISTRADO*\n\n📅 *Fecha de Transferencia:* 15/08/2026\n💰 *Monto Abonado:* S/ 3,450.00 (Neto)\n🏦 *Concepto:* Rendimientos Bimestrales Fondo NSGPEN01\n🔢 *Operación BCP:* Telecrédito N° 849201\n\n¿Deseas otra consulta?`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          options: ['1️⃣ Estado de Cuenta', '2️⃣ Último Abono', '3️⃣ Certificado Retención', '4️⃣ Salir']
-        };
-        setMessages(prev => [...prev, botReply]);
-        return;
-      }
-
-      if (cleaned === '3' || cleaned.toLowerCase().includes('certificado') || cleaned.toLowerCase().includes('renta')) {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `📄 *CERTIFICADO DE RETENCIÓN DE RENTA (2da CATEGORÍA)*\n\nSe ha generado con éxito el certificado tributario oficial para *${selectedInv.nombre_completo}*.\n\n📎 *Documento listo:* [Certificado_Retencion_2daCat_2026.pdf]\n*(Archivo disponible para descarga inmediata)*`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isDocument: true,
-          options: ['1️⃣ Estado de Cuenta', '2️⃣ Último Abono', '3️⃣ Certificado Retención', '4️⃣ Salir']
-        };
-        setMessages(prev => [...prev, botReply]);
-        return;
-      }
-
-      if (cleaned === '4' || cleaned.toLowerCase() === 'salir' || cleaned.toLowerCase().includes('asesor')) {
-        const botReply: ChatMessage = {
-          id: `bot-${Date.now()}`,
-          sender: 'bot',
-          text: `👋 ¡Muchas gracias por comunicarte con *InAndes Grupo Financiero*!\n\nTu asesor asignado se pondrá en contacto contigo a la brevedad. Escribe *'Hola'* cuando desees iniciar una nueva consulta.`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages(prev => [...prev, botReply]);
-        setCurrentStep('INIT');
-        return;
-      }
-
-      const defaultReply: ChatMessage = {
-        id: `bot-${Date.now()}`,
-        sender: 'bot',
-        text: `Por favor selecciona una de las opciones numéricas (1, 2, 3 o 4) o escribe *'Salir'*.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        options: ['1️⃣ Estado de Cuenta', '2️⃣ Último Abono', '3️⃣ Certificado Retención', '4️⃣ Salir']
-      };
-      setMessages(prev => [...prev, defaultReply]);
-    }
-  };
-
-  const sendEvolutionWhatsApp = async (phone: string, text: string) => {
+  // Helper: Enviar mensaje individual vía Evolution API
+  const sendSingleWhatsAppText = async (phone: string, text: string): Promise<boolean> => {
+    const cleanNumber = phone.startsWith('51') ? phone : `51${phone}`;
     try {
-      const cleanPhone = phone.replace(/\D/g, '');
-      const fullPhone = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
-      
-      await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
+      const res = await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
         method: 'POST',
         headers: {
           'apikey': EVOLUTION_API_KEY,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          number: fullPhone,
+          number: cleanNumber,
           text: text
         })
       });
-    } catch (e) {
-      console.error('Error enviando WhatsApp real:', e);
+      return res.ok || res.status === 201;
+    } catch {
+      return false;
     }
   };
 
-  const filteredInversionistas = inversionistas.filter(inv => 
-    inv.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (inv.documento_identidad && inv.documento_identidad.includes(searchQuery))
-  );
+  // Despacho Masivo de Confirmaciones de Depósito (Telecrédito BCP)
+  const handleDispatchDepositos = async () => {
+    const targets = transferRecords.filter(t => selectedTransfers.has(t.idCertificado) && t.telefono);
+    if (targets.length === 0) {
+      alert('No hay partícipes seleccionados con teléfono válido.');
+      return;
+    }
+
+    if (!confirm(`¿Confirmas el envío de ${targets.length} notificaciones de abono por WhatsApp?`)) {
+      return;
+    }
+
+    setIsDispatching(true);
+    setDispatchProgress({ current: 0, total: targets.length });
+    setDispatchLogs([]);
+
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      setDispatchProgress({ current: i + 1, total: targets.length });
+
+      setTransferRecords(prev => prev.map(item => item.idCertificado === t.idCertificado ? { ...item, statusEnvio: 'sending' } : item));
+
+      const symbol = t.moneda === 'USD' ? '$' : 'S/';
+      const msg = (
+        `🔔 *CONFIRMACIÓN DE ABONO DE RENDIMIENTO - INANDES*\n\n` +
+        `Estimado(a) *${t.inversionistaNombre}*,\n\n` +
+        `Le informamos que se ha procesado con éxito la transferencia bancaria correspondiente al rendimiento de su inversión:\n\n` +
+        `💰 *Monto Abonado:* ${t.moneda} ${symbol} ${t.montoTransferencia.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+        `📜 *Certificado:* ${t.idCertificado}\n` +
+        `🏢 *Fondo:* ${t.fondoNombre}\n` +
+        `🏦 *Cuenta de Destino:* ${t.banco} ${t.cuenta}\n` +
+        `📅 *Período:* Cierre ${t.fechaFin}\n\n` +
+        `📄 *Puede descargar su Estado de Cuenta y Certificado de Retención oficial en PDF escribiendo 'Hola' a este canal oficial de WhatsApp.*\n\n` +
+        `Atentamente,\n*InAndes Grupo Financiero*`
+      );
+
+      const success = await sendSingleWhatsAppText(t.telefono, msg);
+
+      setTransferRecords(prev => prev.map(item => item.idCertificado === t.idCertificado ? { ...item, statusEnvio: success ? 'sent' : 'error' } : item));
+
+      setDispatchLogs(prev => [
+        {
+          time: new Date().toLocaleTimeString(),
+          text: `${success ? '✅ Enviado a' : '❌ Error al enviar a'} ${t.inversionistaNombre} (${t.telefono}) - ${t.moneda} ${t.montoTransferencia.toFixed(2)}`,
+          success
+        },
+        ...prev
+      ]);
+
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    setIsDispatching(false);
+  };
+
+  // Despacho Masivo de Cumpleaños
+  const handleDispatchBirthdays = async () => {
+    const targets = birthdayRecords.filter(b => selectedBirthdays.has(b.codigo) && b.telefono);
+    if (targets.length === 0) {
+      alert('No hay cumpleañeros seleccionados con teléfono válido.');
+      return;
+    }
+
+    if (!confirm(`¿Confirmas el envío de ${targets.length} saludos de cumpleaños por WhatsApp?`)) {
+      return;
+    }
+
+    setIsDispatching(true);
+    setDispatchProgress({ current: 0, total: targets.length });
+    setDispatchLogs([]);
+
+    for (let i = 0; i < targets.length; i++) {
+      const b = targets[i];
+      setDispatchProgress({ current: i + 1, total: targets.length });
+
+      setBirthdayRecords(prev => prev.map(item => item.codigo === b.codigo ? { ...item, statusEnvio: 'sending' } : item));
+
+      const msg = (
+        `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂\n\n` +
+        `Estimado(a) *${b.nombre}*,\n\n` +
+        `En este día tan especial, todo el equipo directivo y profesional de *InAndes Grupo Financiero* le hace llegar un cálido y afectuoso saludo de cumpleaños. 🌟\n\n` +
+        `Agradecemos profundamente su confianza continua como partícipe de nuestra institución y le deseamos un año lleno de salud, prosperidad y grandes satisfacciones personales y familiares. 🥂\n\n` +
+        `¡Que disfrute un excelente día!\n\n` +
+        `Atentamente,\n*InAndes Grupo Financiero*`
+      );
+
+      const success = await sendSingleWhatsAppText(b.telefono, msg);
+
+      setBirthdayRecords(prev => prev.map(item => item.codigo === b.codigo ? { ...item, statusEnvio: success ? 'sent' : 'error' } : item));
+
+      setDispatchLogs(prev => [
+        {
+          time: new Date().toLocaleTimeString(),
+          text: `${success ? '🎂 Saludo enviado a' : '❌ Error saludo a'} ${b.nombre} (${b.telefono})`,
+          success
+        },
+        ...prev
+      ]);
+
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    setIsDispatching(false);
+  };
+
+  // Filtros
+  const filteredTransfers = useMemo(() => {
+    return transferRecords.filter(t => {
+      const matchesSearch = filterSearch === '' || 
+        t.inversionistaNombre.toLowerCase().includes(filterSearch.toLowerCase()) ||
+        t.documentoIdentidad.includes(filterSearch) ||
+        t.idCertificado.toLowerCase().includes(filterSearch.toLowerCase());
+      
+      const matchesFondo = filterFondo === 'TODOS' || t.fondoNombre.includes(filterFondo);
+      return matchesSearch && matchesFondo;
+    });
+  }, [transferRecords, filterSearch, filterFondo]);
+
+  const toggleSelectAllTransfers = () => {
+    if (selectedTransfers.size === filteredTransfers.filter(t => t.telefono).length) {
+      setSelectedTransfers(new Set());
+    } else {
+      const next = new Set<string>();
+      filteredTransfers.filter(t => t.telefono).forEach(t => next.add(t.idCertificado));
+      setSelectedTransfers(next);
+    }
+  };
+
+  const toggleSelectTransfer = (id: string) => {
+    const next = new Set(selectedTransfers);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedTransfers(next);
+  };
+
+  const toggleSelectBirthday = (code: string) => {
+    const next = new Set(selectedBirthdays);
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    setSelectedBirthdays(next);
+  };
+
+  const cumpleanosHoyCount = useMemo(() => birthdayRecords.filter(b => b.esHoy).length, [birthdayRecords]);
+  const totalMontoTransferenciasUSD = useMemo(() => transferRecords.filter(t => t.moneda === 'USD').reduce((acc, t) => acc + t.montoTransferencia, 0), [transferRecords]);
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-      {/* Top Banner */}
-      <div className="bg-emerald-800 text-white px-6 py-3 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center border-2 border-emerald-400">
-            <Bot size={22} className="text-emerald-100" />
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-6 space-y-6">
+      {/* HEADER PRINCIPAL */}
+      <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 md:p-6 shadow-xl backdrop-blur-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/20">
+              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
+                <Smartphone className="w-7 h-7 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
+                  Centro de Operaciones WhatsApp & Notificaciones Oficiales
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  PRODUCCIÓN
+                </span>
+              </div>
+              <p className="text-sm text-slate-400 mt-1">
+                Despacho masivo de liquidaciones Telecrédito BCP, saludos institucionales y motor determinista 3FA.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-base flex items-center gap-2">
-              InAndes Finance Bot — Simulador & Despacho WhatsApp
-              <span className="text-[10px] bg-emerald-600 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
-                Motor Baileys Contabo
+
+          {/* STATUS & ACTIONS */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/80 border border-slate-700/60">
+              <div className={`w-2.5 h-2.5 rounded-full ${
+                connectionState === 'open' 
+                  ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' 
+                  : connectionState === 'connecting'
+                  ? 'bg-amber-400 animate-ping'
+                  : 'bg-rose-500'
+              }`} />
+              <span className="text-xs font-mono font-medium text-slate-300 uppercase">
+                {connectionState === 'open' ? 'WhatsApp Online' : connectionState === 'connecting' ? 'Conectando...' : 'Desconectado'}
               </span>
-            </h1>
-            <p className="text-xs text-emerald-200">
-              Autenticación determinista por DNI, consultas de saldo, cupones y EECC
-            </p>
+            </div>
+
+            <button
+              onClick={fetchQrCode}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+            >
+              <QrCode className="w-4 h-4" />
+              Vincular QR / Estado
+            </button>
+
+            <button
+              onClick={loadMasterData}
+              disabled={loadingData}
+              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition-all active:scale-95"
+              title="Refrescar Datos"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin text-emerald-400' : ''}`} />
+            </button>
           </div>
         </div>
 
-        {/* Right Actions: Connection Badge, QR Generator Button, Real WhatsApp Switch */}
-        <div className="flex items-center gap-3">
-          {/* Connection State Badge */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
-            connectionState === 'open'
-              ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300'
-              : 'bg-amber-950/80 border-amber-500/80 text-amber-300'
-          }`}>
-            {connectionState === 'open' ? (
-              <>
-                <Wifi size={14} className="text-emerald-400 animate-pulse" />
-                <span>Sesión Conectada</span>
-              </>
-            ) : (
-              <>
-                <WifiOff size={14} className="text-amber-400" />
-                <span>Desconectado</span>
-              </>
-            )}
+        {/* METRIC CARDS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-6">
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-400">Transferencias Listas</div>
+              <div className="text-lg font-bold text-white mt-0.5">{transferRecords.length} partícipes</div>
+            </div>
           </div>
 
-          {/* QR Code Modal Button */}
-          <button
-            onClick={handleOpenQrModal}
-            className="flex items-center gap-2 bg-white text-emerald-900 hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm transition-all hover:scale-105 active:scale-95"
-          >
-            <QrCode size={15} />
-            <span>{connectionState === 'open' ? 'Re-vincular Celular' : 'Vincular WhatsApp (QR)'}</span>
-          </button>
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-400">Total Liquidación USD</div>
+              <div className="text-lg font-bold text-white mt-0.5">${totalMontoTransferenciasUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            </div>
+          </div>
 
-          {/* Real WhatsApp Dispatch Switch */}
-          <div className="flex items-center gap-2 bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-700/60">
-            <Smartphone size={16} className={sendRealWhatsApp ? 'text-emerald-400 animate-pulse' : 'text-slate-400'} />
-            <label className="text-xs font-medium cursor-pointer flex items-center gap-2 select-none">
-              <span>Disparar WhatsApp Real</span>
-              <input 
-                type="checkbox" 
-                checked={sendRealWhatsApp} 
-                onChange={e => setSendRealWhatsApp(e.target.checked)}
-                className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-              />
-            </label>
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-pink-500/10 text-pink-400">
+              <Cake className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-400">Cumpleaños Hoy</div>
+              <div className="text-lg font-bold text-white mt-0.5">{cumpleanosHoyCount} partícipes</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-3.5 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-400">Padrón Verificado 3FA</div>
+              <div className="text-lg font-bold text-white mt-0.5">{inversionistas.length} registrados</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Container: Left Inversionista Picker + Right WhatsApp Web Chat */}
-      <div className="flex-1 flex overflow-hidden">
-        
-        {/* Left Sidebar: Inversionistas List */}
-        <div className="w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
-          <div className="p-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Buscar inversionista por nombre/DNI..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+      {/* TABS DE NAVEGACIÓN */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+        <button
+          onClick={() => setActiveTab('depositos')}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'depositos'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/25'
+              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          Confirmación de Depósitos / Telecrédito BCP
+          <span className="ml-1.5 px-2 py-0.5 rounded-full text-xs bg-slate-900/60 text-slate-300">
+            {transferRecords.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cumpleanos')}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'cumpleanos'
+              ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/25'
+              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+        >
+          <Cake className="w-4 h-4" />
+          Saludos de Cumpleaños
+          {cumpleanosHoyCount > 0 && (
+            <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-400 text-slate-900 font-bold animate-bounce">
+              {cumpleanosHoyCount} Hoy!
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('participes')}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'participes'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Padrón de Partícipes & Teléfonos
+        </button>
+
+        <button
+          onClick={() => setActiveTab('conexion')}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'conexion'
+              ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/25'
+              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          Arquitectura & Estado del Bot
+        </button>
+      </div>
+
+      {/* LOG DE DESPACHO EN VIVO */}
+      {dispatchLogs.length > 0 && (
+        <div className="bg-slate-800/90 border border-slate-700/80 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span>Historial de Despacho en Vivo</span>
+            <button onClick={() => setDispatchLogs([])} className="text-slate-500 hover:text-slate-300">Limpiar</button>
+          </div>
+          <div className="max-h-32 overflow-y-auto font-mono text-xs space-y-1 divide-y divide-slate-800/60">
+            {dispatchLogs.map((log, idx) => (
+              <div key={idx} className={`pt-1 flex items-center justify-between ${log.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <span>{log.text}</span>
+                <span className="text-slate-500 text-[10px]">{log.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CONTENIDO PESTAÑA 1: DEPÓSITOS TELECRÉDITO */}
+      {activeTab === 'depositos' && (
+        <div className="space-y-4">
+          {/* BARRA DE ACCIÓN Y FILTRO */}
+          <div className="bg-slate-800/90 border border-slate-700/70 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar partícipe, DNI o certificado..."
+                  value={filterSearch}
+                  onChange={e => setFilterSearch(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-64"
+                />
+              </div>
+
+              <select
+                value={filterFondo}
+                onChange={e => setFilterFondo(e.target.value)}
+                className="px-3 py-2 bg-slate-900/80 border border-slate-700 rounded-lg text-sm text-slate-200 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="TODOS">Todos los Fondos</option>
+                <option value="USD 02">FDO NSG MIPYME USD 02</option>
+                <option value="PEN 01">FDO NSG MIPYME PEN 01</option>
+              </select>
+
+              <span className="text-xs text-slate-400">
+                Seleccionados: <b className="text-emerald-400">{selectedTransfers.size}</b> de {filteredTransfers.filter(t => t.telefono).length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDispatchDepositos}
+                disabled={isDispatching || selectedTransfers.size === 0 || connectionState !== 'open'}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg shadow-emerald-600/30 transition-all active:scale-95"
+              >
+                <Send className="w-4 h-4" />
+                {isDispatching ? `Enviando (${dispatchProgress.current}/${dispatchProgress.total})...` : `Despachar ${selectedTransfers.size} Alertas WhatsApp`}
+              </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
-            {loading ? (
-              <div className="p-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                <RefreshCw size={14} className="animate-spin" /> Cargando partícipes...
+          {/* BARRA DE PROGRESO */}
+          {isDispatching && (
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-2">
+              <div className="flex justify-between text-xs font-semibold text-slate-300">
+                <span>Progreso de Despacho Secuencial</span>
+                <span>{dispatchProgress.current} de {dispatchProgress.total} ({Math.round((dispatchProgress.current / dispatchProgress.total) * 100)}%)</span>
               </div>
-            ) : filteredInversionistas.map(inv => {
-              const isSelected = selectedInv?.id === inv.id;
+              <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${(dispatchProgress.current / dispatchProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TABLA DE TRANSFERENCIAS */}
+          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-slate-950/80 text-xs uppercase font-mono tracking-wider text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th className="p-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedTransfers.size === filteredTransfers.filter(t => t.telefono).length && filteredTransfers.length > 0}
+                        onChange={toggleSelectAllTransfers}
+                        className="rounded bg-slate-900 border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-4">Partícipe / Titular</th>
+                    <th className="p-4">Certificado & Fondo</th>
+                    <th className="p-4 text-right">Monto Liquidado</th>
+                    <th className="p-4">Cuenta Destino</th>
+                    <th className="p-4">WhatsApp</th>
+                    <th className="p-4 text-center">Estado Envío</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-sans">
+                  {filteredTransfers.map(t => {
+                    const isSelected = selectedTransfers.has(t.idCertificado);
+                    const hasPhone = Boolean(t.telefono);
+
+                    return (
+                      <tr key={t.idCertificado} className={`hover:bg-slate-750/40 transition-colors ${isSelected ? 'bg-emerald-500/5' : ''}`}>
+                        <td className="p-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={!hasPhone}
+                            onChange={() => toggleSelectTransfer(t.idCertificado)}
+                            className="rounded bg-slate-900 border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="font-semibold text-white">{t.inversionistaNombre}</div>
+                          <div className="text-xs text-slate-400 font-mono">DNI: {t.documentoIdentidad || 'No registrado'}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-mono text-xs text-emerald-400 font-medium">{t.idCertificado}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">{t.fondoNombre}</div>
+                        </td>
+                        <td className="p-4 text-right font-mono">
+                          <div className="font-bold text-white text-base">
+                            {t.moneda === 'USD' ? '$' : 'S/'} {t.montoTransferencia.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-[11px] text-slate-500">Bruto: {t.interesBruto.toFixed(2)} | IR 5%: {t.impuestoRenta.toFixed(2)}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-xs font-semibold text-slate-200">{t.banco}</div>
+                          <div className="text-xs font-mono text-slate-400">{t.cuenta}</div>
+                        </td>
+                        <td className="p-4">
+                          {hasPhone ? (
+                            <span className="font-mono text-xs text-slate-300 bg-slate-900/60 px-2 py-1 rounded border border-slate-700">
+                              +51 {t.telefono}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-amber-400 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5" /> Sin celular
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4 text-center">
+                          {t.statusEnvio === 'idle' && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-700/50 text-slate-400">
+                              Pendiente
+                            </span>
+                          )}
+                          {t.statusEnvio === 'sending' && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 animate-pulse">
+                              Enviando...
+                            </span>
+                          )}
+                          {t.statusEnvio === 'sent' && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1">
+                              <CheckCheck className="w-3.5 h-3.5" /> Enviado
+                            </span>
+                          )}
+                          {t.statusEnvio === 'error' && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/20 text-rose-400">
+                              Error
+                            </span>
+                          )}
+                          {t.statusEnvio === 'no_phone' && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-500">
+                              No disponible
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTENIDO PESTAÑA 2: CUMPLEAÑOS */}
+      {activeTab === 'cumpleanos' && (
+        <div className="space-y-4">
+          <div className="bg-slate-800/90 border border-slate-700/70 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Cake className="w-5 h-5 text-pink-400" />
+                Nómina de Cumpleaños Institucionales
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Saludos formales automatizados con la identidad corporativa de InAndes Grupo Financiero.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDispatchBirthdays}
+                disabled={isDispatching || selectedBirthdays.size === 0 || connectionState !== 'open'}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-lg shadow-pink-600/30 transition-all active:scale-95"
+              >
+                <Cake className="w-4 h-4" />
+                {isDispatching ? 'Enviando Saludos...' : `Enviar ${selectedBirthdays.size} Saludos WhatsApp`}
+              </button>
+            </div>
+          </div>
+
+          {/* LISTA DE CUMPLEAÑEROS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {birthdayRecords.map(b => {
+              const isSelected = selectedBirthdays.has(b.codigo);
               return (
-                <div
-                  key={inv.id}
-                  onClick={() => setSelectedInv(inv)}
-                  className={`p-3 cursor-pointer transition-colors flex items-start gap-3 ${
-                    isSelected 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-emerald-600' 
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                <div 
+                  key={b.codigo}
+                  className={`border rounded-2xl p-5 transition-all relative overflow-hidden ${
+                    b.esHoy 
+                      ? 'bg-gradient-to-b from-pink-950/40 to-slate-900 border-pink-500/50 shadow-lg shadow-pink-900/20' 
+                      : 'bg-slate-800/80 border-slate-700/80'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 font-bold text-xs text-slate-600 dark:text-slate-300">
-                    {inv.nombre_completo.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {inv.nombre_completo}
-                    </p>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      <span>DNI: {inv.documento_identidad || 'S/D'}</span>
-                      {inv.telefono && <span>• 📱 {inv.telefono}</span>}
+                  {b.esHoy && (
+                    <div className="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow">
+                      🎉 ¡CUMPLE HOY!
                     </div>
-                  </div>
-                  {isSelected && (
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-1" />
                   )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Right Area: WhatsApp Web Style Chat View */}
-        <div className="flex-1 flex flex-col bg-[#EFEAE2] dark:bg-[#0B141A] relative">
-          
-          {/* WhatsApp Chat Header */}
-          <div className="bg-[#F0F2F5] dark:bg-[#202C33] px-5 py-2.5 border-b border-slate-300 dark:border-slate-700/60 flex items-center justify-between shadow-sm z-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow">
-                {selectedInv ? selectedInv.nombre_completo.charAt(0) : 'I'}
-              </div>
-              <div>
-                <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                  {selectedInv?.nombre_completo || 'Selecciona un partícipe'}
-                </h2>
-                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  {connectionState === 'open' ? 'En línea · Sesión WhatsApp Activa en Contabo' : 'Simulador Activo'}
-                </p>
-              </div>
-            </div>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={!b.telefono}
+                      onChange={() => toggleSelectBirthday(b.codigo)}
+                      className="mt-1 rounded bg-slate-900 border-slate-700 text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-bold text-white text-base leading-tight">{b.nombre}</h3>
+                      <div className="text-xs text-slate-400 font-mono mt-1">DNI: {b.documento}</div>
 
-            <button
-              onClick={() => selectedInv && resetChat(selectedInv)}
-              title="Reiniciar chat / Borrar historial"
-              className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 hover:text-emerald-600 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
-            >
-              <RefreshCw size={12} />
-              <span>Reiniciar Flujo</span>
-            </button>
-          </div>
-
-          {/* Messages Thread */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {/* Encryption notice */}
-            <div className="flex justify-center my-2">
-              <div className="bg-[#FFEECD] dark:bg-[#182229] text-[#54656F] dark:text-[#8696A0] text-[10.5px] px-3 py-1.5 rounded-lg shadow-sm max-w-md text-center flex items-center gap-1.5 border border-amber-200/50 dark:border-slate-800">
-                <ShieldCheck size={14} className="text-amber-600 shrink-0" />
-                <span>Los mensajes y datos financieros están protegidos con cifrado de extremo a extremo por InAndes.</span>
-              </div>
-            </div>
-
-            {messages.map((msg) => {
-              const isUser = msg.sender === 'user';
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-lg rounded-2xl px-4 py-2.5 shadow-sm text-xs relative ${
-                      isUser
-                        ? 'bg-[#D9FDD3] dark:bg-[#005C4B] text-slate-900 dark:text-slate-100 rounded-tr-none'
-                        : 'bg-white dark:bg-[#202C33] text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200/60 dark:border-slate-700/50'
-                    }`}
-                  >
-                    {/* Message Body */}
-                    <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
-
-                    {/* Attached Document Card */}
-                    {msg.isDocument && (
-                      <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText size={20} className="text-red-500" />
-                          <div>
-                            <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200">Certificado_2026.pdf</p>
-                            <p className="text-[9px] text-slate-400">PDF · 340 KB</p>
-                          </div>
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-700/60 pt-3 text-xs">
+                        <div className="text-slate-400">
+                          Fecha: <b className="text-slate-200">{b.dia}/{b.mes}</b> ({b.edad} años)
                         </div>
-                        <button className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-700 transition-colors">
-                          Descargar
-                        </button>
+                        <div>
+                          {b.telefono ? (
+                            <span className="font-mono text-emerald-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
+                              +51 {b.telefono}
+                            </span>
+                          ) : (
+                            <span className="text-amber-400">Sin teléfono</span>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    {/* Interactive Options as Clickable Buttons */}
-                    {msg.options && msg.options.length > 0 && (
-                      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 space-y-1.5">
-                        {msg.options.map((opt, idx) => {
-                          const optionNumber = String(idx + 1);
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => handleUserMessage(optionNumber)}
-                              className="w-full text-left text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 px-3 py-1.5 rounded-xl border border-emerald-200/70 dark:border-emerald-800/50 transition-colors flex items-center justify-between group"
-                            >
-                              <span>{opt}</span>
-                              <span className="text-[9px] text-emerald-500 font-bold group-hover:translate-x-0.5 transition-transform">
-                                Seleccionar →
-                              </span>
-                            </button>
-                          );
-                        })}
+                      <div className="mt-3 flex items-center justify-between">
+                        {b.statusEnvio === 'sent' ? (
+                          <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCheck className="w-4 h-4" /> Saludo Enviado
+                          </span>
+                        ) : b.statusEnvio === 'sending' ? (
+                          <span className="text-xs text-amber-400 font-semibold animate-pulse">
+                            Enviando...
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">Pendiente</span>
+                        )}
                       </div>
-                    )}
-
-                    {/* Timestamp & Checks */}
-                    <div className="flex items-center justify-end gap-1 mt-1 text-[9.5px] text-slate-400 dark:text-slate-400">
-                      <span>{msg.timestamp}</span>
-                      {isUser && <CheckCheck size={13} className="text-sky-500" />}
                     </div>
                   </div>
                 </div>
               );
             })}
-
-            {/* Typing Animation */}
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-white dark:bg-[#202C33] rounded-2xl px-4 py-2 text-xs shadow-sm flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
-                  <span className="text-[10px] ml-1">InAndes Bot está escribiendo...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
           </div>
-
-          {/* WhatsApp Chat Input Bar */}
-          <div className="bg-[#F0F2F5] dark:bg-[#202C33] px-4 py-2.5 border-t border-slate-300 dark:border-slate-700/60 flex items-center gap-2">
-            <input
-              type="text"
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleUserMessage()}
-              placeholder="Escribe un mensaje o número de opción (1, 2, 3)..."
-              className="flex-1 bg-white dark:bg-[#2A3942] text-slate-900 dark:text-slate-100 text-xs px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-            <button
-              onClick={() => handleUserMessage()}
-              disabled={!inputText.trim()}
-              className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white flex items-center justify-center transition-colors shrink-0 shadow"
-            >
-              <Send size={15} />
-            </button>
-          </div>
-
         </div>
-      </div>
+      )}
 
-      {/* QR Code Linking Modal */}
+      {/* CONTENIDO PESTAÑA 3: PADRÓN DE PARTÍCIPES & 3FA */}
+      {activeTab === 'participes' && (
+        <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-400" />
+                Padrón de Partícipes Registrados en Supabase
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Datos sincronizados para la autenticación 3FA y despacho automatizado.
+              </p>
+            </div>
+            <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+              Total: {inversionistas.length} Partícipes
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-950/80 uppercase font-mono text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th className="p-3">Código</th>
+                  <th className="p-3">Nombre Completo</th>
+                  <th className="p-3">DNI</th>
+                  <th className="p-3">Celular Registrado</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">F. Nacimiento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-sans">
+                {inversionistas.map(i => (
+                  <tr key={i.codigo_inversionista || i.documento_identidad} className="hover:bg-slate-750/30">
+                    <td className="p-3 font-mono text-indigo-400">{i.codigo_inversionista || '-'}</td>
+                    <td className="p-3 font-medium text-white">{i.nombre_completo}</td>
+                    <td className="p-3 font-mono">{i.documento_identidad}</td>
+                    <td className="p-3 font-mono text-emerald-400">{i.telefono ? `+51 ${i.telefono}` : <span className="text-slate-500">No asignado</span>}</td>
+                    <td className="p-3 text-slate-400">{i.email || '-'}</td>
+                    <td className="p-3 font-mono text-slate-400">{i.fecha_nacimiento || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CONTENIDO PESTAÑA 4: ARQUITECTURA & ESTADO */}
+      {activeTab === 'conexion' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 space-y-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Bot className="w-5 h-5 text-cyan-400" />
+              Estado de Microservicios en Contabo VPS
+            </h2>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-300 font-medium">Evolution API v2.2.3</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  {connectionState.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-300 font-medium">Microservicio Bot FastAPI</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  PUERTO 8085 / ACTIVO
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-300 font-medium">Traefik Reverse Proxy SSL</span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  https://inandes.geeksoft.tech/wa-api
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-300 font-medium">Instancia Oficial Conectada</span>
+                <span className="font-mono text-slate-300">{INSTANCE_NAME}</span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={fetchQrCode}
+                className="w-full py-3 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+              >
+                <QrCode className="w-4 h-4" />
+                Generar Código QR de Reconexión
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-6 space-y-4">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              Reglas Intangibles del Bot Inbound (3FA)
+            </h2>
+            <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+              <p>• <b>Determinismo 100%:</b> Las respuestas de saldos, retenciones y certificados se calculan exclusivamente a partir del Ledger en Supabase.</p>
+              <p>• <b>Anti-Link Formatting:</b> Los DNIs se muestran con prefijo <code>DNI-</code> y dummies de la serie <code>09</code> para prevenir auto-linking verde en WhatsApp Web.</p>
+              <p>• <b>Compilación de PDFs Oficiales:</b> El motor ReportLab genera en memoria el EECC y el Certificado de Retención con la firma digital de Juan Ricardo Gallo Pizarro y el logo de InAndes.</p>
+              <p>• <b>Asesor Asignado:</b> La opción 4 resuelve dinámicamente el asesor del contrato y genera un link directo de WhatsApp.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE QR (100% PRESERVADO Y ACCESIBLE) */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl relative flex flex-col items-center text-center">
-            
-            {/* Close Button */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 relative animate-in fade-in zoom-in duration-200">
             <button
               onClick={() => setShowQrModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
             >
-              <X size={18} />
+              <X className="w-5 h-5" />
             </button>
 
-            {/* Header */}
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
-              <QrCode size={26} />
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Vincular Chip InAndes Oficial</h3>
+              <p className="text-xs text-slate-400">
+                Abre WhatsApp en el celular corporativo &gt; Dispositivos Vinculados &gt; Escanear código QR.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Vincular Celular a WhatsApp InAndes
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-              Escanea el código QR con el WhatsApp del celular corporativo para mantener la sesión activa en Contabo.
-            </p>
 
-            {/* QR Image Container */}
-            <div className="my-5 p-4 bg-white rounded-2xl border border-slate-200 shadow-inner flex items-center justify-center min-h-[260px] min-w-[260px] relative">
+            <div className="flex items-center justify-center min-h-[260px] bg-slate-950 rounded-2xl border border-slate-800 p-4">
               {loadingQr ? (
-                <div className="flex flex-col items-center gap-2 text-xs text-slate-500">
-                  <RefreshCw size={24} className="animate-spin text-emerald-600" />
-                  <span>Generando código QR seguro...</span>
+                <div className="flex flex-col items-center gap-3 text-slate-400">
+                  <RefreshCw className="w-8 h-8 animate-spin text-emerald-400" />
+                  <span className="text-xs">Generando código QR seguro...</span>
                 </div>
               ) : qrError ? (
-                <div className="flex flex-col items-center gap-2 text-xs text-red-500 p-4">
-                  <AlertTriangle size={24} />
-                  <span>{qrError}</span>
+                <div className="flex flex-col items-center gap-2 text-rose-400 text-center px-4">
+                  <AlertTriangle className="w-8 h-8" />
+                  <span className="text-xs">{qrError}</span>
                   <button
-                    onClick={fetchLiveQr}
-                    className="mt-2 text-xs bg-red-100 dark:bg-red-950 text-red-700 px-3 py-1.5 rounded-xl font-bold"
+                    onClick={fetchQrCode}
+                    className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
                   >
                     Reintentar
                   </button>
                 </div>
               ) : qrBase64 ? (
-                <img 
-                  src={qrBase64} 
-                  alt="WhatsApp QR Code" 
-                  className="w-56 h-56 object-contain rounded-lg"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-xs text-emerald-600">
-                  <CheckCircle2 size={32} />
-                  <span className="font-bold">¡WhatsApp ya está conectado y activo!</span>
+                <div className="p-3 bg-white rounded-xl shadow-inner">
+                  <img
+                    src={qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`}
+                    alt="WhatsApp QR Code"
+                    className="w-56 h-56 object-contain"
+                  />
                 </div>
+              ) : (
+                <div className="text-xs text-slate-500">Sin código QR disponible.</div>
               )}
             </div>
 
-            {/* Instructions */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-left text-[11px] text-slate-600 dark:text-slate-300 w-full space-y-1">
-              <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Smartphone size={13} className="text-emerald-600" /> Instrucciones de vinculación:
-              </p>
-              <ol className="list-decimal pl-4 space-y-0.5 text-slate-500 dark:text-slate-400">
-                <li>Abre <b>WhatsApp</b> en tu celular.</li>
-                <li>Toca <b>Menú</b> (Android) o <b>Ajustes</b> (iPhone).</li>
-                <li>Toca <b>Dispositivos vinculados</b> y luego <b>Vincular un dispositivo</b>.</li>
-                <li>Apunta tu teléfono hacia este código QR.</li>
-              </ol>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="flex items-center gap-3 w-full mt-4">
+            <div className="flex items-center justify-between pt-2 text-xs">
+              <span className="text-slate-500 font-mono">Instancia: {INSTANCE_NAME}</span>
               <button
-                onClick={fetchLiveQr}
-                disabled={loadingQr}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+                onClick={checkConnectionState}
+                className="text-emerald-400 hover:underline font-semibold"
               >
-                <RefreshCw size={13} className={loadingQr ? 'animate-spin' : ''} />
-                <span>Actualizar QR</span>
-              </button>
-
-              <button
-                onClick={async () => {
-                  await checkConnectionState();
-                  setShowQrModal(false);
-                }}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow"
-              >
-                Listo / Cerrar
+                Verificar Conexión
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };
+export default ChatWhatsAppPage;
