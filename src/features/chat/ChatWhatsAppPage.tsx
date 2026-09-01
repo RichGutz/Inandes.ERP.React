@@ -37,7 +37,13 @@ interface ChatMessage {
 
 type BotStep = 'INIT' | 'Q1_DNI' | 'Q2_ADDRESS' | 'Q3_CURRENCY' | 'AUTHENTICATED';
 
-const EVOLUTION_API_URL = 'http://169.58.168.107:8084';
+const getEvolutionApiUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.origin}/wa-api`;
+  }
+  return 'http://169.58.168.107:8084';
+};
+
 const EVOLUTION_API_KEY = 'InandesSecretWA2026!';
 const INSTANCE_NAME = 'inandes_oficial';
 
@@ -74,7 +80,7 @@ export const ChatWhatsAppPage: React.FC = () => {
   // Check WhatsApp Connection Status
   const checkConnectionState = async () => {
     try {
-      const res = await fetch(`${EVOLUTION_API_URL}/instance/connectionState/${INSTANCE_NAME}`, {
+      const res = await fetch(`${getEvolutionApiUrl()}/instance/connectionState/${INSTANCE_NAME}`, {
         headers: { 'apikey': EVOLUTION_API_KEY }
       });
       if (res.ok) {
@@ -102,7 +108,7 @@ export const ChatWhatsAppPage: React.FC = () => {
       setLoadingQr(true);
       setQrError(null);
       
-      const res = await fetch(`${EVOLUTION_API_URL}/instance/connect/${INSTANCE_NAME}`, {
+      const res = await fetch(`${getEvolutionApiUrl()}/instance/connect/${INSTANCE_NAME}`, {
         headers: { 'apikey': EVOLUTION_API_KEY }
       });
       
@@ -395,7 +401,7 @@ export const ChatWhatsAppPage: React.FC = () => {
       const cleanPhone = phone.replace(/\D/g, '');
       const fullPhone = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
       
-      await fetch(`${EVOLUTION_API_URL}/message/sendText/${INSTANCE_NAME}`, {
+      await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
         method: 'POST',
         headers: {
           'apikey': EVOLUTION_API_KEY,
