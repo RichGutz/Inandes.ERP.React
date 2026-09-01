@@ -22,6 +22,7 @@ import {
 interface InversionistaData {
   codigo_inversionista: string;
   documento_identidad: string;
+  tipo_doc?: string;
   nombre_1?: string;
   nombre_completo: string;
   fecha_nacimiento?: string;
@@ -40,6 +41,7 @@ interface TransferRecord {
   idContrato: string;
   inversionistaNombre: string;
   documentoIdentidad: string;
+  tipoDoc: string;
   telefono: string;
   moneda: 'USD' | 'PEN';
   montoTransferencia: number;
@@ -57,6 +59,7 @@ interface BirthdayRecord {
   nombre: string;
   primerNombre: string;
   documento: string;
+  tipoDoc: string;
   fechaNacimiento: string;
   edad: number;
   dia: number;
@@ -207,11 +210,14 @@ export const ChatWhatsAppPage: React.FC = () => {
         const telefono = invPrincipal.telefono ? invPrincipal.telefono.replace(/\D/g, '') : '';
         const certId = evt?.id_certificado || `${c.id_contrato}.20260630`;
 
+        const tipoDoc = invPrincipal.tipo_doc || (invPrincipal.codigo_inversionista?.startsWith('CEX') ? 'CE' : 'DNI');
+
         transfers.push({
           idCertificado: certId,
           idContrato: c.id_contrato,
           inversionistaNombre: invPrincipal.nombre_completo,
           documentoIdentidad: invPrincipal.documento_identidad,
+          tipoDoc: tipoDoc,
           telefono: telefono,
           moneda: moneda,
           montoTransferencia: totalTransferencia > 0 ? totalTransferencia : 635.07,
@@ -252,11 +258,13 @@ export const ChatWhatsAppPage: React.FC = () => {
             const age = today.getFullYear() - birthYear;
             const cleanPhone = i.telefono ? i.telefono.replace(/\D/g, '') : '';
             const primerNombre = i.nombre_1 ? i.nombre_1.trim() : (i.nombre_completo.split(' ')[0] || i.nombre_completo);
+            const tipoDoc = i.tipo_doc || (i.codigo_inversionista?.startsWith('CEX') ? 'CE' : 'DNI');
             bdays.push({
               codigo: i.codigo_inversionista || i.documento_identidad,
               nombre: i.nombre_completo,
               primerNombre: primerNombre,
               documento: i.documento_identidad,
+              tipoDoc: tipoDoc,
               fechaNacimiento: i.fecha_nacimiento,
               edad: age,
               dia: birthDay,
@@ -765,7 +773,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                         </td>
                         <td className="p-4">
                           <div className="font-bold text-slate-900">{t.inversionistaNombre}</div>
-                          <div className="text-xs text-slate-500 font-mono">DNI: {t.documentoIdentidad || 'No registrado'}</div>
+                          <div className="text-xs text-slate-500 font-mono">{t.tipoDoc}: {t.documentoIdentidad || 'No registrado'}</div>
                         </td>
                         <td className="p-4">
                           <div className="font-mono text-xs text-indigo-600 font-semibold">{t.idCertificado}</div>
@@ -884,7 +892,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                     />
                     <div className="flex-1">
                       <h3 className="font-bold text-slate-900 text-base leading-tight">{b.nombre}</h3>
-                      <div className="text-xs text-slate-500 font-mono mt-1">DNI: {b.documento}</div>
+                      <div className="text-xs text-slate-500 font-mono mt-1">{b.tipoDoc}: {b.documento}</div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                         <div className="text-slate-500">
