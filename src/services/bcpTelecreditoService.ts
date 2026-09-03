@@ -15,6 +15,13 @@ export interface BcpTransferItem {
   moneda: 'PEN' | 'USD';
   fondoId?: string;
   estadoCuenta: 'BCP' | 'INTERBANCARIO' | 'SIN_CUENTA';
+  // Campos especiales para auditoría de Renovaciones (#0XX) y Diferencial de Capital
+  tipoLiquidacion?: 'RENDIMIENTO_REGULAR' | 'ROLLOVER_TOTAL' | 'ROLLOVER_PARCIAL' | 'EXTINCION_TOTAL';
+  comentarioRollover?: string;
+  capitalAnterior?: number;
+  capitalNuevo?: number;
+  diferencialCapital?: number;
+  interesNeto?: number;
 }
 
 export interface BcpBatchConfig {
@@ -242,7 +249,7 @@ export const generateBcpTelecreditoExcel = async (
     const r4 = ws.addRow([
       'CABECERA (Reg C):',
       headerTrama,
-      '', '', '', '', '', '', '', '', '',
+      '', '', '', '', '', '', '', '', '', '',
       `Len: ${headerTrama.length} chars`
     ]);
     r4.height = 22;
@@ -264,6 +271,7 @@ export const generateBcpTelecreditoExcel = async (
       'Monto a Transferir',
       'IDC',
       'Tipo Op',
+      'Comentarios de Rollover / Liquidación',
       'TRAMA_TXT_BCP_120_CHARS'
     ];
 
@@ -274,7 +282,7 @@ export const generateBcpTelecreditoExcel = async (
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: colNumber === 12 ? 'FF312E81' : (colNumber <= 2 ? 'FF0F172A' : 'FF1E293B') }
+        fgColor: { argb: colNumber === 13 ? 'FF312E81' : (colNumber === 12 ? 'FF1E1B4B' : (colNumber <= 2 ? 'FF0F172A' : 'FF1E293B')) }
       };
       cell.alignment = { vertical: 'middle', horizontal: colNumber === 9 ? 'right' : (colNumber === 1 || colNumber === 4 || colNumber === 7 || colNumber === 10 ? 'center' : 'left') };
       cell.border = {
@@ -325,6 +333,8 @@ export const generateBcpTelecreditoExcel = async (
         refCertPadded
       ].join('');
 
+      const comentarioText = it.comentarioRollover || 'Liquidación Regular de Rendimientos';
+
       const rowVals = [
         nOrden++,
         it.idContrato,
@@ -337,6 +347,7 @@ export const generateBcpTelecreditoExcel = async (
         it.montoTransferencia,
         valIdc,
         tipoOp,
+        comentarioText,
         trama120
       ];
 
@@ -358,9 +369,24 @@ export const generateBcpTelecreditoExcel = async (
           cell.font = { name: 'Consolas', size: 9.5, bold: true, color: { argb: 'FF059669' } };
           cell.alignment = { vertical: 'middle', horizontal: 'right' };
         } else if (colNumber === 12) {
+          const isRollover = it.tipoLiquidacion === 'ROLLOVER_TOTAL' || it.tipoLiquidacion === 'ROLLOVER_PARCIAL';
+          const isExtincion = it.tipoLiquidacion === 'EXTINCION_TOTAL';
+          cell.font = { 
+            name: 'Consolas', 
+            size: 9, 
+            bold: isRollover || isExtincion,
+            color: { argb: isRollover ? 'FF4338CA' : (isExtincion ? 'FFB45309' : 'FF475569') } 
+          };
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          if (isRollover) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } };
+          } else if (isExtincion) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+          }
+        } else if (colNumber === 13) {
           cell.font = { name: 'Consolas', size: 8.5, color: { argb: 'FF4338CA' } };
           cell.alignment = { vertical: 'middle', horizontal: 'left' };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
         } else {
           cell.font = { name: 'Consolas', size: 9, color: { argb: 'FF334155' } };
           cell.alignment = { vertical: 'middle', horizontal: colNumber === 4 || colNumber === 7 || colNumber === 10 ? 'center' : 'left' };
@@ -379,7 +405,7 @@ export const generateBcpTelecreditoExcel = async (
       `${totalAbonos} Abonos Programados`,
       '', '', '', '', '',
       montoTotal,
-      '', '',
+      '', '', '',
       `Suma Total: ${moneda === 'USD' ? '$' : 'S/'} ${montoTotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
     ];
 
@@ -411,7 +437,8 @@ export const generateBcpTelecreditoExcel = async (
     ws.getColumn(9).width = 18;
     ws.getColumn(10).width = 6;
     ws.getColumn(11).width = 10;
-    ws.getColumn(12).width = 125;
+    ws.getColumn(12).width = 65; // Comentarios de Rollover / Liquidación
+    ws.getColumn(13).width = 125; // Trama TXT
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

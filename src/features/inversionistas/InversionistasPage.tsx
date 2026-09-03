@@ -1173,10 +1173,18 @@ export const InversionistasPage: React.FC = () => {
         return;
       }
 
-      // Cargar datos bancarios actualizados de inversionistas
-      const { data: invList } = await supabase
-        .from('crm_inversionistas')
-        .select('*');
+      // Cargar datos bancarios actualizados de inversionistas y contratos para detección pericial de renovaciones (#0XX)
+      const [{ data: invList }, { data: todosContratos }] = await Promise.all([
+        supabase.from('crm_inversionistas').select('*'),
+        supabase.from('crm_contratos').select('*')
+      ]);
+
+      const contratosList = todosContratos || [];
+
+      const extractCorrelativoNumber = (idStr: string): number => {
+        const match = String(idStr || '').match(/^[A-Z0-9]+-(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+      };
 
       const invMapLocal: Record<string, any> = {};
       if (invList) {
@@ -1200,7 +1208,70 @@ export const InversionistasPage: React.FC = () => {
 
           const rNetoFinal = r.neto_total !== undefined ? r.neto_total : Math.round(((r.reparto_valor || 0) - (r.deducciones_total || 0)) * 100) / 100;
           const rRescatesNetos = Math.round(((r.devolucion_capital || 0) - (r.penalidad_rescate || 0)) * 100) / 100;
-          const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+
+          // Buscar datos del contrato actual en la base de datos
+          const contratoActual = contratosList.find((c: any) => c.id_contrato === r.id || c.id === r.id);
+          const numCorrelativo = extractCorrelativoNumber(r.id || contratoActual?.id_contrato || '');
+          const invId = contratoActual?.id_inversionista_1 || r.id_inversionista_1 || '';
+          const fondoIdActual = contratoActual?.id_fondo || (r.id ? r.id.split('-')[0] : (fData.fondo?.id || ''));
+
+          const capAnterior = Number(r.capital || r.capital_base || contratoActual?.monto_inversion || 0);
+
+          // Verificar si el contrato llega a vencimiento en o antes de la fecha de cierre fEnd
+          const fechaFinStr = contratoActual?.fecha_fin ? contratoActual.fecha_fin.split('T')[0] : '';
+          const fechaFinD = fechaFinStr ? new Date(fechaFinStr + 'T00:00:00') : null;
+          const fechaCorteD = new Date(fEnd + 'T00:00:00');
+          const isVencidoOAlCierre = Boolean(
+            (fechaFinD && fechaFinD <= fechaCorteD) || 
+            (r.devolucion_capital && r.devolucion_capital >= capAnterior && capAnterior > 0)
+          );
+
+          let tipoLiq: 'RENDIMIENTO_REGULAR' | 'ROLLOVER_TOTAL' | 'ROLLOVER_PARCIAL' | 'EXTINCION_TOTAL' = 'RENDIMIENTO_REGULAR';
+          let comentario = 'Liquidación Regular de Rendimientos del Período';
+          let capitalATransferir = rRescatesNetos;
+          let capNuevo = 0;
+          let difCap = 0;
+
+          if (isVencidoOAlCierre && numCorrelativo > 0) {
+            // Buscar si existe un contrato sucesor con el MISMO número correlativo (#0XX)
+            const contratoSucesor = contratosList.find((c: any) => {
+              if (c.id_contrato === r.id || c.id === r.id) return false;
+              const sameInv = (c.id_inversionista_1 && c.id_inversionista_1 === invId) || 
+                              (c.id_inversionista && c.id_inversionista === invId);
+              const sameFondo = c.id_fondo === fondoIdActual;
+              const sameNum = extractCorrelativoNumber(c.id_contrato) === numCorrelativo;
+              const isActive = ['emitido', 'activo', 'vigente'].includes(String(c.estado || '').toLowerCase());
+              const isLater = !contratoActual?.fecha_inicio || !c.fecha_inicio || 
+                              new Date(c.fecha_inicio) >= new Date(contratoActual.fecha_inicio);
+              return sameInv && sameFondo && sameNum && isActive && isLater;
+            });
+
+            if (contratoSucesor) {
+              capNuevo = Number(contratoSucesor.monto_inversion || contratoSucesor.capital || 0);
+              difCap = Math.max(0, Math.round((capAnterior - capNuevo) * 100) / 100);
+
+              if (capNuevo >= capAnterior) {
+                // Caso A: Rollover Total o Incremento de Capital -> No se transfiere capital
+                tipoLiq = 'ROLLOVER_TOTAL';
+                capitalATransferir = 0;
+                comentario = `🔄 Rollover Total #${String(numCorrelativo).padStart(3, '0')} (Cap. ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} mantenido en ${contratoSucesor.id_contrato}) — Solo Rendimientos`;
+              } else {
+                // Caso B: Rollover Parcial -> Se transfiere la diferencia de capital
+                tipoLiq = 'ROLLOVER_PARCIAL';
+                capitalATransferir = difCap;
+                comentario = `✂️ Rollover Parcial #${String(numCorrelativo).padStart(3, '0')} (Cap. anterior ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} ➔ nuevo ${monedaFondo} ${capNuevo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}). Devolución diferencial: ${monedaFondo} ${difCap.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
+              }
+            } else {
+              // Caso C: No hay renovación activa -> Extinción / Devolución Total de Capital
+              tipoLiq = 'EXTINCION_TOTAL';
+              capitalATransferir = rRescatesNetos > 0 ? rRescatesNetos : capAnterior;
+              comentario = `🚪 Extinción / Cierre Contrato #${String(numCorrelativo).padStart(3, '0')} (Sin renovación activa). Devolución Total Cap: ${monedaFondo} ${capitalATransferir.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
+            }
+          } else if (rRescatesNetos > 0) {
+            comentario = `Liquidación Regular + Rescate Parcial (${monedaFondo} ${rRescatesNetos.toLocaleString('es-PE', { minimumFractionDigits: 2 })})`;
+          }
+
+          const rTransferencia = Math.round((rNetoFinal + capitalATransferir) * 100) / 100;
 
           if (rTransferencia > 0) {
             // Buscar datos del inversionista
@@ -1230,7 +1301,13 @@ export const InversionistasPage: React.FC = () => {
               cci,
               montoTransferencia: rTransferencia,
               moneda: monedaFondo,
-              estadoCuenta
+              estadoCuenta,
+              tipoLiquidacion: tipoLiq,
+              comentarioRollover: comentario,
+              capitalAnterior: capAnterior,
+              capitalNuevo: capNuevo,
+              diferencialCapital: difCap,
+              interesNeto: rNetoFinal
             });
           }
         });
@@ -3812,7 +3889,7 @@ export const InversionistasPage: React.FC = () => {
                   <span className="text-[10px] text-[#64748b] font-mono">1 línea por certificado (120 chars)</span>
                 </div>
 
-                <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden shadow-xs max-h-64 overflow-y-auto">
+                <div className="border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden shadow-xs max-h-72 overflow-y-auto">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead className="bg-[#0f172a] text-white font-mono text-[10px] sticky top-0 z-10 uppercase">
                       <tr>
@@ -3821,6 +3898,7 @@ export const InversionistasPage: React.FC = () => {
                         <th className="py-2 px-3">Inversionista / Razón Social</th>
                         <th className="py-2 px-2 text-center">Doc</th>
                         <th className="py-2 px-3">Banco / Cuenta / CCI</th>
+                        <th className="py-2 px-3">Concepto / Observaciones</th>
                         <th className="py-2 px-3 text-right">Monto</th>
                         <th className="py-2 px-2.5 text-center">Canal</th>
                       </tr>
@@ -3830,7 +3908,7 @@ export const InversionistasPage: React.FC = () => {
                         <tr key={it.idContrato} className="hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]/50 transition-colors">
                           <td className="py-1.5 px-2.5 text-center text-[#64748b]">{idx + 1}</td>
                           <td className="py-1.5 px-3 font-bold text-[#0f172a] dark:text-[#f8fafc]">{it.idContrato}</td>
-                          <td className="py-1.5 px-3 font-sans font-medium text-[#334155] dark:text-[#cbd5e1] truncate max-w-56" title={it.inversionistaNombre}>
+                          <td className="py-1.5 px-3 font-sans font-medium text-[#334155] dark:text-[#cbd5e1] truncate max-w-44" title={it.inversionistaNombre}>
                             {it.inversionistaNombre}
                           </td>
                           <td className="py-1.5 px-2 text-center text-[#64748b]">
@@ -3843,6 +3921,25 @@ export const InversionistasPage: React.FC = () => {
                               <span className="text-[#0284c7] font-bold">CCI: {it.cci}</span>
                             ) : (
                               <span className="text-[#e11d48] font-bold italic">⚠️ Sin Cuenta Registrada</span>
+                            )}
+                          </td>
+                          <td className="py-1.5 px-3 max-w-56 truncate">
+                            {it.tipoLiquidacion === 'ROLLOVER_TOTAL' ? (
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800" title={it.comentarioRollover}>
+                                🔄 Rollover Total (Solo Rend.)
+                              </span>
+                            ) : it.tipoLiquidacion === 'ROLLOVER_PARCIAL' ? (
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.5 rounded border border-violet-200 dark:border-violet-800" title={it.comentarioRollover}>
+                                ✂️ Rollover Parcial (Dif. Cap)
+                              </span>
+                            ) : it.tipoLiquidacion === 'EXTINCION_TOTAL' ? (
+                              <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800" title={it.comentarioRollover}>
+                                🚪 Extinción (Cap. + Rend.)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 font-sans" title={it.comentarioRollover}>
+                                {it.comentarioRollover || 'Rendimiento Regular'}
+                              </span>
                             )}
                           </td>
                           <td className="py-1.5 px-3 text-right font-black text-[#059669]">
