@@ -69,6 +69,22 @@ interface BirthdayRecord {
   statusEnvio: 'idle' | 'sending' | 'sent' | 'error' | 'no_phone';
 }
 
+interface ExpirationRecord {
+  idContrato: string;
+  inversionistaNombre: string;
+  documentoIdentidad: string;
+  fondoNombre: string;
+  moneda: 'USD' | 'PEN';
+  montoInversion: number;
+  tasaPactada: number;
+  fechaInicio: string;
+  fechaFin: string;
+  diasRestantes: number;
+  asesorNombre: string;
+  asesorTelefono: string;
+  statusEnvio: 'idle' | 'sending' | 'sent' | 'error';
+}
+
 const getEvolutionApiUrl = (): string => {
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return `${window.location.origin}/wa-api`;
@@ -79,19 +95,25 @@ const getEvolutionApiUrl = (): string => {
 const EVOLUTION_API_KEY = 'InandesSecretWA2026!';
 const INSTANCE_NAME = 'inandes_oficial';
 
+// Directivos Fijos para Alertas Tripartitas de Vencimiento
+const PHONE_RICARDO_GALLO = '51992778175'; // Juan Ricardo Gallo Pizarro (GG)
+const PHONE_YANNETH_PARRA = '51979781204'; // Gladys Yanneth Parra Forero (GC)
+
 export const ChatWhatsAppPage: React.FC = () => {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'depositos' | 'cumpleanos' | 'participes' | 'conexion'>('depositos');
+  const [activeTab, setActiveTab] = useState<'depositos' | 'cumpleanos' | 'vencimientos' | 'participes' | 'conexion'>('depositos');
   
   // Data States
   const [inversionistas, setInversionistas] = useState<InversionistaData[]>([]);
   const [transferRecords, setTransferRecords] = useState<TransferRecord[]>([]);
   const [birthdayRecords, setBirthdayRecords] = useState<BirthdayRecord[]>([]);
+  const [expirationRecords, setExpirationRecords] = useState<ExpirationRecord[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   
   // Selection States
   const [selectedTransfers, setSelectedTransfers] = useState<Set<string>>(new Set());
   const [selectedBirthdays, setSelectedBirthdays] = useState<Set<string>>(new Set());
+  const [selectedExpirations, setSelectedExpirations] = useState<Set<string>>(new Set());
   const [filterSearch, setFilterSearch] = useState('');
   const [filterFondo, setFilterFondo] = useState('TODOS');
   
@@ -309,6 +331,83 @@ export const ChatWhatsAppPage: React.FC = () => {
       bdays.filter(b => b.esHoy && b.telefono && b.statusEnvio !== 'sent').forEach(b => initBdays.add(b.codigo));
       setSelectedBirthdays(initBdays);
 
+      // 7. Procesar Alertas de Vencimiento de Contratos (<= 30 días)
+      // Cargar asesores
+      const { data: asesoresData } = await supabase.from('crm_asesores').select('*');
+      const asMap: Record<string, any> = {};
+      if (asesoresData) {
+        asesoresData.forEach(a => {
+          if (a.id_asesor) asMap[String(a.id_asesor).trim()] = a;
+          if (a.nombre_completo) asMap[String(a.nombre_completo).trim().toLowerCase()] = a;
+        });
+      }
+
+      // Consultar alertas de vencimiento enviadas hoy
+      const { data: expLogs } = await supabase
+        .from('auditoria_eventos')
+        .select('entidad_id, estado_nuevo, timestamp')
+        .eq('accion', 'WHATSAPP_ALERTA_VENCIMIENTO')
+        .gte('timestamp', `${todayStr}T00:00:00Z`);
+
+      const alertedTodayContracts = new Set<string>();
+      if (expLogs) {
+        expLogs.forEach(log => {
+          if (log.estado_nuevo === 'ENVIADO') {
+            alertedTodayContracts.add(String(log.entidad_id));
+          }
+        });
+      }
+
+      const expirations: ExpirationRecord[] = [];
+      const contractsList: any[] = contratosActivos || [];
+      const todayDateObj = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+      contractsList.forEach((c: any) => {
+        const st = String(c.estado || '').toLowerCase();
+        if (['cerrado', 'cerrado_por_rescate', 'anulado', 'borrador'].includes(st)) return;
+        if (!c.fecha_fin) return;
+
+        const finParts = String(c.fecha_fin).split('T')[0].split('-');
+        if (finParts.length !== 3) return;
+
+        const finDate = new Date(parseInt(finParts[0], 10), parseInt(finParts[1], 10) - 1, parseInt(finParts[2], 10));
+        const diffDays = Math.ceil((finDate.getTime() - todayDateObj.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 0 && diffDays <= 30) {
+          const invObj = invMap.get(String(c.id_inversionista_1 || '').trim());
+          const invNom = invObj?.nombre_completo || c.id_inversionista_1 || 'Inversionista';
+          const asKey = String(c.id_asesor || '').trim();
+          const asObj = asMap[asKey] || asMap[asKey.toLowerCase()] || {};
+          const asNom = asObj.nombre_completo || c.id_asesor || 'Asesor Principal';
+          const asTel = asObj.telefono ? String(asObj.telefono).replace(/\D/g, '') : '';
+          const isAlerted = alertedTodayContracts.has(String(c.id_contrato));
+          const fondoNombre = fondosMap.get(c.id_fondo) || c.id_fondo || 'Fondo';
+
+          expirations.push({
+            idContrato: c.id_contrato,
+            inversionistaNombre: invNom,
+            documentoIdentidad: c.id_inversionista_1 || '',
+            fondoNombre: fondoNombre,
+            moneda: c.moneda || 'USD',
+            montoInversion: Number(c.monto_inversion || 0),
+            tasaPactada: Number(c.tasa_pactada || 0),
+            fechaInicio: String(c.fecha_inicio || '').split('T')[0],
+            fechaFin: String(c.fecha_fin).split('T')[0],
+            diasRestantes: diffDays,
+            asesorNombre: asNom,
+            asesorTelefono: asTel,
+            statusEnvio: isAlerted ? 'sent' : 'idle'
+          });
+        }
+      });
+
+      expirations.sort((a, b) => a.diasRestantes - b.diasRestantes);
+      setExpirationRecords(expirations);
+
+      const initExp = new Set<string>();
+      expirations.filter(e => e.statusEnvio !== 'sent').forEach(e => initExp.add(e.idContrato));
+      setSelectedExpirations(initExp);
+
     } catch (err) {
       console.error('Error cargando datos de WhatsApp Ops:', err);
     } finally {
@@ -474,6 +573,95 @@ export const ChatWhatsAppPage: React.FC = () => {
     setIsDispatching(false);
   };
 
+  // Despacho Masivo de Alertas de Vencimiento (<= 30 días) a Asesor, Ricardo Gallo y Yanneth Parra
+  const handleDispatchExpirations = async () => {
+    const targets = expirationRecords.filter(e => selectedExpirations.has(e.idContrato));
+    if (targets.length === 0) {
+      alert('No hay contratos seleccionados para alertar.');
+      return;
+    }
+
+    if (!confirm(`¿Confirmas el envío de alertas de vencimiento para ${targets.length} contratos a Asesores, GG (Ricardo Gallo Pizarro) y GC (Yanneth Parra)?`)) {
+      return;
+    }
+
+    setIsDispatching(true);
+    setDispatchProgress({ current: 0, total: targets.length });
+    setDispatchLogs([]);
+
+    for (let i = 0; i < targets.length; i++) {
+      const exp = targets[i];
+      setDispatchProgress({ current: i + 1, total: targets.length });
+
+      setExpirationRecords(prev => prev.map(item => item.idContrato === exp.idContrato ? { ...item, statusEnvio: 'sending' } : item));
+
+      const msg = (
+        `⚠️ *ALERTA DE VENCIMIENTO DE CONTRATO (InAndes CRM)* 🏛️\n\n` +
+        `Se informa que el siguiente contrato se encuentra próximo a vencer:\n\n` +
+        `📋 *Contrato:* \`${exp.idContrato}\`\n` +
+        `👤 *Inversionista:* ${exp.inversionistaNombre} (Doc: ${exp.documentoIdentidad})\n` +
+        `💰 *Monto de Inversión:* *${exp.moneda} ${exp.montoInversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}*\n` +
+        `🏦 *Fondo:* ${exp.fondoNombre} | *Tasa:* ${exp.tasaPactada}%\n` +
+        `📅 *Fecha de Inicio:* ${exp.fechaInicio}\n` +
+        `🏁 *Fecha de Vencimiento:* *${exp.fechaFin}*\n` +
+        `⏳ *Tiempo Restante:* *${exp.diasRestantes} días*\n` +
+        `👔 *Asesor Responsable:* ${exp.asesorNombre}\n\n` +
+        `📌 *Acción requerida:* Coordinar gestión comercial de renovación o provisión de rescate.`
+      );
+
+      // Enviar a GG y GC
+      const sentGG = await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, msg);
+      const sentGC = await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, msg);
+      let sentAs = true;
+      if (exp.asesorTelefono) {
+        sentAs = await sendSingleWhatsAppText(exp.asesorTelefono, msg);
+      }
+
+      const overallSuccess = sentGG || sentGC || sentAs;
+
+      setExpirationRecords(prev => prev.map(item => item.idContrato === exp.idContrato ? { ...item, statusEnvio: overallSuccess ? 'sent' : 'error' } : item));
+
+      // Guardar en auditoría Supabase
+      try {
+        await supabase.from('auditoria_eventos').insert({
+          usuario_id: 'MANUAL_UI_OPS',
+          entidad_id: exp.idContrato,
+          accion: 'WHATSAPP_ALERTA_VENCIMIENTO',
+          estado_anterior: 'PENDIENTE',
+          estado_nuevo: overallSuccess ? 'ENVIADO' : 'ERROR_ENVIO',
+          detalles_adicionales: JSON.stringify({
+            contrato: exp.idContrato,
+            inversionista: exp.inversionistaNombre,
+            diasRestantes: exp.diasRestantes,
+            fechaFin: exp.fechaFin
+          })
+        });
+      } catch (e) {
+        console.warn('Error recording auditoria:', e);
+      }
+
+      setDispatchLogs(prev => [
+        {
+          time: new Date().toLocaleTimeString(),
+          text: `${overallSuccess ? '⚠️ Alerta enviada para' : '❌ Error alerta para'} Contrato ${exp.idContrato} (${exp.inversionistaNombre})`,
+          success: overallSuccess
+        },
+        ...prev
+      ]);
+
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    setIsDispatching(false);
+  };
+
+  const toggleSelectExpiration = (id: string) => {
+    const next = new Set(selectedExpirations);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedExpirations(next);
+  };
+
   // Filtros
   const filteredTransfers = useMemo(() => {
     return transferRecords.filter(t => {
@@ -573,13 +761,13 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
 
         {/* METRIC CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mt-6">
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
             <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-500">Contratos con Liquidación</div>
+              <div className="text-xs font-medium text-slate-500">Contratos Liquidación</div>
               <div className="text-lg font-bold text-slate-900 mt-0.5">{transferRecords.length} partícipes</div>
             </div>
           </div>
@@ -601,6 +789,16 @@ export const ChatWhatsAppPage: React.FC = () => {
             <div>
               <div className="text-xs font-medium text-slate-500">Cumpleaños Hoy</div>
               <div className="text-lg font-bold text-slate-900 mt-0.5">{cumpleanosHoyCount} partícipes</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-amber-100 text-amber-700">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-500">Vencimientos (30d)</div>
+              <div className="text-lg font-bold text-slate-900 mt-0.5">{expirationRecords.length} contratos</div>
             </div>
           </div>
 
@@ -648,6 +846,25 @@ export const ChatWhatsAppPage: React.FC = () => {
               {cumpleanosHoyCount} Hoy!
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('vencimientos')}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'vencimientos'
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Alertas de Vencimiento de Contratos
+          <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === 'vencimientos'
+              ? 'bg-amber-700 text-amber-100'
+              : 'bg-amber-100 text-amber-800 border border-amber-300'
+          }`}>
+            {expirationRecords.length}
+          </span>
         </button>
 
         <button
@@ -965,7 +1182,139 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 3: PADRÓN DE PARTÍCIPES & 3FA */}
+      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS (<= 30 DÍAS) */}
+      {activeTab === 'vencimientos' && (
+        <div className="space-y-4">
+          {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+              <strong>Despacho Automático Diario: ACTIVO</strong>
+              <span className="text-amber-700 dark:text-amber-300">
+                • El Bot evalúa diariamente contratos con $0 \le t \le 30$ días y despacha alertas a las 09:00 AM a Asesores, GG (Ricardo Gallo Pizarro) y GC (Gladys Yanneth Parra).
+              </span>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 font-mono font-bold text-amber-800 dark:text-amber-200 text-[11px]">
+              Cron VPS: 09:00 AM (UTC-5)
+            </span>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                Contratos Próximos a Vencer (Ventana de 30 Días)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Alertas anticipadas para accionar renovaciones comerciales y coordinar liquidez.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDispatchExpirations}
+                disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open'}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
+              >
+                <Send className="w-4 h-4" />
+                {isDispatching ? 'Despachando Alertas...' : `Envío Manual Contingencia (${selectedExpirations.size})`}
+              </button>
+            </div>
+          </div>
+
+          {/* LISTA DE CONTRATOS POR VENCER */}
+          {expirationRecords.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-2 shadow-sm">
+              <AlertCircle className="w-10 h-10 text-emerald-500 mx-auto" />
+              <h3 className="font-bold text-slate-800 text-base">No hay contratos por vencer en los próximos 30 días</h3>
+              <p className="text-xs text-slate-400">
+                La cartera se encuentra al día. Las alertas se generarán automáticamente conforme los contratos entren en la ventana de vencimiento.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {expirationRecords.map(exp => {
+                const isSelected = selectedExpirations.has(exp.idContrato);
+                const isUrgent = exp.diasRestantes <= 7;
+
+                return (
+                  <div 
+                    key={exp.idContrato}
+                    className={`border rounded-2xl p-5 transition-all relative overflow-hidden shadow-sm ${
+                      isUrgent 
+                        ? 'bg-rose-50/50 border-rose-300 ring-1 ring-rose-200' 
+                        : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={exp.statusEnvio === 'sent'}
+                        onChange={() => toggleSelectExpiration(exp.idContrato)}
+                        className="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                      />
+                      <div className="flex-1 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            {exp.idContrato}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${
+                            isUrgent ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}>
+                            ⏳ Vence en {exp.diasRestantes} días
+                          </span>
+                        </div>
+
+                        <div>
+                          <h3 className="font-bold text-slate-900 text-sm leading-tight">{exp.inversionistaNombre}</h3>
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">Doc: {exp.documentoIdentidad} • Fondo: {exp.fondoNombre} ({exp.tasaPactada}%)</div>
+                        </div>
+
+                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-500">Monto Inversión:</span>
+                            <span className="font-black text-slate-900">
+                              {exp.moneda} {exp.montoInversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-400">Fecha Vencimiento:</span>
+                            <span className="font-mono font-bold text-slate-700">{exp.fechaFin}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px]">
+                            <span className="text-slate-400">Asesor a Cargo:</span>
+                            <span className="text-slate-700 font-medium">{exp.asesorNombre}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-1 flex items-center justify-between">
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            Tripartito: Asesor + GG + GC
+                          </span>
+                          {exp.statusEnvio === 'sent' ? (
+                            <span className="text-xs text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              <CheckCheck className="w-3.5 h-3.5 text-emerald-600" /> Alerta Enviada
+                            </span>
+                          ) : exp.statusEnvio === 'sending' ? (
+                            <span className="text-xs text-amber-700 font-semibold animate-pulse">
+                              Despachando...
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">Pendiente de Despacho</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CONTENIDO PESTAÑA 4: PADRÓN DE PARTÍCIPES & 3FA */}
       {activeTab === 'participes' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="flex justify-between items-center">
