@@ -119,12 +119,18 @@ export const DeduccionesPage: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Un período de corte (ej. 31 de agosto) sigue ABIERTO para liquidaciones y rescates durante el mes de cierre y liquidación.
+    // Ventana de corte abierto: incluye el período inmediato en proceso de liquidación (hasta 45 días atrás de hoy).
+    const openCutoffThreshold = new Date(today);
+    openCutoffThreshold.setDate(openCutoffThreshold.getDate() - 45);
+    openCutoffThreshold.setHours(0, 0, 0, 0);
+
     for (let y = startYear; y < startYear + limitYears; y++) {
       for (const m of mesesCorte) {
         const d = new Date(y, m, 0); // día 0 del siguiente mes es el último del anterior
         d.setHours(0, 0, 0, 0);
-        // REGLA: Solo períodos ABIERTOS (fechas de corte estrictamente iguales o posteriores a hoy)
-        if (d.getTime() >= today.getTime()) {
+        // REGLA: Fechas de corte del período ABIERTO actual (ej. 31/08/2026) y períodos futuros
+        if (d.getTime() >= openCutoffThreshold.getTime()) {
           dates.push(d);
         }
       }
