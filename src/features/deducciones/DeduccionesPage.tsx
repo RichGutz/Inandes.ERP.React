@@ -65,8 +65,8 @@ export const DeduccionesPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'cronograma' | 'deduccion' | 'rescate'>('cronograma');
 
   // Filtros temporales por Año y Período de Cierre
-  const [selYearFilter, setSelYearFilter] = useState<number>(2026);
-  const [selCorteFilter, setSelCorteFilter] = useState<string>('2026-02-28');
+  const [selYearFilter, setSelYearFilter] = useState<number>(new Date().getFullYear());
+  const [selCorteFilter, setSelCorteFilter] = useState<string>('TODOS');
 
   // Fechas de corte disponibles (fín de mes alineado)
   const [validDates, setValidDates] = useState<Date[]>([]);
@@ -113,13 +113,20 @@ export const DeduccionesPage: React.FC = () => {
   const [resError, setResError] = useState<string | null>(null);
 
   // Helpers de calendario
-  const getValidEndOfMonthDates = (frecuenciaPago: number, startYear: number = 2026, limitYears: number = 5): Date[] => {
+  const getValidEndOfMonthDates = (frecuenciaPago: number, startYear: number = new Date().getFullYear(), limitYears: number = 5): Date[] => {
     const dates: Date[] = [];
     const mesesCorte = frecuenciaPago === 3 ? [3, 6, 9, 12] : [2, 4, 6, 8, 10, 12];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     for (let y = startYear; y < startYear + limitYears; y++) {
       for (const m of mesesCorte) {
         const d = new Date(y, m, 0); // día 0 del siguiente mes es el último del anterior
-        dates.push(d);
+        d.setHours(0, 0, 0, 0);
+        // REGLA: Solo períodos ABIERTOS (fechas de corte estrictamente iguales o posteriores a hoy)
+        if (d.getTime() >= today.getTime()) {
+          dates.push(d);
+        }
       }
     }
     return dates;
