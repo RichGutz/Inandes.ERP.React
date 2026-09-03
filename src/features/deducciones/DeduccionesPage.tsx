@@ -235,9 +235,9 @@ export const DeduccionesPage: React.FC = () => {
       setActiveCapital(realCap);
 
       // 2. Reglas del fondo
-      const { rules, tasaMinima } = await getFondoRules(c.id_fondo);
+      const { rules } = await getFondoRules(c.id_fondo);
       setFondoRules(rules);
-      setResTasaWaiver(tasaMinima);
+      setResTasaWaiver(0);
 
       // 3. Fechas de corte validas (CON01 es el único fondo trimestral; los demás fondos son bimestrales)
       const fPago = isFondoTrimestral(c.id_fondo, c.frecuencia_cupones_meses) ? 3 : 2;
@@ -279,7 +279,7 @@ export const DeduccionesPage: React.FC = () => {
       const capVigente = activeCapital > 0 ? activeCapital : (selectedContrato?.monto_inversion || 0);
       const baseMonto = (resEsRescateTotal && selectedContrato) 
         ? Math.round((capVigente / resArmadasCount) * 100) / 100 
-        : 1000;
+        : 0;
 
       // Si es rescate total, buscar automáticamente la fecha de corte que coincida con el fin del contrato
       let defaultDateIndex = 0;
@@ -1216,9 +1216,10 @@ export const DeduccionesPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* FILA COMPACTA: ARMADAS + TASA GLOBAL + RESCATE TOTAL */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase">Cantidad de Armadas para Rescate</label>
+                    <label className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase">Cantidad de Armadas</label>
                     <input
                       type="number"
                       min={1}
@@ -1233,7 +1234,7 @@ export const DeduccionesPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase">Tasa de Interés de Rescate (Waiver) %</label>
+                    <label className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase">Tasa Global Waiver %</label>
                     <input
                       type="number"
                       min={0}
@@ -1246,22 +1247,21 @@ export const DeduccionesPage: React.FC = () => {
                       required
                     />
                   </div>
-                </div>
 
-                {/* Checkbox Rescate Total */}
-                <div className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl p-3.5 flex flex-col gap-2">
-                  <label className="flex items-center gap-2.5 text-xs font-black text-rose-700 dark:text-rose-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 cursor-pointer"
-                      checked={resEsRescateTotal}
-                      onChange={(e) => setResEsRescateTotal(e.target.checked)}
-                    />
-                    <span>☑ Rescate Total (Extinción Completa del Certificado a USD 0.00)</span>
-                  </label>
-                  <p className="text-[10px] text-rose-600/90 dark:text-rose-400/80 leading-relaxed font-semibold pl-6">
-                    Al marcar esta opción, el motor V40 liquidará el 100% de los rendimientos netos acumulados sin recapitalizar, obligando al saldo final del certificado a USD 0.00 para extinguirlo definitivamente en la base de datos.
-                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-455 dark:text-slate-500 uppercase">Modalidad</label>
+                    <label className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-lg p-2 flex items-center gap-2.5 h-[37px] cursor-pointer hover:bg-rose-100/50 transition-colors">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 cursor-pointer"
+                        checked={resEsRescateTotal}
+                        onChange={(e) => setResEsRescateTotal(e.target.checked)}
+                      />
+                      <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 select-none">
+                        Rescate Total (Extinción)
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
                 <hr className="border-slate-100 dark:border-slate-850" />
