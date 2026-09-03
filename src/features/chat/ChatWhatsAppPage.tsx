@@ -18,8 +18,32 @@ import {
   TrendingUp,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Pencil,
+  FileText,
+  Check
 } from 'lucide-react';
+
+const DEFAULT_BIRTHDAY_TEMPLATE = `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂
+
+Estimad@ *{primerNombre}*,
+
+En este día tan especial, todo el equipo directivo y profesional de *InAndes Grupo Financiero* le hace llegar un cálido y afectuoso saludo de cumpleaños. 🌟
+
+Agradecemos profundamente su confianza continua como partícipe de nuestra institución y le deseamos un año lleno de salud, bienestar, prosperidad y grandes satisfacciones personales y familiares. 🥂
+
+¡Que disfrute un excelente día en compañía de sus seres queridos!
+
+Atentamente,
+*InAndes Grupo Financiero*`;
+
+const formatBirthdayMessage = (template: string, b: BirthdayRecord): string => {
+  return template
+    .replace(/{primerNombre}/g, b.primerNombre || b.nombre.split(' ')[0] || 'Inversionista')
+    .replace(/{nombre}/g, b.nombre)
+    .replace(/{edad}/g, b.edad ? String(b.edad) : '')
+    .replace(/{documento}/g, b.documento || '');
+};
 
 interface InversionistaData {
   codigo_inversionista: string;
@@ -123,6 +147,17 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [expSendGG, setExpSendGG] = useState<boolean>(true); // Ricardo Gallo
   const [expSendGC, setExpSendGC] = useState<boolean>(true); // Yanneth Parra
   const [expSendAsesor, setExpSendAsesor] = useState<boolean>(true); // Asesor a cargo
+
+  // Estados de Plantilla de Saludos de Cumpleaños
+  const [birthdayTemplate, setBirthdayTemplate] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('inandes_wa_birthday_template') || DEFAULT_BIRTHDAY_TEMPLATE;
+    }
+    return DEFAULT_BIRTHDAY_TEMPLATE;
+  });
+  const [showBirthdayTemplateModal, setShowBirthdayTemplateModal] = useState<boolean>(false);
+  const [tempBirthdayTemplate, setTempBirthdayTemplate] = useState<string>(birthdayTemplate);
+  const [templateSaveSuccess, setTemplateSaveSuccess] = useState<boolean>(false);
 
   // Estados de Acordeones para Vencimientos (30d, 30-60d, 60-90d)
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
@@ -575,14 +610,7 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       setBirthdayRecords(prev => prev.map(item => item.codigo === b.codigo ? { ...item, statusEnvio: 'sending' } : item));
 
-      const msg = (
-        `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂\n\n` +
-        `Estimad@ *${b.primerNombre}*,\n\n` +
-        `En este día tan especial, todo el equipo directivo y profesional de *InAndes Grupo Financiero* le hace llegar un cálido y afectuoso saludo de cumpleaños. 🌟\n\n` +
-        `Agradecemos profundamente su confianza continua como partícipe de nuestra institución y le deseamos un año lleno de salud, bienestar, prosperidad y grandes satisfacciones personales y familiares. 🥂\n\n` +
-        `¡Que disfrute un excelente día en compañía de sus seres queridos!\n\n` +
-        `Atentamente,\n*InAndes Grupo Financiero*`
-      );
+      const msg = formatBirthdayMessage(birthdayTemplate, b);
 
       const success = await sendSingleWhatsAppText(b.telefono, msg);
 
@@ -1150,11 +1178,23 @@ export const ChatWhatsAppPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  setTempBirthdayTemplate(birthdayTemplate);
+                  setTemplateSaveSuccess(false);
+                  setShowBirthdayTemplateModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-pink-200 dark:border-pink-850 bg-pink-50/60 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 hover:bg-pink-100/80 transition-all cursor-pointer shadow-xs"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Configurar / Editar Plantilla</span>
+              </button>
+
               <button
                 onClick={handleDispatchBirthdays}
                 disabled={isDispatching || selectedBirthdays.size === 0 || connectionState !== 'open'}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95 cursor-pointer"
               >
                 <Cake className="w-4 h-4" />
                 {isDispatching ? 'Enviando Saludos...' : `Envío Manual Contingencia (${selectedBirthdays.size})`}
@@ -1767,6 +1807,147 @@ export const ChatWhatsAppPage: React.FC = () => {
               >
                 Verificar Conexión
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE CONFIGURACIÓN / EDICIÓN DE PLANTILLA DE CUMPLEAÑOS */}
+      {showBirthdayTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 max-w-4xl w-full shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowBirthdayTemplateModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
+                <Cake className="w-6 h-6" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Plantilla de Saludo Institucional por WhatsApp
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Personalice el mensaje que el Bot despachará automáticamente a las 08:30 AM y en contingencias manuales.
+              </p>
+            </div>
+
+            {/* GUÍA DE VARIABLES */}
+            <div className="bg-pink-50/70 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-900/40 rounded-2xl p-3.5 space-y-2">
+              <span className="text-[11px] font-bold text-pink-900 dark:text-pink-300 uppercase tracking-tight block">
+                Variables dinámicas disponibles (haz clic para insertar):
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { tag: '{primerNombre}', desc: 'Primer Nombre (ej. Juan)' },
+                  { tag: '{nombre}', desc: 'Nombre Completo' },
+                  { tag: '{edad}', desc: 'Años cumplidos' },
+                  { tag: '{documento}', desc: 'DNI / RUC' },
+                ].map(v => (
+                  <button
+                    key={v.tag}
+                    type="button"
+                    onClick={() => setTempBirthdayTemplate(prev => prev + ' ' + v.tag)}
+                    className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                  >
+                    <span>{v.tag}</span>
+                    <span className="text-[10px] text-slate-400 font-sans">({v.desc})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CUERPO DEL EDITOR Y PREVIEW */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Columna Izquierda: Textarea */}
+              <div className="space-y-2 flex flex-col">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-slate-400" />
+                  Editor de Plantilla
+                </label>
+                <textarea
+                  value={tempBirthdayTemplate}
+                  onChange={(e) => setTempBirthdayTemplate(e.target.value)}
+                  rows={12}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-pink-500 leading-relaxed shadow-inner resize-none flex-1"
+                  placeholder="Redacta el saludo aquí..."
+                />
+              </div>
+
+              {/* Columna Derecha: Mockup WhatsApp */}
+              <div className="space-y-2 flex flex-col">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1.5">
+                  <Smartphone className="w-4 h-4 text-emerald-600" />
+                  Previsualización en WhatsApp
+                </label>
+                <div className="bg-[#e5ddd5] dark:bg-[#0b141a] rounded-2xl p-4 border border-slate-300 dark:border-slate-800 shadow-inner flex flex-col justify-end flex-1 min-h-[280px]">
+                  <div className="bg-white dark:bg-[#202c33] p-3.5 rounded-2xl rounded-tl-none shadow-sm max-w-full space-y-2 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-100 text-xs whitespace-pre-wrap leading-relaxed">
+                    {formatBirthdayMessage(tempBirthdayTemplate, {
+                      codigo: 'DNI00000001',
+                      nombre: 'Juan Ricardo Gallo González',
+                      primerNombre: 'Juan Ricardo',
+                      documento: '02816271',
+                      tipoDoc: 'DNI',
+                      fechaNacimiento: '1981-09-04',
+                      edad: 45,
+                      dia: 4,
+                      mes: 9,
+                      esHoy: true,
+                      telefono: '51992778175',
+                      statusEnvio: 'idle'
+                    })}
+                    <div className="text-[10px] text-slate-400 text-right font-sans pt-1">
+                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ✓✓
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {templateSaveSuccess && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2 animate-fadeIn">
+                <Check className="w-4 h-4" />
+                <span>Plantilla guardada y actualizada exitosamente en el sistema.</span>
+              </div>
+            )}
+
+            {/* BOTONES DE ACCIÓN */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setTempBirthdayTemplate(DEFAULT_BIRTHDAY_TEMPLATE)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+              >
+                Restablecer por Defecto
+              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBirthdayTemplateModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBirthdayTemplate(tempBirthdayTemplate);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('inandes_wa_birthday_template', tempBirthdayTemplate);
+                    }
+                    setTemplateSaveSuccess(true);
+                    setTimeout(() => setShowBirthdayTemplateModal(false), 800);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white shadow transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>💾 Guardar Plantilla</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
