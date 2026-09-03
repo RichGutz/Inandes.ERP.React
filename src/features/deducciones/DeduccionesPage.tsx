@@ -620,13 +620,19 @@ export const DeduccionesPage: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
-                        <span className="flex items-center gap-1">
-                          <User size={12} className="text-slate-400" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                        <div className="flex items-center gap-2">
+                          <User size={12} className="text-slate-400 shrink-0" />
                           <strong className="text-slate-800 dark:text-slate-200">{inversionistaNombre}</strong>
-                        </span>
-                        <span>•</span>
-                        <span>Inversionista / DNI: <strong className="font-mono text-slate-800 dark:text-slate-200">{c.id_inversionista_1}</strong></span>
+                          <span>•</span>
+                          <span className="font-mono text-slate-500">{c.id_inversionista_1}</span>
+                        </div>
+                        {c.fecha_fin && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60 shrink-0">
+                            <Calendar size={11} />
+                            <span>Vence: <strong>{c.fecha_fin.split('T')[0].split('-').reverse().join('/')}</strong></span>
+                          </span>
+                        )}
                       </div>
 
                     </button>
