@@ -229,3 +229,69 @@ export const updateContratoFirmado = async (idContrato: string, url: string): Pr
 
   if (error) throw new Error(`Error al guardar archivo firmado: ${error.message}`);
 };
+
+export interface InvestorCorrelativeOption {
+  correlativo: number;
+  correlativoPadded: string;
+  id_contrato_previo: string;
+  estado_previo: string;
+  disponible: boolean;
+}
+
+/**
+ * Obtiene los correlativos históricos pertenecientes a un inversionista en un fondo
+ * y evalúa si actualmente se encuentran libres o en conflicto activo.
+ */
+export const getHistoricalCorrelativesForInvestor = async (
+  idInversionista: string,
+  idFondo: string
+): Promise<InvestorCorrelativeOption[]> => {
+  if (!idInversionista || !idFondo) return [];
+
+  const [investorContractsRes, activeContractsRes] = await Promise.all([
+    supabase
+      .from('crm_contratos')
+      .select('id_contrato, estado, fecha_inicio, fecha_fin')
+      .eq('id_fondo', idFondo)
+      .or(`id_inversionista_1.eq.${idInversionista},id_inversionista_2.eq.${idInversionista},id_inversionista_3.eq.${idInversionista},id_inversionista_4.eq.${idInversionista}`),
+    supabase
+      .from('crm_contratos')
+      .select('id_contrato')
+      .eq('id_fondo', idFondo)
+      .in('estado', ['emitido', 'activo', 'vigente', 'pendiente_aprobacion', 'propuesto'])
+  ]);
+
+  const activeCorrelatives = new Set<number>();
+  if (activeContractsRes.data) {
+    activeContractsRes.data.forEach(c => {
+      const match = c.id_contrato?.match(/-(\d+)/);
+      if (match) activeCorrelatives.add(parseInt(match[1], 10));
+    });
+  }
+
+  const seen = new Set<number>();
+  const results: InvestorCorrelativeOption[] = [];
+
+  if (investorContractsRes.data) {
+    investorContractsRes.data.forEach(c => {
+      const match = c.id_contrato?.match(/-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!seen.has(num)) {
+          seen.add(num);
+          results.push({
+            correlativo: num,
+            correlativoPadded: String(num).padStart(3, '0'),
+            id_contrato_previo: c.id_contrato,
+            estado_previo: c.estado,
+            disponible: !activeCorrelatives.has(num)
+          });
+        }
+      }
+    });
+  }
+
+  results.sort((a, b) => a.correlativo - b.correlativo);
+  return results;
+};
+

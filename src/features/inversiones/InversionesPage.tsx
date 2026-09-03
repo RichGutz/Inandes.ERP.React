@@ -1,9 +1,10 @@
 // src/features/inversiones/InversionesPage.tsx
 import React, { useEffect, useState } from 'react';
 import { 
-  getContratos, upsertContrato, deleteContrato, approveContrato, updateContratoFirmado
+  getContratos, upsertContrato, deleteContrato, approveContrato, updateContratoFirmado,
+  getHistoricalCorrelativesForInvestor, getNextCorrelativeForFondo
 } from '../../services/contratosService';
-import type { Contrato, Certificado, CertificadoEvento } from '../../services/contratosService';
+import type { Contrato, Certificado, CertificadoEvento, InvestorCorrelativeOption } from '../../services/contratosService';
 import { getFondos } from '../../services/fondosService';
 import type { Fondo } from '../../services/fondosService';
 import { supabase } from '../../services/supabaseClient';
@@ -11,7 +12,7 @@ import { generateContractHtml, generateCertificateHtml } from '../../utils/contr
 import { calculateContractCycleDates } from '../../utils/contractCycleEngine';
 import * as XLSX from 'xlsx';
 import { 
-  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check, Search, X, Users, Pencil
+  Loader2, AlertCircle, RefreshCw, Edit2, FileSpreadsheet, Plus, FileText, CheckCircle, Eye, Trash2, ArrowUpRight, Upload, Link2, Check, Search, X, Users, Pencil, History, Sparkles, Hash
 } from 'lucide-react';
 
 export const InversionesPage: React.FC = () => {
@@ -71,6 +72,14 @@ export const InversionesPage: React.FC = () => {
   const [approveSuccess, setApproveSuccess] = useState<boolean>(false);
   const [approveSubmitting, setApproveSubmitting] = useState<boolean>(false);
   const [approveTab, setApproveTab] = useState<'contrato' | 'certificado'>('contrato');
+
+  // Estados de Asignación Inteligente de Correlativo (Renovaciones)
+  const [approveCorrelativeMode, setApproveCorrelativeMode] = useState<'auto' | 'historical' | 'manual'>('auto');
+  const [investorHistCorrelatives, setInvestorHistCorrelatives] = useState<InvestorCorrelativeOption[]>([]);
+  const [selectedHistCorrelative, setSelectedHistCorrelative] = useState<number | null>(null);
+  const [customCorrelativeInput, setCustomCorrelativeInput] = useState<number | ''>('');
+  const [autoCorrelativeNumber, setAutoCorrelativeNumber] = useState<number>(1);
+  const [loadingCorrelatives, setLoadingCorrelatives] = useState<boolean>(false);
 
   // ==========================================
   // --- ESTADOS DEL DETALLE ACTIVO (SUBIDA) --
@@ -466,6 +475,28 @@ export const InversionesPage: React.FC = () => {
     setApproveError(null);
     setApproveSuccess(false);
     setApproveTab('contrato');
+    setApproveCorrelativeMode('auto');
+    setCustomCorrelativeInput('');
+    setSelectedHistCorrelative(null);
+
+    setLoadingCorrelatives(true);
+    try {
+      const [hist, nextAuto] = await Promise.all([
+        getHistoricalCorrelativesForInvestor(c.id_inversionista_1, c.id_fondo),
+        getNextCorrelativeForFondo(c.id_fondo)
+      ]);
+      setInvestorHistCorrelatives(hist);
+      setAutoCorrelativeNumber(nextAuto);
+      const firstAvailable = hist.find(h => h.disponible);
+      if (firstAvailable) {
+        setSelectedHistCorrelative(firstAvailable.correlativo);
+      }
+    } catch (err) {
+      console.error('Error cargando correlativos:', err);
+    } finally {
+      setLoadingCorrelatives(false);
+    }
+
     setView('approve');
   };
 
@@ -571,13 +602,13 @@ export const InversionesPage: React.FC = () => {
     setApproveError(null);
 
     try {
-      // 1. Obtener correlativos de contratos VIGENTES para reciclar el menor disponible ("muerto libre")
+      // 1. Obtener correlativos de contratos VIGENTES para validar disponibilidad
       const fCode = selectedContract.id_fondo;
       const { data: activeContracts } = await supabase
         .from('crm_contratos')
         .select('id_contrato')
         .eq('id_fondo', fCode)
-        .in('estado', ['emitido', 'pendiente_aprobacion', 'propuesto'])
+        .in('estado', ['emitido', 'pendiente_aprobacion', 'propuesto', 'activo', 'vigente'])
         .like('id_contrato', `${fCode}-%`);
 
       const activeCorrelatives = new Set<number>();
@@ -593,13 +624,27 @@ export const InversionesPage: React.FC = () => {
       }
 
       // Encontrar el menor número entero disponible (1, 2, 3...)
-      let nextCorrelative = 1;
-      while (activeCorrelatives.has(nextCorrelative)) {
-        nextCorrelative++;
+      let nextAutoCorrelative = 1;
+      while (activeCorrelatives.has(nextAutoCorrelative)) {
+        nextAutoCorrelative++;
+      }
+
+      // Determinar el correlativo definitivo según el modo elegido por el usuario
+      let finalCorrelative = nextAutoCorrelative;
+      if (approveCorrelativeMode === 'historical' && selectedHistCorrelative) {
+        if (activeCorrelatives.has(selectedHistCorrelative)) {
+          throw new Error(`El correlativo histórico #${String(selectedHistCorrelative).padStart(3, '0')} ya está en uso activo en este fondo. Seleccione otro o use el automático.`);
+        }
+        finalCorrelative = selectedHistCorrelative;
+      } else if (approveCorrelativeMode === 'manual' && typeof customCorrelativeInput === 'number' && customCorrelativeInput > 0) {
+        if (activeCorrelatives.has(customCorrelativeInput)) {
+          throw new Error(`El correlativo manual #${String(customCorrelativeInput).padStart(3, '0')} ya está en uso activo en este fondo. Ingrese uno disponible.`);
+        }
+        finalCorrelative = customCorrelativeInput;
       }
 
       const formattedDate = approveDate.replaceAll('-', '');
-      const newContractId = `${fCode}-${String(nextCorrelative).padStart(3, '0')}.${formattedDate}`;
+      const newContractId = `${fCode}-${String(finalCorrelative).padStart(3, '0')}.${formattedDate}`;
       const newCertificateId = `${newContractId}.${formattedDate}`;
 
       // 2. Armar payload de contrato definitivo
@@ -2121,6 +2166,139 @@ export const InversionesPage: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-850 dark:text-slate-150 uppercase tracking-tight">✅ Aprobación de Depósito (Voucher)</h3>
+
+            {/* SELECTOR DE CORRELATIVO INTELIGENTE (RENOVACIONES & HISTÓRICOS) */}
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-1.5">
+                  <Hash size={13} className="text-indigo-600" />
+                  Asignación de Correlativo / Número de Contrato
+                </span>
+                <span className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                  ID Resultante: {selectedContract.id_fondo}-{String(
+                    approveCorrelativeMode === 'historical' && selectedHistCorrelative
+                      ? selectedHistCorrelative
+                      : approveCorrelativeMode === 'manual' && customCorrelativeInput
+                      ? customCorrelativeInput
+                      : autoCorrelativeNumber
+                  ).padStart(3, '0')}.{approveDate.replaceAll('-', '')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Opción 1: Automático Menor Libre */}
+                <label className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-1 ${
+                  approveCorrelativeMode === 'auto'
+                    ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-400'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="correlativeMode"
+                        checked={approveCorrelativeMode === 'auto'}
+                        onChange={() => setApproveCorrelativeMode('auto')}
+                        className="w-4 h-4 text-indigo-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                        <Sparkles size={12} className="text-amber-500" /> Automático
+                      </span>
+                    </div>
+                    <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
+                      #{String(autoCorrelativeNumber).padStart(3, '0')}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 pl-6">
+                    Menor número libre disponible en la serie del fondo.
+                  </span>
+                </label>
+
+                {/* Opción 2: Reutilizar Histórico del Inversionista (Renovaciones) */}
+                <label className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-1 ${
+                  approveCorrelativeMode === 'historical'
+                    ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-400'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="correlativeMode"
+                        disabled={investorHistCorrelatives.length === 0}
+                        checked={approveCorrelativeMode === 'historical'}
+                        onChange={() => setApproveCorrelativeMode('historical')}
+                        className="w-4 h-4 text-indigo-600 cursor-pointer disabled:opacity-30"
+                      />
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                        <History size={12} className="text-indigo-600" /> Renovación Histórica
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {loadingCorrelatives ? '...' : `(${investorHistCorrelatives.length})`}
+                    </span>
+                  </div>
+
+                  {investorHistCorrelatives.length > 0 ? (
+                    <select
+                      className="mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                      disabled={approveCorrelativeMode !== 'historical'}
+                      value={selectedHistCorrelative || ''}
+                      onChange={(e) => {
+                        setSelectedHistCorrelative(parseInt(e.target.value, 10) || null);
+                        setApproveCorrelativeMode('historical');
+                      }}
+                    >
+                      {investorHistCorrelatives.map(h => (
+                        <option key={h.correlativo} value={h.correlativo} disabled={!h.disponible}>
+                          #{h.correlativoPadded} ({h.id_contrato_previo}) - {h.disponible ? '✓ DISPONIBLE' : '⚠️ EN USO'}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic pl-6">
+                      Sin contratos previos en este fondo.
+                    </span>
+                  )}
+                </label>
+
+                {/* Opción 3: Manual / Personalizado */}
+                <label className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col gap-1 ${
+                  approveCorrelativeMode === 'manual'
+                    ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 ring-1 ring-indigo-400'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="correlativeMode"
+                        checked={approveCorrelativeMode === 'manual'}
+                        onChange={() => setApproveCorrelativeMode('manual')}
+                        className="w-4 h-4 text-indigo-600 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1">
+                        <Pencil size={12} className="text-sky-600" /> Personalizado
+                      </span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="number"
+                    min={1}
+                    max={999}
+                    placeholder="Ej. 17"
+                    disabled={approveCorrelativeMode !== 'manual'}
+                    className="mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-1 text-xs font-mono font-bold text-center focus:outline-none"
+                    value={customCorrelativeInput === 0 ? '' : customCorrelativeInput}
+                    onChange={(e) => {
+                      setCustomCorrelativeInput(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '');
+                      setApproveCorrelativeMode('manual');
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
               <div className="flex flex-col gap-1.5">
