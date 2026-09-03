@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const InversionesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'borradores' | 'porAprobar' | 'vigentes' | 'cerrados'>('borradores');
+  const [activeTab, setActiveTab] = useState<'borradores' | 'porAprobar' | 'vigentes' | 'porVencer' | 'cerrados'>('borradores');
   const [view, setView] = useState<'list' | 'create' | 'approve' | 'active' | 'certificate'>('list');
 
   // Datos del listado
@@ -957,6 +957,36 @@ export const InversionesPage: React.FC = () => {
   const activeList = filterList(getContractsByStates(['aprobado', 'vigente', 'emitido']));
   const closedList = filterList(getContractsByStates(['cerrado_fin_contrato', 'cerrado_por_rescate']));
 
+  // P3: Lista de contratos Por Vencer (vigentes/emitidos con fecha_fin en horizonte comercial de liquidación)
+  const todayDateOnly = new Date();
+  const todayMidnight = new Date(todayDateOnly.getFullYear(), todayDateOnly.getMonth(), todayDateOnly.getDate());
+
+  const expiringList = filterList(
+    getContractsByStates(['aprobado', 'vigente', 'emitido']).filter(c => {
+      if (!c.fecha_fin) return false;
+      const parts = String(c.fecha_fin).split('T')[0].split('-');
+      if (parts.length !== 3) return false;
+      const fFin = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const diff = Math.ceil((fFin.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+      // Muestra contratos que vencen en los próximos 120 días o vencidos recientemente (últimos 30 días)
+      return diff >= -30 && diff <= 120;
+    })
+  ).sort((a, b) => {
+    const da = new Date(String(a.fecha_fin).split('T')[0]).getTime();
+    const db = new Date(String(b.fecha_fin).split('T')[0]).getTime();
+    return da - db;
+  });
+
+  const expiringTotalUSD = expiringList.filter(c => c.moneda === 'USD').reduce((acc, c) => acc + (Number(c.monto_inversion) || 0), 0);
+  const expiringTotalPEN = expiringList.filter(c => c.moneda === 'PEN').reduce((acc, c) => acc + (Number(c.monto_inversion) || 0), 0);
+  const expiringCriticalCount = expiringList.filter(c => {
+    if (!c.fecha_fin) return false;
+    const parts = String(c.fecha_fin).split('T')[0].split('-');
+    const fFin = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const diff = Math.ceil((fFin.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+    return diff <= 30;
+  }).length;
+
   // Agrupar activos por fondo para el expander
   const activeGroupedByFund: Record<string, Contrato[]> = {};
   activeList.forEach(c => {
@@ -1041,6 +1071,7 @@ export const InversionesPage: React.FC = () => {
                 { id: 'borradores', label: `Borradores (${draftsList.length})` },
                 { id: 'porAprobar', label: `Por Aprobar (${pendingList.length})` },
                 { id: 'vigentes', label: `Vigentes (${activeList.length})` },
+                { id: 'porVencer', label: `⏳ Por Vencer (${expiringList.length})` },
                 { id: 'cerrados', label: `Cerrados (${closedList.length})` },
               ].map(tab => (
                 <button
@@ -1288,6 +1319,186 @@ export const InversionesPage: React.FC = () => {
                         </div>
                       </div>
                     ))
+                  )}
+                </div>
+              )}
+
+              {/* TAB: POR VENCER (Estilo Cronograma de Liquidaciones) */}
+              {activeTab === 'porVencer' && (
+                <div className="flex flex-col gap-5 w-full animate-fadeIn">
+                  {/* BARRA DE MÉTRICAS KPI DEL HORIZONTE DE VENCIMIENTO */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">Contratos por Vencer</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl font-black text-[#0f172a] dark:text-[#f8fafc]">{expiringList.length}</span>
+                        <span className="text-[10px] text-[#64748b]">en ventana 120d</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">Capital Total USD</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-lg font-black text-[#0284c7] dark:text-[#38bdf8]">
+                          ${expiringTotalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3.5 flex flex-col justify-between shadow-xs">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">Capital Total PEN</span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-lg font-black text-[#059669] dark:text-[#34d399]">
+                          S/ {expiringTotalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={`border rounded-xl p-3.5 flex flex-col justify-between shadow-xs ${
+                      expiringCriticalCount > 0 
+                        ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60' 
+                        : 'bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155]'
+                    }`}>
+                      <span className={`text-[10px] font-black uppercase tracking-wider ${
+                        expiringCriticalCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-[#64748b] dark:text-[#94a3b8]'
+                      }`}>
+                        Urgentes (≤ 30 días)
+                      </span>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className={`text-xl font-black ${
+                          expiringCriticalCount > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-[#0f172a] dark:text-[#f8fafc]'
+                        }`}>
+                          {expiringCriticalCount}
+                        </span>
+                        <span className="text-[10px] text-slate-500">requieren gestión comercial</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TABLA DE CONTRATOS POR VENCER */}
+                  {expiringList.length === 0 ? (
+                    <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1e293b]">
+                      No hay contratos por vencer en la ventana temporal activa.
+                    </div>
+                  ) : (
+                    <div className="glass-card overflow-hidden">
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+                          <thead>
+                            <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">ID Contrato</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Titular Principal / DNI</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Fondo & Tasa</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Monto Inversión</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Fecha Inicio</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Fecha Vencimiento</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Horizonte</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Asesor</th>
+                              <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {expiringList.map(c => {
+                              let diffDays = 0;
+                              if (c.fecha_fin) {
+                                const parts = String(c.fecha_fin).split('T')[0].split('-');
+                                if (parts.length === 3) {
+                                  const fFin = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                  diffDays = Math.ceil((fFin.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
+                                }
+                              }
+
+                              return (
+                                <tr key={c.id_contrato} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
+                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">
+                                    {c.id_contrato}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-[#0f172a] dark:text-[#f8fafc] leading-tight">
+                                      {c.titular?.nombre_completo || 'Sin Nombre'}
+                                    </div>
+                                    <div className="text-[10px] font-mono text-[#64748b] dark:text-[#94a3b8] mt-0.5">
+                                      {c.id_inversionista_1}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="font-medium text-[#475569] dark:text-[#cbd5e1] leading-tight">
+                                      {c.crm_fondos?.nombre_fondo}
+                                    </div>
+                                    <div className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-450 mt-0.5">
+                                      Tasa: {c.tasa_pactada}% ({c.plazo_meses}M)
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                      {c.moneda}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] tabular-nums">
+                                    {c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">
+                                    {c.fecha_inicio}
+                                  </td>
+                                  <td className="px-4 py-3 text-center font-mono text-xs font-bold text-[#0f172a] dark:text-[#f8fafc]">
+                                    {c.fecha_fin}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    {diffDays < 0 ? (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-900 text-rose-100 border border-rose-700 uppercase">
+                                        Venció hace {Math.abs(diffDays)}d
+                                      </span>
+                                    ) : diffDays === 0 ? (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white animate-pulse uppercase">
+                                        ¡Vence Hoy!
+                                      </span>
+                                    ) : diffDays <= 15 ? (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
+                                        ⏳ En {diffDays} días
+                                      </span>
+                                    ) : diffDays <= 30 ? (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                                        ⏳ En {diffDays} días
+                                      </span>
+                                    ) : diffDays <= 60 ? (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+                                        En {diffDays} días
+                                      </span>
+                                    ) : (
+                                      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                                        En {diffDays} días
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-xs text-[#475569] dark:text-[#cbd5e1]">
+                                    {c.asesor?.nombre_completo || 'Sin Asesor'}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        className="w-8 h-8 rounded-lg bg-[#f0f9ff] hover:bg-[#0284c7] text-[#0284c7] hover:text-white border border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#38bdf8] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                        title="Visualizar Contrato"
+                                        onClick={() => handleOpenActiveView(c)}
+                                      >
+                                        <Eye size={14} />
+                                      </button>
+                                      <button
+                                        className="w-8 h-8 rounded-lg bg-[#ecfdf5] hover:bg-[#059669] text-[#059669] hover:text-white border border-[#a7f3d0] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#34d399] flex items-center justify-center transition-all shadow-xs cursor-pointer"
+                                        title="Editar % de Reparto"
+                                        onClick={() => handleOpenEditReparto(c)}
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
