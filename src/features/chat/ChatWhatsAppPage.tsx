@@ -241,6 +241,23 @@ export const ChatWhatsAppPage: React.FC = () => {
       const today = new Date();
       const currentMonth = today.getMonth() + 1;
       const currentDay = today.getDate();
+      const todayStr = today.toISOString().split('T')[0];
+
+      // Consultar auditoría de saludos de cumpleaños enviados hoy
+      const { data: bdayLogs } = await supabase
+        .from('auditoria_eventos')
+        .select('entidad_id, estado_nuevo, timestamp')
+        .eq('accion', 'WHATSAPP_SALUDO_CUMPLEANOS')
+        .gte('timestamp', `${todayStr}T00:00:00Z`);
+
+      const sentTodayDocs = new Set<string>();
+      if (bdayLogs) {
+        bdayLogs.forEach(log => {
+          if (log.estado_nuevo === 'ENVIADO') {
+            sentTodayDocs.add(String(log.entidad_id));
+          }
+        });
+      }
 
       const bdays: BirthdayRecord[] = [];
       invs.forEach(i => {
@@ -259,6 +276,9 @@ export const ChatWhatsAppPage: React.FC = () => {
             const cleanPhone = i.telefono ? i.telefono.replace(/\D/g, '') : '';
             const primerNombre = i.nombre_1 ? i.nombre_1.trim() : (i.nombre_completo.split(' ')[0] || i.nombre_completo);
             const tipoDoc = i.tipo_doc || (i.codigo_inversionista?.startsWith('CEX') ? 'CE' : 'DNI');
+            const docKey = i.documento_identidad || i.codigo_inversionista;
+            const isSent = sentTodayDocs.has(String(docKey)) || sentTodayDocs.has(String(i.codigo_inversionista));
+
             bdays.push({
               codigo: i.codigo_inversionista || i.documento_identidad,
               nombre: i.nombre_completo,
@@ -271,7 +291,7 @@ export const ChatWhatsAppPage: React.FC = () => {
               mes: birthMonth,
               esHoy: isToday,
               telefono: cleanPhone,
-              statusEnvio: cleanPhone ? 'idle' : 'no_phone'
+              statusEnvio: !cleanPhone ? 'no_phone' : isSent ? 'sent' : 'idle'
             });
           }
         }
@@ -286,7 +306,7 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       setBirthdayRecords(bdays);
       const initBdays = new Set<string>();
-      bdays.filter(b => b.esHoy && b.telefono).forEach(b => initBdays.add(b.codigo));
+      bdays.filter(b => b.esHoy && b.telefono && b.statusEnvio !== 'sent').forEach(b => initBdays.add(b.codigo));
       setSelectedBirthdays(initBdays);
 
     } catch (err) {
@@ -840,6 +860,20 @@ export const ChatWhatsAppPage: React.FC = () => {
       {/* CONTENIDO PESTAÑA 2: CUMPLEAÑOS */}
       {activeTab === 'cumpleanos' && (
         <div className="space-y-4">
+          {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
+          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-emerald-900 dark:text-emerald-200">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <strong>Despacho Automático Diario: ACTIVO</strong>
+              <span className="text-emerald-700 dark:text-emerald-300">
+                • El Bot del servidor despacha los saludos institucionales a las 08:30 AM sin requerir acción manual.
+              </span>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 font-mono font-bold text-emerald-800 dark:text-emerald-200 text-[11px]">
+              Cron VPS: 08:30 AM (UTC-5)
+            </span>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -858,7 +892,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-pink-600 hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
               >
                 <Cake className="w-4 h-4" />
-                {isDispatching ? 'Enviando Saludos...' : `Enviar ${selectedBirthdays.size} Saludos WhatsApp`}
+                {isDispatching ? 'Enviando Saludos...' : `Envío Manual Contingencia (${selectedBirthdays.size})`}
               </button>
             </div>
           </div>
@@ -886,7 +920,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      disabled={!b.telefono}
+                      disabled={!b.telefono || b.statusEnvio === 'sent'}
                       onChange={() => toggleSelectBirthday(b.codigo)}
                       className="mt-1 rounded border-slate-300 text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer disabled:opacity-30"
                     />
@@ -911,15 +945,15 @@ export const ChatWhatsAppPage: React.FC = () => {
 
                       <div className="mt-3 flex items-center justify-between">
                         {b.statusEnvio === 'sent' ? (
-                          <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                            <CheckCheck className="w-4 h-4" /> Saludo Enviado
+                          <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            <CheckCheck className="w-4 h-4 text-emerald-600" /> Saludo Enviado Automáticamente
                           </span>
                         ) : b.statusEnvio === 'sending' ? (
                           <span className="text-xs text-amber-700 font-semibold animate-pulse">
                             Enviando...
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-400">Pendiente</span>
+                          <span className="text-xs text-slate-400">Pendiente de Despacho</span>
                         )}
                       </div>
                     </div>
