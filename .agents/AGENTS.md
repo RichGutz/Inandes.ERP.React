@@ -84,6 +84,14 @@ El componente Selector de Letras del Abecedario en AprobacionesTab.tsx es INTANG
      d) Regresar INMEDIATAMENTE a `main` (`git checkout main`) para mantener el trabajo 100% en `main`.
 3. Safe Points por Nombre de Commit: Los puntos de control ("safe points") se identifican exclusivamente mediante el nombre especifico del commit o branches/tags asignados directamente por el usuario.
 
+## Regla 10 - METODO CANONICO BENOIT BLANC (Protocolo de Cambios y Debugging)
+Para toda investigacion, correccion de bugs o implementacion de cambios solicitados por el usuario, el agente DEBE seguir el ciclo canónico de 6 pasos de Benoit Blanc (documentado en `Obsidian/38_Metodo_Benoit_Blanc_LEG.CLON.DIFF.QC.md`):
+1. **BEN (Listen First & Parafraseo):** Parafrasear el requerimiento y la evidencia del usuario (F12/capturas) antes de actuar.
+2. **LEG (Legacy & Lineas Exactas):** Inspeccionar el codigo con `view_file` con numeros de linea exactos. Prohibido adivinar o asumir.
+3. **CLON (BRANCH TAG & Respaldo Inmutable):** Ejecución 1 x 1 (cambio por cambio). Antes de cada cambio: crear BRANCH TAG (`git branch <TAG>`, `git push origin refs/heads/<TAG>`, `git tag -a <TAG> -m "..."`, `git push origin <TAG>`) y regresar INMEDIATAMENTE a `main` (`git checkout main`). Toda la cirugía (LEG, DIFF, QC) ocurre exclusivamente en `main`.
+4. **DIFF (Cirugia Minima):** Modificar unicamente las lineas estrictamente necesarias. CERO refactors cosmeticos o cambios no solicitados.
+5. **QC (Control de Calidad en Terminal):** Probar todo cambio en terminal (`npm run build`, linters, scripts) y demostrar el `exit code 0`.
+6. **NOTA (Memoria Forense):** Asentar dictamen en Obsidian y bitacoras para asegurar continuidad inter-agente.
 
 ## Regla 11 - PROTOCOLO OBLIGATORIO DE DESPLIEGUE Y REPOSITORIO (EXCLUSIVO CONTABO)
 1. Lectura Obligatoria de Procedimientos: El agente DEBE consultar y seguir estrictamente lo estipulado en `C:\Users\rguti\Inandes.ERP.React\Obsidian\Inandes.Factoring.React\06. Procedimientos de Despliegue y Base de Datos.md`.

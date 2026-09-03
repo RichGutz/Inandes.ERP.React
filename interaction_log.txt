@@ -435,6 +435,12 @@
 1. Actualizado '13.Whats.App.BOT.md' con la totalidad de detalles tecnicos, diagramas de arquitectura End-to-End, tablas de rutas (local y VPS), variables de entorno, configuracion de Traefik Reverse Proxy y codigo fuente integro de 'bot_service.py'.
 2. Registrada la solucion forense a problemas de Mixed Content, Error 401 Supabase, normalizacion de telefonos, auto-linking de WhatsApp Web y enlace al Ledger de Certificados.
 
+[2026-09-02 16:15:00-05:00] INVESTIGACION DE CERTIFICADO Y ACTUALIZACION DE PLAZO CONTRACTUAL (DONNY GUILLEN LARA - NSGPEN03-035.20260701):
+1. Investigado en Supabase Cloud el certificado 'NSGPEN03-035.20260701.20260701' (S/ 142,669.89 PEN), identificando contrato padre vigente, contrato antecesor 'NSGPEN03-035.20250701' y trazabilidad de capitalizaciones de intereses.
+2. Modificado el contrato vigente 'NSGPEN03-035.20260701' en 'crm_contratos' ajustando el plazo de 24 a 12 meses (plazo_meses: '12', fecha_fin: '2027-06-30', tasa_pactada: 8.5, id_fondo_plazo: 'NSGPEN03-12').
+3. Confirmada la consistencia contable con cero impacto adverso en libros ledger (crm_certificados_eventos) debido a que agosto 2026 aun no ha sido cerrado.
+
+
 
 
 

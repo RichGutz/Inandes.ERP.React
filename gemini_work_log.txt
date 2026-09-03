@@ -465,10 +465,17 @@
 1. Incrementada la altura del logo Geeksoft en MasterTemplate.tsx a `h-[66px]`.
 2. Compilación validada `npm run build` (0 errores en 3.00s).
 
-[2026-09-01 12:12:00-05:00] TAREA: Documentación Técnica Exhaustiva del WhatsApp Bot en Obsidian (13.Whats.App.BOT.md).
-[2026-09-01 12:12:00-05:00] ESTADO: Completado con éxito.
+[2026-09-01 12:12:00-05:00] TAREA: Documentacion Tecnica Exhaustiva del WhatsApp Bot en Obsidian (13.Whats.App.BOT.md).
+[2026-09-01 12:12:00-05:00] ESTADO: Completado con exito.
 1. Documentados planos de arquitectura en Contabo (Traefik, Evolution API, inandes_wa_bot, Supabase Cloud).
-2. Detalladas todas las rutas locales y del servidor VPS con sus variables de entorno y código Python íntegro.
+2. Detalladas todas las rutas locales y del servidor VPS con sus variables de entorno y codigo Python integro.
+
+[2026-09-02 16:15:00-05:00] TAREA: Investigacion de certificado NSGPEN03-035.20260701.20260701 y ajuste de plazo de contrato a 12 meses en Supabase.
+[2026-09-02 16:15:00-05:00] ESTADO: Completado con exito.
+1. Consultado el padron completo de certificados, contratos, eventos ledger e inversionistas en Supabase Cloud ('egvcinsbyropumybatdf').
+2. Actualizada la duracion del contrato vigente 'NSGPEN03-035.20260701' en 'crm_contratos' de 24 a 12 meses (plazo_meses: '12', fecha_fin: '2027-06-30', tasa_pactada: 8.5, id_fondo_plazo: 'NSGPEN03-12').
+3. Verificada la persistencia en base de datos con cero discrepancias contables.
+
 
 
 
