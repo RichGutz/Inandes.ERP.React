@@ -21,8 +21,56 @@ import {
   ChevronUp,
   Pencil,
   FileText,
-  Check
+  Check,
+  Mail,
+  Clock,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
+
+export interface BloqueCorteConfig {
+  canales: {
+    whatsapp: boolean;
+    email: boolean;
+  };
+  destinatarios: {
+    ricardo: boolean;
+    yanneth: boolean;
+    asesor: boolean;
+    participe: boolean;
+  };
+  frecuencia: 'diaria' | 'semanal' | 'quincenal';
+}
+
+export interface AlertasCortesConfig {
+  bloque_1: BloqueCorteConfig;
+  bloque_2: BloqueCorteConfig;
+  bloque_3: BloqueCorteConfig;
+  bloque_otros: BloqueCorteConfig;
+}
+
+const DEFAULT_CORTES_CONFIG: AlertasCortesConfig = {
+  bloque_1: {
+    canales: { whatsapp: true, email: true },
+    destinatarios: { ricardo: true, yanneth: true, asesor: true, participe: false },
+    frecuencia: 'diaria'
+  },
+  bloque_2: {
+    canales: { whatsapp: true, email: false },
+    destinatarios: { ricardo: true, yanneth: true, asesor: true, participe: false },
+    frecuencia: 'semanal'
+  },
+  bloque_3: {
+    canales: { whatsapp: true, email: false },
+    destinatarios: { ricardo: false, yanneth: false, asesor: true, participe: false },
+    frecuencia: 'quincenal'
+  },
+  bloque_otros: {
+    canales: { whatsapp: true, email: false },
+    destinatarios: { ricardo: false, yanneth: false, asesor: true, participe: false },
+    frecuencia: 'quincenal'
+  }
+};
 
 const DEFAULT_BIRTHDAY_TEMPLATE = `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂
 
@@ -108,6 +156,7 @@ interface ExpirationRecord {
   diasRestantes: number;
   asesorNombre: string;
   asesorTelefono: string;
+  inversionistaTelefono?: string;
   statusEnvio: 'idle' | 'sending' | 'sent' | 'error';
 }
 
@@ -143,10 +192,56 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterFondo, setFilterFondo] = useState('TODOS');
 
-  // Estados de Destinatarios de Alertas de Vencimiento (3 boxes)
-  const [expSendGG, setExpSendGG] = useState<boolean>(true); // Ricardo Gallo
-  const [expSendGC, setExpSendGC] = useState<boolean>(true); // Yanneth Parra
-  const [expSendAsesor, setExpSendAsesor] = useState<boolean>(true); // Asesor a cargo
+  // Estados de Configuración de Alertas por Cortes Contables (Persistido en Supabase crm_configuraciones)
+  const [alertasConfig, setAlertasConfig] = useState<AlertasCortesConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('inandes_alertas_cortes_config');
+        if (local) return JSON.parse(local);
+      } catch {}
+    }
+    return DEFAULT_CORTES_CONFIG;
+  });
+  const [savingConfigKey, setSavingConfigKey] = useState<string | null>(null);
+  const [configSuccessMsg, setConfigSuccessMsg] = useState<string | null>(null);
+
+  // Guardar configuración en crm_configuraciones (Supabase) y localStorage
+  const saveCortesConfig = async (newConfig: AlertasCortesConfig, blockKey?: string) => {
+    setAlertasConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inandes_alertas_cortes_config', JSON.stringify(newConfig));
+    }
+    if (blockKey) setSavingConfigKey(blockKey);
+    try {
+      const { error } = await supabase.from('crm_configuraciones').upsert({
+        clave: 'alertas_vencimientos_cortes',
+        valor: newConfig,
+        updated_at: new Date().toISOString(),
+        updated_by: 'admin'
+      });
+      if (!error) {
+        setConfigSuccessMsg(`Configuración del ${blockKey || 'sistema'} guardada exitosamente en Supabase.`);
+        setTimeout(() => setConfigSuccessMsg(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error guardando crm_configuraciones:', err);
+    } finally {
+      setSavingConfigKey(null);
+    }
+  };
+
+  const updateBlockConfig = (
+    blockKey: 'bloque_1' | 'bloque_2' | 'bloque_3' | 'bloque_otros',
+    updater: (prev: BloqueCorteConfig) => BloqueCorteConfig
+  ) => {
+    const current = alertasConfig[blockKey] || DEFAULT_CORTES_CONFIG[blockKey] || DEFAULT_CORTES_CONFIG.bloque_otros;
+    const updated = updater(current);
+    const nextConfig = {
+      ...alertasConfig,
+      [blockKey]: updated
+    };
+    saveCortesConfig(nextConfig, blockKey);
+  };
 
   // Estados de Plantilla de Saludos de Cumpleaños
   const [birthdayTemplate, setBirthdayTemplate] = useState<string>(() => {
@@ -159,11 +254,12 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [tempBirthdayTemplate, setTempBirthdayTemplate] = useState<string>(birthdayTemplate);
   const [templateSaveSuccess, setTemplateSaveSuccess] = useState<boolean>(false);
 
-  // Estados de Acordeones para Vencimientos (30d, 30-60d, 60-90d)
+  // Estados de Acordeones para Cortes Contables
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
-    'range_30': true,
-    'range_60': true,
-    'range_90': true
+    'corte_bloque_1': true,
+    'corte_bloque_2': true,
+    'corte_bloque_3': true,
+    'corte_bloque_otros': false
   });
 
   const toggleAccordion = (key: string) => {
@@ -438,32 +534,32 @@ export const ChatWhatsAppPage: React.FC = () => {
         const finDate = new Date(parseInt(finParts[0], 10), parseInt(finParts[1], 10) - 1, parseInt(finParts[2], 10));
         const diffDays = Math.ceil((finDate.getTime() - todayDateObj.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (diffDays >= -30 && diffDays <= 90) {
-          const invObj = invMap.get(String(c.id_inversionista_1 || '').trim());
-          const invNom = invObj?.nombre_completo || c.id_inversionista_1 || 'Inversionista';
-          const asKey = String(c.id_asesor || '').trim();
-          const asObj = asMap[asKey] || asMap[asKey.toLowerCase()] || {};
-          const asNom = asObj.nombre_completo || c.id_asesor || 'Asesor Principal';
-          const asTel = asObj.telefono ? String(asObj.telefono).replace(/\D/g, '') : '';
-          const isAlerted = alertedTodayContracts.has(String(c.id_contrato));
-          const fondoNombre = fondosMap.get(c.id_fondo) || c.id_fondo || 'Fondo';
+        const invObj = invMap.get(String(c.id_inversionista_1 || '').trim());
+        const invNom = invObj?.nombre_completo || c.id_inversionista_1 || 'Inversionista';
+        const invTel = invObj?.telefono ? String(invObj.telefono).replace(/\D/g, '') : '';
+        const asKey = String(c.id_asesor || '').trim();
+        const asObj = asMap[asKey] || asMap[asKey.toLowerCase()] || {};
+        const asNom = asObj.nombre_completo || c.id_asesor || 'Asesor Principal';
+        const asTel = asObj.telefono ? String(asObj.telefono).replace(/\D/g, '') : '';
+        const isAlerted = alertedTodayContracts.has(String(c.id_contrato));
+        const fondoNombre = fondosMap.get(c.id_fondo) || c.id_fondo || 'Fondo';
 
-          expirations.push({
-            idContrato: c.id_contrato,
-            inversionistaNombre: invNom,
-            documentoIdentidad: c.id_inversionista_1 || '',
-            fondoNombre: fondoNombre,
-            moneda: c.moneda || 'USD',
-            montoInversion: Number(c.monto_inversion || 0),
-            tasaPactada: Number(c.tasa_pactada || 0),
-            fechaInicio: String(c.fecha_inicio || '').split('T')[0],
-            fechaFin: String(c.fecha_fin).split('T')[0],
-            diasRestantes: diffDays,
-            asesorNombre: asNom,
-            asesorTelefono: asTel,
-            statusEnvio: isAlerted ? 'sent' : 'idle'
-          });
-        }
+        expirations.push({
+          idContrato: c.id_contrato,
+          inversionistaNombre: invNom,
+          documentoIdentidad: c.id_inversionista_1 || '',
+          fondoNombre: fondoNombre,
+          moneda: c.moneda || 'USD',
+          montoInversion: Number(c.monto_inversion || 0),
+          tasaPactada: Number(c.tasa_pactada || 0),
+          fechaInicio: String(c.fecha_inicio || '').split('T')[0],
+          fechaFin: String(c.fecha_fin).split('T')[0],
+          diasRestantes: diffDays,
+          asesorNombre: asNom,
+          asesorTelefono: asTel,
+          inversionistaTelefono: invTel,
+          statusEnvio: isAlerted ? 'sent' : 'idle'
+        });
       });
 
       expirations.sort((a, b) => a.diasRestantes - b.diasRestantes);
@@ -472,6 +568,25 @@ export const ChatWhatsAppPage: React.FC = () => {
       const initExp = new Set<string>();
       expirations.filter(e => e.statusEnvio !== 'sent').forEach(e => initExp.add(e.idContrato));
       setSelectedExpirations(initExp);
+
+      // 8. Cargar Configuración Persistida de Alertas por Cortes Contables desde Supabase
+      try {
+        const { data: cfgRow } = await supabase
+          .from('crm_configuraciones')
+          .select('valor')
+          .eq('clave', 'alertas_vencimientos_cortes')
+          .maybeSingle();
+
+        if (cfgRow?.valor) {
+          const loadedCfg = { ...DEFAULT_CORTES_CONFIG, ...cfgRow.valor };
+          setAlertasConfig(loadedCfg);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('inandes_alertas_cortes_config', JSON.stringify(loadedCfg));
+          }
+        }
+      } catch (cfgErr) {
+        console.warn('Error loading crm_configuraciones from Supabase:', cfgErr);
+      }
 
     } catch (err) {
       console.error('Error cargando datos de WhatsApp Ops:', err);
@@ -631,26 +746,47 @@ export const ChatWhatsAppPage: React.FC = () => {
     setIsDispatching(false);
   };
 
-  // Despacho Masivo de Alertas de Vencimiento según Destinatarios Seleccionados
-  const handleDispatchExpirations = async () => {
-    if (!expSendGG && !expSendGC && !expSendAsesor) {
-      alert('Debe marcar al menos un destinatario (Ricardo Gallo, Yanneth Parra o Asesor) para enviar las alertas.');
-      return;
-    }
-
-    const targets = expirationRecords.filter(e => selectedExpirations.has(e.idContrato));
+  // Despacho Masivo de Alertas de Vencimiento según Destinatarios y Canales Seleccionados
+  const handleDispatchExpirations = async (
+    customTargets?: ExpirationRecord[], 
+    customConfig?: BloqueCorteConfig,
+    blockLabel?: string
+  ) => {
+    const targets = customTargets || expirationRecords.filter(e => selectedExpirations.has(e.idContrato));
     if (targets.length === 0) {
       alert('No hay contratos seleccionados para alertar.');
       return;
     }
 
+    // Determinar configuración activa
+    const activeCfg = customConfig || alertasConfig.bloque_1;
+    const dest = activeCfg.destinatarios;
+    const can = activeCfg.canales;
+
+    if (!dest.ricardo && !dest.yanneth && !dest.asesor && !dest.participe) {
+      alert('Debe marcar al menos un destinatario (Ricardo Gallo, Yanneth Parra, Asesor o Partícipe) para enviar las alertas.');
+      return;
+    }
+
+    if (!can.whatsapp && !can.email) {
+      alert('Debe seleccionar al menos un canal de comunicación (WhatsApp o Correo Electrónico).');
+      return;
+    }
+
     const recipientsList = [
-      expSendGG && 'Ricardo Gallo (GG)',
-      expSendGC && 'Yanneth Parra (GC)',
-      expSendAsesor && 'Asesor a Cargo'
+      dest.ricardo && 'Ricardo Gallo (GG)',
+      dest.yanneth && 'Yanneth Parra (GC)',
+      dest.asesor && 'Asesor a Cargo',
+      dest.participe && 'Partícipe Titular'
     ].filter(Boolean).join(', ');
 
-    if (!confirm(`¿Confirmas el envío de alertas de vencimiento para ${targets.length} contratos a: ${recipientsList}?`)) {
+    const channelsList = [
+      can.whatsapp && 'WhatsApp',
+      can.email && 'Email'
+    ].filter(Boolean).join(' + ');
+
+    const tituloConfirm = blockLabel ? `para el ${blockLabel}` : '';
+    if (!confirm(`¿Confirmas el envío de alertas de vencimiento ${tituloConfirm} (${targets.length} contratos) vía ${channelsList} a: ${recipientsList}?`)) {
       return;
     }
 
@@ -678,22 +814,32 @@ export const ChatWhatsAppPage: React.FC = () => {
         `📌 *Acción requerida:* Coordinar gestión comercial de renovación o provisión de rescate.`
       );
 
-      // Enviar condicionalmente según checkboxes activos
       let sentGG = false;
       let sentGC = false;
       let sentAs = false;
+      let sentPart = false;
 
-      if (expSendGG) {
-        sentGG = await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, msg);
-      }
-      if (expSendGC) {
-        sentGC = await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, msg);
-      }
-      if (expSendAsesor && exp.asesorTelefono) {
-        sentAs = await sendSingleWhatsAppText(exp.asesorTelefono, msg);
+      if (can.whatsapp) {
+        if (dest.ricardo) {
+          sentGG = await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, msg);
+        }
+        if (dest.yanneth) {
+          sentGC = await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, msg);
+        }
+        if (dest.asesor && exp.asesorTelefono) {
+          sentAs = await sendSingleWhatsAppText(exp.asesorTelefono, msg);
+        }
+        if (dest.participe && exp.inversionistaTelefono) {
+          sentPart = await sendSingleWhatsAppText(exp.inversionistaTelefono, msg);
+        }
       }
 
-      const overallSuccess = (expSendGG ? sentGG : true) && (expSendGC ? sentGC : true) && (expSendAsesor ? (exp.asesorTelefono ? sentAs : true) : true);
+      const overallSuccess = (!can.whatsapp) || (
+        (dest.ricardo ? sentGG : true) &&
+        (dest.yanneth ? sentGC : true) &&
+        (dest.asesor ? (exp.asesorTelefono ? sentAs : true) : true) &&
+        (dest.participe ? (exp.inversionistaTelefono ? sentPart : true) : true)
+      );
 
       setExpirationRecords(prev => prev.map(item => item.idContrato === exp.idContrato ? { ...item, statusEnvio: overallSuccess ? 'sent' : 'error' } : item));
 
@@ -709,7 +855,9 @@ export const ChatWhatsAppPage: React.FC = () => {
             contrato: exp.idContrato,
             inversionista: exp.inversionistaNombre,
             diasRestantes: exp.diasRestantes,
-            fechaFin: exp.fechaFin
+            fechaFin: exp.fechaFin,
+            canales: can,
+            destinatarios: dest
           })
         });
       } catch (e) {
@@ -1270,20 +1418,107 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS ORGANIZADO EN ACORDEONES (30d, 30-60d, 60-90d) */}
+      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS ORGANIZADAS POR CORTES CONTABLES OFICIALES DE INANDES */}
       {activeTab === 'vencimientos' && (() => {
-        const group30 = expirationRecords.filter(e => e.diasRestantes <= 30);
-        const group60 = expirationRecords.filter(e => e.diasRestantes > 30 && e.diasRestantes <= 60);
-        const group90 = expirationRecords.filter(e => e.diasRestantes > 60 && e.diasRestantes <= 90);
+        // 1. Mapear contratos por fecha_fin (Cortes Oficiales de InAndes)
+        const mapByFecha = new Map<string, ExpirationRecord[]>();
+        expirationRecords.forEach(e => {
+          const f = e.fechaFin || 'Sin Fecha';
+          if (!mapByFecha.has(f)) {
+            mapByFecha.set(f, []);
+          }
+          mapByFecha.get(f)!.push(e);
+        });
 
-        const sumUSD = (list: ExpirationRecord[]) => list.filter(e => e.moneda === 'USD').reduce((acc, e) => acc + e.montoInversion, 0);
-        const sumPEN = (list: ExpirationRecord[]) => list.filter(e => e.moneda === 'PEN').reduce((acc, e) => acc + e.montoInversion, 0);
+        // Ordenar fechas cronológicamente
+        const sortedFechas = Array.from(mapByFecha.keys()).sort();
+
+        const getCorteInfo = (fechaStr: string) => {
+          if (!fechaStr || fechaStr === 'Sin Fecha') return { label: 'Sin Fecha Definida', periodo: 'Período Especial' };
+          const parts = fechaStr.split('-');
+          if (parts.length !== 3) return { label: fechaStr, periodo: 'Período General' };
+          const y = parts[0];
+          const m = parseInt(parts[1], 10);
+          const d = parts[2];
+          const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+          const mNom = meses[m - 1] || '';
+
+          let periodo = '';
+          if (m === 2) periodo = 'Bimestre 1 (B1)';
+          else if (m === 3) periodo = 'Trimestre 1 (Q1)';
+          else if (m === 4) periodo = 'Bimestre 2 (B2)';
+          else if (m === 6) periodo = 'Bimestre 3 (B3) / Trimestre 2 (Q2)';
+          else if (m === 8) periodo = 'Bimestre 4 (B4)';
+          else if (m === 9) periodo = 'Trimestre 3 (Q3)';
+          else if (m === 10) periodo = 'Bimestre 5 (B5)';
+          else if (m === 12) periodo = 'Bimestre 6 (B6) / Trimestre 4 (Q4)';
+          else periodo = `Mes ${mNom}`;
+
+          return {
+            label: `${d} ${mNom} ${y}`,
+            periodo: periodo
+          };
+        };
+
+        const bloquesCortes = sortedFechas.map((fecha, idx) => {
+          const records = mapByFecha.get(fecha) || [];
+          const sumUSD = records.filter(r => r.moneda === 'USD').reduce((acc, r) => acc + r.montoInversion, 0);
+          const sumPEN = records.filter(r => r.moneda === 'PEN').reduce((acc, r) => acc + r.montoInversion, 0);
+          const dias = records.length > 0 ? records[0].diasRestantes : 0;
+          const info = getCorteInfo(fecha);
+
+          let blockKey: 'bloque_1' | 'bloque_2' | 'bloque_3' | 'bloque_otros' = 'bloque_otros';
+          let blockTitle = `📦 BLOQUE ${idx + 1}: CORTE POSTERIOR`;
+          let badgeTag = 'Corte Posterior';
+          let badgeColor = 'bg-slate-600 text-white';
+          let borderColor = 'border-slate-200 dark:border-slate-800';
+          let bgHeader = 'bg-slate-50/70 dark:bg-slate-900/50';
+
+          if (idx === 0) {
+            blockKey = 'bloque_1';
+            blockTitle = '🥇 BLOQUE 1: SIGUIENTE CORTE INMEDIATO ("Mañana")';
+            badgeTag = 'Corte Inmediato';
+            badgeColor = 'bg-rose-600 text-white';
+            borderColor = 'border-rose-200 dark:border-rose-900/60';
+            bgHeader = 'bg-rose-50/70 dark:bg-rose-950/40';
+          } else if (idx === 1) {
+            blockKey = 'bloque_2';
+            blockTitle = '🥈 BLOQUE 2: SUBSIGUIENTE CORTE ("Pasado Mañana")';
+            badgeTag = 'Subsiguiente Corte';
+            badgeColor = 'bg-amber-600 text-white';
+            borderColor = 'border-amber-200 dark:border-amber-900/60';
+            bgHeader = 'bg-amber-50/70 dark:bg-amber-950/40';
+          } else if (idx === 2) {
+            blockKey = 'bloque_3';
+            blockTitle = '🥉 BLOQUE 3: TERCER CORTE ("Tras Pasado Mañana")';
+            badgeTag = 'Tercer Corte';
+            badgeColor = 'bg-blue-600 text-white';
+            borderColor = 'border-blue-200 dark:border-blue-900/60';
+            bgHeader = 'bg-blue-50/70 dark:bg-blue-950/40';
+          }
+
+          return {
+            fecha,
+            info,
+            index: idx,
+            blockKey,
+            blockTitle,
+            badgeTag,
+            badgeColor,
+            borderColor,
+            bgHeader,
+            diasRestantes: dias,
+            records,
+            sumUSD,
+            sumPEN
+          };
+        });
 
         const renderContractCards = (list: ExpirationRecord[]) => {
           if (list.length === 0) {
             return (
               <div className="py-8 text-center text-slate-400 text-xs font-semibold bg-white dark:bg-[#151e2e] border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                No hay contratos registrados en este tramo temporal.
+                No hay contratos registrados en este corte contable.
               </div>
             );
           }
@@ -1311,7 +1546,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                         checked={isSelected}
                         disabled={exp.statusEnvio === 'sent'}
                         onChange={() => toggleSelectExpiration(exp.idContrato)}
-                        className="mt-1 rounded border-slate-300 text-amber-600 focus:ring-amber-500 w-4 h-4 cursor-pointer disabled:opacity-30"
+                        className="mt-1 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer disabled:opacity-30"
                       />
                       <div className="flex-1 space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
@@ -1344,22 +1579,24 @@ export const ChatWhatsAppPage: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex justify-between items-center text-[11px]">
-                            <span className="text-slate-400">Fecha Vencimiento:</span>
+                            <span className="text-slate-400">Fecha Vencimiento (Corte):</span>
                             <span className="font-mono font-bold text-slate-700">{exp.fechaFin}</span>
                           </div>
                           <div className="flex justify-between items-center text-[11px]">
                             <span className="text-slate-400">Asesor a Cargo:</span>
                             <span className="text-slate-700 font-medium">{exp.asesorNombre}</span>
                           </div>
+                          {exp.inversionistaTelefono && (
+                            <div className="flex justify-between items-center text-[11px]">
+                              <span className="text-slate-400">Celular Partícipe:</span>
+                              <span className="font-mono font-semibold text-emerald-700">+51 {exp.inversionistaTelefono}</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="pt-1 flex items-center justify-between">
                           <span className="text-[10px] text-slate-400 font-medium">
-                            Destinatarios: {[
-                              expSendGG && 'GG',
-                              expSendGC && 'GC',
-                              expSendAsesor && 'Asesor'
-                            ].filter(Boolean).join(' + ') || 'Ninguno'}
+                            Contrato Activo
                           </span>
                           {exp.statusEnvio === 'sent' ? (
                             <span className="text-xs text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -1383,257 +1620,330 @@ export const ChatWhatsAppPage: React.FC = () => {
         };
 
         return (
-          <div className="space-y-5">
-            {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
-            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                <strong>Despacho Automático Diario: ACTIVO</strong>
-                <span className="text-amber-700 dark:text-amber-300">
-                  • El Bot evalúa diariamente contratos con $0 \le t \le 30$ días y despacha alertas a las 09:00 AM a Asesores, GG (Ricardo Gallo Pizarro) y GC (Gladys Yanneth Parra).
-                </span>
+          <div className="space-y-6">
+            {/* BANNER INFORMATIVO DE CORTES CONTABLES OFICIALES */}
+            <div className="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-indigo-950 dark:text-indigo-200 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 font-bold text-sm text-indigo-900 dark:text-indigo-100">
+                    <span>Tablero de Alertas por Cortes Contables Oficiales de InAndes</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">
+                      Sincronizado Supabase
+                    </span>
+                  </div>
+                  <p className="text-indigo-700 dark:text-indigo-300 mt-0.5">
+                    Organización por cortes de liquidación (Inmediato, Subsiguiente y Tercer Corte). Cada bloque cuenta con su caja de configuración independiente de canales, destinatarios y frecuencia persistida en la tabla <code>crm_configuraciones</code>.
+                  </p>
+                </div>
               </div>
-              <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 font-mono font-bold text-amber-800 dark:text-amber-200 text-[11px]">
-                Cron VPS: 09:00 AM (UTC-5)
-              </span>
+              <div className="flex items-center gap-2 font-mono text-[11px] bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 self-start md:self-auto font-bold text-indigo-800 dark:text-indigo-200">
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Cron VPS: 09:00 AM (UTC-5)</span>
+              </div>
             </div>
 
-            {/* HEADER DE ACCIONES MASIVAS */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+            {/* MENSAJE DE CONFIRMACIÓN DE GUARDADO EN VIVO */}
+            {configSuccessMsg && (
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-2 shadow-xs animate-fadeIn">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{configSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* HEADER DE ACCIONES GLOBALES */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
               <div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  Centro de Notificaciones de Vencimientos (30d • 30-60d • 60-90d)
+                  Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos Activos)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Alertas comerciales escalonadas para accionar renovaciones oportunas y planificar liquidez.
+                  Seleccione contratos o configure individualmente las reglas de despacho por cada corte contable.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleDispatchExpirations}
-                  disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open' || (!expSendGG && !expSendGC && !expSendAsesor)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
+                  onClick={() => handleDispatchExpirations(undefined, alertasConfig.bloque_1, 'Contratos Seleccionados')}
+                  disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open'}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
-                  {isDispatching ? 'Despachando Alertas...' : `Envío Manual Contingencia (${selectedExpirations.size})`}
+                  {isDispatching ? 'Despachando...' : `Despachar Selección Global (${selectedExpirations.size})`}
                 </button>
               </div>
             </div>
 
-            {/* SELECTOR TRIPARTITO DE DESTINATARIOS (3 BOXES) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-amber-500" />
-                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-                  Destinatarios Activos para Despacho WhatsApp:
-                </span>
-              </div>
+            {/* ========================================================================= */}
+            {/* RENDERIZADO DE BLOQUES DE CORTE CONTABLE (1: Inmediato, 2: Sub, 3: Tercer) */}
+            {/* ========================================================================= */}
+            {bloquesCortes.map((bloque) => {
+              const bKey = bloque.blockKey;
+              const cfg = alertasConfig[bKey] || DEFAULT_CORTES_CONFIG[bKey] || DEFAULT_CORTES_CONFIG.bloque_otros;
+              const isAccordionOpen = openAccordions[`corte_${bKey}`] !== false;
 
-              <div className="flex flex-wrap items-center gap-3">
-                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                  expSendGG 
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={expSendGG}
-                    onChange={(e) => setExpSendGG(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
-                  />
-                  <span>Ricardo Gallo (GG)</span>
-                </label>
-
-                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                  expSendGC 
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={expSendGC}
-                    onChange={(e) => setExpSendGC(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
-                  />
-                  <span>Yanneth Parra (GC)</span>
-                </label>
-
-                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                  expSendAsesor 
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={expSendAsesor}
-                    onChange={(e) => setExpSendAsesor(e.target.checked)}
-                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
-                  />
-                  <span>Asesor a Cargo</span>
-                </label>
-
-                {(!expSendGG && !expSendGC && !expSendAsesor) && (
-                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md border border-rose-200">
-                    ⚠️ Ninguno marcado (despacho deshabilitado)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* ============================================================== */}
-            {/* ACORDEÓN 1: VENCIMIENTO INMEDIATO (<= 30 DÍAS)                 */}
-            {/* ============================================================== */}
-            <div className="border border-rose-200 dark:border-rose-900/60 rounded-2xl overflow-hidden bg-rose-50/20 shadow-sm">
-              <div 
-                onClick={() => toggleAccordion('range_30')}
-                className="p-4 bg-rose-50/70 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/60 flex items-center justify-between cursor-pointer select-none hover:bg-rose-100/60 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    30d
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Vencimiento Inmediato (≤ 30 días)</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase">
-                        Crítico • {group30.length} Contratos
-                      </span>
-                    </div>
-                    <div className="text-xs text-rose-800 font-medium mt-0.5 flex gap-3">
-                      <span>USD: <b>${sumUSD(group30).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
-                      <span>•</span>
-                      <span>PEN: <b>S/ {sumPEN(group30).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectGroupExpirations(group30);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-rose-700 border border-rose-300 hover:bg-rose-50 transition-all cursor-pointer shadow-xs"
+              return (
+                <div 
+                  key={bloque.fecha}
+                  className={`border rounded-2xl overflow-hidden bg-white shadow-sm transition-all ${bloque.borderColor}`}
+                >
+                  {/* CABECERA PRINCIPAL DEL CORTE */}
+                  <div 
+                    onClick={() => toggleAccordion(`corte_${bKey}`)}
+                    className={`p-4 md:p-5 ${bloque.bgHeader} border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer select-none hover:opacity-95 transition-all`}
                   >
-                    Seleccionar Todo Tramo
-                  </button>
-                  <div className="p-1 text-slate-500">
-                    {openAccordions['range_30'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
-                </div>
-              </div>
-
-              {openAccordions['range_30'] && (
-                <div className="p-4 bg-white">
-                  {renderContractCards(group30)}
-                </div>
-              )}
-            </div>
-
-            {/* ============================================================== */}
-            {/* ACORDEÓN 2: VENCIMIENTO PRÓXIMO (30 A 60 DÍAS)                 */}
-            {/* ============================================================== */}
-            <div className="border border-amber-200 dark:border-amber-800/60 rounded-2xl overflow-hidden bg-amber-50/20 shadow-sm">
-              <div 
-                onClick={() => toggleAccordion('range_60')}
-                className="p-4 bg-amber-50/70 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 flex items-center justify-between cursor-pointer select-none hover:bg-amber-100/60 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    60d
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Vencimiento Próximo (31 a 60 días)</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                        {group60.length} Contratos
-                      </span>
+                    <div className="flex items-start md:items-center gap-3.5">
+                      <div className={`px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-xs ${bloque.badgeColor}`}>
+                        {bloque.badgeTag}
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm md:text-base">
+                            {bloque.blockTitle}
+                          </h3>
+                          <span className="font-mono font-bold text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                            📅 {bloque.info.label} • {bloque.info.periodo}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex flex-wrap gap-3 items-center">
+                          <span>Contratos: <b>{bloque.records.length}</b></span>
+                          <span>•</span>
+                          <span>USD: <b>${bloque.sumUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
+                          <span>•</span>
+                          <span>PEN: <b>S/ {bloque.sumPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
+                          <span>•</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {bloque.diasRestantes < 0 
+                              ? `⚠️ Venció hace ${Math.abs(bloque.diasRestantes)}d` 
+                              : bloque.diasRestantes === 0 
+                              ? '¡Vence Hoy!' 
+                              : `⏳ Vence en ${bloque.diasRestantes} días`}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-amber-800 font-medium mt-0.5 flex gap-3">
-                      <span>USD: <b>${sumUSD(group60).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
-                      <span>•</span>
-                      <span>PEN: <b>S/ {sumPEN(group60).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectGroupExpirations(group60);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-all cursor-pointer shadow-xs"
-                  >
-                    Seleccionar Todo Tramo
-                  </button>
-                  <div className="p-1 text-slate-500">
-                    {openAccordions['range_60'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
-                </div>
-              </div>
-
-              {openAccordions['range_60'] && (
-                <div className="p-4 bg-white">
-                  {renderContractCards(group60)}
-                </div>
-              )}
-            </div>
-
-            {/* ============================================================== */}
-            {/* ACORDEÓN 3: VENCIMIENTO MEDIO PLAZO (60 A 90 DÍAS)             */}
-            {/* ============================================================== */}
-            <div className="border border-blue-200 dark:border-blue-800/60 rounded-2xl overflow-hidden bg-blue-50/20 shadow-sm">
-              <div 
-                onClick={() => toggleAccordion('range_90')}
-                className="p-4 bg-blue-50/70 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/60 flex items-center justify-between cursor-pointer select-none hover:bg-blue-100/60 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    90d
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-sm">Planificación Preventiva (61 a 90 días)</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                        {group90.length} Contratos
-                      </span>
-                    </div>
-                    <div className="text-xs text-blue-800 font-medium mt-0.5 flex gap-3">
-                      <span>USD: <b>${sumUSD(group90).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
-                      <span>•</span>
-                      <span>PEN: <b>S/ {sumPEN(group90).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
+                    <div className="flex items-center gap-2 self-end md:self-auto">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectGroupExpirations(bloque.records);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
+                      >
+                        Seleccionar Todo Corte
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDispatchExpirations(bloque.records, cfg, bloque.info.label);
+                        }}
+                        disabled={isDispatching || connectionState !== 'open' || bloque.records.length === 0}
+                        className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Despachar Corte</span>
+                      </button>
+                      <div className="p-1 text-slate-500">
+                        {isAccordionOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectGroupExpirations(group90);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-blue-700 border border-blue-300 hover:bg-blue-50 transition-all cursor-pointer shadow-xs"
-                  >
-                    Seleccionar Todo Tramo
-                  </button>
-                  <div className="p-1 text-slate-500">
-                    {openAccordions['range_90'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  {/* ========================================================================= */}
+                  {/* BOX DE CONFIGURACIÓN PERSISTENTE (CANAL, DESTINATARIOS, FRECUENCIA)       */}
+                  {/* ========================================================================= */}
+                  <div className="p-4 md:p-5 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-800 space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                          ⚙️ Parámetros de Envío Automático para este Corte (Persistido en Supabase):
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {savingConfigKey === bKey ? (
+                          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold animate-pulse flex items-center gap-1">
+                            <Clock className="w-3 h-3 animate-spin" /> Guardando en Supabase...
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            Clave: crm_configuraciones &gt; {bKey}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 1. CANAL / MEDIO */}
+                      <div className="bg-white dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                          1. Medio / Canales de Envío:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                            cfg.canales.whatsapp 
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-300' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.canales.whatsapp}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                canales: { ...prev.canales, whatsapp: e.target.checked }
+                              }))}
+                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            />
+                            <span>WhatsApp</span>
+                          </label>
+
+                          <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                            cfg.canales.email 
+                              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 text-blue-900 dark:text-blue-200 ring-1 ring-blue-300' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.canales.email}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                canales: { ...prev.canales, email: e.target.checked }
+                              }))}
+                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                            <Mail className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Correo Electrónico</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 2. DESTINATARIOS (4 CHECKBOXES) */}
+                      <div className="bg-white dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-indigo-600" />
+                          2. Destinatarios de la Alerta:
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all ${
+                            cfg.destinatarios.ricardo 
+                              ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-400 text-indigo-900 dark:text-indigo-200' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.destinatarios.ricardo}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                destinatarios: { ...prev.destinatarios, ricardo: e.target.checked }
+                              }))}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span>Ricardo Gallo</span>
+                          </label>
+
+                          <label className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all ${
+                            cfg.destinatarios.yanneth 
+                              ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-400 text-indigo-900 dark:text-indigo-200' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.destinatarios.yanneth}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                destinatarios: { ...prev.destinatarios, yanneth: e.target.checked }
+                              }))}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span>Yanneth Parra</span>
+                          </label>
+
+                          <label className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all ${
+                            cfg.destinatarios.asesor 
+                              ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-400 text-indigo-900 dark:text-indigo-200' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.destinatarios.asesor}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                destinatarios: { ...prev.destinatarios, asesor: e.target.checked }
+                              }))}
+                              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span>Asesor a Cargo</span>
+                          </label>
+
+                          <label className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-all ${
+                            cfg.destinatarios.participe 
+                              ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-400 text-purple-900 dark:text-purple-200' 
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={cfg.destinatarios.participe}
+                              onChange={(e) => updateBlockConfig(bKey, prev => ({
+                                ...prev,
+                                destinatarios: { ...prev.destinatarios, participe: e.target.checked }
+                              }))}
+                              className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                            />
+                            <span>Partícipe Titular</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 3. FRECUENCIA */}
+                      <div className="bg-white dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 shadow-xs">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          3. Frecuencia de Despacho:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {(['diaria', 'semanal', 'quincenal'] as const).map(frec => (
+                            <label 
+                              key={frec}
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold capitalize cursor-pointer transition-all ${
+                                cfg.frecuencia === frec 
+                                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
+                                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`frec_${bKey}`}
+                                value={frec}
+                                checked={cfg.frecuencia === frec}
+                                onChange={() => updateBlockConfig(bKey, prev => ({ ...prev, frecuencia: frec }))}
+                                className="w-3.5 h-3.5 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                              />
+                              <span>{frec === 'diaria' ? 'Diaria' : frec === 'semanal' ? 'Semanal (Lun)' : 'Quincenal'}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {openAccordions['range_90'] && (
-                <div className="p-4 bg-white">
-                  {renderContractCards(group90)}
+                  {/* ========================================================================= */}
+                  {/* LISTA DE CONTRATOS EN EL ACORDEÓN                                         */}
+                  {/* ========================================================================= */}
+                  {isAccordionOpen && (
+                    <div className="p-4 md:p-5 bg-white dark:bg-slate-900/60">
+                      {renderContractCards(bloque.records)}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         );
       })()}
