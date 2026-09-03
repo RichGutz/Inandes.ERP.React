@@ -85,9 +85,54 @@ export const InversionistasPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [formMode, setFormMode] = useState<'crear' | 'editar'>('crear');
   const [formData, setFormData] = useState<Partial<Inversionista>>({});
-  const [formActiveTab, setFormActiveTab] = useState<'identidad' | 'conyuge' | 'laboral' | 'bancario' | 'compliance'>('identidad');
+  const [formActiveTab, setFormActiveTab] = useState<'identidad' | 'asesor' | 'conyuge' | 'laboral' | 'bancario' | 'compliance'>('identidad');
   const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
   const [formSubmitSuccess, setFormSubmitSuccess] = useState<boolean>(false);
+
+  // Estado de Asesores y Contratos asociados al partícipe
+  const [asesoresList, setAsesoresList] = useState<any[]>([]);
+  const [contratosListAll, setContratosListAll] = useState<any[]>([]);
+  const [selectedFormAsesor, setSelectedFormAsesor] = useState<string>('');
+  const [selectedInvContracts, setSelectedInvContracts] = useState<any[]>([]);
+  const [reasignarContratos, setReasignarContratos] = useState<boolean>(true);
+
+  // Mapeo indexado de asesores por código, ID o documento
+  const asesorMapByCode = useMemo(() => {
+    const map: Record<string, any> = {};
+    for (const a of asesoresList) {
+      if (a.codigo) map[String(a.codigo).trim().toLowerCase()] = a;
+      if (a.id) map[String(a.id).trim().toLowerCase()] = a;
+      if (a.documento_identidad) map[String(a.documento_identidad).trim().toLowerCase()] = a;
+    }
+    return map;
+  }, [asesoresList]);
+
+  // Helper para consultar contratos y asesor de un inversionista
+  const getInvestorContractsAndAsesor = (inv: Inversionista) => {
+    const invId = String(inv.id || '').toLowerCase();
+    const invUuid = String((inv as any).uuid || '').toLowerCase();
+    const invDoc = String(inv.documento_identidad || '').toLowerCase();
+    const invCode = String(inv.codigo_inversionista || '').toLowerCase();
+
+    const matchedContracts = contratosListAll.filter(c => {
+      const cInv1 = String(c.id_inversionista_1 || '').toLowerCase();
+      const cInv2 = String(c.id_inversionista_2 || '').toLowerCase();
+      return (invId && (cInv1 === invId || cInv2 === invId)) ||
+             (invUuid && (cInv1 === invUuid || cInv2 === invUuid)) ||
+             (invDoc && (cInv1 === invDoc || cInv2 === invDoc)) ||
+             (invCode && (cInv1 === invCode || cInv2 === invCode));
+    });
+
+    const activeContract = matchedContracts.find(c => ['emitido', 'activo', 'vigente'].includes(String(c.estado || '').toLowerCase())) || matchedContracts[0];
+    const asesorCode = activeContract?.id_asesor || '';
+    const asesorObj = asesorCode ? (asesorMapByCode[asesorCode.trim().toLowerCase()] || { nombre_completo: asesorCode, codigo: asesorCode }) : null;
+
+    return {
+      contracts: matchedContracts,
+      asesorCode,
+      asesorObj
+    };
+  };
 
   // Estado del Motor de Retornos y Auditoría v40
   const [fondosDisponibles, setFondosDisponibles] = useState<any[]>([]);
@@ -131,8 +176,14 @@ export const InversionistasPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getInversionistas();
-      setInversionistas(data);
+      const [invData, { data: asesData }, { data: contData }] = await Promise.all([
+        getInversionistas(),
+        supabase.from('crm_asesores').select('*').order('nombre_completo'),
+        supabase.from('crm_contratos').select('*')
+      ]);
+      setInversionistas(invData);
+      setAsesoresList(asesData || []);
+      setContratosListAll(contData || []);
     } catch (err: any) {
       setError(err.message || 'Error inesperado al cargar los partícipes.');
     } finally {
@@ -1638,6 +1689,10 @@ export const InversionistasPage: React.FC = () => {
     if (investor) {
       setFormMode('editar');
       setFormData({ ...investor });
+      const { contracts, asesorCode } = getInvestorContractsAndAsesor(investor);
+      setSelectedInvContracts(contracts);
+      setSelectedFormAsesor(asesorCode || '');
+      setReasignarContratos(true);
     } else {
       setFormMode('crear');
       setFormData({
@@ -1656,11 +1711,12 @@ export const InversionistasPage: React.FC = () => {
         codigo_postal: '',
         estado_compliance: 'borrador'
       });
+      setSelectedInvContracts([]);
+      setSelectedFormAsesor('');
+      setReasignarContratos(true);
     }
     setIsModalOpen(true);
   };
-
-
 
   const handleInputChange = (field: keyof Inversionista, value: any) => {
     setFormData(prev => ({
@@ -1681,6 +1737,19 @@ export const InversionistasPage: React.FC = () => {
 
     try {
       await upsertInversionista(formData);
+
+      // Si se seleccionó un asesor comercial y hay contratos vinculados marcados para reasignación
+      if (selectedFormAsesor && selectedInvContracts.length > 0 && reasignarContratos) {
+        const contractIds = selectedInvContracts.map(c => c.id_contrato || c.id).filter(Boolean);
+        if (contractIds.length > 0) {
+          const { error: errCont } = await supabase
+            .from('crm_contratos')
+            .update({ id_asesor: selectedFormAsesor })
+            .in('id_contrato', contractIds);
+          if (errCont) console.warn('Error sincronizando asesor en contratos:', errCont.message);
+        }
+      }
+
       setFormSubmitSuccess(true);
       setTimeout(() => {
         setIsModalOpen(false);
@@ -1898,6 +1967,7 @@ export const InversionistasPage: React.FC = () => {
                 const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
                 const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
                 const state = inv.estado_compliance || 'borrador';
+                const { asesorObj, contracts } = getInvestorContractsAndAsesor(inv);
                 
                 let stateStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
                 if (state === 'aprobado') {
@@ -1950,10 +2020,10 @@ export const InversionistasPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Fila 2: Chips Compactos de Contacto y Bancos */}
+                    {/* Fila 2: Chips Compactos de Contacto y Asesor Asignado */}
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#e2e8f0] dark:border-[#334155] text-[10px]">
                       <div className="flex items-center gap-1.5 text-[#64748b] dark:text-[#94a3b8] truncate min-w-0">
-                        <span className="truncate max-w-[140px]" title={inv.email || 'Sin correo'}>
+                        <span className="truncate max-w-[130px]" title={inv.email || 'Sin correo'}>
                           ✉️ {inv.email || 'Sin correo'}
                         </span>
                         {inv.telefono && (
@@ -1963,20 +2033,14 @@ export const InversionistasPage: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Bancos */}
-                      <div className="flex items-center gap-1 shrink-0 font-mono text-[9px]">
-                        {inv.banco_nombre_pen && (
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0f172a] dark:text-[#f8fafc] font-bold border border-slate-200 dark:border-slate-700">
-                            S/ {inv.banco_nombre_pen}
+                      {/* Asesor Asignado */}
+                      <div className="flex items-center gap-1 shrink-0 font-sans text-[9.5px]">
+                        {asesorObj ? (
+                          <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800/60 truncate max-w-[140px]" title={`Asesor: ${asesorObj.nombre_completo} (${contracts.length} contratos)`}>
+                            👔 {asesorObj.nombre_completo}
                           </span>
-                        )}
-                        {inv.banco_nombre_usd && (
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#0284c7] dark:text-[#38bdf8] font-bold border border-slate-200 dark:border-slate-700">
-                            $ {inv.banco_nombre_usd}
-                          </span>
-                        )}
-                        {!inv.banco_nombre_pen && !inv.banco_nombre_usd && (
-                          <span className="text-slate-400 italic text-[8.5px]">Sin bancos</span>
+                        ) : (
+                          <span className="text-slate-400 italic text-[8.5px]">Sin Asesor</span>
                         )}
                       </div>
                     </div>
@@ -1995,6 +2059,7 @@ export const InversionistasPage: React.FC = () => {
                       <th className="py-3 px-4">Partícipe / Razón Social</th>
                       <th className="py-3 px-4">Documento</th>
                       <th className="py-3 px-4">Email & Teléfono</th>
+                      <th className="py-3 px-4">Asesor Asignado</th>
                       <th className="py-3 px-4">Cuentas Bancarias</th>
                       <th className="py-3 px-4 text-center">Compliance</th>
                       <th className="py-3 px-4 text-right">Acción</th>
@@ -2005,6 +2070,7 @@ export const InversionistasPage: React.FC = () => {
                       const initials = `${inv.nombre_1?.charAt(0) || ''}${inv.apellido_1?.charAt(0) || ''}`.toUpperCase();
                       const cleanName = `${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`.replace(/\s+/g, ' ').trim() || inv.nombre_completo || '';
                       const state = inv.estado_compliance || 'borrador';
+                      const { asesorObj, contracts } = getInvestorContractsAndAsesor(inv);
                       
                       let stateStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
                       if (state === 'aprobado') {
@@ -2026,7 +2092,7 @@ export const InversionistasPage: React.FC = () => {
                               >
                                 {initials}
                               </div>
-                              <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] uppercase truncate max-w-[220px]" title={cleanName}>
+                              <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] uppercase truncate max-w-[200px]" title={cleanName}>
                                 {cleanName}
                               </span>
                             </div>
@@ -2040,9 +2106,25 @@ export const InversionistasPage: React.FC = () => {
                           {/* Contacto */}
                           <td className="py-3 px-4 text-[#64748b] dark:text-[#94a3b8]">
                             <div className="flex flex-col gap-0.5">
-                              <span className="truncate max-w-[200px]" title={inv.email || ''}>{inv.email || 'Sin correo'}</span>
+                              <span className="truncate max-w-[180px]" title={inv.email || ''}>{inv.email || 'Sin correo'}</span>
                               <span className="font-mono text-[10px] text-[#0f172a] dark:text-[#f8fafc] font-bold">{inv.telefono || '-'}</span>
                             </div>
+                          </td>
+
+                          {/* Asesor Asignado */}
+                          <td className="py-3 px-4 font-sans text-xs">
+                            {asesorObj ? (
+                              <div className="flex items-center gap-1.5" title={`Asesor: ${asesorObj.nombre_completo} (${contracts.length} contratos vinculados)`}>
+                                <span className="h-5 w-5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800">
+                                  👔
+                                </span>
+                                <span className="font-bold text-[#0f172a] dark:text-[#f8fafc] truncate max-w-[140px]">
+                                  {asesorObj.nombre_completo}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic text-[11px]">Sin Asesor</span>
+                            )}
                           </td>
 
                           {/* Bancos */}
@@ -2876,7 +2958,7 @@ export const InversionistasPage: React.FC = () => {
 
             {/* Selector de sub-pestanas del formulario */}
             <div className="px-5 bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-850 flex gap-4 overflow-x-auto whitespace-nowrap scrollbar-none">
-              {(['identidad', 'conyuge', 'laboral', 'bancario', 'compliance'] as const).map(tab => (
+              {(['identidad', 'asesor', 'conyuge', 'laboral', 'bancario', 'compliance'] as const).map(tab => (
                 <button
                   key={tab}
                   type="button"
@@ -2888,6 +2970,7 @@ export const InversionistasPage: React.FC = () => {
                   onClick={() => setFormActiveTab(tab)}
                 >
                   {tab === 'identidad' && 'Identidad'}
+                  {tab === 'asesor' && '💼 Asesor Asignado'}
                   {tab === 'conyuge' && 'Cónyuge'}
                   {tab === 'laboral' && 'Laboral'}
                   {tab === 'bancario' && 'Bancario'}
@@ -3076,7 +3159,139 @@ export const InversionistasPage: React.FC = () => {
                 </div>
               )}
 
-              {/* --- SUB-TAB 2: CÓNYUGE --- */}
+              {/* --- SUB-TAB 2: ASESOR ASIGNADO Y GESTIÓN DE CARTERA --- */}
+              {formActiveTab === 'asesor' && (
+                <div className="flex flex-col gap-5 animate-fadeIn">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-150 dark:border-slate-800">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight flex items-center gap-2">
+                        <span>💼 Asesor Comercial Asignado</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Consulte o reasigne el asesor responsable del inversionista y sincronice sus contratos.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Selector de Asesor Comercial */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                        Asesor Comercial Responsable
+                      </label>
+                      <select
+                        className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                        value={selectedFormAsesor}
+                        onChange={(e) => setSelectedFormAsesor(e.target.value)}
+                      >
+                        <option value="">-- SELECCIONAR ASESOR COMERCIAL --</option>
+                        {asesoresList.map((ase) => (
+                          <option key={ase.codigo || ase.id} value={ase.codigo || ase.id}>
+                            {ase.nombre_completo} {ase.codigo ? `(${ase.codigo})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-5">
+                      <input
+                        type="checkbox"
+                        id="reasignar_contratos"
+                        className="rounded text-emerald-600 focus:ring-emerald-600 h-4 w-4 cursor-pointer"
+                        checked={reasignarContratos}
+                        onChange={(e) => setReasignarContratos(e.target.checked)}
+                      />
+                      <label htmlFor="reasignar_contratos" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                        Sincronizar contratos vinculados ({selectedInvContracts.length})
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Ficha Resumen del Asesor Seleccionado */}
+                  {(() => {
+                    const aseObj = asesoresList.find(a => (a.codigo && a.codigo === selectedFormAsesor) || (a.id && a.id === selectedFormAsesor));
+                    if (!aseObj) {
+                      return (
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400 italic">
+                          Seleccione un asesor comercial para visualizar sus datos de contacto y detalles institucionales.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/60 flex flex-col gap-3 shadow-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-linear-to-br from-indigo-600 to-violet-700 text-white font-mono font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                            {aseObj.nombre_completo?.charAt(0) || 'A'}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase">
+                              {aseObj.nombre_completo}
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                              Código: {aseObj.codigo || 'N/A'} · Doc: {aseObj.documento_identidad || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-2 border-t border-indigo-100 dark:border-indigo-900/50">
+                          <span className="text-slate-600 dark:text-slate-300">
+                            📞 Teléfono: <strong className="text-[#0f172a] dark:text-white">{aseObj.telefono || 'No registrado'}</strong>
+                          </span>
+                          <span className="text-slate-600 dark:text-slate-300">
+                            ✉️ Email: <strong className="text-[#0f172a] dark:text-white">{aseObj.email || 'No registrado'}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Lista de Contratos del Inversionista */}
+                  <div className="flex flex-col gap-2 pt-1">
+                    <span className="text-[10.5px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                      Contratos Vinculados a este Partícipe ({selectedInvContracts.length})
+                    </span>
+                    {selectedInvContracts.length === 0 ? (
+                      <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 text-center italic">
+                        No tiene contratos registrados actualmente.
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto shadow-xs">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="bg-slate-100 dark:bg-slate-950 text-[10px] font-mono text-slate-500 uppercase sticky top-0">
+                            <tr>
+                              <th className="py-2 px-3">Contrato</th>
+                              <th className="py-2 px-2">Fondo</th>
+                              <th className="py-2 px-3 text-right">Monto</th>
+                              <th className="py-2 px-2 text-center">Estado</th>
+                              <th className="py-2 px-3">Asesor Actual</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[11px] font-mono">
+                            {selectedInvContracts.map(c => (
+                              <tr key={c.id_contrato || c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td className="py-1.5 px-3 font-bold text-[#0f172a] dark:text-[#f8fafc]">{c.id_contrato || c.id}</td>
+                                <td className="py-1.5 px-2 font-bold text-indigo-600 dark:text-indigo-400">{c.id_fondo}</td>
+                                <td className="py-1.5 px-3 text-right font-bold text-emerald-600">
+                                  {c.moneda === 'USD' ? '$' : 'S/'} {Number(c.monto_inversion || c.capital || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-1.5 px-2 text-center">
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                    {c.estado}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 px-3 font-sans text-slate-600 dark:text-slate-300">
+                                  {asesorMapByCode[String(c.id_asesor || '').trim().toLowerCase()]?.nombre_completo || c.id_asesor || 'Sin Asesor'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* --- SUB-TAB 3: CÓNYUGE --- */}
               {formActiveTab === 'conyuge' && (
                 <div className="flex flex-col gap-4 animate-fadeIn">
                   <h4 className="text-xs font-bold text-slate-805 dark:text-slate-200 uppercase tracking-tight text-slate-700">Información del Cónyuge</h4>
