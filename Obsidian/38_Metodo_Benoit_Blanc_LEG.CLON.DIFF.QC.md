@@ -203,9 +203,49 @@ Utiliza esta plantilla canónica para documentar cualquier caso forense en tus p
 
 ---
 
-## 🎯 6. Resumen Ejecutivo para Futuros Agentes
+---
+
+## 🚀 7. Protocolo Operativo Estricto de Ejecución 1 x 1 y Despliegue VPS (Jurisprudencia P1, P2, P3)
+
+Para que ningún agente futuro altere ni un ápice el flujo operativo, se establece la secuencia obligatoria demostrada con éxito en producción:
+
+```
+[Inicio de Punto N]
+       │
+       ▼
+ 1. BEN: Listen First & Parafraseo técnico del requerimiento
+       │
+       ▼
+ 2. CLON (Safepoint inmutable):
+    git branch PRE.PN.NOMBRE
+    git push origin refs/heads/PRE.PN.NOMBRE
+    git tag -a PRE.PN.NOMBRE -m "Safepoint previo a Punto N"
+    git push origin refs/tags/PRE.PN.NOMBRE
+    git checkout main   <--- OBLIGATORIO: Retornar inmediatamente a main
+       │
+       ▼
+ 3. LEG: Lectura con view_file de líneas exactas
+       │
+       ▼
+ 4. DIFF: Cirugía mínima sobre main (cero refactor)
+       │
+       ▼
+ 5. QC: Verificación obligatoria en terminal:
+    - npm run build (exit code 0)
+    - python script_test.py (exit code 0)
+       │
+       ▼
+ 6. NOTA & DEPLOY:
+    - git add . ; git commit -m "feat: PN ..." ; git push origin main
+    - python deploy_contabo_fast.py (Inyección en caliente al VPS Contabo 169.58.168.107)
+    - Dictamen pericial al usuario con diagramas mermaid y resumen.
+```
+
+---
+
+## 🎯 8. Resumen Ejecutivo para Futuros Agentes
 
 > *"Estimado Gemini o agente que continúe esta sesión: no intentes ser un héroe que reescribe módulos completos. Sé un detective perspicaz: escucha la pista de F12 que te da el humano, anota en la libreta, aísla el archivo culpable en el Legacy, haz tu diff mínimo, pruébalo en la terminal y sella el caso con elegancia."*
 
 ---
-*Documento canónico oficializado por Detective Benoit Blanc — 02 de Septiembre de 2026.*
+*Documento canónico oficializado por Detective Benoit Blanc — 03 de Septiembre de 2026.*

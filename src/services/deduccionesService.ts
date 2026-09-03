@@ -253,3 +253,17 @@ export const insertCronogramaDeducciones = async (cuotas: DeduccionCuota[]): Pro
 
   if (error) throw new Error(`Error al registrar cronograma: ${error.message}`);
 };
+
+/**
+ * Actualiza la Tasa Waiver / REPO Credicorp ex-post para una cuota de rescate
+ */
+export const updateCuotaTasa = async (idCuota: string, newTasa: number): Promise<boolean> => {
+  const { error } = await supabase
+    .from('crm_cronograma_deducciones_rescates')
+    .update({ tasa: newTasa })
+    .eq('id_cuota', idCuota);
+
+  if (error) throw new Error(`Error al actualizar tasa de rescate: ${error.message}`);
+  return true;
+};
+

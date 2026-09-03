@@ -359,11 +359,18 @@ export const generateRetornosV40 = async (
         const r_a = rescates.find((r: any) => dTime <= r.fecha.getTime());
 
         let cap_rem = row.capital_base;
+        let tasa_activa = row.tasa_pactada;
+
         for (const r of rescates) {
-          if (dTime > r.fecha.getTime()) cap_rem -= r.monto;
+          if (dTime > r.fecha.getTime()) {
+            cap_rem -= r.monto;
+            if (r.tasa !== undefined && r.tasa !== null && Number(r.tasa) > 0) {
+              tasa_activa = Number(r.tasa) / 100;
+            }
+          }
         }
 
-        const t_hoy = row.tasa_pactada;
+        const t_hoy = tasa_activa;
         const base_hoy = r_a ? row.capital_base : Math.max(0.0, cap_rem);
 
         const isEmittedOrAfter = dTime >= row.emision.getTime();

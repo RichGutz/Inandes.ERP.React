@@ -1,11 +1,11 @@
 // src/features/deducciones/DeduccionesPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
-  buscarContratosPadre, getActiveCertificadoByContrato, getActiveCapitalBalance, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones, getParticipesMap
+  buscarContratosPadre, getActiveCertificadoByContrato, getActiveCapitalBalance, getFondoRules, getCronogramaDeducciones, getCronogramaDeduccionesGlobal, insertCronogramaDeducciones, getParticipesMap, updateCuotaTasa
 } from '../../services/deduccionesService';
 import type { DeduccionCuota, ContratoBusqueda, FondoRules } from '../../services/deduccionesService';
 import { 
-  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign, Calendar 
+  Search, Loader2, CheckCircle, User, FileText, X, AlertCircle, DollarSign, Calendar, Pencil
 } from 'lucide-react';
 
 // Helper para determinar si el fondo es trimestral (CON01) o bimestral (todos los demás)
@@ -30,6 +30,36 @@ export const DeduccionesPage: React.FC = () => {
   const [cronograma, setCronograma] = useState<DeduccionCuota[]>([]);
   const [cronoLoading, setCronoLoading] = useState<boolean>(false);
   const [participesMap, setParticipesMap] = useState<Record<string, string>>({});
+
+  // Modal de edición de Tasa Waiver / REPO Credicorp ex-post
+  const [editTasaModalOpen, setEditTasaModalOpen] = useState<boolean>(false);
+  const [cuotaToEditTasa, setCuotaToEditTasa] = useState<DeduccionCuota | null>(null);
+  const [newTasaValue, setNewTasaValue] = useState<number>(0);
+  const [savingTasa, setSavingTasa] = useState<boolean>(false);
+  const [tasaSaveError, setTasaSaveError] = useState<string | null>(null);
+
+  const handleOpenEditTasa = (cuota: DeduccionCuota) => {
+    setCuotaToEditTasa(cuota);
+    setNewTasaValue(cuota.tasa ?? 0);
+    setTasaSaveError(null);
+    setEditTasaModalOpen(true);
+  };
+
+  const handleSaveTasaWaiver = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cuotaToEditTasa) return;
+    setSavingTasa(true);
+    setTasaSaveError(null);
+    try {
+      await updateCuotaTasa(cuotaToEditTasa.id_cuota, newTasaValue);
+      setCronograma(prev => prev.map(c => c.id_cuota === cuotaToEditTasa.id_cuota ? { ...c, tasa: newTasaValue } : c));
+      setEditTasaModalOpen(false);
+    } catch (err: any) {
+      setTasaSaveError(err.message || 'Error al actualizar tasa');
+    } finally {
+      setSavingTasa(false);
+    }
+  };
 
   // Pestañas internas
   const [activeSubTab, setActiveSubTab] = useState<'cronograma' | 'deduccion' | 'rescate'>('cronograma');
@@ -838,6 +868,7 @@ export const DeduccionesPage: React.FC = () => {
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Glosa / Descripción</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-right">Monto</th>
+                                <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Tasa Waiver REPO</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Corte Cobro</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Estado</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Prioridad</th>
@@ -877,6 +908,25 @@ export const DeduccionesPage: React.FC = () => {
                                     </span>
                                   </td>
                                   <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                  <td className="px-4 py-3 text-center">
+                                    {c.tipo_cargo === 'RESCATE_CAPITAL' ? (
+                                      <div className="inline-flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-lg">
+                                        <span className="font-mono text-[10.5px] font-black text-sky-700 dark:text-sky-300">
+                                          {c.tasa !== null && c.tasa !== undefined && c.tasa > 0 ? `${c.tasa}%` : '0% (Ex-post)'}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditTasa(c)}
+                                          className="text-sky-600 hover:text-sky-800 dark:text-sky-400 p-0.5 rounded hover:bg-sky-100 dark:hover:bg-sky-900/60 transition-colors cursor-pointer"
+                                          title="Editar Tasa Waiver / REPO Credicorp ex-post"
+                                        >
+                                          <Pencil size={11} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>
+                                    )}
+                                  </td>
                                   <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_proyectada_cobro}</td>
                                   <td className="px-4 py-3 text-center">
                                     <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-mono font-black uppercase ${
@@ -1319,6 +1369,91 @@ export const DeduccionesPage: React.FC = () => {
           )}
 
         </div>
+
+        {/* MODAL PARA EDITAR TASA WAIVER / REPO CREDICORP EX-POST */}
+        {editTasaModalOpen && cuotaToEditTasa && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+              <button 
+                onClick={() => setEditTasaModalOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Editar Tasa Waiver / REPO Credicorp</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">{cuotaToEditTasa.id_cuota}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex justify-between">
+                  <span>Contrato:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-200">{cuotaToEditTasa.id_contrato}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Monto Rescate:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-200">{cuotaToEditTasa.moneda} {cuotaToEditTasa.monto_cobrar.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Corte Cobro:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-200">{cuotaToEditTasa.fecha_proyectada_cobro}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Esta tasa representa el rendimiento efectivo obtenido en Credicorp Capital para depósitos REPO y aplicará al <b>saldo remanente de capital</b> a partir de la fecha de este rescate.
+              </p>
+
+              <form onSubmit={handleSaveTasaWaiver} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Nueva Tasa Waiver / REPO (%)</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      min={0}
+                      max={100}
+                      autoFocus
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm font-mono font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-sky-500 focus:outline-none pr-8"
+                      value={newTasaValue === 0 ? '' : newTasaValue}
+                      placeholder="0.00"
+                      onChange={(e) => setNewTasaValue(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                      required
+                    />
+                    <span className="absolute right-3 top-3 text-sm font-mono font-bold text-slate-400">%</span>
+                  </div>
+                </div>
+
+                {tasaSaveError && (
+                  <p className="text-xs text-rose-600 font-semibold">{tasaSaveError}</p>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditTasaModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingTasa}
+                    className="px-5 py-2 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingTasa ? 'Guardando...' : 'Guardar Tasa Ex-Post'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
     </div>
   );
