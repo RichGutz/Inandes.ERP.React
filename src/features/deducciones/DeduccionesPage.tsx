@@ -107,7 +107,7 @@ export const DeduccionesPage: React.FC = () => {
   const [resArmadasCount, setResArmadasCount] = useState<number>(1);
   const [resTasaWaiver, setResTasaWaiver] = useState<number>(0);
   const [resEsRescateTotal, setResEsRescateTotal] = useState<boolean>(false);
-  const [resArmadasData, setResArmadasData] = useState<Array<{ fecha: string; monto: number; penalidad: number }>>([]);
+  const [resArmadasData, setResArmadasData] = useState<Array<{ fecha: string; monto: number; penalidad: number; tasaWaiver?: number }>>([]);
   const [resSubmitting, setResSubmitting] = useState<boolean>(false);
   const [resSuccess, setResSuccess] = useState<string | null>(null);
   const [resError, setResError] = useState<string | null>(null);
@@ -294,12 +294,13 @@ export const DeduccionesPage: React.FC = () => {
         newArmadas.push({
           fecha: dateStr,
           monto,
-          penalidad
+          penalidad,
+          tasaWaiver: resTasaWaiver || 0
         });
       }
       setResArmadasData(newArmadas);
     }
-  }, [resArmadasCount, validDates, fondoRules, selectedContrato, resEsRescateTotal, activeCapital]);
+  }, [resArmadasCount, validDates, fondoRules, selectedContrato, resEsRescateTotal, activeCapital, resTasaWaiver]);
 
   // Llaves naturales
   const generateNaturalKeys = (
@@ -460,7 +461,7 @@ export const DeduccionesPage: React.FC = () => {
           fecha_proyectada_cobro: arm.fecha,
           estado: 'PENDIENTE',
           prioridad: 3,
-          tasa: resTasaWaiver,
+          tasa: (arm.tasaWaiver !== undefined && arm.tasaWaiver !== null) ? arm.tasaWaiver : resTasaWaiver,
           es_rescate_total: resEsRescateTotal,
           creado_por: 'Sistema React'
         });
@@ -1288,7 +1289,7 @@ export const DeduccionesPage: React.FC = () => {
                             </select>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                             <div className="flex flex-col gap-1">
                               <label className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Monto Rescate</label>
                               <input
@@ -1332,16 +1333,50 @@ export const DeduccionesPage: React.FC = () => {
                                 }}
                               />
                             </div>
+
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[8px] font-bold text-sky-600 dark:text-sky-400 uppercase flex items-center gap-1">
+                                <span>Tasa Waiver REPO (%)</span>
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                step="any"
+                                onFocus={(e) => e.target.select()}
+                                className="bg-sky-50/50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800 rounded p-1.5 text-xs font-mono font-bold text-sky-800 dark:text-sky-200 text-center focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                value={arm.tasaWaiver === 0 ? '' : (arm.tasaWaiver ?? resTasaWaiver ?? 0)}
+                                placeholder="0.00"
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0);
+                                  setResArmadasData(prev => {
+                                    const cpy = [...prev];
+                                    cpy[i].tasaWaiver = val;
+                                    return cpy;
+                                  });
+                                }}
+                              />
+                            </div>
                           </div>
 
-                          {/* Badge Visual de Neto en Efectivo a Devolver */}
-                          <div className="p-2 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex items-center justify-between mt-0.5">
-                            <span className="text-[9.5px] font-bold text-emerald-800 dark:text-emerald-300">
-                              💵 Neto a Devolver al Inversionista:
-                            </span>
-                            <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-400">
-                              {selectedContrato.moneda} {Math.max(0, arm.monto - arm.penalidad).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
+                          {/* Badge Visual de Saldo Remanente y Neto en Efectivo */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-0.5">
+                            <div className="p-2 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-300">
+                                💵 Devolución Neta:
+                              </span>
+                              <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-400">
+                                {selectedContrato.moneda} {Math.max(0, arm.monto - arm.penalidad).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-sky-50/80 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-900/40 flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-sky-800 dark:text-sky-300">
+                                ⚖️ Tasa Saldo Post-Corte:
+                              </span>
+                              <span className="font-mono text-xs font-black text-sky-700 dark:text-sky-400">
+                                {arm.tasaWaiver || resTasaWaiver || 0}%
+                              </span>
+                            </div>
                           </div>
 
                         </div>
