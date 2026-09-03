@@ -119,6 +119,11 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterFondo, setFilterFondo] = useState('TODOS');
 
+  // Estados de Destinatarios de Alertas de Vencimiento (3 boxes)
+  const [expSendGG, setExpSendGG] = useState<boolean>(true); // Ricardo Gallo
+  const [expSendGC, setExpSendGC] = useState<boolean>(true); // Yanneth Parra
+  const [expSendAsesor, setExpSendAsesor] = useState<boolean>(true); // Asesor a cargo
+
   // Estados de Acordeones para Vencimientos (30d, 30-60d, 60-90d)
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
     'range_30': true,
@@ -598,15 +603,26 @@ export const ChatWhatsAppPage: React.FC = () => {
     setIsDispatching(false);
   };
 
-  // Despacho Masivo de Alertas de Vencimiento (<= 30 días) a Asesor, Ricardo Gallo y Yanneth Parra
+  // Despacho Masivo de Alertas de Vencimiento según Destinatarios Seleccionados
   const handleDispatchExpirations = async () => {
+    if (!expSendGG && !expSendGC && !expSendAsesor) {
+      alert('Debe marcar al menos un destinatario (Ricardo Gallo, Yanneth Parra o Asesor) para enviar las alertas.');
+      return;
+    }
+
     const targets = expirationRecords.filter(e => selectedExpirations.has(e.idContrato));
     if (targets.length === 0) {
       alert('No hay contratos seleccionados para alertar.');
       return;
     }
 
-    if (!confirm(`¿Confirmas el envío de alertas de vencimiento para ${targets.length} contratos a Asesores, GG (Ricardo Gallo Pizarro) y GC (Yanneth Parra)?`)) {
+    const recipientsList = [
+      expSendGG && 'Ricardo Gallo (GG)',
+      expSendGC && 'Yanneth Parra (GC)',
+      expSendAsesor && 'Asesor a Cargo'
+    ].filter(Boolean).join(', ');
+
+    if (!confirm(`¿Confirmas el envío de alertas de vencimiento para ${targets.length} contratos a: ${recipientsList}?`)) {
       return;
     }
 
@@ -634,15 +650,22 @@ export const ChatWhatsAppPage: React.FC = () => {
         `📌 *Acción requerida:* Coordinar gestión comercial de renovación o provisión de rescate.`
       );
 
-      // Enviar a GG y GC
-      const sentGG = await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, msg);
-      const sentGC = await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, msg);
-      let sentAs = true;
-      if (exp.asesorTelefono) {
+      // Enviar condicionalmente según checkboxes activos
+      let sentGG = false;
+      let sentGC = false;
+      let sentAs = false;
+
+      if (expSendGG) {
+        sentGG = await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, msg);
+      }
+      if (expSendGC) {
+        sentGC = await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, msg);
+      }
+      if (expSendAsesor && exp.asesorTelefono) {
         sentAs = await sendSingleWhatsAppText(exp.asesorTelefono, msg);
       }
 
-      const overallSuccess = sentGG || sentGC || sentAs;
+      const overallSuccess = (expSendGG ? sentGG : true) && (expSendGC ? sentGC : true) && (expSendAsesor ? (exp.asesorTelefono ? sentAs : true) : true);
 
       setExpirationRecords(prev => prev.map(item => item.idContrato === exp.idContrato ? { ...item, statusEnvio: overallSuccess ? 'sent' : 'error' } : item));
 
@@ -1292,7 +1315,11 @@ export const ChatWhatsAppPage: React.FC = () => {
 
                         <div className="pt-1 flex items-center justify-between">
                           <span className="text-[10px] text-slate-400 font-medium">
-                            Tripartito: Asesor + GG + GC
+                            Destinatarios: {[
+                              expSendGG && 'GG',
+                              expSendGC && 'GC',
+                              expSendAsesor && 'Asesor'
+                            ].filter(Boolean).join(' + ') || 'Ninguno'}
                           </span>
                           {exp.statusEnvio === 'sent' ? (
                             <span className="text-xs text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -1346,12 +1373,72 @@ export const ChatWhatsAppPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleDispatchExpirations}
-                  disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open'}
+                  disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open' || (!expSendGG && !expSendGC && !expSendAsesor)}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
                 >
                   <Send className="w-4 h-4" />
                   {isDispatching ? 'Despachando Alertas...' : `Envío Manual Contingencia (${selectedExpirations.size})`}
                 </button>
+              </div>
+            </div>
+
+            {/* SELECTOR TRIPARTITO DE DESTINATARIOS (3 BOXES) */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                  Destinatarios Activos para Despacho WhatsApp:
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                  expSendGG 
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={expSendGG}
+                    onChange={(e) => setExpSendGG(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <span>Ricardo Gallo (GG)</span>
+                </label>
+
+                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                  expSendGC 
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={expSendGC}
+                    onChange={(e) => setExpSendGC(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <span>Yanneth Parra (GC)</span>
+                </label>
+
+                <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                  expSendAsesor 
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-900 dark:text-amber-200 ring-1 ring-amber-300' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={expSendAsesor}
+                    onChange={(e) => setExpSendAsesor(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <span>Asesor a Cargo</span>
+                </label>
+
+                {(!expSendGG && !expSendGC && !expSendAsesor) && (
+                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md border border-rose-200">
+                    ⚠️ Ninguno marcado (despacho deshabilitado)
+                  </span>
+                )}
               </div>
             </div>
 
