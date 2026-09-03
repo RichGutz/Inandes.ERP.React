@@ -16,7 +16,9 @@ import {
   CreditCard,
   Users,
   TrendingUp,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface InversionistaData {
@@ -116,6 +118,29 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [selectedExpirations, setSelectedExpirations] = useState<Set<string>>(new Set());
   const [filterSearch, setFilterSearch] = useState('');
   const [filterFondo, setFilterFondo] = useState('TODOS');
+
+  // Estados de Acordeones para Vencimientos (30d, 30-60d, 60-90d)
+  const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
+    'range_30': true,
+    'range_60': true,
+    'range_90': true
+  });
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordions(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const selectGroupExpirations = (records: ExpirationRecord[]) => {
+    const next = new Set(selectedExpirations);
+    const validRecs = records.filter(r => r.statusEnvio !== 'sent');
+    const allSelected = validRecs.every(r => next.has(r.idContrato));
+    if (allSelected) {
+      validRecs.forEach(r => next.delete(r.idContrato));
+    } else {
+      validRecs.forEach(r => next.add(r.idContrato));
+    }
+    setSelectedExpirations(next);
+  };
   
   // Dispatch Progress States
   const [isDispatching, setIsDispatching] = useState(false);
@@ -373,7 +398,7 @@ export const ChatWhatsAppPage: React.FC = () => {
         const finDate = new Date(parseInt(finParts[0], 10), parseInt(finParts[1], 10) - 1, parseInt(finParts[2], 10));
         const diffDays = Math.ceil((finDate.getTime() - todayDateObj.getTime()) / (1000 * 60 * 60 * 24));
 
-        if (diffDays >= 0 && diffDays <= 30) {
+        if (diffDays >= -30 && diffDays <= 90) {
           const invObj = invMap.get(String(c.id_inversionista_1 || '').trim());
           const invNom = invObj?.nombre_completo || c.id_inversionista_1 || 'Inversionista';
           const asKey = String(c.id_asesor || '').trim();
@@ -1182,58 +1207,27 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS (<= 30 DÍAS) */}
-      {activeTab === 'vencimientos' && (
-        <div className="space-y-4">
-          {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-              <strong>Despacho Automático Diario: ACTIVO</strong>
-              <span className="text-amber-700 dark:text-amber-300">
-                • El Bot evalúa diariamente contratos con $0 \le t \le 30$ días y despacha alertas a las 09:00 AM a Asesores, GG (Ricardo Gallo Pizarro) y GC (Gladys Yanneth Parra).
-              </span>
-            </div>
-            <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 font-mono font-bold text-amber-800 dark:text-amber-200 text-[11px]">
-              Cron VPS: 09:00 AM (UTC-5)
-            </span>
-          </div>
+      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS ORGANIZADO EN ACORDEONES (30d, 30-60d, 60-90d) */}
+      {activeTab === 'vencimientos' && (() => {
+        const group30 = expirationRecords.filter(e => e.diasRestantes <= 30);
+        const group60 = expirationRecords.filter(e => e.diasRestantes > 30 && e.diasRestantes <= 60);
+        const group90 = expirationRecords.filter(e => e.diasRestantes > 60 && e.diasRestantes <= 90);
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-            <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                Contratos Próximos a Vencer (Ventana de 30 Días)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Alertas anticipadas para accionar renovaciones comerciales y coordinar liquidez.
-              </p>
-            </div>
+        const sumUSD = (list: ExpirationRecord[]) => list.filter(e => e.moneda === 'USD').reduce((acc, e) => acc + e.montoInversion, 0);
+        const sumPEN = (list: ExpirationRecord[]) => list.filter(e => e.moneda === 'PEN').reduce((acc, e) => acc + e.montoInversion, 0);
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleDispatchExpirations}
-                disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open'}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-                {isDispatching ? 'Despachando Alertas...' : `Envío Manual Contingencia (${selectedExpirations.size})`}
-              </button>
-            </div>
-          </div>
+        const renderContractCards = (list: ExpirationRecord[]) => {
+          if (list.length === 0) {
+            return (
+              <div className="py-8 text-center text-slate-400 text-xs font-semibold bg-white dark:bg-[#151e2e] border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                No hay contratos registrados en este tramo temporal.
+              </div>
+            );
+          }
 
-          {/* LISTA DE CONTRATOS POR VENCER */}
-          {expirationRecords.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-2 shadow-sm">
-              <AlertCircle className="w-10 h-10 text-emerald-500 mx-auto" />
-              <h3 className="font-bold text-slate-800 text-base">No hay contratos por vencer en los próximos 30 días</h3>
-              <p className="text-xs text-slate-400">
-                La cartera se encuentra al día. Las alertas se generarán automáticamente conforme los contratos entren en la ventana de vencimiento.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {expirationRecords.map(exp => {
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              {list.map(exp => {
                 const isSelected = selectedExpirations.has(exp.idContrato);
                 const isUrgent = exp.diasRestantes <= 7;
 
@@ -1242,7 +1236,9 @@ export const ChatWhatsAppPage: React.FC = () => {
                     key={exp.idContrato}
                     className={`border rounded-2xl p-5 transition-all relative overflow-hidden shadow-sm ${
                       isUrgent 
-                        ? 'bg-rose-50/50 border-rose-300 ring-1 ring-rose-200' 
+                        ? 'bg-rose-50/60 border-rose-300 ring-1 ring-rose-200' 
+                        : exp.diasRestantes <= 30
+                        ? 'bg-amber-50/40 border-amber-200'
                         : 'bg-white border-slate-200'
                     }`}
                   >
@@ -1260,9 +1256,15 @@ export const ChatWhatsAppPage: React.FC = () => {
                             {exp.idContrato}
                           </span>
                           <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${
-                            isUrgent ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                            isUrgent 
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300' 
+                              : exp.diasRestantes <= 30
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                              : exp.diasRestantes <= 60
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           }`}>
-                            ⏳ Vence en {exp.diasRestantes} días
+                            {exp.diasRestantes < 0 ? `Venció hace ${Math.abs(exp.diasRestantes)}d` : exp.diasRestantes === 0 ? '¡Vence Hoy!' : `⏳ Vence en ${exp.diasRestantes} días`}
                           </span>
                         </div>
 
@@ -1310,9 +1312,204 @@ export const ChatWhatsAppPage: React.FC = () => {
                 );
               })}
             </div>
-          )}
-        </div>
-      )}
+          );
+        };
+
+        return (
+          <div className="space-y-5">
+            {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <strong>Despacho Automático Diario: ACTIVO</strong>
+                <span className="text-amber-700 dark:text-amber-300">
+                  • El Bot evalúa diariamente contratos con $0 \le t \le 30$ días y despacha alertas a las 09:00 AM a Asesores, GG (Ricardo Gallo Pizarro) y GC (Gladys Yanneth Parra).
+                </span>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 font-mono font-bold text-amber-800 dark:text-amber-200 text-[11px]">
+                Cron VPS: 09:00 AM (UTC-5)
+              </span>
+            </div>
+
+            {/* HEADER DE ACCIONES MASIVAS */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  Centro de Notificaciones de Vencimientos (30d • 30-60d • 60-90d)
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Alertas comerciales escalonadas para accionar renovaciones oportunas y planificar liquidez.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleDispatchExpirations}
+                  disabled={isDispatching || selectedExpirations.size === 0 || connectionState !== 'open'}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-sm transition-all active:scale-95"
+                >
+                  <Send className="w-4 h-4" />
+                  {isDispatching ? 'Despachando Alertas...' : `Envío Manual Contingencia (${selectedExpirations.size})`}
+                </button>
+              </div>
+            </div>
+
+            {/* ============================================================== */}
+            {/* ACORDEÓN 1: VENCIMIENTO INMEDIATO (<= 30 DÍAS)                 */}
+            {/* ============================================================== */}
+            <div className="border border-rose-200 dark:border-rose-900/60 rounded-2xl overflow-hidden bg-rose-50/20 shadow-sm">
+              <div 
+                onClick={() => toggleAccordion('range_30')}
+                className="p-4 bg-rose-50/70 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/60 flex items-center justify-between cursor-pointer select-none hover:bg-rose-100/60 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    30d
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 text-sm">Vencimiento Inmediato (≤ 30 días)</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-600 text-white uppercase">
+                        Crítico • {group30.length} Contratos
+                      </span>
+                    </div>
+                    <div className="text-xs text-rose-800 font-medium mt-0.5 flex gap-3">
+                      <span>USD: <b>${sumUSD(group30).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
+                      <span>•</span>
+                      <span>PEN: <b>S/ {sumPEN(group30).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectGroupExpirations(group30);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-rose-700 border border-rose-300 hover:bg-rose-50 transition-all cursor-pointer shadow-xs"
+                  >
+                    Seleccionar Todo Tramo
+                  </button>
+                  <div className="p-1 text-slate-500">
+                    {openAccordions['range_30'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </div>
+
+              {openAccordions['range_30'] && (
+                <div className="p-4 bg-white">
+                  {renderContractCards(group30)}
+                </div>
+              )}
+            </div>
+
+            {/* ============================================================== */}
+            {/* ACORDEÓN 2: VENCIMIENTO PRÓXIMO (30 A 60 DÍAS)                 */}
+            {/* ============================================================== */}
+            <div className="border border-amber-200 dark:border-amber-800/60 rounded-2xl overflow-hidden bg-amber-50/20 shadow-sm">
+              <div 
+                onClick={() => toggleAccordion('range_60')}
+                className="p-4 bg-amber-50/70 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800/60 flex items-center justify-between cursor-pointer select-none hover:bg-amber-100/60 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    60d
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 text-sm">Vencimiento Próximo (31 a 60 días)</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        {group60.length} Contratos
+                      </span>
+                    </div>
+                    <div className="text-xs text-amber-800 font-medium mt-0.5 flex gap-3">
+                      <span>USD: <b>${sumUSD(group60).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
+                      <span>•</span>
+                      <span>PEN: <b>S/ {sumPEN(group60).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectGroupExpirations(group60);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 transition-all cursor-pointer shadow-xs"
+                  >
+                    Seleccionar Todo Tramo
+                  </button>
+                  <div className="p-1 text-slate-500">
+                    {openAccordions['range_60'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </div>
+
+              {openAccordions['range_60'] && (
+                <div className="p-4 bg-white">
+                  {renderContractCards(group60)}
+                </div>
+              )}
+            </div>
+
+            {/* ============================================================== */}
+            {/* ACORDEÓN 3: VENCIMIENTO MEDIO PLAZO (60 A 90 DÍAS)             */}
+            {/* ============================================================== */}
+            <div className="border border-blue-200 dark:border-blue-800/60 rounded-2xl overflow-hidden bg-blue-50/20 shadow-sm">
+              <div 
+                onClick={() => toggleAccordion('range_90')}
+                className="p-4 bg-blue-50/70 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/60 flex items-center justify-between cursor-pointer select-none hover:bg-blue-100/60 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    90d
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 text-sm">Planificación Preventiva (61 a 90 días)</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        {group90.length} Contratos
+                      </span>
+                    </div>
+                    <div className="text-xs text-blue-800 font-medium mt-0.5 flex gap-3">
+                      <span>USD: <b>${sumUSD(group90).toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
+                      <span>•</span>
+                      <span>PEN: <b>S/ {sumPEN(group90).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</b></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectGroupExpirations(group90);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-blue-700 border border-blue-300 hover:bg-blue-50 transition-all cursor-pointer shadow-xs"
+                  >
+                    Seleccionar Todo Tramo
+                  </button>
+                  <div className="p-1 text-slate-500">
+                    {openAccordions['range_90'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </div>
+
+              {openAccordions['range_90'] && (
+                <div className="p-4 bg-white">
+                  {renderContractCards(group90)}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* CONTENIDO PESTAÑA 4: PADRÓN DE PARTÍCIPES & 3FA */}
       {activeTab === 'participes' && (
