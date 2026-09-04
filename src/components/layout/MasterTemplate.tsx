@@ -75,6 +75,13 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
     setOpenGroup(prev => (prev === g ? null : g));
   }, []);
 
+  useEffect(() => {
+    const currentModuleGroup = activeTab === 'home' ? null : (isCRM ? 'crm' : isFactoring ? 'factoring' : isConfirming ? 'confirming' : isHerr ? 'herramientas' : isMant ? 'mantenimiento' : null);
+    if (currentModuleGroup) {
+      setOpenGroup(currentModuleGroup);
+    }
+  }, [activeTab, isCRM, isFactoring, isConfirming, isHerr, isMant]);
+
   // Estado para modal ficticio de cambio de contraseña
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');

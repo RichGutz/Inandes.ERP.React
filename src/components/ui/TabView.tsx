@@ -44,16 +44,9 @@ export const TabView: React.FC<TabViewProps> = ({ tabs, activeTab, onTabChange }
         })}
       </div>
 
-      {/* Tabs Content - Keep-Alive en DOM para evitar pérdida de datos y desmontes */}
+      {/* Tabs Content */}
       <div className="flex-1 overflow-auto bg-[var(--bg-app)] p-4 relative">
-        {tabs.map(tab => (
-          <div 
-            key={tab.id} 
-            className={`h-full w-full ${activeTab === tab.id ? 'block' : 'hidden'}`}
-          >
-            {tab.content}
-          </div>
-        ))}
+        {tabs.find(tab => tab.id === activeTab)?.content}
       </div>
     </div>
   );
