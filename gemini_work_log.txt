@@ -482,7 +482,12 @@
 2. Punto 9 (Asesor Asignado): Sub-tab dedicado 'Asesor Asignado' en modal de participes con perfil de asesor, contratos vinculados y boton de reasignacion en lote. Desplegado en commit 28fa894.
 3. Punto 10 (Supabase DDL): Creada tabla 'crm_configuraciones' en VPS Contabo con soporte JSONB, timestamps y politicas RLS completas.
 4. Punto 2 (Tablero de Vencimientos por Cortes): Filtrado exclusivo para mostrar exactamente los 3 cortes contables abiertos futuros (30 Set 2026 Q3, 31 Oct 2026 B5, 31 Dic 2026 B6/Q4), eliminando cortes cerrados pasados y etiquetas informales. Desplegado en commit 0e6a3b3.
-5. Memoria forense y documentacion asentada en Obsidian (15.Mejoras.RGP.03.09.16.md) bajo commit 94c4c85.
+[2026-09-04 08:06:00-05:00] TAREA: Alinear Tablero de Alertas de Vencimiento a la ventana canónica de 120 días y los 3 cortes futuros oficiales.
+[2026-09-04 08:06:00-05:00] ESTADO: Completado con éxito.
+1. Reutilizada la lógica canónica de contratos por vencer (`diffDays >= -30 && diffDays <= 120`) en `ChatWhatsAppPage.tsx`, eliminando registros vencidos pasados fuera de la ventana.
+2. Ajustado el filtro de los 3 bloques de cortes contables futuros oficiales (Setiembre Q3, Octubre B5 y Diciembre B6/Q4) para abarcar exactamente los contratos que vencen en cada período correspondiente.
+3. Actualizada la etiqueta del encabezado a "Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos por Vencer)".
+4. Verificada la compilación limpia en terminal (`npm run build` exit code 0) y desplegado a producción en commit `f1aecac`.
 
 
 
