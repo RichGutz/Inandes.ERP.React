@@ -251,10 +251,10 @@ export function generateReporteBelloPdfHtml(
                 const penResc = r.penalidad_rescate !== undefined ? r.penalidad_rescate : (r.penalidad || 0);
                 
                 // Mapeo Paritario 1:1 con Excel Maestro
-                const rNetoFinal = isAumento ? 0 : (r.neto_total !== undefined ? r.neto_total : Math.round(((repVal || 0) - (deducTot || 0)) * 100) / 100);
+                const rNetoFinal = isAumento ? 0 : (r.neto_total !== undefined ? r.neto_total : Math.max(0, Math.round(((repVal || 0) - (deducTot || 0)) * 100) / 100));
                 const rDevolucionCap = isAumento ? 0 : (r.devolucion_capital !== undefined ? r.devolucion_capital : (r.rescate || 0));
                 const rRescatesNetos = isAumento ? 0 : Math.round(((rDevolucionCap || 0) - (penResc || 0)) * 100) / 100;
-                const rTransferencia = isAumento ? 0 : Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
+                const rTransferencia = isAumento ? 0 : (r.monto_transferir !== undefined ? r.monto_transferir : Math.max(0, Math.round((rNetoFinal + rRescatesNetos) * 100) / 100));
                 const capFin = r.capital_final || 0;
 
                 if (isAumento) {

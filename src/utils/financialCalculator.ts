@@ -418,15 +418,15 @@ export const generateRetornosV40 = async (
       
       const tieneRescateTotal = r.cron_rescates.some((x: any) => x.es_rescate_total || (x.monto > 0 && x.monto >= r.capital_base));
 
-      let cap_z = Math.round(neta * (1 - r.porcentaje_reparto) * 100) / 100;
-      let rep_v = Math.round(neta * r.porcentaje_reparto * 100) / 100;
-
       const aum_v = r.hijos.reduce((sum: number, h: any) => sum + h.monto, 0);
+
+      let cap_z_bruto = Math.round(neta * (1 - r.porcentaje_reparto) * 100) / 100;
+      let rep_v_bruto = Math.round(neta * r.porcentaje_reparto * 100) / 100;
 
       let rescate_sum = 0;
       if (tieneRescateTotal) {
-        cap_z = 0.0;
-        rep_v = neta;
+        cap_z_bruto = 0.0;
+        rep_v_bruto = neta;
         rescate_sum = Math.round((r.capital_base + aum_v) * 100) / 100;
       } else {
         rescate_sum = r.cron_rescates.reduce((sum: number, x: any) => sum + x.monto, 0);
@@ -440,11 +440,25 @@ export const generateRetornosV40 = async (
         .filter((x: any) => x.tipo_cargo === 'PENALIDAD_RESCATE')
         .reduce((sum: number, x: any) => sum + Number(x.monto_cobrar), 0);
 
-      let cap_final = Math.round((r.capital_base + aum_v + cap_z - rescate_sum - penalidad_sum) * 100) / 100;
+      // Cascada de Absorción Canónica de Deducciones Ordinarias (Reparto -> Capitalización -> Capital Base)
+      const ded_cubierta_reparto = Math.min(rep_v_bruto, ded_ord);
+      const rep_v_neto = Math.round((rep_v_bruto - ded_cubierta_reparto) * 100) / 100;
+
+      const ded_remanente = Math.round((ded_ord - ded_cubierta_reparto) * 100) / 100;
+      const ded_cubierta_cap = Math.min(cap_z_bruto, ded_remanente);
+      const cap_z_neto = Math.round((cap_z_bruto - ded_cubierta_cap) * 100) / 100;
+
+      const ded_excedente_capital = Math.round((ded_remanente - ded_cubierta_cap) * 100) / 100;
+
+      let cap_final = Math.round((r.capital_base + aum_v + cap_z_neto - rescate_sum - penalidad_sum - ded_excedente_capital) * 100) / 100;
       if (tieneRescateTotal || cap_final < 0) {
         cap_final = 0.0;
       }
       const tipo_ev = (cap_final <= 0 || tieneRescateTotal) ? "cierre_fin_contrato" : "cierre_fin_ciclo";
+
+      const rNetoFinal = rep_v_neto;
+      const rRescatesNetos = Math.round((rescate_sum - penalidad_sum) * 100) / 100;
+      const rTransferencia = Math.max(0.0, Math.round((rNetoFinal + rRescatesNetos) * 100) / 100);
 
       // Crear payload de auditoría
       const payloadEnriquecido = {
@@ -456,8 +470,8 @@ export const generateRetornosV40 = async (
         interes_bruto: bruto,
         impuesto_5_pct: imp,
         interes_neto: neta,
-        capitalizacion: cap_z,
-        reparto_valor: rep_v,
+        capitalizacion: cap_z_neto,
+        reparto_valor: rep_v_bruto,
         deducciones_ordinarias: ded_ord,
         rescates_capital: rescate_sum,
         penalidades: penalidad_sum,
@@ -483,8 +497,8 @@ export const generateRetornosV40 = async (
         interes_generado_bruto: bruto,
         impuestos_renta: imp,
         interes_neto_disponible: neta,
-        monto_capitalizacion: cap_z,
-        monto_reparto: rep_v,
+        monto_capitalizacion: cap_z_neto,
+        monto_reparto: rep_v_bruto,
         monto_deduccion: ded_ord,
         monto_rescate: rescate_sum,
         penalidad_rescate: penalidad_sum,
@@ -508,15 +522,11 @@ export const generateRetornosV40 = async (
         rx[columnasFechasFund[k]] = Math.round(r.valores_dia_padre[k] * 1000000) / 1000000;
       }
 
-      const rNetoFinal = Math.round((rep_v - ded_ord) * 100) / 100;
-      const rRescatesNetos = Math.round((rescate_sum - penalidad_sum) * 100) / 100;
-      const rTransferencia = Math.round((rNetoFinal + rRescatesNetos) * 100) / 100;
-
       rx["INT. BRUTO"] = bruto_padre;
       rx["IR (5%)"] = imp;
       rx["BASE NETA"] = neta;
-      rx["CAPITALIZACION"] = cap_z;
-      rx["REPARTO"] = rep_v;
+      rx["CAPITALIZACION"] = cap_z_neto;
+      rx["REPARTO"] = rep_v_bruto;
       rx["DEDUCCIONES"] = ded_ord;
       rx["PENALIDAD"] = penalidad_sum;
       rx["NETO FINAL"] = rNetoFinal;
@@ -561,12 +571,13 @@ export const generateRetornosV40 = async (
         bruto_total: bruto_padre,
         impuesto_total: imp,
         base_neta: neta,
-        capitalizacion: cap_z,
-        reparto_valor: rep_v,
+        capitalizacion: cap_z_neto,
+        reparto_valor: rep_v_bruto,
         deducciones_total: ded_ord,
-        neto_total: Math.round((rep_v - ded_ord) * 100) / 100,
+        neto_total: rNetoFinal,
         devolucion_capital: rescate_sum,
         penalidad_rescate: penalidad_sum,
+        monto_transferir: rTransferencia,
         capital_final: cap_final
       });
 
@@ -595,10 +606,10 @@ export const generateRetornosV40 = async (
       fTotals.bruto_total += bruto;
       fTotals.impuesto_total += imp;
       fTotals.base_neta += neta;
-      fTotals.capitalizacion += cap_z;
-      fTotals.reparto_valor += rep_v;
+      fTotals.capitalizacion += cap_z_neto;
+      fTotals.reparto_valor += rep_v_bruto;
       fTotals.deducciones_total += ded_ord;
-      fTotals.neto_total += Math.round((rep_v - ded_ord) * 100) / 100;
+      fTotals.neto_total += rNetoFinal;
       fTotals.devolucion_capital += rescate_sum;
       fTotals.penalidad_rescate += penalidad_sum;
       fTotals.aumentos += aum_v;

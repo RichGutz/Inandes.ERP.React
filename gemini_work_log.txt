@@ -520,6 +520,13 @@
 2. Tabla `crm_certificados_eventos`: Actualizados los 4 eventos históricos (#58 emision inicial, #11865 Ene-Feb 2026, #12247 Mar-Abr 2026, #12438 May-Jun 2026) apuntando a la clave canónica `NSGPEN03-056.20240910`.
 3. Control de Calidad Forense: Escaneadas todas las tablas de Supabase (`crm_contratos`, `crm_certificados`, `crm_certificados_eventos`, `crm_deducciones_rescates`, `crm_inversionistas`, `crm_asesores`, `crm_fondos`, `crm_configuraciones`). 0 coincidencias residuales con `20240710` o `2024-07-10` para esta persona.
 4. Integración Contable: El capital de S/ 315,058.41 (saldo actual capitalizado S/ 328,606.11) se mantiene 100% activo en el fondo NSGPEN03 con vencimiento en Corte B5 (31/10/2026).
+[2026-09-04 17:20:00-05:00] TAREA: Implementar Cascada de Absorción Canónica de Deducciones Ordinarias y blindar contra Transferencias Negativas (Caso Vera Tudela).
+[2026-09-04 17:20:00-05:00] ESTADO: Completado con éxito.
+1. Diagnóstico: En contratos 100% capitalizables (% Reparto = 0%), la deducción ordinaria se restaba exclusivamente del reparto en efectivo ($0.00), generando transferencias negativas (-$290.52) y capital final sin ajustar.
+2. Solución en financialCalculator.ts y pdfGeneratorBelloConDesglose.ts: Implementada la matriz canónica donde las deducciones ordinarias se absorben en cascada: Bolsa 1 (Reparto) -> Bolsa 2 (Capitalización) -> Bolsa 3 (Capital Base).
+3. Caso Vera Tudela (NSGUSD02-038): Base Neta $296.69, Deducción $290.52 -> Capitalización Neta $6.17, Capital Final $22,988.44, Transferencia $0.00.
+4. Documentación: Asentada la especificación completa en Obsidian (`00.F.DEDUCCIONES.md`) secciones 6 y 7.
+5. Control de Calidad: `npm run build` validado exitoso (exit code 0). Test unitario con aserciones ejecutado con 100% de éxito.
 
 
 
