@@ -487,7 +487,13 @@
 1. Reutilizada la lógica canónica de contratos por vencer (`diffDays >= -30 && diffDays <= 120`) en `ChatWhatsAppPage.tsx`, eliminando registros vencidos pasados fuera de la ventana.
 2. Ajustado el filtro de los 3 bloques de cortes contables futuros oficiales (Setiembre Q3, Octubre B5 y Diciembre B6/Q4) para abarcar exactamente los contratos que vencen en cada período correspondiente.
 3. Actualizada la etiqueta del encabezado a "Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos por Vencer)".
-4. Verificada la compilación limpia en terminal (`npm run build` exit code 0) y desplegado a producción en commit `f1aecac`.
+[2026-09-04 08:21:00-05:00] TAREA: Checkboxes de CC en Ribbon de Cumpleaños (Supabase) y Colapso por Defecto de Cortes de Vencimiento.
+[2026-09-04 08:21:00-05:00] ESTADO: Completado con éxito.
+1. Integrados checkboxes interactivos para Ricardo Gallo y Yanneth Parra como CC en el ribbon de Cumpleaños en `ChatWhatsAppPage.tsx`.
+2. Persistencia automática bidireccional en Supabase (`crm_configuraciones` con clave `alertas_cumpleanos_config`) y localStorage.
+3. Despacho masivo y manual de saludos de cumpleaños adaptado para enviar copia institucional (CC) si están activos.
+4. Establecido colapso por defecto (`openAccordions: false`) en las tarjetas de contratos de los 3 cortes futuros, permitiendo visualizar limpiamente los tableros de configuración al entrar.
+5. Verificada la compilación en terminal (`npm run build` exit code 0) y desplegado en commit `89c2e9e`.
 
 
 
