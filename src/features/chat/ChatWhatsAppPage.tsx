@@ -1418,95 +1418,72 @@ export const ChatWhatsAppPage: React.FC = () => {
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS ORGANIZADAS POR CORTES CONTABLES OFICIALES DE INANDES */}
+      {/* CONTENIDO PESTAÑA 3: ALERTAS DE VENCIMIENTO DE CONTRATOS ORGANIZADAS POR LOS 3 CORTES CONTABLES ABIERTOS OFICIALES */}
       {activeTab === 'vencimientos' && (() => {
-        // 1. Mapear contratos por fecha_fin (Cortes Oficiales de InAndes)
-        const mapByFecha = new Map<string, ExpirationRecord[]>();
-        expirationRecords.forEach(e => {
-          const f = e.fechaFin || 'Sin Fecha';
-          if (!mapByFecha.has(f)) {
-            mapByFecha.set(f, []);
+        // Definición Canónica de los 3 Cortes Contables Abiertos / Futuros Oficiales (Año Fiscal 2026)
+        const CORTES_OFICIALES_FUTUROS = [
+          {
+            blockKey: 'bloque_1' as const,
+            fechaCorte: '2026-09-30',
+            fechaLabel: '30 de Setiembre de 2026',
+            periodo: 'Trimestre 3 (Q3)',
+            blockTitle: '📅 Corte: 30 de Setiembre de 2026',
+            badgeTag: '1° Corte Futuro (Próximo Cierre)',
+            badgeColor: 'bg-indigo-600 text-white',
+            borderColor: 'border-indigo-200 dark:border-indigo-900/60',
+            bgHeader: 'bg-indigo-50/70 dark:bg-indigo-950/40',
+            filterFn: (fechaFin: string) => fechaFin <= '2026-09-30'
+          },
+          {
+            blockKey: 'bloque_2' as const,
+            fechaCorte: '2026-10-31',
+            fechaLabel: '31 de Octubre de 2026',
+            periodo: 'Bimestre 5 (B5)',
+            blockTitle: '📅 Corte: 31 de Octubre de 2026',
+            badgeTag: '2° Corte Futuro',
+            badgeColor: 'bg-sky-600 text-white',
+            borderColor: 'border-sky-200 dark:border-sky-900/60',
+            bgHeader: 'bg-sky-50/70 dark:bg-sky-950/40',
+            filterFn: (fechaFin: string) => fechaFin > '2026-09-30' && fechaFin <= '2026-10-31'
+          },
+          {
+            blockKey: 'bloque_3' as const,
+            fechaCorte: '2026-12-31',
+            fechaLabel: '31 de Diciembre de 2026',
+            periodo: 'Bimestre 6 / Trimestre 4 (B6/Q4)',
+            blockTitle: '📅 Corte: 31 de Diciembre de 2026',
+            badgeTag: '3° Corte Futuro (Cierre Anual)',
+            badgeColor: 'bg-emerald-600 text-white',
+            borderColor: 'border-emerald-200 dark:border-emerald-900/60',
+            bgHeader: 'bg-emerald-50/70 dark:bg-emerald-950/40',
+            filterFn: (fechaFin: string) => fechaFin > '2026-10-31'
           }
-          mapByFecha.get(f)!.push(e);
-        });
+        ];
 
-        // Ordenar fechas cronológicamente
-        const sortedFechas = Array.from(mapByFecha.keys()).sort();
+        const today = new Date();
+        const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        const getCorteInfo = (fechaStr: string) => {
-          if (!fechaStr || fechaStr === 'Sin Fecha') return { label: 'Sin Fecha Definida', periodo: 'Período Especial' };
-          const parts = fechaStr.split('-');
-          if (parts.length !== 3) return { label: fechaStr, periodo: 'Período General' };
-          const y = parts[0];
-          const m = parseInt(parts[1], 10);
-          const d = parts[2];
-          const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
-          const mNom = meses[m - 1] || '';
-
-          let periodo = '';
-          if (m === 2) periodo = 'Bimestre 1 (B1)';
-          else if (m === 3) periodo = 'Trimestre 1 (Q1)';
-          else if (m === 4) periodo = 'Bimestre 2 (B2)';
-          else if (m === 6) periodo = 'Bimestre 3 (B3) / Trimestre 2 (Q2)';
-          else if (m === 8) periodo = 'Bimestre 4 (B4)';
-          else if (m === 9) periodo = 'Trimestre 3 (Q3)';
-          else if (m === 10) periodo = 'Bimestre 5 (B5)';
-          else if (m === 12) periodo = 'Bimestre 6 (B6) / Trimestre 4 (Q4)';
-          else periodo = `Mes ${mNom}`;
-
-          return {
-            label: `${d} ${mNom} ${y}`,
-            periodo: periodo
-          };
-        };
-
-        const bloquesCortes = sortedFechas.map((fecha, idx) => {
-          const records = mapByFecha.get(fecha) || [];
+        const bloquesCortes = CORTES_OFICIALES_FUTUROS.map((corteDef) => {
+          const records = expirationRecords.filter(e => corteDef.filterFn(e.fechaFin || ''));
           const sumUSD = records.filter(r => r.moneda === 'USD').reduce((acc, r) => acc + r.montoInversion, 0);
           const sumPEN = records.filter(r => r.moneda === 'PEN').reduce((acc, r) => acc + r.montoInversion, 0);
-          const dias = records.length > 0 ? records[0].diasRestantes : 0;
-          const info = getCorteInfo(fecha);
 
-          let blockKey: 'bloque_1' | 'bloque_2' | 'bloque_3' | 'bloque_otros' = 'bloque_otros';
-          let blockTitle = `📦 BLOQUE ${idx + 1}: CORTE POSTERIOR`;
-          let badgeTag = 'Corte Posterior';
-          let badgeColor = 'bg-slate-600 text-white';
-          let borderColor = 'border-slate-200 dark:border-slate-800';
-          let bgHeader = 'bg-slate-50/70 dark:bg-slate-900/50';
-
-          if (idx === 0) {
-            blockKey = 'bloque_1';
-            blockTitle = '🥇 BLOQUE 1: SIGUIENTE CORTE INMEDIATO ("Mañana")';
-            badgeTag = 'Corte Inmediato';
-            badgeColor = 'bg-rose-600 text-white';
-            borderColor = 'border-rose-200 dark:border-rose-900/60';
-            bgHeader = 'bg-rose-50/70 dark:bg-rose-950/40';
-          } else if (idx === 1) {
-            blockKey = 'bloque_2';
-            blockTitle = '🥈 BLOQUE 2: SUBSIGUIENTE CORTE ("Pasado Mañana")';
-            badgeTag = 'Subsiguiente Corte';
-            badgeColor = 'bg-amber-600 text-white';
-            borderColor = 'border-amber-200 dark:border-amber-900/60';
-            bgHeader = 'bg-amber-50/70 dark:bg-amber-950/40';
-          } else if (idx === 2) {
-            blockKey = 'bloque_3';
-            blockTitle = '🥉 BLOQUE 3: TERCER CORTE ("Tras Pasado Mañana")';
-            badgeTag = 'Tercer Corte';
-            badgeColor = 'bg-blue-600 text-white';
-            borderColor = 'border-blue-200 dark:border-blue-900/60';
-            bgHeader = 'bg-blue-50/70 dark:bg-blue-950/40';
-          }
+          const cParts = corteDef.fechaCorte.split('-');
+          const cDate = new Date(parseInt(cParts[0], 10), parseInt(cParts[1], 10) - 1, parseInt(cParts[2], 10));
+          const dias = Math.ceil((cDate.getTime() - todayMid.getTime()) / (1000 * 60 * 60 * 24));
 
           return {
-            fecha,
-            info,
-            index: idx,
-            blockKey,
-            blockTitle,
-            badgeTag,
-            badgeColor,
-            borderColor,
-            bgHeader,
+            fecha: corteDef.fechaCorte,
+            info: {
+              label: corteDef.fechaLabel,
+              periodo: corteDef.periodo
+            },
+            blockKey: corteDef.blockKey,
+            blockTitle: corteDef.blockTitle,
+            badgeTag: corteDef.badgeTag,
+            badgeColor: corteDef.badgeColor,
+            borderColor: corteDef.borderColor,
+            bgHeader: corteDef.bgHeader,
             diasRestantes: dias,
             records,
             sumUSD,
@@ -1629,13 +1606,13 @@ export const ChatWhatsAppPage: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 font-bold text-sm text-indigo-900 dark:text-indigo-100">
-                    <span>Tablero de Alertas por Cortes Contables Oficiales de InAndes</span>
+                    <span>Tablero de Alertas por Cortes Contables Oficiales de InAndes (3 Cortes Futuros)</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">
                       Sincronizado Supabase
                     </span>
                   </div>
                   <p className="text-indigo-700 dark:text-indigo-300 mt-0.5">
-                    Organización por cortes de liquidación (Inmediato, Subsiguiente y Tercer Corte). Cada bloque cuenta con su caja de configuración independiente de canales, destinatarios y frecuencia persistida en la tabla <code>crm_configuraciones</code>.
+                    Se muestran estrictamente los 3 siguientes cortes contables abiertos (Setiembre Q3, Octubre B5 y Diciembre B6/Q4). Cada corte cuenta con su panel de configuración de canales, destinatarios y frecuencia persistido en <code>crm_configuraciones</code>.
                   </p>
                 </div>
               </div>
@@ -1661,7 +1638,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                   Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos Activos)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Seleccione contratos o configure individualmente las reglas de despacho por cada corte contable.
+                  Seleccione contratos o configure individualmente las reglas de despacho por cada corte contable futuro.
                 </p>
               </div>
 
@@ -1678,7 +1655,7 @@ export const ChatWhatsAppPage: React.FC = () => {
             </div>
 
             {/* ========================================================================= */}
-            {/* RENDERIZADO DE BLOQUES DE CORTE CONTABLE (1: Inmediato, 2: Sub, 3: Tercer) */}
+            {/* RENDERIZADO DE LOS 3 CORTES CONTABLES ABIERTOS FUTUROS                    */}
             {/* ========================================================================= */}
             {bloquesCortes.map((bloque) => {
               const bKey = bloque.blockKey;
@@ -1705,11 +1682,11 @@ export const ChatWhatsAppPage: React.FC = () => {
                             {bloque.blockTitle}
                           </h3>
                           <span className="font-mono font-bold text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                            📅 {bloque.info.label} • {bloque.info.periodo}
+                            {bloque.info.periodo}
                           </span>
                         </div>
                         <div className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 flex flex-wrap gap-3 items-center">
-                          <span>Contratos: <b>{bloque.records.length}</b></span>
+                          <span>Contratos en Corte: <b>{bloque.records.length}</b></span>
                           <span>•</span>
                           <span>USD: <b>${bloque.sumUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</b></span>
                           <span>•</span>
@@ -1717,10 +1694,10 @@ export const ChatWhatsAppPage: React.FC = () => {
                           <span>•</span>
                           <span className="font-semibold text-slate-800 dark:text-slate-200">
                             {bloque.diasRestantes < 0 
-                              ? `⚠️ Venció hace ${Math.abs(bloque.diasRestantes)}d` 
+                              ? `⚠️ Corte cerrado hace ${Math.abs(bloque.diasRestantes)}d` 
                               : bloque.diasRestantes === 0 
-                              ? '¡Vence Hoy!' 
-                              : `⏳ Vence en ${bloque.diasRestantes} días`}
+                              ? '¡Cierre Contable Hoy!' 
+                              : `⏳ Cierre Contable en ${bloque.diasRestantes} días`}
                           </span>
                         </div>
                       </div>
