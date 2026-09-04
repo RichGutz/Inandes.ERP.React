@@ -506,6 +506,14 @@
 3. Desbloqueada la interfaz en `ChatWhatsAppPage.tsx`: los checkboxes de cumpleañeros permanecen habilitados y el botón de "Envío Manual Contingencia" permite forzar el re-envío inmediato sin bloqueos de auditoría previa.
 4. Documentada la arquitectura técnica en Obsidian (`13.Whats.App.BOT.md`).
 5. Compilación validada `npm run build` (exit code 0) y desplegado en commit correspondiente.
+[2026-09-04 09:10:00-05:00] TAREA: Diagnosticar y corregir pantalla negra (render crash) en la navegación y retorno entre módulos.
+[2026-09-04 09:10:00-05:00] ESTADO: Completado con éxito.
+1. Diagnóstico: El montaje simultáneo de múltiples páginas pesadas y pestañas internas en el DOM (vía `visitedTabs` y `hidden` CSS) provocaba colisiones de renderizado y errores en cálculos de layout/canvas (Recharts/Chart.js), disparando el ErrorBoundary (`bg-slate-900` / pantalla negra).
+2. Solución en App.tsx: Simplificado `renderContent()` mediante un switch-case canónico y limpio para renderizar exclusivamente el módulo activo.
+3. Persistencia de URL intacta: Sincronización continua de `activeTab` con `window.location.hash` y `localStorage`, manteniendo la reapertura exacta tras F5 y navegación de historial.
+4. Solución en TabView.tsx: Renderizado directo de la pestaña activa (`tabs.find(...)`), eliminando el montaje masivo de sub-pestañas ocultas en Factoring y CRM.
+5. Sincronización en MasterTemplate.tsx: Acordeón del menú lateral sincronizado automáticamente con `activeTab` mediante `useEffect`.
+6. Control de Calidad: `npm run build` verificado exitoso (exit code 0). Commit `ff81bb0` publicado en `origin/main` y desplegado automáticamente vía Coolify en Contabo VPS.
 
 
 
