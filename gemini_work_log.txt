@@ -493,7 +493,13 @@
 2. Persistencia automática bidireccional en Supabase (`crm_configuraciones` con clave `alertas_cumpleanos_config`) y localStorage.
 3. Despacho masivo y manual de saludos de cumpleaños adaptado para enviar copia institucional (CC) si están activos.
 4. Establecido colapso por defecto (`openAccordions: false`) en las tarjetas de contratos de los 3 cortes futuros, permitiendo visualizar limpiamente los tableros de configuración al entrar.
-5. Verificada la compilación en terminal (`npm run build` exit code 0) y desplegado en commit `89c2e9e`.
+[2026-09-04 08:38:00-05:00] TAREA: Persistencia Integral de Navegación, Keep-Alive DOM y Sincronización URL Hash/LocalStorage.
+[2026-09-04 08:38:00-05:00] ESTADO: Completado con éxito.
+1. Implementado Keep-Alive en `TabView.tsx` (`tabs.map(...)` con toggles CSS), evitando el desmonte de componentes al cambiar de pestañas internas (Registro, Originación, Liquidaciones, Dashboard). Cero pérdida de datos/formularios.
+2. Implementado Keep-Alive multimodular en `App.tsx` (`visitedTabs`), manteniendo vivos los módulos visitados en memoria al cambiar entre opciones del menú lateral.
+3. Conectada la navegación de `App.tsx` con `window.location.hash` y `localStorage`, de modo que al recargar con F5 o compartir la URL, la aplicación reabre directamente en el módulo activo.
+4. Persistencia de sub-tabs en `sessionStorage` en `FactoringPage.tsx`, `InversionesPage.tsx` y `ChatWhatsAppPage.tsx`.
+5. Compilación validada `npm run build` (exit code 0) y desplegado a producción en commit `78f6398`.
 
 
 
