@@ -476,10 +476,13 @@
 2. Actualizada la duracion del contrato vigente 'NSGPEN03-035.20260701' en 'crm_contratos' de 24 a 12 meses (plazo_meses: '12', fecha_fin: '2027-06-30', tasa_pactada: 8.5, id_fondo_plazo: 'NSGPEN03-12').
 3. Verificada la persistencia en base de datos con cero discrepancias contables.
 
-
-
-
-
+[2026-09-03 19:22:00-05:00] TAREA: Sesion de Mejoras RGP 03.09.2026 (Puntos 2, 8, 9, 10).
+[2026-09-03 19:22:00-05:00] ESTADO: Completado con exito.
+1. Punto 8 (Telecredito BCP): Implementado rollover diferencial de capital (Cap_ant - Cap_nuevo) y columna de comentarios en Excel. Desplegado en commit da5ce81.
+2. Punto 9 (Asesor Asignado): Sub-tab dedicado 'Asesor Asignado' en modal de participes con perfil de asesor, contratos vinculados y boton de reasignacion en lote. Desplegado en commit 28fa894.
+3. Punto 10 (Supabase DDL): Creada tabla 'crm_configuraciones' en VPS Contabo con soporte JSONB, timestamps y politicas RLS completas.
+4. Punto 2 (Tablero de Vencimientos por Cortes): Filtrado exclusivo para mostrar exactamente los 3 cortes contables abiertos futuros (30 Set 2026 Q3, 31 Oct 2026 B5, 31 Dic 2026 B6/Q4), eliminando cortes cerrados pasados y etiquetas informales. Desplegado en commit 0e6a3b3.
+5. Memoria forense y documentacion asentada en Obsidian (15.Mejoras.RGP.03.09.16.md) bajo commit 94c4c85.
 
 
 
