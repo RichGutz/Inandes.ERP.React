@@ -185,8 +185,22 @@ const PHONE_RICARDO_GALLO = '51992778175'; // Juan Ricardo Gallo Pizarro (GG)
 const PHONE_YANNETH_PARRA = '51979781204'; // Gladys Yanneth Parra Forero (GC)
 
 export const ChatWhatsAppPage: React.FC = () => {
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'depositos' | 'cumpleanos' | 'vencimientos' | 'participes' | 'conexion'>('depositos');
+  // Navigation Tabs con persistencia
+  const [activeTab, setActiveTab] = useState<'depositos' | 'cumpleanos' | 'vencimientos' | 'participes' | 'conexion'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('inandes_chat_subtab');
+      if (saved && ['depositos', 'cumpleanos', 'vencimientos', 'participes', 'conexion'].includes(saved)) {
+        return saved as any;
+      }
+    }
+    return 'depositos';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('inandes_chat_subtab', activeTab);
+    }
+  }, [activeTab]);
   
   // Data States
   const [inversionistas, setInversionistas] = useState<InversionistaData[]>([]);

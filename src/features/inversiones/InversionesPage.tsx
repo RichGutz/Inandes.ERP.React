@@ -16,7 +16,22 @@ import {
 } from 'lucide-react';
 
 export const InversionesPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'borradores' | 'porAprobar' | 'vigentes' | 'porVencer' | 'cerrados'>('borradores');
+  const [activeTab, setActiveTab] = useState<'borradores' | 'porAprobar' | 'vigentes' | 'porVencer' | 'cerrados'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('inandes_contratos_subtab');
+      if (saved && ['borradores', 'porAprobar', 'vigentes', 'porVencer', 'cerrados'].includes(saved)) {
+        return saved as any;
+      }
+    }
+    return 'borradores';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('inandes_contratos_subtab', activeTab);
+    }
+  }, [activeTab]);
+
   const [view, setView] = useState<'list' | 'create' | 'approve' | 'active' | 'certificate'>('list');
 
   // Datos del listado

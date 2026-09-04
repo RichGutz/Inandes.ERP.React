@@ -10,7 +10,19 @@ import { LiquidacionesTab } from './components/LiquidacionesTab';
 import { RepositorioTab } from './components/RepositorioTab';
 
 export const FactoringPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('registro');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('inandes_factoring_subtab') || 'registro';
+    }
+    return 'registro';
+  });
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('inandes_factoring_subtab', newTab);
+    }
+  };
 
   const tabs = [
     { id: 'registro',      label: '📋 Registro',     content: <RegistroTab /> },
@@ -28,7 +40,7 @@ export const FactoringPage: React.FC = () => {
         <TabView 
           tabs={tabs} 
           activeTab={activeTab} 
-          onTabChange={setActiveTab} 
+          onTabChange={handleTabChange} 
         />
       </div>
     </div>

@@ -55,9 +55,50 @@ function App() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [userFullName, setUserFullName] = useState<string>('');
   const [userRoles, setUserRoles] = useState<UserModuleAccess[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('home');
+  
+  // Persistencia de módulo activo mediante URL Hash y LocalStorage
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash) return hash;
+      const saved = localStorage.getItem('inandes_active_tab');
+      if (saved) return saved;
+    }
+    return 'home';
+  });
+
+  // Conjunto de módulos visitados para Keep-Alive en memoria (cero pérdida de formularios/estado)
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set([activeTab]));
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inandes_active_tab', newTab);
+      window.location.hash = newTab;
+    }
+  };
+
+  useEffect(() => {
+    setVisitedTabs(prev => {
+      if (prev.has(activeTab)) return prev;
+      const next = new Set(prev);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && hash !== activeTab) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [activeTab]);
 
   useEffect(() => {
     const isDevLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && sessionStorage.getItem('dev_local_login') === 'true';
@@ -504,71 +545,70 @@ function App() {
     );
   };
 
-  // Renderizado condicional de vistas según la pestaña seleccionada
+  // Renderizado Keep-Alive de vistas visitadas para preservar estado al cambiar de menú lateral
   const renderContent = () => {
-    switch (activeTab) {
+    const modules: Record<string, React.ReactNode> = {
       // Home (Logos)
-      case 'home':
-        return (
-          <div className="flex flex-col items-center justify-center h-full min-h-[500px] gap-8 animate-fadeIn">
-            <div className="flex items-center gap-12">
-              <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-16 object-contain opacity-50 hover:opacity-100 transition-opacity" />
-              <div className="w-px h-16 bg-slate-200 dark:bg-slate-700"></div>
-              <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes" className="h-20 object-contain" />
-            </div>
-            <h2 className="text-slate-400 dark:text-slate-500 font-bold tracking-widest text-sm uppercase">Seleccione un módulo en el menú lateral para comenzar</h2>
+      home: (
+        <div className="flex flex-col items-center justify-center h-full min-h-[500px] gap-8 animate-fadeIn">
+          <div className="flex items-center gap-12">
+            <img src="/Logo.Geeksoft.png" alt="Geeksoft" className="h-16 object-contain opacity-50 hover:opacity-100 transition-opacity" />
+            <div className="w-px h-16 bg-slate-200 dark:bg-slate-700"></div>
+            <img src="/assets/Logo.Inandes.MODERNO.png" alt="InAndes" className="h-20 object-contain" />
           </div>
-        );
+          <h2 className="text-slate-400 dark:text-slate-500 font-bold tracking-widest text-sm uppercase">Seleccione un módulo en el menú lateral para comenzar</h2>
+        </div>
+      ),
 
       // CRM Migrados
-      case 'crm_asesores':
-        return <AsesoresPage />;
-      case 'crm_fondos':
-        return <FondosPage />;
-      case 'crm_inversionistas':
-        return <InversionistasPage />;
-      case 'crm_contratos':
-        return <InversionesPage />;
+      crm_asesores: <AsesoresPage />,
+      crm_fondos: <FondosPage />,
+      crm_inversionistas: <InversionistasPage />,
+      crm_contratos: <InversionesPage />,
 
       // Factoring
-      case 'factoring_core':
-        return <FactoringPage />;
+      factoring_core: <FactoringPage />,
 
       // Confirming Placeholder
-      case 'confirming_futuros':
-        return renderMigrationPlaceholder('Futuros Módulos', 'modules/08_Confirming_Placeholder.py');
+      confirming_futuros: renderMigrationPlaceholder('Futuros Módulos', 'modules/08_Confirming_Placeholder.py'),
 
       // CRM
-      case 'crm_certificados':
-        return <CertificadosPage />;
-      case 'crm_deducciones':
-        return <DeduccionesPage />;
-      case 'crm_chat':
-        return <ChatWhatsAppPage />;
+      crm_certificados: <CertificadosPage />,
+      crm_deducciones: <DeduccionesPage />,
+      crm_chat: <ChatWhatsAppPage />,
 
       // Herramientas
-      case 'herramientas_calculadora':
-        return (
-          <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-            <Calculator size={48} className="text-emerald-600/70 dark:text-emerald-450/70" />
-            <h2 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 uppercase">Calculadora Financiera</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">Módulo en construcción. Simulador local de retenciones, cuotas y rendimientos.</p>
-          </div>
-        );
-      case 'herramientas_agentes':
-        return renderMigrationPlaceholder('Agentes IA', 'modules/21_Agentes_IA.py');
+      herramientas_calculadora: (
+        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+          <Calculator size={48} className="text-emerald-600/70 dark:text-emerald-450/70" />
+          <h2 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 uppercase">Calculadora Financiera</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">Módulo en construcción. Simulador local de retenciones, cuotas y rendimientos.</p>
+        </div>
+      ),
+      herramientas_agentes: renderMigrationPlaceholder('Agentes IA', 'modules/21_Agentes_IA.py'),
 
       // Mantenimiento
-      case 'mantenimiento_estilos':
-        return <EstilosPage />;
-      case 'mantenimiento_limpieza':
-        return renderMigrationPlaceholder('Limpieza BD', 'modules/30_Limpieza_BD.py');
-      case 'mantenimiento_roles':
-        return <RolesPage />;
+      mantenimiento_estilos: <EstilosPage />,
+      mantenimiento_limpieza: renderMigrationPlaceholder('Limpieza BD', 'modules/30_Limpieza_BD.py'),
+      mantenimiento_roles: <RolesPage />
+    };
 
-      default:
-        return <InversionistasPage />;
-    }
+    return (
+      <div className="h-full w-full relative">
+        {Array.from(visitedTabs).map((tabKey) => {
+          const comp = modules[tabKey] || <InversionistasPage />;
+          const isCurrent = activeTab === tabKey;
+          return (
+            <div 
+              key={tabKey} 
+              className={`h-full w-full ${isCurrent ? 'block' : 'hidden'}`}
+            >
+              {comp}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const exportTabs = ['crm_inversionistas', 'crm_asesores', 'crm_fondos', 'crm_contratos'];
@@ -611,7 +651,7 @@ function App() {
       title={currentMetadata.title} 
       subtitle={currentMetadata.subtitle} 
       activeTab={activeTab} 
-      setActiveTab={setActiveTab}
+      setActiveTab={handleTabChange}
       onExportExcel={enableExport ? handleExportExcel : undefined}
       onExportPDF={enableExport ? handleExportPDF : undefined}
       userEmail={userEmail}
