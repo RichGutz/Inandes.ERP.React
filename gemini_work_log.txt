@@ -499,7 +499,13 @@
 2. Implementado Keep-Alive multimodular en `App.tsx` (`visitedTabs`), manteniendo vivos los módulos visitados en memoria al cambiar entre opciones del menú lateral.
 3. Conectada la navegación de `App.tsx` con `window.location.hash` y `localStorage`, de modo que al recargar con F5 o compartir la URL, la aplicación reabre directamente en el módulo activo.
 4. Persistencia de sub-tabs en `sessionStorage` en `FactoringPage.tsx`, `InversionesPage.tsx` y `ChatWhatsAppPage.tsx`.
-5. Compilación validada `npm run build` (exit code 0) y desplegado a producción en commit `78f6398`.
+[2026-09-04 08:56:00-05:00] TAREA: Despliegue de Cron Autónomo de Cumpleaños en VPS Contabo y Desbloqueo de Envío Manual de Contingencia.
+[2026-09-04 08:56:00-05:00] ESTADO: Completado con éxito.
+1. Creado y desplegado el script autónomo `/data/whatsapp_bot/cron_cumpleanos.py` en el VPS Contabo (`169.58.168.107`), consultando partícipes de Supabase, validando fecha en zona horaria America/Lima (UTC-5) y despachando saludos vía Evolution API con copias CC a Ricardo Gallo y Yanneth Parra.
+2. Instalada la tarea programada en Linux crontab (`30 13 * * *` = 08:30 AM Lima) para ejecución 100% desatendida.
+3. Desbloqueada la interfaz en `ChatWhatsAppPage.tsx`: los checkboxes de cumpleañeros permanecen habilitados y el botón de "Envío Manual Contingencia" permite forzar el re-envío inmediato sin bloqueos de auditoría previa.
+4. Documentada la arquitectura técnica en Obsidian (`13.Whats.App.BOT.md`).
+5. Compilación validada `npm run build` (exit code 0) y desplegado en commit correspondiente.
 
 
 

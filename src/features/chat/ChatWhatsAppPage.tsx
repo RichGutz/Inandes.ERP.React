@@ -549,7 +549,7 @@ export const ChatWhatsAppPage: React.FC = () => {
 
       setBirthdayRecords(bdays);
       const initBdays = new Set<string>();
-      bdays.filter(b => b.esHoy && b.telefono && b.statusEnvio !== 'sent').forEach(b => initBdays.add(b.codigo));
+      bdays.filter(b => b.esHoy && b.telefono).forEach(b => initBdays.add(b.codigo));
       setSelectedBirthdays(initBdays);
 
       // 7. Procesar Alertas de Vencimiento de Contratos (<= 30 días)
@@ -1495,7 +1495,7 @@ export const ChatWhatsAppPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      disabled={!b.telefono || b.statusEnvio === 'sent'}
+                      disabled={!b.telefono}
                       onChange={() => toggleSelectBirthday(b.codigo)}
                       className="mt-1 rounded border-slate-300 text-pink-600 focus:ring-pink-500 w-4 h-4 cursor-pointer disabled:opacity-30"
                     />
