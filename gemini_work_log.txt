@@ -514,6 +514,12 @@
 4. Solución en TabView.tsx: Renderizado directo de la pestaña activa (`tabs.find(...)`), eliminando el montaje masivo de sub-pestañas ocultas en Factoring y CRM.
 5. Sincronización en MasterTemplate.tsx: Acordeón del menú lateral sincronizado automáticamente con `activeTab` mediante `useEffect`.
 6. Control de Calidad: `npm run build` verificado exitoso (exit code 0). Commit `ff81bb0` publicado en `origin/main` y desplegado automáticamente vía Coolify en Contabo VPS.
+[2026-09-04 09:28:00-05:00] TAREA: Actualizar fecha de inicio (10/09/2024), vencimiento (31/10/2026), claves canónicas y QC integral para Sánchez Monteblanco (NSGPEN03-056).
+[2026-09-04 09:28:00-05:00] ESTADO: Completado con éxito.
+1. Tabla `crm_contratos`: Actualizado `id_contrato = 'NSGPEN03-056.20240910'`, `fecha_inicio = '2024-09-10'`, `fecha_fin = '2026-10-31'`, `estado = 'emitido'` (Vigente). Eliminado el ID previo `NSGPEN03-056.20240710`.
+2. Tabla `crm_certificados_eventos`: Actualizados los 4 eventos históricos (#58 emision inicial, #11865 Ene-Feb 2026, #12247 Mar-Abr 2026, #12438 May-Jun 2026) apuntando a la clave canónica `NSGPEN03-056.20240910`.
+3. Control de Calidad Forense: Escaneadas todas las tablas de Supabase (`crm_contratos`, `crm_certificados`, `crm_certificados_eventos`, `crm_deducciones_rescates`, `crm_inversionistas`, `crm_asesores`, `crm_fondos`, `crm_configuraciones`). 0 coincidencias residuales con `20240710` o `2024-07-10` para esta persona.
+4. Integración Contable: El capital de S/ 315,058.41 (saldo actual capitalizado S/ 328,606.11) se mantiene 100% activo en el fondo NSGPEN03 con vencimiento en Corte B5 (31/10/2026).
 
 
 
