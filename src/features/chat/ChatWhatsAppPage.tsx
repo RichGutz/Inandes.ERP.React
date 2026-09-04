@@ -72,6 +72,16 @@ const DEFAULT_CORTES_CONFIG: AlertasCortesConfig = {
   }
 };
 
+export interface BirthdayCCConfig {
+  ricardo: boolean;
+  yanneth: boolean;
+}
+
+const DEFAULT_BIRTHDAY_CC_CONFIG: BirthdayCCConfig = {
+  ricardo: true,
+  yanneth: true
+};
+
 const DEFAULT_BIRTHDAY_TEMPLATE = `🎉 *¡FELIZ CUMPLEAÑOS DE PARTE DE INANDES!* 🎂
 
 Estimad@ *{primerNombre}*,
@@ -243,7 +253,7 @@ export const ChatWhatsAppPage: React.FC = () => {
     saveCortesConfig(nextConfig, blockKey);
   };
 
-  // Estados de Plantilla de Saludos de Cumpleaños
+  // Estados de Plantilla de Saludos de Cumpleaños y CC Institucional
   const [birthdayTemplate, setBirthdayTemplate] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('inandes_wa_birthday_template') || DEFAULT_BIRTHDAY_TEMPLATE;
@@ -254,11 +264,47 @@ export const ChatWhatsAppPage: React.FC = () => {
   const [tempBirthdayTemplate, setTempBirthdayTemplate] = useState<string>(birthdayTemplate);
   const [templateSaveSuccess, setTemplateSaveSuccess] = useState<boolean>(false);
 
-  // Estados de Acordeones para Cortes Contables
+  // CC Institucional para Saludos de Cumpleaños (Persistido en Supabase crm_configuraciones)
+  const [birthdayCCConfig, setBirthdayCCConfig] = useState<BirthdayCCConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('inandes_wa_birthday_cc_config');
+        if (local) return JSON.parse(local);
+      } catch {}
+    }
+    return DEFAULT_BIRTHDAY_CC_CONFIG;
+  });
+  const [savingBirthdayCC, setSavingBirthdayCC] = useState<boolean>(false);
+
+  const saveBirthdayCCConfig = async (newConfig: BirthdayCCConfig) => {
+    setBirthdayCCConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inandes_wa_birthday_cc_config', JSON.stringify(newConfig));
+    }
+    setSavingBirthdayCC(true);
+    try {
+      const { error } = await supabase.from('crm_configuraciones').upsert({
+        clave: 'alertas_cumpleanos_config',
+        valor: newConfig,
+        updated_at: new Date().toISOString(),
+        updated_by: 'admin'
+      });
+      if (!error) {
+        setConfigSuccessMsg('Copia institucional (CC) de cumpleaños guardada en Supabase.');
+        setTimeout(() => setConfigSuccessMsg(null), 3000);
+      }
+    } catch (err) {
+      console.error('Error guardando alertas_cumpleanos_config:', err);
+    } finally {
+      setSavingBirthdayCC(false);
+    }
+  };
+
+  // Estados de Acordeones para Cortes Contables (Colapsados por defecto para ver solo los tableros de configuración)
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({
-    'corte_bloque_1': true,
-    'corte_bloque_2': true,
-    'corte_bloque_3': true,
+    'corte_bloque_1': false,
+    'corte_bloque_2': false,
+    'corte_bloque_3': false,
     'corte_bloque_otros': false
   });
 
@@ -587,6 +633,21 @@ export const ChatWhatsAppPage: React.FC = () => {
             localStorage.setItem('inandes_alertas_cortes_config', JSON.stringify(loadedCfg));
           }
         }
+
+        // Cargar Configuración de CC para Saludos de Cumpleaños
+        const { data: bdayCfgRow } = await supabase
+          .from('crm_configuraciones')
+          .select('valor')
+          .eq('clave', 'alertas_cumpleanos_config')
+          .maybeSingle();
+
+        if (bdayCfgRow?.valor) {
+          const loadedBdayCC = { ...DEFAULT_BIRTHDAY_CC_CONFIG, ...bdayCfgRow.valor };
+          setBirthdayCCConfig(loadedBdayCC);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('inandes_wa_birthday_cc_config', JSON.stringify(loadedBdayCC));
+          }
+        }
       } catch (cfgErr) {
         console.warn('Error loading crm_configuraciones from Supabase:', cfgErr);
       }
@@ -731,6 +792,15 @@ export const ChatWhatsAppPage: React.FC = () => {
       const msg = formatBirthdayMessage(birthdayTemplate, b);
 
       const success = await sendSingleWhatsAppText(b.telefono, msg);
+
+      if (success) {
+        if (birthdayCCConfig.ricardo) {
+          await sendSingleWhatsAppText(PHONE_RICARDO_GALLO, `🎂 *[CC CUMPLEAÑOS]* Saludo enviado a *${b.nombre}* (${b.telefono}):\n\n${msg}`);
+        }
+        if (birthdayCCConfig.yanneth) {
+          await sendSingleWhatsAppText(PHONE_YANNETH_PARRA, `🎂 *[CC CUMPLEAÑOS]* Saludo enviado a *${b.nombre}* (${b.telefono}):\n\n${msg}`);
+        }
+      }
 
       setBirthdayRecords(prev => prev.map(item => item.codigo === b.codigo ? { ...item, statusEnvio: success ? 'sent' : 'error' } : item));
 
@@ -1304,8 +1374,8 @@ export const ChatWhatsAppPage: React.FC = () => {
       {/* CONTENIDO PESTAÑA 2: CUMPLEAÑOS */}
       {activeTab === 'cumpleanos' && (
         <div className="space-y-4">
-          {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA */}
-          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3.5 flex items-center justify-between gap-3 text-xs text-emerald-900 dark:text-emerald-200">
+          {/* BANNER DE AUTOMATIZACIÓN 100% DESATENDIDA CON CC INSTITUCIONAL */}
+          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-emerald-900 dark:text-emerald-200 shadow-xs">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <strong>Despacho Automático Diario: ACTIVO</strong>
@@ -1313,7 +1383,42 @@ export const ChatWhatsAppPage: React.FC = () => {
                 • El Bot del servidor despacha los saludos institucionales a las 08:30 AM sin requerir acción manual.
               </span>
             </div>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 font-mono font-bold text-emerald-800 dark:text-emerald-200 text-[11px]">
+
+            {/* SECCIÓN CC EN EL ESPACIO BLANCO DEL RIBBON */}
+            <div className="flex items-center gap-2.5 bg-white/90 dark:bg-slate-900/80 px-3 py-1.5 rounded-lg border border-emerald-300/80 dark:border-emerald-700 shadow-2xs">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                CC WhatsApp:
+              </span>
+              <label className={`flex items-center gap-1.5 text-[11px] font-bold cursor-pointer transition-colors ${
+                birthdayCCConfig.ricardo ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-400 dark:text-slate-500'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={birthdayCCConfig.ricardo}
+                  onChange={(e) => saveBirthdayCCConfig({ ...birthdayCCConfig, ricardo: e.target.checked })}
+                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                />
+                <span>Ricardo Gallo</span>
+              </label>
+
+              <label className={`flex items-center gap-1.5 text-[11px] font-bold cursor-pointer transition-colors ${
+                birthdayCCConfig.yanneth ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-400 dark:text-slate-500'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={birthdayCCConfig.yanneth}
+                  onChange={(e) => saveBirthdayCCConfig({ ...birthdayCCConfig, yanneth: e.target.checked })}
+                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                />
+                <span>Yanneth Parra</span>
+              </label>
+
+              {savingBirthdayCC && (
+                <span className="text-[10px] text-emerald-600 font-mono animate-pulse">Guardando...</span>
+              )}
+            </div>
+
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 font-mono font-bold text-emerald-800 dark:text-emerald-200 text-[11px] self-start md:self-auto">
               Cron VPS: 08:30 AM (UTC-5)
             </span>
           </div>
@@ -1663,7 +1768,7 @@ export const ChatWhatsAppPage: React.FC = () => {
             {bloquesCortes.map((bloque) => {
               const bKey = bloque.blockKey;
               const cfg = alertasConfig[bKey] || DEFAULT_CORTES_CONFIG[bKey] || DEFAULT_CORTES_CONFIG.bloque_otros;
-              const isAccordionOpen = openAccordions[`corte_${bKey}`] !== false;
+              const isAccordionOpen = !!openAccordions[`corte_${bKey}`];
 
               return (
                 <div 
