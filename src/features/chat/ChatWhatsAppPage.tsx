@@ -534,6 +534,9 @@ export const ChatWhatsAppPage: React.FC = () => {
         const finDate = new Date(parseInt(finParts[0], 10), parseInt(finParts[1], 10) - 1, parseInt(finParts[2], 10));
         const diffDays = Math.ceil((finDate.getTime() - todayDateObj.getTime()) / (1000 * 60 * 60 * 24));
 
+        // Muestra exclusivamente contratos que vencen en los próximos 120 días o vencidos recientemente (-30 días)
+        if (diffDays < -30 || diffDays > 120) return;
+
         const invObj = invMap.get(String(c.id_inversionista_1 || '').trim());
         const invNom = invObj?.nombre_completo || c.id_inversionista_1 || 'Inversionista';
         const invTel = invObj?.telefono ? String(invObj.telefono).replace(/\D/g, '') : '';
@@ -1456,7 +1459,7 @@ export const ChatWhatsAppPage: React.FC = () => {
             badgeColor: 'bg-emerald-600 text-white',
             borderColor: 'border-emerald-200 dark:border-emerald-900/60',
             bgHeader: 'bg-emerald-50/70 dark:bg-emerald-950/40',
-            filterFn: (fechaFin: string) => fechaFin > '2026-10-31'
+            filterFn: (fechaFin: string) => fechaFin > '2026-10-31' && fechaFin <= '2026-12-31'
           }
         ];
 
@@ -1635,7 +1638,7 @@ export const ChatWhatsAppPage: React.FC = () => {
               <div>
                 <h2 className="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos Activos)
+                  Gestión de Alertas de Vencimiento ({expirationRecords.length} Contratos por Vencer)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Seleccione contratos o configure individualmente las reglas de despacho por cada corte contable futuro.
