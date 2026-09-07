@@ -528,39 +528,70 @@
 4. Documentación: Asentada la especificación completa en Obsidian (`00.F.DEDUCCIONES.md`) secciones 6 y 7.
 5. Control de Calidad: `npm run build` validado exitoso (exit code 0). Test unitario con aserciones ejecutado con 100% de éxito.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ======================================================================
 FECHA: 2026-09-06 14:12:40
 TAREA: Auditoria Forense y Guia Oficial de Reprocesamiento Periodos Mayo - Agosto 2026
 RESULTADO:
-- Diagnostico del caso raiz: Contrato NSGUSD02-015.20260625 (Ruth Janet Quispe Saire,  USD, 100% Capitalizable).
+- Diagnostico del caso raiz: Contrato NSGUSD02-015.20260625 (Ruth Janet Quispe Saire, USD, 100% Capitalizable).
 - Reconstruccion integral de ingredientes: 5 contratos en Mayo-Junio, 1 aumento de capital (+S/200k) y 10 contratos en Julio-Agosto.
-- Verificacion de base de cierre previa (30/04/2026): 3 fines de contrato, 4 rescates parciales, 1 rescate con penalidad (,864.28 USD Katty Zuzunaga) y 2 aumentos de capital.
+- Verificacion de base de cierre previa (30/04/2026): 3 fines de contrato, 4 rescates parciales, 1 rescate con penalidad (Katty Zuzunaga) y 2 aumentos de capital.
 - Generacion de Guia Oficial en PDF y Markdown en Obsidian/Inandes.Inversionistas.React/.
 - Creacion de BRANCH TAG de control y retorno a main.
+======================================================================
+
+======================================================================
+FECHA: 2026-09-06 20:58:00
+TAREA: Auditoria Forense y Depuracion de Rescate de Capital Erroneo (NSGUSD02-042.20250130)
+RESULTADO:
+- Localizadas 3 armadas de rescate anticipado en 'crm_cronograma_deducciones_rescates' bajo el agrupador 'RES-NSGUSD02-042.20250130.260903' ($3,000 USD total, creadas el 03/09/2026 18:08:31 UTC).
+- Evaluacion de impacto contable: Estado 'PENDIENTE', sin vinculo a asientos contables ('id_evento_ledger = null'), sin afectacion a cierres previos auditados.
+- Eliminacion exitosa de las 3 filas en Supabase ('egvcinsbyropumybatdf').
+- Verificacion final de integridad: 0 rescates pendientes para el contrato, capital base activo intacto en $50,000.00 USD y estado 'emitido'.
+- Documentacion asentada en Obsidian y bitacoras de trabajo.
+======================================================================
+
+[2026-09-07 08:23:51] feat(APEFAC): Creacion de Presentacion V20 con validacion por dominios corporativos, copia BCC al admin, bloqueo en dispositivos moviles y 2FA obligatorio en cada carga. Branch Tag: PRESENTACION_V20_DOMAINS_BCC.
+[2026-09-07 09:54:26] feat(APEFAC): Despliegue oficial de la Presentacion V22 en Produccion VPS Contabo con la matriz de 9 microservicios (Topes Web y Topes WhatsApp Bot) en Slide 23, validacion 2FA por dominios, BCC y bloqueo en movil.
+================================================================================
+[2026-09-07 11:03:37] - CIERRE DE SESION: BLINDAJE Y DESPLIEGUE PITCH APEFAC 2026 (V22)
+================================================================================
+1. CONTROL DE ACCESO GATEKEEPER 2FA EXCLUSIVO POR DOMINIOS:
+   - Eliminacion completa de arreglos o restricciones por whitelist individual de correos.
+   - Acceso 100% universal y automatico para colaboradores de los 24 dominios corporativos autorizados de APEFAC.
+   - Bloqueo estricto a correos de proveedores publicos/genericos (@gmail.com, @yahoo.com, etc.).
+   - Envio de codigo OTP transaccional de 6 digitos via Resend multi-ruta con copia oculta (BCC) a rgutil@gmail.com y rich@kaizencapital.pe.
+   - Retiro formal del dominio ercapacita.com a solicitud del usuario.
+
+2. DISENO Y HOMOLOGACION VISUAL MODAL / EMAIL:
+   - Homologacion cromatica continua: Fondo del contenedor superior .auth-header-ribbon ajustado a #f4f6f5, eliminando discrepancias de color y recuadros alrededor de LOGO.RISK.CORE.jpg.
+   - Integracion de barra superior en gradiente azul (#0284c7 a #0369a1) y leyenda 'CENTRAL DE RIESGOS GREMIAL • RED DE SEGURIDAD'.
+   - Ajuste exacto del <title> de la pagina y tooltip del favicon a: 'Pitch APEFAC Risk Core'.
+
+3. CONTENIDO ESTRUCTURAL (23 SLIDES COMPLETOS):
+   - Slide 2: Tree swing cartoon oficial de la industria tradicional de software.
+   - Slide 3: Arquitectura agentica y rol del Arquitecto al Mando / Experto Financiero.
+   - Slide 4: Perfil profesional y experiencia en factoring.
+   - Slide 6: Auditoria en caliente y propuesta de valor sin intermediarios.
+   - Slide 8: Modelos WoE, Logit, GLM Probit y XGBoost con glosario tecnico al pie.
+   - Slide 15: Gobernanza por 5 perfiles y hardware UUID.
+   - Slide 18: Suite de reporteadores empresariales autoconfigurables.
+   - Slide 23: Ficha de dimensionamiento express por FACTOR (tabla exacta de 9 microservicios web y bot).
+
+4. PLANTILLA EJECUTIVA DE CORREO:
+   - Generada en HTML responsivo inline para Gmail (email_apefac.html) sin emojis ni marcas de agentes, con tabla comparativa de dominios y enlace directo.
+
+5. CONTROL DE VERSIONES & DESPLIEGUE EN PRODUCCION:
+   - Repositorio: RichGutz/APEFAC (Rama: main, commits 55f9f53, 6f3fbbb, b083a3c, 24d9d89).
+   - Servidor: VPS Contabo (169.58.168.107), contenedor Docker apefac_risk_core_frontend.
+   - URLs Activas: https://apefac.geeksoft.tech/presentation.html y https://apefac.geeksoft.tech/presentation_V22.html
+================================================================================
+
+======================================================================
+FECHA: 2026-09-07 12:15:00-05:00
+TAREA: Correccion de monto por error de digitacion en contrato NSGPEN03-059.20260903 (Neuhaus Buzaglo Fernando Luis)
+ESTADO: Completado con exito.
+RESULTADO:
+1. Actualizada la columna monto_inversion a 267680.00 PEN para el contrato NSGPEN03-059.20260903 en crm_contratos.
+2. Actualizadas las columnas capital_base y capital_final_saldo a 267680.00 PEN para el evento de emision inicial (id_evento 13520) en crm_certificados_eventos.
+3. Verificada la consistencia y saldo de emision inicial sin discrepancias contables.
 ======================================================================

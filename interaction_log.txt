@@ -480,3 +480,19 @@ RESULTADO:
 - Generacion de Guia Oficial en PDF y Markdown en Obsidian/Inandes.Inversionistas.React/.
 - Creacion de BRANCH TAG de control y retorno a main.
 ======================================================================
+
+================================================================================
+[2026-09-07 12:15:00-05:00] CORRECCION DE MONTO POR ERROR DE DIGITACION (NEUHAUS BUZAGLO FERNANDO LUIS - NSGPEN03-059.20260903):
+================================================================================
+1. Solicitud del usuario: Correccion de monto de contrato NSGPEN03-059.20260903 (Neuhaus Buzaglo Fernando Luis, PEN, fecha inicio 2026-09-03, fecha fin 2031-10-31) de 267,700.00 a 267,680.00 PEN.
+2. Actualizacion en tabla crm_contratos:
+   - id_contrato: 'NSGPEN03-059.20260903'
+   - monto_inversion: 267680.00 PEN (anterior: 267700.00 PEN).
+3. Actualizacion en tabla crm_certificados_eventos:
+   - id_evento: 13520 (tipo_evento: 'emision_inicial', id_certificado: 'NSGPEN03-059.20260903.20260903')
+   - capital_base: 267680.00 PEN (anterior: 267700.00 PEN)
+   - capital_final_saldo: 267680.00 PEN (anterior: 267700.00 PEN).
+4. Verificacion de integridad (QC):
+   - Escaneadas todas las tablas de Supabase egvcinsbyropumybatdf.
+   - 0 registros huerfanos con el monto previo de 267,700.00.
+================================================================================
