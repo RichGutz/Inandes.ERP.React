@@ -331,13 +331,16 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
     const fechaProg = r.fecha_proyectada_cobro ? String(r.fecha_proyectada_cobro).split('T')[0] : '';
     const contractEvents = eventsByContract.get(r.id_contrato) || [];
 
-    // Buscar si existe un evento en el ledger que ya amortizó este rescate
+    // Buscar si existe un evento en el ledger que ya amortizó este rescate o deducción
     let matchingEvent = r.id_evento_ledger
       ? contractEvents.find(e => e.id_evento === r.id_evento_ledger)
       : null;
 
     if (!matchingEvent && fechaProg) {
-      matchingEvent = contractEvents.find(e => e.fecha_periodo_fin === fechaProg && e.amortizacion_rescate_monto > 0);
+      matchingEvent = contractEvents.find(e => 
+        e.fecha_periodo_fin === fechaProg && 
+        (e.amortizacion_rescate_monto > 0 || (e as any).monto_deduccion > 0 || e.tipo_evento === 'cierre_fin_ciclo')
+      );
     }
 
     const isAplicado = Boolean(matchingEvent) || r.estado === 'APLICADO';
