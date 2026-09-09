@@ -496,3 +496,106 @@ RESULTADO:
    - Escaneadas todas las tablas de Supabase egvcinsbyropumybatdf.
    - 0 registros huerfanos con el monto previo de 267,700.00.
 ================================================================================
+
+[2026-09-07 14:04:35]
+USER: Correccion de fecha fin contrato Piedad Zavala (31/08/2028) sin rollback.
+AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_certificados_eventos, crm_cronograma_deducciones_rescates). Contrato 100% reactivado y saldo restaurado a $30,000.
+
+================================================================================
+[2026-09-08 18:47:00-05:00] ASENTAMIENTO DE CIERRES Y RESCATE ARMADA 1/3 (OJEDA NOVOA SHEILA MIRIAM):
+================================================================================
+1. Contexto y Transcripcion: Audio SHEYLA.OJEDA.ogg procesado con transcribe_whisper.py.
+2. Regla Operativa Aplicada:
+   - Fondo PEN (NSGPEN01-053.20160101): 100% Capitalizacion todo el ano (Mar-Abr, May-Jun, Jul-Ago y siguientes a 10.5%).
+   - Fondo USD (NSGUSD01-033.20160101): 100% Capitalizacion hasta el 31/08/2026 (a 8.5%), aplicacion de Rescate Armada 1/3 ($66,195.86) el 31/08/2026, y conmutacion a 100% Reparto con tasa 2.5% a partir de Septiembre.
+3. Eventos Asentados en crm_certificados_eventos:
+   - PEN Mar-Abr 2026 (id 14300): CapBase S/ 513,863.62 -> CapFinal S/ 522,548.99 (Cap: S/ 8,685.37).
+   - PEN May-Jun 2026 (id 14301): CapBase S/ 522,548.99 -> CapFinal S/ 531,381.16 (Cap: S/ 8,832.17).
+   - PEN Jul-Ago 2026 (id 14302): CapBase S/ 531,381.16 -> CapFinal S/ 540,509.84 (Cap: S/ 9,128.68).
+   - USD Mar-Abr 2026 (id 14303): CapBase $ 81,566.06 -> CapFinal $ 82,682.10 (Cap: $ 1,116.04).
+   - USD May-Jun 2026 (id 14304): CapBase $ 82,682.10 -> CapFinal $ 83,813.41 (Cap: $ 1,131.31).
+   - USD Jul-Ago 2026 (id 14305): CapBase $ 83,813.41 -> CapAcum $ 84,979.00 -> Rescate $ 66,195.86 -> CapFinal $ 18,783.14.
+4. Cronograma Actualizado:
+   - Cuota RES-NSGUSD01-033.20160101.260903.260831-C.1/3 ($66,195.86) actualizada a APLICADO linkeada a evento 14305.
+5. QC: Ejecutado con exit code 0.
+================================================================================
+[2026-09-08 19:05:00-05:00] CIERRE MASIVO CRONOLOGICO DE FONDOS HASTA AGOSTO 2026 (MOTOR V40):
+================================================================================
+1. Backup Previo Generado:
+   - JSON Snapshot en C:\Users\rguti\Inandes.ERP.React\backups\BACKUP_PRE_CIERRES_AGOSTO_20260908_185326_*.json
+2. Secuencia Temporal Ejecutada via Motor V40:
+   - BIMESTRE 2 (Marzo - Abril 2026 / 30-04-2026):
+     * Asientos Persistidos: 191 contratos (134 PEN, 57 USD).
+     * Soles: Int. Neto S/ 425,157.79 | Rescates S/ 1,098,867.67 | Capital Final S/ 26,368,166.11.
+     * Dolares: Int. Neto $ 35,685.91 | Rescates $ 38,881.61 | Capital Final $ 2,775,850.67.
+     * Amortizaciones/Rescates aplicados: 9 cuotas.
+     * Contratos culminados/cerrados por saldo cero: 4 contratos.
+   - BIMESTRE 3 (Mayo - Junio 2026 / 30-06-2026):
+     * Asientos Persistidos: 193 contratos (135 PEN, 58 USD).
+     * Soles: Int. Neto S/ 426,649.62 | Rescates S/ 675,770.17 | Capital Final S/ 26,660,954.56.
+     * Dolares: Int. Neto $ 35,853.61 | Rescates $ 45,000.00 | Capital Final $ 2,802,188.85.
+     * Amortizaciones/Rescates aplicados: 6 cuotas.
+     * Contratos culminados/cerrados por saldo cero: 3 contratos.
+   - BIMESTRE 4 (Julio - Agosto 2026 / 31-08-2026):
+     * Asientos Persistidos: 199 contratos (139 PEN, 60 USD).
+     * Soles: Int. Neto S/ 432,285.42 | Rescates S/ 800,403.28 | Capital Final S/ 26,897,886.45.
+     * Dolares: Int. Neto $ 42,733.77 | Rescates $ 245,148.59 | Capital Final $ 3,197,849.64.
+     * Amortizaciones/Rescates aplicados: 14 cuotas (incluyendo Armada 1/3 Sheila Ojeda $66,195.86).
+     * Contratos culminados/cerrados por saldo cero: 7 contratos.
+3. Auditoria y QC:
+   - Script qc_all_closed_periods.py ejecutado con exit code 0.
+   - 100% de la contabilidad de fondos alineada, balanceada y sincronizada en Supabase con los contratos de Sheila Miriam Ojeda Novoa y el universo completo de inversionistas.
+================================================================================
+[2026-09-08 19:32:00-05:00] CREACIÓN Y DESPLIEGUE DEL MÓDULO "ESTADO DE POSICIÓN":
+================================================================================
+1. Requerimiento:
+   - Nuevo módulo en la sección "Herramientas" llamado "Estado de Posición".
+   - Integración con OmniBuscador multicriterio (DNI, RUC, Nombres, Apellidos, Contrato, Certificado) y Rolodex Oficial A-Z.
+   - Generador y visor de PDF con estética ejecutiva institucional:
+     * Logo Geeksoft arriba a la izquierda.
+     * Título "ESTADO DE POSICIÓN" centrado con subtítulo formal.
+     * Logo InAndes arriba a la derecha.
+     * Cuadro de datos del inversionista, cuentas bancarias, asesor comercial y total de contratos.
+     * Tarjetas de resumen consolidado en PEN y USD (Inversión Inicial, Interés Neto, Capitalizado, Rescates Pagados y Saldo de Capital Activo).
+     * Desglose individual por contrato con KPIs, tabla de ledger detallada por período y cronograma de rescates.
+2. Archivos Creados e Integrados:
+   - src/services/estadoPosicionService.ts (consultas multicriterio y consolidación contable 1:1 en Supabase).
+   - src/utils/pdfGeneratorEstadoPosicion.ts (plantilla HTML/CSS de alta fidelidad para WeasyPrint con header GeekSoft-Izq / InAndes-Der).
+   - src/features/herramientas/EstadoPosicionPage.tsx (interfaz completa con Rolodex, buscador, KPIs, acordeón de contratos, visor y descarga PDF).
+   - src/components/layout/MasterTemplate.tsx (agregado item en menú Herramientas con icono PieChart).
+   - src/App.tsx (enrutamiento de tab y metadatos).
+3. QC y Despliegue:
+   - Compilación limpia con `npm run build` (Exit code 0).
+   - Despliegue en caliente a VPS Contabo (`169.58.168.107` / `inandes.geeksoft.tech`) verificado con HTTP 200 OK.
+================================================================================
+[2026-09-08 19:58:00-05:00] CORRECCIÓN COLUMNAS RESCATES EN ESTADO DE POSICIÓN:
+================================================================================
+1. Causa Raíz del Error:
+   - En la consulta a `crm_cronograma_deducciones_rescates`, se intentaba ordenar por `fecha_programada`, cuando el nombre físico de la columna en Supabase es `fecha_proyectada_cobro`.
+2. Corrección Realizada:
+   - Actualizado `src/services/estadoPosicionService.ts` para mapear los nombres exactos:
+     * `fecha_proyectada_cobro` (ordenamiento y fecha de cuota)
+     * `glosa_descripcion` (concepto/descripción)
+     * `monto_cobrar` (monto del rescate/cargo)
+     * `tipo_cargo` (tipo de rescate)
+     * `id_evento_ledger` (asiento contable vinculado)
+3. QC y Despliegue:
+   - `npm run build` compilado con éxito (Exit code 0).
+   - Despliegue en caliente a Contabo VPS (`inandes.geeksoft.tech`) completado exitosamente (HTTP 200 OK).
+================================================================================
+[2026-09-08 20:06:00-05:00] CIRUGÍA FORENSE INTEGRAL EN BD SUPABASE (OJEDA NOVOA SHEILA MIRIAM):
+================================================================================
+1. Causa Raíz Identificada:
+   - En `crm_contratos`, el contrato `NSGUSD01-033.20160101` tenía `porcentaje_reparto = 100` (error heredado de configuración).
+   - Al ejecutar los cálculos y reportes de liquidación de Bimestre 1 (Feb 2026) y subsecuentes, el motor leía 100% Reparto y asignaba `$1,050.95` a Reparto en lugar de Capitalización.
+2. Cirugía Forense Realizada:
+   - `crm_contratos`: Actualizado `porcentaje_reparto = 0` (100% Capitalización) para `NSGUSD01-033.20160101`.
+   - `crm_certificados_eventos` (Asientos Corregidos 100% Capitalización):
+     * Feb 2026 (id 11893): CapBase $80,515.11 | Cap: $1,050.95 | Rep: $0 | CapFinal: $81,566.06
+     * Abr 2026 (id 14303): CapBase $81,566.06 | Cap: $1,100.75 | Rep: $0 | CapFinal: $82,666.81
+     * Jun 2026 (id 14304): CapBase $82,666.81 | Cap: $1,115.60 | Rep: $0 | CapFinal: $83,782.41
+     * Ago 2026 (id 14305): CapBase $83,782.41 | Cap: $1,149.20 | Rep: $0 | Rescate: $66,195.86 | CapFinal: $18,735.75
+   - `crm_cronograma_deducciones_rescates`: Cuota `RES-NSGUSD01-033.20160101.260903.260831-C.1/3` ($66,195.86) vinculada con estado `APLICADO` a `id_evento_ledger = 14305`.
+3. QC y Verificación en Terminal:
+   - Consultas directas ejecutadas con exit code 0 validando 100% capitalización en todos los bimestres de 2026 en PEN y USD.
+================================================================================

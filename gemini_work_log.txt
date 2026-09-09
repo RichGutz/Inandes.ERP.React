@@ -595,3 +595,13 @@ RESULTADO:
 2. Actualizadas las columnas capital_base y capital_final_saldo a 267680.00 PEN para el evento de emision inicial (id_evento 13520) en crm_certificados_eventos.
 3. Verificada la consistencia y saldo de emision inicial sin discrepancias contables.
 ======================================================================
+
+================================================================================
+[2026-09-07 14:04:35] AJUSTE QUIRURGICO FORENSE - CONTRATO PIEDAD ZAVALA (NSGUSD02-003.20250901)
+- Contexto: Error de digitacion en vigencia (finalizaba 31/08/2028, se digito 31/08/2026).
+- Acciones Ejecutadas en Supabase (Sin Rollback masivo):
+  1. crm_contratos: fecha_fin='2028-08-31', plazo_meses='36', id_fondo_plazo='NSGUSD02-36', estado='emitido'.
+  2. crm_certificados_eventos (id_evento 14249 al 2026-08-31): tipo_evento='cierre_fin_ciclo', monto_rescate=0, capital_final_saldo=30000, payload actualizado con capital_final 30000.
+  3. crm_cronograma_deducciones_rescates: Anulada/eliminada cuota de rescate total erronea RES-NSGUSD02-003.20250901.260903.260831-C.1/1.
+- Resultado: QC Exit Code 0. Contrato reactivado y habilitado para devengar rendimientos con normalidad hacia septiembre 2026 en adelante.
+================================================================================

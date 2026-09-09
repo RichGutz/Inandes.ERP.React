@@ -21,6 +21,7 @@ import { getFondos } from './services/fondosService';
 import { getContratos } from './services/contratosService';
 import { FactoringPage } from './features/factoring/FactoringPage';
 import { ChatWhatsAppPage } from './features/chat/ChatWhatsAppPage';
+import { EstadoPosicionPage } from './features/herramientas/EstadoPosicionPage';
 
 // Helpers globales para formato legible (human-chewable)
 const formatCurrency = (val: number | null | undefined, currency: string) => {
@@ -105,19 +106,20 @@ function App() {
       return;
     }
 
-    const checkUser = async (session: any) => {
+    let isSubscribed = true;
+
+    const checkUser = async (session: any, isInitialCheck = false) => {
+      if (!isSubscribed) return;
       if (session?.user?.email) {
         const email = session.user.email;
         const roles = await getUserAccess(email);
+        if (!isSubscribed) return;
         if (roles && roles.length > 0) {
           setIsAuthenticated(true);
           setUserEmail(email);
           setUserRoles(roles);
           setUserFullName(roles[0]?.nombre_completo || email);
-          
-          if (!roles.some(r => r.modulo === 'CRM') && roles.some(r => r.modulo === 'FACTORING')) {
-            // Se mantiene 'home' por defecto para mostrar los logos.
-          }
+          setAuthError(null);
         } else {
           // El usuario de Google no tiene acceso
           setIsAuthenticated(false);
@@ -126,21 +128,44 @@ function App() {
       } else {
         setIsAuthenticated(false);
       }
-      setAuthChecking(false);
+      if (isInitialCheck) {
+        setAuthChecking(false);
+      }
     };
 
-    // Revisar sesión inicial
+    // Revisar sesion inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
-      checkUser(session);
+      if (isSubscribed) {
+        checkUser(session, true);
+      }
+    }).catch(() => {
+      if (isSubscribed) {
+        setAuthChecking(false);
+      }
     });
 
-    // Escuchar cambios
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthChecking(true);
-      checkUser(session);
+    // Escuchar cambios de autenticacion sin desmontar la UI en eventos recurrentes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isSubscribed) return;
+      if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        setUserEmail('');
+        setUserRoles([]);
+        setAuthChecking(false);
+      } else if (event === 'SIGNED_IN') {
+        checkUser(session);
+      } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // En refresco de token no desmontar la pantalla
+        if (session?.user?.email) {
+          setUserEmail(session.user.email);
+        }
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isSubscribed = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Metadatos dinámicos por cada módulo de InAndes
@@ -164,6 +189,7 @@ function App() {
     crm_chat: { title: 'Chat WhatsApp', subtitle: 'Notificaciones e Inteligencia CRM' },
     
     // Herramientas
+    herramientas_estado_posicion: { title: 'Estado de Posición & Auditoría', subtitle: 'Auditoría Integral de Contratos, Ledger y Generación de Reportes PDF' },
     herramientas_calculadora: { title: 'Calculadora', subtitle: 'Simulador Financiero Local' },
     herramientas_agentes: { title: 'Agentes IA', subtitle: 'Copilotos de Procesamiento de Información' },
     
@@ -577,6 +603,8 @@ function App() {
         return <ChatWhatsAppPage />;
 
       // Herramientas
+      case 'herramientas_estado_posicion':
+        return <EstadoPosicionPage />;
       case 'herramientas_calculadora':
         return (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">

@@ -24,7 +24,8 @@ import {
   Palette,
   ChevronDown,
   ChevronRight,
-  Layers
+  Layers,
+  PieChart
 } from 'lucide-react';
 import type { UserModuleAccess } from '../../services/authService';
 import { applyTheme, getStoredTheme } from '../../styles/theme';
@@ -369,6 +370,7 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
             {openGroup === 'herramientas' && (
               <nav className="flex flex-col gap-1 p-2 bg-[#f8fafc] dark:bg-[#151e2e] border-t border-[#e2e8f0] dark:border-[#334155]">
                 {[
+                  { id: 'herramientas_estado_posicion', label: 'Estado de Posición', icon: <PieChart size={14} /> },
                   { id: 'herramientas_calculadora', label: 'Calculadora', icon: <Calculator size={14} /> },
                   { id: 'herramientas_agentes', label: 'Agentes IA', icon: <Bot size={14} /> },
                 ].map(item => {
