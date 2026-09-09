@@ -648,3 +648,16 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 3. QC y Despliegue: Build verificado (npm run build exit 0), commit 03e48a1 subido a origin/main y auto-desplegado en caliente en Contabo VPS Coolify (https://inandes.geeksoft.tech/#herramientas_auditoria, #herramientas_device_vault).
 4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
 
+
+[2026-09-09 14:15:00-05:00] SESION CERRADA EXITOSAMENTE:
+1. Caso Rectificacion de Tasa a 36 Meses (8% TEA) - Contrato Piedad Zavala (NSGUSD02-003.20250901):
+   - Diagnostico forense completado: el contrato conservaba 7.0% TEA de su digitacion previa de 12m.
+   - Respaldo inmutable pre-cirugia: backups/BACKUP_FIX_TASA_NSGUSD02-003.20250901_20260909_140536.json.
+   - crm_contratos: actualizada tasa_pactada a 8.0%.
+   - crm_certificados_eventos: reliquidados asientos 11899 (28/02/2026 -> $368.55), 14446 (30/04/2026 -> $381.04) y 14636 (30/06/2026 -> $381.04) con base $30,000 USD y tasa 8.0% TEA.
+2. QC y Despliegue:
+   - Build verificado npm run build con Exit Code 0.
+   - Sincronizado a Git origin/main (commit 153e434).
+3. Documentacion:
+   - Registrada en Obsidian/Mudanza.Contabo/Mudanza.Contabo/22.Caso.Tasa.Contrato.Piedad.Zavala.36m.md y gemini_work_log.txt.
+================================================================================
