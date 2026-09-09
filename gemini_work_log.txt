@@ -674,6 +674,17 @@ RESULTADO:
    - Tarjetas de resumen consolidado movidas debajo del OmniBuscador en la barra lateral izquierda.
    - Despejado el panel principal derecho para que los contratos y tablas del ledger se desplieguen directamente debajo del titular.
    - Compilado y desplegado a producción en Contabo VPS.
+
+[2026-09-09 14:08:00-05:00] CORRECCION FORENSE - TASA PACTADA 8% EN CONTRATO PIEDAD ZAVALA (NSGUSD02-003.20250901)
+- Contexto: El contrato a 36 meses (3 anos) en el fondo NSGUSD02 (FDO NSG MIPYME USD 02) tenia tasa_pactada=7.0% remanente de su digitacion inicial como contrato de 12 meses.
+- Acciones Ejecutadas en Supabase:
+  1. Respaldo inmutable pre-cirugia en: backups/BACKUP_FIX_TASA_NSGUSD02-003.20250901_20260909_140536.json
+  2. crm_contratos: tasa_pactada actualizada a 8.0%.
+  3. crm_certificados_eventos (asientos historicos bimestrales al 8.0% TEA con base $30,000 USD):
+     - Evento 11899 (2026-02-28, 59 dias): tasa_aplicada=0.08, interes_bruto=387.95, impuestos=19.40, interes_neto=368.55, reparto=368.55, payload_asiento sincronizado.
+     - Evento 14446 (2026-04-30, 61 dias): tasa_aplicada=0.08, interes_bruto=401.10, impuestos=20.06, interes_neto=381.04, reparto=381.04, payload_asiento sincronizado.
+     - Evento 14636 (2026-06-30, 61 dias): tasa_aplicada=0.08, interes_bruto=401.10, impuestos=20.06, interes_neto=381.04, reparto=381.04, payload_asiento sincronizado.
+- Resultado: QC Terminal con Exit Code 0 (npm run build OK). Contrato y ledger alineados con el tarifario institucional oficial a 36 meses (8.0% TEA).
 ================================================================================
 
 [2026-09-09 11:25:24-05:00] SESION CERRADA EXITOSAMENTE:
@@ -681,4 +692,3 @@ RESULTADO:
 2. Portabilidad de Auditoría Forense y Device Vault (PETRAL -> InAndes ERP): Tablas 'audit_logs' y 'user_authorized_devices' creadas en Supabase con RLS. Implementados AuditMasterPage, DeviceVaultPage, auditService y auditTracker. Integrados en Menú Herramientas y App.tsx.
 3. QC y Despliegue: Build verificado (npm run build exit 0), commit 03e48a1 subido a origin/main y auto-desplegado en caliente en Contabo VPS Coolify (https://inandes.geeksoft.tech/#herramientas_auditoria, #herramientas_device_vault).
 4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
-
