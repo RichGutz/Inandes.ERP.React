@@ -1,6 +1,6 @@
-// src/services/certificadosService.ts
 import { supabase } from './supabaseClient';
 import type { CertificadoEvento } from './contratosService';
+import { AuditTracker } from './auditTracker';
 
 export interface CertificadoMaster {
   id_certificado: string;
@@ -210,6 +210,22 @@ export const registrarAumentoCapital = async (event: CertificadoEvento): Promise
       .update({ monto_inversion: event.capital_final_saldo })
       .eq('id_contrato', event.id_contrato);
   }
+
+  // Registrar en la Bitácora de Auditoría Forense
+  await AuditTracker.track({
+    action: 'INSERT',
+    tableName: 'crm_certificados_eventos',
+    recordId: event.id_contrato,
+    newData: {
+      tipo_evento: 'aumento_capital',
+      capital_base: event.capital_base,
+      capital_final_saldo: event.capital_final_saldo,
+      fecha_efectiva: event.fecha_periodo_fin
+    },
+    metadata: {
+      notas: event.notas
+    }
+  });
 };
 
 /**

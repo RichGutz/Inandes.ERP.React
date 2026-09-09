@@ -22,6 +22,9 @@ import { getContratos } from './services/contratosService';
 import { FactoringPage } from './features/factoring/FactoringPage';
 import { ChatWhatsAppPage } from './features/chat/ChatWhatsAppPage';
 import { EstadoPosicionPage } from './features/herramientas/EstadoPosicionPage';
+import { AuditMasterPage } from './features/herramientas/AuditMasterPage';
+import { DeviceVaultPage } from './features/herramientas/DeviceVaultPage';
+import { AuditTracker } from './services/auditTracker';
 
 // Helpers globales para formato legible (human-chewable)
 const formatCurrency = (val: number | null | undefined, currency: string) => {
@@ -190,6 +193,8 @@ function App() {
     
     // Herramientas
     herramientas_estado_posicion: { title: 'Estado de Posición & Auditoría', subtitle: 'Auditoría Integral de Contratos, Ledger y Generación de Reportes PDF' },
+    herramientas_auditoria: { title: 'Bitácora de Auditoría Forense & Trazabilidad', subtitle: 'Libro mayor inmutable de cambios transaccionales y acciones de usuarios en InAndes ERP' },
+    herramientas_device_vault: { title: 'Bóveda de Dispositivos (Device Vault)', subtitle: 'Control Zero-Trust de hardware físico y firmas digitales autorizadas' },
     herramientas_calculadora: { title: 'Calculadora', subtitle: 'Simulador Financiero Local' },
     herramientas_agentes: { title: 'Agentes IA', subtitle: 'Copilotos de Procesamiento de Información' },
     
@@ -360,6 +365,13 @@ function App() {
         XLSX.utils.book_append_sheet(wb, ws, 'Contratos');
         XLSX.writeFile(wb, 'crm_contratos.xlsx');
       }
+
+      AuditTracker.track({
+        action: 'EXPORT',
+        tableName: activeTab,
+        recordId: 'MASIVO',
+        metadata: { form_type: 'Excel', tab: activeTab }
+      }, userEmail);
     } catch (error: any) {
       alert(`Error al exportar a Excel: ${error.message}`);
     }
@@ -534,6 +546,13 @@ function App() {
 
       printWindow.document.write(htmlContent);
       printWindow.document.close();
+
+      AuditTracker.track({
+        action: 'EXPORT',
+        tableName: activeTab,
+        recordId: 'REPORTE_PDF',
+        metadata: { form_type: 'PDF', title: titleReport, tab: activeTab }
+      }, userEmail);
     } catch (error: any) {
       alert(`Error al exportar a PDF: ${error.message}`);
     }
@@ -605,6 +624,10 @@ function App() {
       // Herramientas
       case 'herramientas_estado_posicion':
         return <EstadoPosicionPage />;
+      case 'herramientas_auditoria':
+        return <AuditMasterPage />;
+      case 'herramientas_device_vault':
+        return <DeviceVaultPage currentUserEmail={userEmail} />;
       case 'herramientas_calculadora':
         return (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
