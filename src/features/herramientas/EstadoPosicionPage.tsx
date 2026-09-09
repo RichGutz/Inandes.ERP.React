@@ -5,15 +5,13 @@ import {
   FileText, 
   Download, 
   Eye, 
-  User, 
   Building2, 
   DollarSign, 
   AlertCircle, 
   ChevronRight, 
   ChevronDown, 
   X, 
-  RefreshCw,
-  PieChart
+  RefreshCw
 } from 'lucide-react';
 import { 
   getAllInvestorsForSearch, 
@@ -195,70 +193,36 @@ export const EstadoPosicionPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full animate-fadeIn pb-12">
+    <div className="flex flex-col gap-4 w-full animate-fadeIn pb-12">
       
-      {/* HEADER DE CABECERA CON ACCIONES RÁPIDAS */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-card p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-xl">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-600/30 border border-indigo-500/40 rounded-xl text-indigo-300">
-            <PieChart size={28} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black tracking-tight text-white uppercase">Estado de Posición & Auditoría de Ledger</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 uppercase">
-                Motor V40
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 font-medium">
-              Búsqueda multicriterio mediante OmniBuscador y Rolodex para auditoría inmediata de contratos y generación de reportes ejecutivos en PDF.
-            </p>
+      {/* OMNIBUSCADOR + ROLODEX ALFABÉTICO EN UNA SOLA FILA COMPACTA */}
+      <div className="glass-card p-3 rounded-2xl shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* OMNIBUSCADOR INTEGRADO A LA IZQUIERDA */}
+        <div className="w-full lg:w-80 shrink-0">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <Search size={14} />
+            </span>
+            <input
+              type="text"
+              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-1.5 pl-8 pr-7 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs"
+              placeholder="Buscar DNI, RUC, Nombre o Código..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
         </div>
 
-        {positionReport && (
-          <div className="flex items-center gap-2.5 w-full md:w-auto">
-            <button
-              onClick={handleOpenPreview}
-              className="flex-1 md:flex-initial px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
-            >
-              <Eye size={15} />
-              <span>Vista Previa</span>
-            </button>
-            <button
-              onClick={handleDownloadPdf}
-              disabled={isExportingPdf}
-              className="flex-1 md:flex-initial px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-900/30 hover:scale-[1.02] disabled:opacity-50"
-            >
-              {isExportingPdf ? (
-                <>
-                  <RefreshCw size={15} className="animate-spin" />
-                  <span>Generando PDF...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={15} />
-                  <span>Descargar Reporte PDF</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ROLODEX ALFABÉTICO OFICIAL A-Z */}
-      <div className="glass-card p-4 rounded-2xl shadow-sm">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <User size={13} className="text-indigo-500" />
-            Navegador Alfabético (Rolodex Oficial)
-          </span>
-          <span className="text-[11px] font-bold text-slate-400">
-            {filteredInvestors.length} inversionista(s) disponible(s)
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-2 items-center">
+        {/* ROLODEX DE BOTONES A-Z A LA DERECHA */}
+        <div className="flex flex-wrap items-center gap-1.5 flex-1 justify-start lg:justify-end">
           {ALPHABET.map(char => {
             const count = letterCounts[char] || 0;
             const isSelected = selectedLetter === char;
@@ -268,7 +232,7 @@ export const EstadoPosicionPage: React.FC = () => {
               <button
                 key={char}
                 onClick={() => setSelectedLetter(char)}
-                className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
+                className={`relative px-2.5 py-1 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
                   isSelected
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105 ring-2 ring-indigo-400'
                     : hasData
@@ -279,7 +243,7 @@ export const EstadoPosicionPage: React.FC = () => {
                 <span>{char}</span>
                 {count > 0 && (
                   <span
-                    className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
+                    className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full text-[8px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
                       isSelected ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white'
                     }`}
                   >
@@ -292,53 +256,26 @@ export const EstadoPosicionPage: React.FC = () => {
         </div>
       </div>
 
-      {/* OMNIBUSCADOR MULTICRITERIO + PANEL PRINCIPAL DE 2 COLUMNAS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* PANEL PRINCIPAL DE 2 COLUMNAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* COLUMNA IZQUIERDA: OMNIBUSCADOR Y LISTA DE INVERSIONISTAS (4 COLS) */}
+        {/* COLUMNA IZQUIERDA: LISTA DE INVERSIONISTAS + TARJETAS DE POSICIÓN (4 COLS) */}
         <div className="lg:col-span-4 flex flex-col gap-3">
-          
-          {/* OmniBuscador Input */}
-          <div className="glass-card p-3.5 rounded-2xl shadow-sm">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-              🔍 OmniBuscador Multicriterio
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                <Search size={15} />
-              </span>
-              <input
-                type="text"
-                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-8 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs"
-                placeholder="DNI, RUC, Nombre, Apellido o Código..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* Lista scrolleable de Inversionistas */}
-          <div className="glass-card p-2 rounded-2xl shadow-sm max-h-[340px] overflow-y-auto flex flex-col gap-1.5">
+          <div className="glass-card p-2 rounded-2xl shadow-sm max-h-[220px] overflow-y-auto flex flex-col gap-1.5">
             {loadingList ? (
-              <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
-                <RefreshCw size={20} className="animate-spin text-indigo-500" />
-                <span>Cargando directorio de inversionistas...</span>
+              <div className="py-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
+                <RefreshCw size={18} className="animate-spin text-indigo-500" />
+                <span>Cargando inversionistas...</span>
               </div>
             ) : errorList ? (
-              <div className="p-4 text-center text-xs text-rose-500">
+              <div className="p-3 text-center text-xs text-rose-500">
                 {errorList}
               </div>
             ) : filteredInvestors.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-400">
-                No se encontraron inversionistas con los criterios indicados.
+              <div className="py-8 text-center text-xs text-slate-400">
+                No se encontraron inversionistas.
               </div>
             ) : (
               filteredInvestors.map(inv => {
@@ -347,7 +284,7 @@ export const EstadoPosicionPage: React.FC = () => {
                   <button
                     key={inv.codigo_inversionista}
                     onClick={() => selectInvestor(inv.codigo_inversionista)}
-                    className={`w-full text-left p-3 rounded-xl transition-all flex flex-col gap-1.5 cursor-pointer border ${
+                    className={`w-full text-left p-2.5 rounded-xl transition-all flex flex-col gap-1 cursor-pointer border ${
                       isSelected
                         ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20 ring-2 ring-indigo-300'
                         : 'bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/60 border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-slate-100'
@@ -399,9 +336,81 @@ export const EstadoPosicionPage: React.FC = () => {
             )}
           </div>
 
-          {/* TARJETAS DE POSICIÓN CONSOLIDADA (PEN / USD) DEBAJO DEL BUSCADOR */}
+          {/* INFORMACIÓN DEL PARTÍCIPE & TARJETAS DE POSICIÓN CONSOLIDADA EN COLUMNA LATERAL */}
           {positionReport && (
-            <div className="flex flex-col gap-3.5 animate-fadeIn">
+            <div className="flex flex-col gap-3 animate-fadeIn">
+              
+              {/* TARJETA COMPACTA DE IDENTIDAD DEL PARTÍCIPE */}
+              <div className="glass-card p-4 rounded-2xl border-l-4 border-indigo-600 shadow-sm flex flex-col gap-3">
+                <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                  <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
+                    Partícipe / Titular
+                  </span>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-slate-50 leading-tight">
+                    {positionReport.inversionista.nombre_completo}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                      {positionReport.inversionista.tipo_doc}: {positionReport.inversionista.documento_identidad}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      {positionReport.inversionista.codigo_inversionista}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-[11px]">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Asesor Comercial:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {positionReport.inversionista.asesor_nombre}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Contacto:</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      {positionReport.inversionista.email} · {positionReport.inversionista.telefono}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Cuentas Bancarias:</span>
+                    <div className="text-[10px] font-medium text-slate-600 dark:text-slate-400 leading-snug">
+                      <div><b>PEN:</b> {positionReport.inversionista.banco_pen || '-'} {positionReport.inversionista.cuenta_pen || ''}</div>
+                      <div><b>USD:</b> {positionReport.inversionista.banco_usd || '-'} {positionReport.inversionista.cuenta_usd || ''}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTONES DE ACCIÓN REPORTES */}
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={handleOpenPreview}
+                    className="w-full py-1.5 px-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:scale-[1.02]"
+                    title="Vista Previa en Pantalla"
+                  >
+                    <Eye size={13} />
+                    <span>Vista Previa</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={isExportingPdf}
+                    className="w-full py-1.5 px-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-[11px] font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-[1.02] disabled:opacity-50"
+                    title="Descargar Reporte PDF Institucional"
+                  >
+                    {isExportingPdf ? (
+                      <>
+                        <RefreshCw size={12} className="animate-spin" />
+                        <span>Generando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={13} />
+                        <span>Descargar PDF</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
               
               {/* TARJETA SOLES (PEN) */}
               {(positionReport.resumen_pen.contratos_total > 0 || positionReport.resumen_usd.contratos_total === 0) && (
@@ -504,8 +513,8 @@ export const EstadoPosicionPage: React.FC = () => {
 
         </div>
 
-        {/* COLUMNA DERECHA: DASHBOARD DE ESTADO DE POSICIÓN & AUDITORÍA (8 COLS) */}
-        <div ref={detailRef} className="lg:col-span-8 flex flex-col gap-6">
+        {/* COLUMNA DERECHA: DESGLOSE COMPLETO DE CONTRATOS & AUDITORÍA (8 COLS) */}
+        <div ref={detailRef} className="lg:col-span-8 flex flex-col gap-4">
           {loadingReport ? (
             <div className="glass-card p-16 text-center text-slate-400 rounded-2xl flex flex-col items-center justify-center gap-3">
               <RefreshCw size={28} className="animate-spin text-indigo-500" />
@@ -526,53 +535,9 @@ export const EstadoPosicionPage: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* TARJETA DE IDENTIDAD DEL PARTÍCIPE */}
-              <div className="glass-card p-5 rounded-2xl border-l-4 border-indigo-600 shadow-sm flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <div>
-                    <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
-                      Partícipe / Titular de Contratos
-                    </span>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-slate-50">
-                      {positionReport.inversionista.nombre_completo}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                      {positionReport.inversionista.tipo_doc}: {positionReport.inversionista.documento_identidad}
-                    </span>
-                    <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                      {positionReport.inversionista.codigo_inversionista}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Asesor Comercial</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {positionReport.inversionista.asesor_nombre}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Email & Teléfono</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {positionReport.inversionista.email} · {positionReport.inversionista.telefono}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Cuentas Bancarias</span>
-                    <div className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                      <div><b>PEN:</b> {positionReport.inversionista.banco_pen || '-'} {positionReport.inversionista.cuenta_pen || ''}</div>
-                      <div><b>USD:</b> {positionReport.inversionista.banco_usd || '-'} {positionReport.inversionista.cuenta_usd || ''}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* DESGLOSE DETALLADO DE CONTRATOS & HISTORIAL DEL LEDGER */}
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between px-1">
                   <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     <FileText size={15} className="text-indigo-500" />
                     Desglose Individual de Contratos ({positionReport.contracts.length})

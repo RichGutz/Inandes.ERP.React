@@ -623,6 +623,22 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 3. QC y Despliegue:
    - Compilación exitosa `npm run build` (Exit code 0).
    - Sincronización a Contabo VPS y bundle activo `index-r2FSR1C_.js`.
+[2026-09-08 22:40:00-05:00] REDISEÑO COMPACTO DE ESTADO DE POSICION (BARRA SUPERIOR UNIFICADA & TITULAR LATERAL):
 ================================================================================
+1. Requerimiento:
+   - Eliminar el ribbon oscuro superior para no ocupar una fila completa innecesaria.
+   - Integrar el OmniBuscador y el Rolodex A-Z en una sola fila compacta en la parte superior (Omnibox a la izquierda, Rolodex a la derecha).
+   - Trasladar el bloque de datos del partícipe (Titular, DNI, Asesor, Contacto, Cuentas y botones PDF) a la columna lateral izquierda encima de las tarjetas de posición PEN/USD.
+   - Liberar el 100% del panel derecho desde la parte superior para el Desglose Individual de Contratos y Ledger.
+2. Modificaciones:
+   - `src/features/herramientas/EstadoPosicionPage.tsx`:
+     * Fila superior única: OmniBuscador a la izquierda + Selector Rolodex A-Z a la derecha.
+     * Columna izquierda (`lg:col-span-4`): Listado scroll + Tarjeta compacta del Titular con acciones PDF + Tarjetas de posición PEN y USD.
+     * Columna derecha (`lg:col-span-8`): Desglose Individual de Contratos ocupando toda la altura.
+3. QC y Despliegue:
+   - Compilación exitosa `npm run build` (Exit code 0).
+   - Despliegue sincronizado a Contabo VPS ([https://inandes.geeksoft.tech](https://inandes.geeksoft.tech)) con bundle `index-BNecQtmh.js`.
+================================================================================
+
 
 
