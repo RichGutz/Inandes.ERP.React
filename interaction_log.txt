@@ -642,3 +642,9 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 
 
 
+[2026-09-09 11:25:24-05:00] SESION CERRADA EXITOSAMENTE:
+1. Caso Aumentos/Rescates Julia Chang Lock y Huérfanos: Diagnóstico forense completado, corrección de asientos y documentación exhaustiva en Obsidian/18 y 20.
+2. Portabilidad de Auditoría Forense y Device Vault (PETRAL -> InAndes ERP): Tablas 'audit_logs' y 'user_authorized_devices' creadas en Supabase con RLS. Implementados AuditMasterPage, DeviceVaultPage, auditService y auditTracker. Integrados en Menú Herramientas y App.tsx.
+3. QC y Despliegue: Build verificado (npm run build exit 0), commit 03e48a1 subido a origin/main y auto-desplegado en caliente en Contabo VPS Coolify (https://inandes.geeksoft.tech/#herramientas_auditoria, #herramientas_device_vault).
+4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
+
