@@ -329,6 +329,21 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
       rescatesByContract.set(r.id_contrato, []);
     }
     const fechaProg = r.fecha_proyectada_cobro ? String(r.fecha_proyectada_cobro).split('T')[0] : '';
+    const contractEvents = eventsByContract.get(r.id_contrato) || [];
+
+    // Buscar si existe un evento en el ledger que ya amortizó este rescate
+    let matchingEvent = r.id_evento_ledger
+      ? contractEvents.find(e => e.id_evento === r.id_evento_ledger)
+      : null;
+
+    if (!matchingEvent && fechaProg) {
+      matchingEvent = contractEvents.find(e => e.fecha_periodo_fin === fechaProg && e.amortizacion_rescate_monto > 0);
+    }
+
+    const isAplicado = Boolean(matchingEvent) || r.estado === 'APLICADO';
+    const estadoFinal = isAplicado ? 'APLICADO' : (r.estado || 'PENDIENTE');
+    const idEvtAplicado = matchingEvent ? matchingEvent.id_evento : (r.id_evento_ledger || null);
+
     rescatesByContract.get(r.id_contrato)!.push({
       id_cuota: r.id_cuota,
       id_contrato: r.id_contrato,
@@ -338,8 +353,8 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
       moneda: r.moneda || 'USD',
       monto: Number(r.monto_cobrar || r.monto || 0),
       fecha_programada: fechaProg,
-      estado: r.estado || 'PENDIENTE',
-      id_evento_aplicado: r.id_evento_ledger || r.id_evento_aplicado || null,
+      estado: estadoFinal,
+      id_evento_aplicado: idEvtAplicado,
       fecha_pago_real: null
     });
   });
