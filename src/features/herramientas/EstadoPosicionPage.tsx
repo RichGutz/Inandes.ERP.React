@@ -326,7 +326,7 @@ export const EstadoPosicionPage: React.FC = () => {
           </div>
 
           {/* Lista scrolleable de Inversionistas */}
-          <div className="glass-card p-2 rounded-2xl shadow-sm max-h-[680px] overflow-y-auto flex flex-col gap-1.5">
+          <div className="glass-card p-2 rounded-2xl shadow-sm max-h-[340px] overflow-y-auto flex flex-col gap-1.5">
             {loadingList ? (
               <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
                 <RefreshCw size={20} className="animate-spin text-indigo-500" />
@@ -398,6 +398,110 @@ export const EstadoPosicionPage: React.FC = () => {
               })
             )}
           </div>
+
+          {/* TARJETAS DE POSICIÓN CONSOLIDADA (PEN / USD) DEBAJO DEL BUSCADOR */}
+          {positionReport && (
+            <div className="flex flex-col gap-3.5 animate-fadeIn">
+              
+              {/* TARJETA SOLES (PEN) */}
+              {(positionReport.resumen_pen.contratos_total > 0 || positionReport.resumen_usd.contratos_total === 0) && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50/50 dark:from-sky-950/40 dark:to-blue-950/20 border border-sky-200 dark:border-sky-800/60 shadow-sm flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between border-b border-sky-200/60 dark:border-sky-800/40 pb-2">
+                    <span className="text-[11px] font-black text-sky-800 dark:text-sky-300 uppercase tracking-wide flex items-center gap-1.5">
+                      <Building2 size={13} /> Posición Soles (PEN)
+                    </span>
+                    <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">
+                      {positionReport.resumen_pen.contratos_activos} contrato(s)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Inversión Inicial</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">
+                        {formatCurrency(positionReport.resumen_pen.total_inversion_inicial, 'PEN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Int. Neto Acum.</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_pen.total_interes_neto, 'PEN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Capitalizado</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_pen.total_capitalizado, 'PEN')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Rescates Pagados</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_pen.total_rescates, 'PEN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-0.5 pt-2 border-t-2 border-sky-300 dark:border-sky-700 flex items-center justify-between">
+                    <span className="text-[11px] font-black text-sky-900 dark:text-sky-100 uppercase">Saldo al Corte:</span>
+                    <span className="text-sm font-black text-sky-900 dark:text-sky-100">
+                      {formatCurrency(positionReport.resumen_pen.total_capital_actual, 'PEN')}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* TARJETA DÓLARES (USD) */}
+              {(positionReport.resumen_usd.contratos_total > 0 || positionReport.resumen_pen.contratos_total === 0) && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-950/40 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800/60 shadow-sm flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-800/40 pb-2">
+                    <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                      <DollarSign size={13} /> Posición Dólares (USD)
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      {positionReport.resumen_usd.contratos_activos} contrato(s)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Inversión Inicial</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">
+                        {formatCurrency(positionReport.resumen_usd.total_inversion_inicial, 'USD')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Int. Neto Acum.</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_usd.total_interes_neto, 'USD')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Capitalizado</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_usd.total_capitalizado, 'USD')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-500 uppercase block">Rescates Pagados</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400 text-[11px]">
+                        {formatCurrency(positionReport.resumen_usd.total_rescates, 'USD')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-0.5 pt-2 border-t-2 border-emerald-300 dark:border-emerald-700 flex items-center justify-between">
+                    <span className="text-[11px] font-black text-emerald-900 dark:text-emerald-100 uppercase">Saldo al Corte:</span>
+                    <span className="text-sm font-black text-emerald-900 dark:text-emerald-100">
+                      {formatCurrency(positionReport.resumen_usd.total_capital_actual, 'USD')}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
         </div>
 
         {/* COLUMNA DERECHA: DASHBOARD DE ESTADO DE POSICIÓN & AUDITORÍA (8 COLS) */}
@@ -464,103 +568,6 @@ export const EstadoPosicionPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* KPI CARDS: RESUMEN CONSOLIDADO POR MONEDA */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* TARJETA SOLES (PEN) */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50/50 dark:from-sky-950/40 dark:to-blue-950/20 border border-sky-200 dark:border-sky-800/60 shadow-sm flex flex-col gap-3">
-                  <div className="flex items-center justify-between border-b border-sky-200/60 dark:border-sky-800/40 pb-2">
-                    <span className="text-xs font-black text-sky-800 dark:text-sky-300 uppercase tracking-wide flex items-center gap-1.5">
-                      <Building2 size={14} /> Posición Consolidada Soles (PEN)
-                    </span>
-                    <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">
-                      {positionReport.resumen_pen.contratos_activos} contratos vigentes
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Inversión Inicial</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">
-                        {formatCurrency(positionReport.resumen_pen.total_inversion_inicial, 'PEN')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Int. Neto Generado</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(positionReport.resumen_pen.total_interes_neto, 'PEN')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Capitalizado</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(positionReport.resumen_pen.total_capitalizado, 'PEN')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Rescates Pagados</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">
-                        {formatCurrency(positionReport.resumen_pen.total_rescates, 'PEN')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-1 pt-2.5 border-t-2 border-sky-300 dark:border-sky-700 flex items-center justify-between">
-                    <span className="text-xs font-black text-sky-900 dark:text-sky-100 uppercase">Saldo Activo al Corte:</span>
-                    <span className="text-base font-black text-sky-900 dark:text-sky-100">
-                      {formatCurrency(positionReport.resumen_pen.total_capital_actual, 'PEN')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* TARJETA DÓLARES (USD) */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-950/40 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-800/60 shadow-sm flex flex-col gap-3">
-                  <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-800/40 pb-2">
-                    <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
-                      <DollarSign size={14} /> Posición Consolidada Dólares (USD)
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                      {positionReport.resumen_usd.contratos_activos} contratos vigentes
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Inversión Inicial</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">
-                        {formatCurrency(positionReport.resumen_usd.total_inversion_inicial, 'USD')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Int. Neto Generado</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(positionReport.resumen_usd.total_interes_neto, 'USD')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Capitalizado</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(positionReport.resumen_usd.total_capitalizado, 'USD')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase block">Rescates Pagados</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">
-                        {formatCurrency(positionReport.resumen_usd.total_rescates, 'USD')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-1 pt-2.5 border-t-2 border-emerald-300 dark:border-emerald-700 flex items-center justify-between">
-                    <span className="text-xs font-black text-emerald-900 dark:text-emerald-100 uppercase">Saldo Activo al Corte:</span>
-                    <span className="text-base font-black text-emerald-900 dark:text-emerald-100">
-                      {formatCurrency(positionReport.resumen_usd.total_capital_actual, 'USD')}
-                    </span>
-                  </div>
-                </div>
-
               </div>
 
               {/* DESGLOSE DETALLADO DE CONTRATOS & HISTORIAL DEL LEDGER */}

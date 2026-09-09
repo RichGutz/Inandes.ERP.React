@@ -611,5 +611,18 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 3. QC y Despliegue:
    - `npm run build` ejecutado con exito (Exit code 0).
    - Verificacion directa de computo validando que todos los bimestres hasta el 31/08/2026 reflejan 100% CAPITALIZACION.
+[2026-09-08 22:07:00-05:00] REUBICACION DE TARJETAS DE POSICION CONSOLIDADA (PEN/USD) A COLUMNA LATERAL:
 ================================================================================
+1. Requerimiento:
+   - Mover las tarjetas de Posición Consolidada Soles (PEN) y Posición Consolidada Dólares (USD) a la columna lateral izquierda, directamente debajo del OmniBuscador.
+   - Liberar espacio vertical completo en el panel principal derecho para que el desglose de contratos y ledgers se ubique inmediatamente debajo de la tarjeta del titular.
+2. Modificaciones:
+   - `src/features/herramientas/EstadoPosicionPage.tsx`:
+     * Agregadas las tarjetas de Posición Consolidada PEN y USD en `lg:col-span-4` debajo de la lista de partícipes.
+     * Eliminadas del grid central en `lg:col-span-8`.
+3. QC y Despliegue:
+   - Compilación exitosa `npm run build` (Exit code 0).
+   - Sincronización a Contabo VPS y bundle activo `index-r2FSR1C_.js`.
+================================================================================
+
 

@@ -669,5 +669,10 @@ RESULTADO:
    - Corregido el mapeo de columnas del servicio estadoPosicionService.ts (`monto_capitalizacion`, `interes_neto_disponible`, etc.).
    - Los cierres de Sheila (USD y PEN) reflejan fielmente 100% CAPITALIZACIÓN en todos los períodos bimestrales hasta el 31/08/2026.
    - Verificado y compilado con Exit Code 0.
+
+6. REUBICACIÓN DE TARJETAS DE POSICIÓN (PEN / USD) A COLUMNA LATERAL:
+   - Tarjetas de resumen consolidado movidas debajo del OmniBuscador en la barra lateral izquierda.
+   - Despejado el panel principal derecho para que los contratos y tablas del ledger se desplieguen directamente debajo del titular.
+   - Compilado y desplegado a producción en Contabo VPS.
 ================================================================================
 
