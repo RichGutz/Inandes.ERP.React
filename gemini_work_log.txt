@@ -583,6 +583,40 @@ RESULTADO:
 5. CONTROL DE VERSIONES & DESPLIEGUE EN PRODUCCION:
    - Repositorio: RichGutz/APEFAC (Rama: main, commits 55f9f53, 6f3fbbb, b083a3c, 24d9d89).
    - Servidor: VPS Contabo (169.58.168.107), contenedor Docker apefac_risk_core_frontend.
+
+[2026-09-07 08:23:51] feat(APEFAC): Creacion de Presentacion V20 con validacion por dominios corporativos, copia BCC al admin, bloqueo en dispositivos moviles y 2FA obligatorio en cada carga. Branch Tag: PRESENTACION_V20_DOMAINS_BCC.
+[2026-09-07 09:54:26] feat(APEFAC): Despliegue oficial de la Presentacion V22 en Produccion VPS Contabo con la matriz de 9 microservicios (Topes Web y Topes WhatsApp Bot) en Slide 23, validacion 2FA por dominios, BCC y bloqueo en movil.
+================================================================================
+[2026-09-07 11:03:37] - CIERRE DE SESION: BLINDAJE Y DESPLIEGUE PITCH APEFAC 2026 (V22)
+================================================================================
+1. CONTROL DE ACCESO GATEKEEPER 2FA EXCLUSIVO POR DOMINIOS:
+   - Eliminacion completa de arreglos o restricciones por whitelist individual de correos.
+   - Acceso 100% universal y automatico para colaboradores de los 24 dominios corporativos autorizados de APEFAC.
+   - Bloqueo estricto a correos de proveedores publicos/genericos (@gmail.com, @yahoo.com, etc.).
+   - Envio de codigo OTP transaccional de 6 digitos via Resend multi-ruta con copia oculta (BCC) a rgutil@gmail.com y rich@kaizencapital.pe.
+   - Retiro formal del dominio ercapacita.com a solicitud del usuario.
+
+2. DISENO Y HOMOLOGACION VISUAL MODAL / EMAIL:
+   - Homologacion cromatica continua: Fondo del contenedor superior .auth-header-ribbon ajustado a #f4f6f5, eliminando discrepancias de color y recuadros alrededor de LOGO.RISK.CORE.jpg.
+   - Integracion de barra superior en gradiente azul (#0284c7 a #0369a1) y leyenda 'CENTRAL DE RIESGOS GREMIAL • RED DE SEGURIDAD'.
+   - Ajuste exacto del <title> de la pagina y tooltip del favicon a: 'Pitch APEFAC Risk Core'.
+
+3. CONTENIDO ESTRUCTURAL (23 SLIDES COMPLETOS):
+   - Slide 2: Tree swing cartoon oficial de la industria tradicional de software.
+   - Slide 3: Arquitectura agentica y rol del Arquitecto al Mando / Experto Financiero.
+   - Slide 4: Perfil profesional y experiencia en factoring.
+   - Slide 6: Auditoria en caliente y propuesta de valor sin intermediarios.
+   - Slide 8: Modelos WoE, Logit, GLM Probit y XGBoost con glosario tecnico al pie.
+   - Slide 15: Gobernanza por 5 perfiles y hardware UUID.
+   - Slide 18: Suite de reporteadores empresariales autoconfigurables.
+   - Slide 23: Ficha de dimensionamiento express por FACTOR (tabla exacta de 9 microservicios web y bot).
+
+4. PLANTILLA EJECUTIVA DE CORREO:
+   - Generada en HTML responsivo inline para Gmail (email_apefac.html) sin emojis ni marcas de agentes, con tabla comparativa de dominios y enlace directo.
+
+5. CONTROL DE VERSIONES & DESPLIEGUE EN PRODUCCION:
+   - Repositorio: RichGutz/APEFAC (Rama: main, commits 55f9f53, 6f3fbbb, b083a3c, 24d9d89).
+   - Servidor: VPS Contabo (169.58.168.107), contenedor Docker apefac_risk_core_frontend.
    - URLs Activas: https://apefac.geeksoft.tech/presentation.html y https://apefac.geeksoft.tech/presentation_V22.html
 ================================================================================
 
@@ -604,4 +638,30 @@ RESULTADO:
   2. crm_certificados_eventos (id_evento 14249 al 2026-08-31): tipo_evento='cierre_fin_ciclo', monto_rescate=0, capital_final_saldo=30000, payload actualizado con capital_final 30000.
   3. crm_cronograma_deducciones_rescates: Anulada/eliminada cuota de rescate total erronea RES-NSGUSD02-003.20250901.260903.260831-C.1/1.
 - Resultado: QC Exit Code 0. Contrato reactivado y habilitado para devengar rendimientos con normalidad hacia septiembre 2026 en adelante.
+================================================================================
+
+================================================================================
+[2026-09-08 20:20:00-05:00] CIERRE DE SESIÓN & RESUMEN DE HITOS ALCANZADOS
+================================================================================
+1. ESTABILIZACIÓN DEL SISTEMA Y REPARACIÓN DE AUTENTICACIÓN:
+   - Solucionado el parpadeo de pantalla en el Web App (eliminado el re-render por TOKEN_REFRESHED en App.tsx).
+   - Reconfigurado Traefik Proxy en VPS Contabo para el backend FastAPI (api-factoring.geeksoft.tech:8010).
+
+2. CASO SHEILA MIRIAM OJEDA NOVOA (DNI 02715386):
+   - Transcripción de audio SHEYLA.OJEDA.ogg mediante Whisper.
+   - Cirugía forense en Supabase:
+     * crm_contratos (NSGUSD01-033.20160101): porcentaje_reparto = 0 (100% Capitalización).
+     * crm_certificados_eventos: Asentados cierres 100% capitalizados hasta 31/08/2026 en PEN (S/ 540,138.74) y USD ($18,735.75).
+     * crm_cronograma_deducciones_rescates: Armada 1/3 ($66,195.86) aplicada y vinculada a asiento 14305.
+   - Generado Reporte Ejecutivo PDF de posición patrimonial.
+
+3. CIERRES MASIVOS DE FONDOS HASTA AGOSTO 2026:
+   - Ejecutados y auditados los bimestres Mar-Abr (191 contratos), May-Jun (193 contratos) y Jul-Ago (199 contratos) con Motor V40.
+   - Control de Calidad QC en terminal completado con Exit Code 0.
+
+4. NUEVO MÓDULO "ESTADO DE POSICIÓN" (EN HERRAMIENTAS):
+   - Implementado en React (EstadoPosicionPage.tsx) con OmniBuscador multicriterio y Rolodex A-Z.
+   - Generador de PDF institucional WeasyPrint (pdfGeneratorEstadoPosicion.ts) con cabecera GeekSoft (izq), Título Central e InAndes (der).
+   - Compilación exitosa (npm run build) y despliegue en caliente a producción en VPS Contabo (https://inandes.geeksoft.tech).
+   - Sincronizado en repositorio Git (origin/main, commit 29520f6).
 ================================================================================
