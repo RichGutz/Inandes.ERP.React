@@ -599,3 +599,17 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 3. QC y Verificación en Terminal:
    - Consultas directas ejecutadas con exit code 0 validando 100% capitalización en todos los bimestres de 2026 en PEN y USD.
 ================================================================================
+[2026-09-08 21:50:00-05:00] CORRECCION DE MAPEO DE COLUMNAS EN ESTADO DE POSICION (SHEILA OJEDA / INVERSIONISTAS):
+================================================================================
+1. Diagnostico Forense:
+   - En la base de datos Supabase, los asientos contables de Sheila (`crm_certificados_eventos`) estaban correctamente guardados con 100% Capitalizacion ($1,050.95 en Feb, $1,100.75 en Abr, $1,115.60 en Jun, $1,149.20 en Ago).
+   - Sin embargo, en `estadoPosicionService.ts`, la funcion de consulta mapeaba los nombres de campos de forma erronea (`capitalizacion_monto` en vez de `monto_capitalizacion`, `interes_neto` en vez de `interes_neto_disponible`, etc.).
+   - Como resultado, el servicio leia `$0.00` en capitalizacion, defaultando la modalidad a "100% REPARTO" en la interfaz visual y en el PDF oficial de Estado de Posicion.
+2. Cirugia Aplicada:
+   - Modificado `src/services/estadoPosicionService.ts` para mapear de forma resiliente todas las columnas canonicas de Supabase (`monto_capitalizacion`, `interes_neto_disponible`, `interes_generado_bruto`, `impuestos_renta`, `monto_rescate`, `tasa_aplicada`, `tasa_pactada`).
+   - Validacion condicional para que la modalidad se identifique fielmente como `CAPITALIZACION` (badge azul) cuando `monto_capitalizacion > 0` o `pct_reparto_aplicado == 0`.
+3. QC y Despliegue:
+   - `npm run build` ejecutado con exito (Exit code 0).
+   - Verificacion directa de computo validando que todos los bimestres hasta el 31/08/2026 reflejan 100% CAPITALIZACION.
+================================================================================
+

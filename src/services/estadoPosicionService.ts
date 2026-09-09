@@ -300,20 +300,24 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
     if (!eventsByContract.has(e.id_contrato)) {
       eventsByContract.set(e.id_contrato, []);
     }
+    const isCapEvent = Number(e.monto_capitalizacion || e.capitalizacion_monto || 0) > 0 || Number(e.pct_reparto_aplicado ?? 0) === 0;
+    const tasaRaw = e.tasa_aplicada !== undefined && e.tasa_aplicada !== null ? Number(e.tasa_aplicada) : Number(e.tasa_anual_periodo || 0);
+    const tasaNorm = (tasaRaw > 0 && tasaRaw <= 1) ? tasaRaw * 100 : tasaRaw;
+
     eventsByContract.get(e.id_contrato)!.push({
       id_evento: e.id_evento,
       id_contrato: e.id_contrato,
       id_certificado: e.id_certificado || e.id_contrato,
       fecha_periodo_fin: e.fecha_periodo_fin ? e.fecha_periodo_fin.split('T')[0] : '',
       tipo_evento: e.tipo_evento || 'CIERRE_PERIODICO',
-      modalidad_periodo: e.modalidad_periodo || 'REPARTO',
-      tasa_anual_periodo: Number(e.tasa_anual_periodo || 0),
+      modalidad_periodo: e.modalidad_periodo || (isCapEvent ? 'CAPITALIZACION' : 'REPARTO'),
+      tasa_anual_periodo: tasaNorm,
       capital_base: Number(e.capital_base || 0),
-      interes_ganado_bruto: Number(e.interes_ganado_bruto || 0),
-      retencion_fiscal: Number(e.retencion_fiscal || 0),
-      interes_neto: Number(e.interes_neto || 0),
-      capitalizacion_monto: Number(e.capitalizacion_monto || 0),
-      amortizacion_rescate_monto: Number(e.amortizacion_rescate_monto || 0),
+      interes_ganado_bruto: Number(e.interes_generado_bruto || e.interes_ganado_bruto || 0),
+      retencion_fiscal: Number(e.impuestos_renta || e.retencion_fiscal || 0),
+      interes_neto: Number(e.interes_neto_disponible || e.interes_neto || 0),
+      capitalizacion_monto: Number(e.monto_capitalizacion || e.capitalizacion_monto || 0),
+      amortizacion_rescate_monto: Number(e.monto_rescate || e.amortizacion_rescate_monto || 0),
       capital_final_saldo: Number(e.capital_final_saldo || 0),
       created_at: e.created_at
     });
@@ -399,6 +403,8 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
       });
     }
 
+    const tasaPactadaVal = Number(ct.tasa_pactada || ct.tasa_pactada_anual || 0);
+
     return {
       id_contrato: ct.id_contrato,
       id_certificado: ct.id_certificado || ct.id_contrato,
@@ -409,9 +415,9 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
       fecha_inicio: ct.fecha_inicio ? ct.fecha_inicio.split('T')[0] : '',
       fecha_fin: ct.fecha_fin ? ct.fecha_fin.split('T')[0] : '',
       plazo_meses: ct.plazo_meses || '12',
-      tasa_pactada_anual: Number(ct.tasa_pactada_anual || 0),
+      tasa_pactada_anual: tasaPactadaVal,
       tasa_pactada_mensual: Number(ct.tasa_pactada_mensual || 0),
-      modalidad_pago_rendimiento: ct.modalidad_pago_rendimiento || 'REPARTO',
+      modalidad_pago_rendimiento: ct.modalidad_pago_rendimiento || (Number(ct.porcentaje_reparto || 0) === 0 ? 'CAPITALIZACION' : 'REPARTO'),
       estado: ct.estado || 'vigente',
       capital_actual: capitalActual,
       total_interes_neto: sumIntNeto,
