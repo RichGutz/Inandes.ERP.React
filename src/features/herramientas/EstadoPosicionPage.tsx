@@ -341,48 +341,58 @@ export const EstadoPosicionPage: React.FC = () => {
             <div className="flex flex-col gap-3 animate-fadeIn">
               
               {/* TARJETA COMPACTA DE IDENTIDAD DEL PARTÍCIPE */}
-              <div className="glass-card p-4 rounded-2xl border-l-4 border-indigo-600 shadow-sm flex flex-col gap-3">
-                <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                  <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
-                    Partícipe / Titular
-                  </span>
-                  <h2 className="text-sm font-black text-slate-900 dark:text-slate-50 leading-tight">
-                    {positionReport.inversionista.nombre_completo}
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                      {positionReport.inversionista.tipo_doc}: {positionReport.inversionista.documento_identidad}
+              <div className="glass-card p-3.5 rounded-2xl border-l-4 border-indigo-600 shadow-sm flex flex-col gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                  {/* COLUMNA 1: TITULAR Y DOCUMENTO */}
+                  <div className="flex flex-col gap-1 justify-center">
+                    <span className="text-[9px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
+                      Partícipe / Titular
                     </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                      {positionReport.inversionista.codigo_inversionista}
-                    </span>
+                    <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-50 leading-tight">
+                      {positionReport.inversionista.nombre_completo}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                        {positionReport.inversionista.tipo_doc}: {positionReport.inversionista.documento_identidad}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        {positionReport.inversionista.codigo_inversionista}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col gap-1.5 text-[11px]">
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Asesor Comercial:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {positionReport.inversionista.asesor_nombre}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Contacto:</span>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      {positionReport.inversionista.email} · {positionReport.inversionista.telefono}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Cuentas Bancarias:</span>
-                    <div className="text-[10px] font-medium text-slate-600 dark:text-slate-400 leading-snug">
-                      <div><b>PEN:</b> {positionReport.inversionista.banco_pen || '-'} {positionReport.inversionista.cuenta_pen || ''}</div>
-                      <div><b>USD:</b> {positionReport.inversionista.banco_usd || '-'} {positionReport.inversionista.cuenta_usd || ''}</div>
+                  {/* COLUMNA 2: ASESOR, CONTACTO Y CUENTAS EN 2 FILAS */}
+                  <div className="flex flex-col justify-between gap-1.5 text-[10px] bg-slate-50/70 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                    {/* FILA 1: ASESOR & CONTACTO */}
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">Asesor:</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {positionReport.inversionista.asesor_nombre}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-1 text-[9px] text-slate-600 dark:text-slate-400 truncate">
+                        <span className="truncate">{positionReport.inversionista.email || '-'}</span>
+                        <span className="font-mono font-semibold">{positionReport.inversionista.telefono || ''}</span>
+                      </div>
+                    </div>
+
+                    {/* FILA 2: CUENTAS BANCARIAS */}
+                    <div className="pt-1 border-t border-slate-200/60 dark:border-slate-800/60 text-[9px] text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center justify-between gap-1 truncate">
+                        <span className="font-bold text-slate-500">PEN:</span>
+                        <span className="font-mono truncate">{positionReport.inversionista.banco_pen || '-'} {positionReport.inversionista.cuenta_pen || ''}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-1 truncate">
+                        <span className="font-bold text-slate-500">USD:</span>
+                        <span className="font-mono truncate">{positionReport.inversionista.banco_usd || '-'} {positionReport.inversionista.cuenta_usd || ''}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* BOTONES DE ACCIÓN REPORTES */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={handleOpenPreview}
                     className="w-full py-1.5 px-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:scale-[1.02]"
