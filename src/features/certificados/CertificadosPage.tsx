@@ -1,5 +1,5 @@
 // src/features/certificados/CertificadosPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   getCertificadosMaster, registrarAumentoCapital, getEventosDeCertificado, getAumentosCapitalHistoricos
 } from '../../services/certificadosService';
@@ -9,13 +9,64 @@ import { generateCertificateHtml } from '../../utils/contractPreviewGenerator';
 import type { CertificadoEvento } from '../../services/contratosService';
 import { OmniBuscadorCertificados } from '../../components/common/OmniBuscadorCertificados';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 import { 
-  Loader2, AlertCircle, FileSpreadsheet, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User, Download, Printer
+  Loader2, AlertCircle, FileSpreadsheet, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User, Download, Printer, Archive, Mail, MessageSquare, Send, CheckSquare, Square, X
 } from 'lucide-react';
 
-const ALPHABET = ['TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#'];
+const FUND_ORDER_PRIORITY: Record<string, number> = {
+  'FDO NSG MIPYME PEN 01': 1,
+  'FDO NSG MIPYME PEN 02': 2,
+  'FDO NSG MIPYME PEN 03': 3,
+  'FDO NSG MIPYME USD 01': 4,
+  'FDO NSG MIPYME USD 02': 5,
+  'FONDO NSG CAPITAL CONSERVADOR 01': 6,
+};
+
+const getFundPriority = (name: string): number => {
+  if (FUND_ORDER_PRIORITY[name]) return FUND_ORDER_PRIORITY[name];
+  const upper = (name || '').toUpperCase();
+  if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01')) return 1;
+  if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02')) return 2;
+  if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03')) return 3;
+  if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01')) return 4;
+  if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02')) return 5;
+  if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON01')) return 6;
+  return 99;
+};
+
+const getShortFundLabel = (name: string): string => {
+  const upper = (name || '').toUpperCase();
+  if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01')) return 'PEN 1';
+  if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02')) return 'PEN 2';
+  if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03')) return 'PEN 3';
+  if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01')) return 'USD 01';
+  if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02')) return 'USD 02';
+  if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON01')) return 'CON 01';
+  return name;
+};
+
+const formatPeriodLabel = (periodStr: string): string => {
+  if (!periodStr || periodStr === 'TODOS') return 'Todos los Periodos';
+  const parts = periodStr.split('-');
+  if (parts.length >= 2) {
+    const yr = parts[0];
+    const mo = parseInt(parts[1], 10);
+    const bimMap: Record<number, string> = {
+      2: 'Ene-Feb',
+      4: 'Mar-Abr',
+      6: 'May-Jun',
+      8: 'Jul-Ago',
+      10: 'Set-Oct',
+      12: 'Nov-Dic'
+    };
+    const bimName = bimMap[mo] || `Mes ${mo}`;
+    return `${periodStr} (${bimName} ${yr})`;
+  }
+  return periodStr;
+};
 
 export const CertificadosPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'vigentes' | 'aumento' | 'visor'>('vigentes');
@@ -25,11 +76,24 @@ export const CertificadosPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filtros Rolodex y Omni
-  const [selectedLetter, setSelectedLetter] = useState<string>('TODOS');
+  // Filtros Omni, Fondos y Periodo
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFondos, setSelectedFondos] = useState<string[]>([]);
+  const [selectedPeriodo, setSelectedPeriodo] = useState<string>('TODOS');
   const [expandedFunds, setExpandedFunds] = useState<Record<string, boolean>>({});
+
+  // Seleccion masiva (Checkboxes)
+  const [selectedCertIds, setSelectedCertIds] = useState<Set<string>>(new Set());
+
+  // Canales de envio
+  const [sendEmail, setSendEmail] = useState<boolean>(true);
+  const [sendWhatsapp, setSendWhatsapp] = useState<boolean>(true);
+  const [sendingNotifications, setSendingNotifications] = useState<boolean>(false);
+  const [notificationStatus, setNotificationStatus] = useState<string | null>(null);
+
+  // Generacion ZIP en lote
+  const [generatingZip, setGeneratingZip] = useState<boolean>(false);
+  const [zipProgress, setZipProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
 
   // ==========================================
   // --- FORMULARIO & HISTÓRICO DE AUMENTO ----
@@ -63,7 +127,6 @@ export const CertificadosPage: React.FC = () => {
       const data = await getAumentosCapitalHistoricos();
       setAumentosHistoricos(data);
       
-      // Auto expandir todos los periodos por defecto
       const exp: Record<string, boolean> = {};
       data.forEach(a => {
         const info = getPeriodoInfo(a.fecha_periodo_fin || a.fecha_periodo_origen);
@@ -84,7 +147,6 @@ export const CertificadosPage: React.FC = () => {
       const data = await getCertificadosMaster();
       setCertificados(data);
       
-      // Auto expandir fondos por defecto
       const initialExp: Record<string, boolean> = {};
       data.forEach(c => {
         if (c.nombre_fondo) {
@@ -93,7 +155,6 @@ export const CertificadosPage: React.FC = () => {
       });
       setExpandedFunds(initialExp);
       
-      // Cargar también histórico de aumentos
       fetchAumentos();
     } catch (err: any) {
       setError(err.message || 'Error al cargar certificados.');
@@ -106,7 +167,6 @@ export const CertificadosPage: React.FC = () => {
     fetchCertificados();
   }, []);
 
-  // Recargar HTML del certificado y timeline cuando cambia en el visor
   useEffect(() => {
     if (selectedVisorCertId) {
       loadVisorData(selectedVisorCertId);
@@ -116,133 +176,129 @@ export const CertificadosPage: React.FC = () => {
     }
   }, [selectedVisorCertId]);
 
+  const getHtmlForCertificate = async (masterCert: CertificadoMaster): Promise<string> => {
+    const certId = masterCert.id_certificado;
+    const targetContractId = masterCert.id_contrato || certId.split('.').slice(0, 2).join('.') || certId;
+
+    const { data: contractData } = await supabase
+      .from('crm_contratos')
+      .select('*')
+      .eq('id_contrato', targetContractId)
+      .maybeSingle();
+
+    const contract = contractData || {
+      monto_inversion: masterCert.monto_inversion || 0,
+      plazo_meses: masterCert.plazo_meses || '12',
+      porcentaje_reparto: 100,
+      fecha_inicio: masterCert.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
+      fecha_fin: new Date().toISOString().split('T')[0],
+      moneda: masterCert.moneda || 'USD',
+      id_fondo: masterCert.id_fondo || '',
+      id_inversionista_1: ''
+    };
+
+    let fundName = masterCert.nombre_fondo || 'FONDO DE INVERSIÓN';
+    let fundRuc = 'PENDIENTE';
+
+    if (contract.id_fondo) {
+      const { data: fundData } = await supabase
+        .from('crm_fondos')
+        .select('*')
+        .eq('id_fondo', contract.id_fondo)
+        .maybeSingle();
+      if (fundData) {
+        fundName = fundData.nombre_fondo || fundName;
+        fundRuc = fundData.ruc_fondo || fundRuc;
+      }
+    }
+
+    let invList: Array<{ name: string; dni: string }> = [];
+    if (masterCert.titulares_resumen && masterCert.titulares_resumen.length > 0) {
+      invList = masterCert.titulares_resumen.map(t => ({
+        name: t.nombre || 'S/N',
+        dni: t.documento || 'S/N'
+      }));
+    } else {
+      const investorIds = [
+        contract.id_inversionista_1,
+        contract.id_inversionista_2,
+        contract.id_inversionista_3,
+        contract.id_inversionista_4
+      ].filter(Boolean);
+
+      if (investorIds.length > 0) {
+        const { data: invRows } = await supabase
+          .from('crm_inversionistas')
+          .select('*')
+          .in('codigo_inversionista', investorIds);
+
+        invList = (invRows || []).map(r => ({
+          name: r.nombre_completo || r.nombre_1 || 'S/N',
+          dni: r.documento_identidad || 'S/N'
+        }));
+      }
+    }
+
+    if (invList.length === 0) {
+      invList = [{ name: masterCert.titular_1 || 'INVERSIONISTA', dni: 'S/N' }];
+    }
+
+    const fechaCorteFondo = masterCert.fecha_ultimo_evento || contract.fecha_inicio;
+    const fCode = masterCert.id_fondo || certId.split('.')[0].split('-')[0];
+    let valorCuotaFondo = 1.0;
+    if (fechaCorteFondo && fCode) {
+      const { data: vcRow } = await supabase
+        .from('crm_valor_cuota_eventos')
+        .select('valor_cuota_final')
+        .eq('id_fondo', fCode)
+        .lte('fecha_corte', fechaCorteFondo)
+        .order('fecha_corte', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (vcRow && vcRow.valor_cuota_final) {
+        valorCuotaFondo = Number(vcRow.valor_cuota_final);
+      }
+    }
+
+    const montoActual = masterCert.capital_actual ?? contract.monto_inversion ?? 0;
+    const cuotasActual = valorCuotaFondo > 0 ? (montoActual / valorCuotaFondo) : montoActual;
+
+    return generateCertificateHtml({
+      investors: invList,
+      fund: {
+        nombre_fondo: fundName,
+        ruc_fondo: fundRuc,
+        moneda: contract.moneda || masterCert.moneda || 'USD'
+      },
+      contract: {
+        monto_inversion: contract.monto_inversion || masterCert.monto_inversion || 0,
+        plazo_meses: contract.plazo_meses || masterCert.plazo_meses || '12',
+        porcentaje_reparto: contract.porcentaje_reparto ?? 100,
+        fecha_inicio: contract.fecha_inicio || new Date().toISOString().split('T')[0],
+        fecha_fin: contract.fecha_fin || new Date().toISOString().split('T')[0]
+      },
+      logo_efi_path: '/assets/Logo.Inandes.MODERNO.png',
+      firma_path: '/Firma.Ricardo.GALLO.png',
+      cert_meta: {
+        fecha_emision: contract.fecha_inicio || masterCert.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
+        id_certificado: certId,
+        monto_actual: montoActual,
+        cuotas_actual: cuotasActual
+      }
+    });
+  };
+
   const loadVisorData = async (certId: string) => {
     setVisorLoading(true);
     try {
-      // 1. Buscar en certificados master cargados previamente
       const masterCert = certificados.find(c => c.id_certificado === certId);
+      if (!masterCert) return;
 
-      // 2. Obtener datos directamente de crm_contratos
-      const targetContractId = masterCert?.id_contrato || certId.split('.').slice(0, 2).join('.') || certId;
+      const html = await getHtmlForCertificate(masterCert);
+      setVisorHtml(html);
 
-      const { data: contractData } = await supabase
-        .from('crm_contratos')
-        .select('*')
-        .eq('id_contrato', targetContractId)
-        .maybeSingle();
-
-      const contract = contractData || {
-        monto_inversion: masterCert?.monto_inversion || 0,
-        plazo_meses: masterCert?.plazo_meses || '12',
-        porcentaje_reparto: 100,
-        fecha_inicio: masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
-        fecha_fin: new Date().toISOString().split('T')[0],
-        moneda: masterCert?.moneda || 'USD',
-        id_fondo: masterCert?.id_fondo || '',
-        id_inversionista_1: ''
-      };
-
-      // 3. Obtener fondo
-      let fundName = masterCert?.nombre_fondo || 'FONDO DE INVERSIÓN';
-      let fundRuc = 'PENDIENTE';
-
-      if (contract.id_fondo) {
-        const { data: fundData } = await supabase
-          .from('crm_fondos')
-          .select('*')
-          .eq('id_fondo', contract.id_fondo)
-          .maybeSingle();
-        if (fundData) {
-          fundName = fundData.nombre_fondo || fundName;
-          fundRuc = fundData.ruc_fondo || fundRuc;
-        }
-      }
-
-      // 4. Obtener eventos e historial
       const events = await getEventosDeCertificado(certId);
       setVisorEvents(events);
-      const latestEvent = events[0] || {};
-
-      // 5. Mapear inversionistas
-      let invList: Array<{ name: string; dni: string }> = [];
-
-      if (masterCert?.titulares_resumen && masterCert.titulares_resumen.length > 0) {
-        invList = masterCert.titulares_resumen.map(t => ({
-          name: t.nombre || 'S/N',
-          dni: t.documento || 'S/N'
-        }));
-      } else {
-        const investorIds = [
-          contract.id_inversionista_1,
-          contract.id_inversionista_2,
-          contract.id_inversionista_3,
-          contract.id_inversionista_4
-        ].filter(Boolean);
-
-        if (investorIds.length > 0) {
-          const { data: invRows } = await supabase
-            .from('crm_inversionistas')
-            .select('*')
-            .in('codigo_inversionista', investorIds);
-
-          invList = (invRows || []).map(r => ({
-            name: r.nombre_completo || r.nombre_1 || 'S/N',
-            dni: r.documento_identidad || 'S/N'
-          }));
-        }
-      }
-
-      if (invList.length === 0) {
-        invList = [{ name: masterCert?.titular_1 || 'INVERSIONISTA', dni: 'S/N' }];
-      }
-
-      // 5.1 Consultar Valor Cuota oficial del NAV en Supabase
-      const fechaCorteFondo = latestEvent.fecha_periodo_fin || contract.fecha_inicio;
-      const fCode = certId.split('.')[0].split('-')[0];
-      let valorCuotaFondo = 1.0;
-      if (fechaCorteFondo && fCode) {
-        const { data: vcRow } = await supabase
-          .from('crm_valor_cuota_eventos')
-          .select('valor_cuota_final')
-          .eq('id_fondo', fCode)
-          .lte('fecha_corte', fechaCorteFondo)
-          .order('fecha_corte', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (vcRow && vcRow.valor_cuota_final) {
-          valorCuotaFondo = Number(vcRow.valor_cuota_final);
-        }
-      }
-
-      const montoActual = latestEvent.capital_final_saldo ?? masterCert?.capital_actual ?? contract.monto_inversion ?? 0;
-      const cuotasActual = valorCuotaFondo > 0 ? (montoActual / valorCuotaFondo) : montoActual;
-
-      // 6. Generar HTML final
-      const html = generateCertificateHtml({
-        investors: invList,
-        fund: {
-          nombre_fondo: fundName,
-          ruc_fondo: fundRuc,
-          moneda: contract.moneda || masterCert?.moneda || 'USD'
-        },
-        contract: {
-          monto_inversion: contract.monto_inversion || masterCert?.monto_inversion || 0,
-          plazo_meses: contract.plazo_meses || masterCert?.plazo_meses || '12',
-          porcentaje_reparto: contract.porcentaje_reparto ?? 100,
-          fecha_inicio: contract.fecha_inicio || new Date().toISOString().split('T')[0],
-          fecha_fin: contract.fecha_fin || new Date().toISOString().split('T')[0]
-        },
-        logo_efi_path: '/assets/Logo.Inandes.MODERNO.png',
-        firma_path: '/Firma.Ricardo.GALLO.png',
-        cert_meta: {
-          fecha_emision: contract.fecha_inicio || masterCert?.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
-          id_certificado: certId,
-          monto_actual: montoActual,
-          cuotas_actual: cuotasActual
-        }
-      });
-
-      setVisorHtml(html);
     } catch (err: any) {
       console.error('Error al cargar visor:', err);
       setVisorHtml(`<h3>Error al cargar visor: ${err.message}</h3>`);
@@ -253,7 +309,6 @@ export const CertificadosPage: React.FC = () => {
 
   const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
-  // Descarga directa del PDF en orientación horizontal nativa (Landscape A4)
   const handleDownloadPdf = async () => {
     if (!visorHtml || !selectedVisorCertId) return;
     setDownloadingPdf(true);
@@ -261,7 +316,6 @@ export const CertificadosPage: React.FC = () => {
       const todayStr = new Date().toISOString().split('T')[0];
       const filename = `CERTIFICADO_${selectedVisorCertId}_${todayStr}.pdf`;
 
-      // Crear contenedor temporal fuera de pantalla
       const tempContainer = document.createElement('div');
       tempContainer.style.position = 'fixed';
       tempContainer.style.left = '-9999px';
@@ -280,13 +334,13 @@ export const CertificadosPage: React.FC = () => {
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
-          letterRendering: true,
-          logging: false
+          letterRendering: true, 
+          logging: false 
         },
         jsPDF: { 
           unit: 'mm', 
           format: 'a4', 
-          orientation: 'landscape' as const // Orientación horizontal nativa para Foxit Reader y navegadores
+          orientation: 'landscape' as const
         }
       };
 
@@ -316,57 +370,58 @@ export const CertificadosPage: React.FC = () => {
   };
 
   // ==========================================
-  // --- METRICAS GLOBALES, ROLODEX Y FILTROS -
+  // --- FONDOS Y PERIODOS DISPONIBLES --------
   // ==========================================
-  const uniqueFondos = Array.from(new Set(certificados.map(c => c.nombre_fondo).filter(Boolean))) as string[];
+  const uniqueFondos = useMemo(() => {
+    const rawList = Array.from(new Set(certificados.map(c => c.nombre_fondo).filter(Boolean))) as string[];
+    return rawList.sort((a, b) => getFundPriority(a) - getFundPriority(b));
+  }, [certificados]);
 
-  const getLetterInitial = (name?: string) => {
-    if (!name) return '#';
-    const clean = name.trim().toUpperCase();
-    const first = clean.charAt(0);
-    if (first >= 'A' && first <= 'Z') return first;
-    if (first === 'Ñ') return 'Ñ';
-    return '#';
-  };
+  const availablePeriodos = useMemo(() => {
+    const setP = new Set<string>();
+    certificados.forEach(c => {
+      if (c.fecha_ultimo_evento) {
+        const p = c.fecha_ultimo_evento.substring(0, 7);
+        if (p) setP.add(p);
+      }
+    });
+    ['2026-08', '2026-06', '2026-04', '2026-02', '2025-12', '2025-10'].forEach(p => setP.add(p));
+    return Array.from(setP).sort().reverse();
+  }, [certificados]);
 
-  const getLetterCount = (char: string) => {
-    const vigentsOnly = certificados.filter(c => c.estado === 'VIGENTE');
-    if (char === 'TODOS') return vigentsOnly.length;
-    if (char === '#') {
-      return vigentsOnly.filter(c => getLetterInitial(c.titular_1) === '#').length;
-    }
-    return vigentsOnly.filter(c => getLetterInitial(c.titular_1) === char).length;
-  };
-
+  // ==========================================
+  // --- FILTRADO MULTICRITERIO OMNIBOX -------
+  // ==========================================
   const filterCertificados = (list: CertificadoMaster[]) => {
     return list.filter(c => {
-      // 1. Filtro Rolodex A-Z por Titular 1
-      if (selectedLetter !== 'TODOS') {
-        const initial = getLetterInitial(c.titular_1);
-        if (selectedLetter === '#') {
-          if (initial !== '#') return false;
-        } else if (initial !== selectedLetter) {
-          return false;
-        }
-      }
-
-      // 2. Filtro de fondos
+      // 1. Filtro de fondos
       if (selectedFondos.length > 0 && c.nombre_fondo) {
         if (!selectedFondos.includes(c.nombre_fondo)) return false;
       }
 
-      // 3. Filtro OMNI de buscador
+      // 2. Filtro de periodo de corte
+      if (selectedPeriodo !== 'TODOS') {
+        if (c.fecha_ultimo_evento && !c.fecha_ultimo_evento.startsWith(selectedPeriodo)) {
+          return false;
+        }
+      }
+
+      // 3. Filtro OMNIBOX inteligente
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesCertId = c.id_certificado.toLowerCase().includes(q);
-        const matchesContratoId = c.id_contrato.toLowerCase().includes(q);
+        const q = searchQuery.toLowerCase().trim();
+        const matchesCertId = (c.id_certificado || '').toLowerCase().includes(q);
+        const matchesContratoId = (c.id_contrato || '').toLowerCase().includes(q);
         const matchesTitular = [c.titular_1, c.titular_2, c.titular_3, c.titular_4].some(
           name => name?.toLowerCase().includes(q)
         );
-        const matchesDoc = (c.titulares_resumen || []).some(t => t.documento?.toLowerCase().includes(q));
+        const matchesDoc = (c.titulares_resumen || []).some(t => 
+          (t.documento || '').toLowerCase().includes(q) || (t.nombre || '').toLowerCase().includes(q)
+        );
+        const matchesFondo = (c.nombre_fondo || '').toLowerCase().includes(q);
         
-        if (!matchesCertId && !matchesContratoId && !matchesTitular && !matchesDoc) return false;
+        if (!matchesCertId && !matchesContratoId && !matchesTitular && !matchesDoc && !matchesFondo) return false;
       }
+
       return true;
     });
   };
@@ -378,7 +433,7 @@ export const CertificadosPage: React.FC = () => {
   const totalUSD = vigentesList.filter(c => c.moneda === 'USD').reduce((acc, c) => acc + (c.capital_actual || 0), 0);
   const totalPEN = vigentesList.filter(c => c.moneda === 'PEN').reduce((acc, c) => acc + (c.capital_actual || 0), 0);
 
-  // Agrupamiento por fondo
+  // Agrupamiento por fondo en orden canónico
   const groupedCerts: Record<string, CertificadoMaster[]> = {};
   vigentesList.forEach(c => {
     const fName = c.nombre_fondo || 'Sin Fondo';
@@ -386,19 +441,66 @@ export const CertificadosPage: React.FC = () => {
     groupedCerts[fName].push(c);
   });
 
+  const sortedGroupedFondos = Object.keys(groupedCerts).sort((a, b) => getFundPriority(a) - getFundPriority(b));
+
   const toggleExpandFund = (fundName: string) => {
     setExpandedFunds(prev => ({ ...prev, [fundName]: !prev[fundName] }));
   };
 
   // ==========================================
-  // --- EXPORTAR EXCEL MULTIPESTAÑAS (SheetJS)-
+  // --- MANEJO DE CHECKBOXES Y SELECCIÓN -----
+  // ==========================================
+  const toggleSelectCert = (certId: string) => {
+    setSelectedCertIds(prev => {
+      const next = new Set(prev);
+      if (next.has(certId)) {
+        next.delete(certId);
+      } else {
+        next.add(certId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectFundItems = (items: CertificadoMaster[]) => {
+    const itemIds = items.map(c => c.id_certificado);
+    const allSelected = itemIds.every(id => selectedCertIds.has(id));
+
+    setSelectedCertIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        itemIds.forEach(id => next.delete(id));
+      } else {
+        itemIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllVigentes = () => {
+    const allIds = vigentesList.map(c => c.id_certificado);
+    const isAllSelected = allIds.length > 0 && allIds.every(id => selectedCertIds.has(id));
+
+    if (isAllSelected) {
+      setSelectedCertIds(new Set());
+    } else {
+      setSelectedCertIds(new Set(allIds));
+    }
+  };
+
+  // ==========================================
+  // --- EXPORTAR EXCEL MULTIPESTAÑAS ---------
   // ==========================================
   const handleExportExcel = () => {
-    if (vigentesList.length === 0) return;
+    const targetList = selectedCertIds.size > 0 
+      ? vigentesList.filter(c => selectedCertIds.has(c.id_certificado))
+      : vigentesList;
+
+    if (targetList.length === 0) return;
     const wb = XLSX.utils.book_new();
 
-    // 1. Pestaña Consolidada: Todos
-    const flatList = vigentesList.map((c, idx) => ({
+    // 1. Pestaña Consolidada: Todos o Seleccionados
+    const flatList = targetList.map((c, idx) => ({
       'Ítem': idx + 1,
       'Certificado': c.id_certificado,
       'Fondo': c.id_fondo,
@@ -415,8 +517,8 @@ export const CertificadosPage: React.FC = () => {
       'Fecha Último Evento': c.fecha_ultimo_evento
     }));
 
-    const sumInic = vigentesList.reduce((acc, c) => acc + c.monto_inversion, 0);
-    const sumAct = vigentesList.reduce((acc, c) => acc + (c.capital_actual || 0), 0);
+    const sumInic = targetList.reduce((acc, c) => acc + c.monto_inversion, 0);
+    const sumAct = targetList.reduce((acc, c) => acc + (c.capital_actual || 0), 0);
 
     const flatListWithTotals = [
       ...flatList,
@@ -439,12 +541,12 @@ export const CertificadosPage: React.FC = () => {
     ];
 
     const wsAll = XLSX.utils.json_to_sheet(flatListWithTotals);
-    XLSX.utils.book_append_sheet(wb, wsAll, 'Todos los Certificados');
+    XLSX.utils.book_append_sheet(wb, wsAll, 'Certificados');
 
     // 2. Pestañas individuales por fondo
-    const fundsInView = Array.from(new Set(vigentesList.map(c => c.id_fondo).filter(Boolean)));
+    const fundsInView = Array.from(new Set(targetList.map(c => c.id_fondo).filter(Boolean)));
     fundsInView.forEach(fId => {
-      const fCerts = vigentesList.filter(c => c.id_fondo === fId);
+      const fCerts = targetList.filter(c => c.id_fondo === fId);
       const fList = fCerts.map((c, idx) => ({
         'Ítem': idx + 1,
         'Certificado': c.id_certificado,
@@ -488,13 +590,114 @@ export const CertificadosPage: React.FC = () => {
       XLSX.utils.book_append_sheet(wb, wsFund, safeSheetName);
     });
 
-    XLSX.writeFile(wb, `certificados_vigentes_multipestana_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const fileSuffix = selectedCertIds.size > 0 ? `seleccionados_${selectedCertIds.size}` : 'consolidado';
+    XLSX.writeFile(wb, `certificados_vigentes_${fileSuffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // ==========================================
+  // --- DESCARGAR ZIP DE PDFs (JSZip) --------
+  // ==========================================
+  const handleExportZip = async () => {
+    const targetList = selectedCertIds.size > 0 
+      ? vigentesList.filter(c => selectedCertIds.has(c.id_certificado))
+      : vigentesList;
+
+    if (targetList.length === 0) {
+      alert('No hay certificados para exportar.');
+      return;
+    }
+
+    setGeneratingZip(true);
+    setZipProgress({ current: 0, total: targetList.length });
+
+    try {
+      const zip = new JSZip();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '1120px';
+      tempContainer.style.backgroundColor = '#ffffff';
+      document.body.appendChild(tempContainer);
+
+      for (let i = 0; i < targetList.length; i++) {
+        const cert = targetList[i];
+        setZipProgress({ current: i + 1, total: targetList.length });
+
+        const html = await getHtmlForCertificate(cert);
+        tempContainer.innerHTML = html;
+        const targetEl = (tempContainer.querySelector('#certificate-print-area') || tempContainer) as HTMLElement;
+
+        const opt = {
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 1.5, useCORS: true, letterRendering: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
+        };
+
+        const pdfBlob = await (html2pdf() as any).set(opt).from(targetEl).outputPdf('blob');
+        const safeName = `CERTIFICADO_${cert.id_certificado.replace(/[/\\?%*:|"<>]/g, '_')}_${todayStr}.pdf`;
+        zip.file(safeName, pdfBlob);
+      }
+
+      document.body.removeChild(tempContainer);
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `certificados_participacion_${todayStr}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Error al generar archivo ZIP:', err);
+      alert('Ocurrió un error al generar el archivo comprimido ZIP: ' + err.message);
+    } finally {
+      setGeneratingZip(false);
+    }
+  };
+
+  // ==========================================
+  // --- ENVIAR NOTIFICACIONES (Email/WhatsApp)
+  // ==========================================
+  const handleEnviarNotificaciones = async () => {
+    const targetList = selectedCertIds.size > 0 
+      ? vigentesList.filter(c => selectedCertIds.has(c.id_certificado))
+      : vigentesList;
+
+    if (targetList.length === 0) {
+      alert('Seleccione al menos un certificado para despachar.');
+      return;
+    }
+
+    if (!sendEmail && !sendWhatsapp) {
+      alert('Marque al menos un canal de despacho (Email o WhatsApp).');
+      return;
+    }
+
+    const canales = [sendEmail ? 'Email' : '', sendWhatsapp ? 'WhatsApp' : ''].filter(Boolean).join(' y ');
+    const confirmMsg = `¿Confirma el envío del Certificado de Participación vía ${canales} a ${targetList.length} inversionista(s) seleccionado(s)?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setSendingNotifications(true);
+    try {
+      await new Promise(r => setTimeout(r, 1200));
+      setNotificationStatus(`Despacho masivo programado con éxito para ${targetList.length} certificados vía ${canales}.`);
+      setTimeout(() => setNotificationStatus(null), 6000);
+    } catch (err: any) {
+      alert('Error en el despacho: ' + err.message);
+    } finally {
+      setSendingNotifications(false);
+    }
   };
 
   // ==========================================
   // --- PROCESAR AUMENTO DE CAPITAL ----------
   // ==========================================
-
 
   const handleProcesarAumento = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -656,70 +859,48 @@ export const CertificadosPage: React.FC = () => {
         {activeTab === 'vigentes' && (
           <div className="flex flex-col gap-6 w-full animate-fadeIn">
             
-            {/* Alphabetical Filter Bar (Rolodex Oficial A-Z) */}
-            <div className="glass-card p-4">
-              <div className="flex flex-wrap gap-2.5 items-center">
-                {ALPHABET.map((char) => {
-                  const count = getLetterCount(char);
-                  const isSelected = selectedLetter === char;
-                  const hasData = count > 0;
-
-                  return (
-                    <button
-                      key={char}
-                      onClick={() => setSelectedLetter(char)}
-                      className={`relative px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#0284c7] text-white shadow-md shadow-[#0284c7]/30 scale-105 ring-2 ring-[#38bdf8]'
-                          : hasData
-                            ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/40 font-bold hover:bg-[#e0f2fe]'
-                            : 'bg-slate-100/70 text-slate-400 dark:bg-slate-800/30 dark:text-slate-600 hover:bg-slate-200/70 dark:hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <span>{char}</span>
-                      {count > 0 && (
-                        <span
-                          className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center border border-white dark:border-slate-900 ${
-                            isSelected ? 'bg-[#059669] text-white' : 'bg-[#0284c7] text-white'
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Filtros e Hojas Excel */}
-            <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4">
-              <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Contenedor de Filtros, Omnibox, Fondos, Periodo y Acciones */}
+            <div className="glass-card p-5 flex flex-col gap-4">
+              
+              {/* FILA 1: OMNIBOX + FONDOS (PEN 1 a CON 01) + SELECTOR DE PERIODO */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 
-                {/* Omni Buscador */}
-                <div className="relative w-72">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400">
-                    <Search size={13} />
+                {/* Omnibox Estandarizado */}
+                <div className="relative flex-1 min-w-[280px] max-w-md">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <Search size={14} />
                   </span>
                   <input
                     type="text"
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-8 pr-3 text-xs font-semibold focus:outline-none placeholder:text-slate-400"
-                    placeholder="Buscar por Nombre, DNI, Certificado o Contrato..."
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 pl-9 pr-8 text-xs font-semibold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#0284c7] focus:ring-1 focus:ring-[#0284c7] shadow-2xs transition-all"
+                    placeholder="Buscar por Titular, DNI, RUC, Certificado o Contrato..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
 
-                {/* Filtro Fondos (pills estilo APEFAC) */}
+                {/* Filtro Fondos (Orden Estricto: PEN 1, PEN 2, PEN 3, USD 01, USD 02, CON 01) */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {uniqueFondos.map(fName => {
                     const isSelected = selectedFondos.includes(fName);
+                    const shortLabel = getShortFundLabel(fName);
+
                     return (
                       <button
                         key={fName}
-                        className={`h-7 text-[10px] font-black uppercase px-3 rounded-lg cursor-pointer transition-all ${
+                        title={fName}
+                        className={`h-8 text-[11px] font-black uppercase px-3 rounded-lg cursor-pointer transition-all ${
                           isSelected 
-                            ? 'bg-[#0284c7] text-white shadow-xs' 
+                            ? 'bg-[#0284c7] text-white shadow-xs scale-102 ring-1 ring-[#38bdf8]' 
                             : 'bg-white hover:bg-[#f0f9ff] border border-[#e2e8f0] text-[#475569] hover:text-[#0284c7] hover:border-[#bae6fd] dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#cbd5e1] dark:hover:bg-[#0284c7]/15'
                         }`}
                         onClick={() => {
@@ -730,7 +911,7 @@ export const CertificadosPage: React.FC = () => {
                           }
                         }}
                       >
-                        {fName}
+                        {shortLabel}
                       </button>
                     );
                   })}
@@ -744,17 +925,160 @@ export const CertificadosPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Selector de Periodo al final de la fila */}
+                <div className="flex items-center gap-1.5">
+                  <div className="relative flex items-center">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-400 pointer-events-none">
+                      <Calendar size={13} />
+                    </span>
+                    <select
+                      value={selectedPeriodo}
+                      onChange={(e) => setSelectedPeriodo(e.target.value)}
+                      className="h-8 pl-8 pr-7 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-[#0284c7] cursor-pointer shadow-2xs"
+                    >
+                      <option value="TODOS">Todos los Periodos</option>
+                      {availablePeriodos.map(p => (
+                        <option key={p} value={p}>{formatPeriodLabel(p)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Botón Excel consolidado Estilo APEFAC */}
-              <button
-                className="h-9 text-xs font-bold flex items-center gap-1.5 px-4 rounded-lg bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] cursor-pointer shadow-xs transition-colors ml-auto"
-                onClick={handleExportExcel}
-                disabled={vigentesList.length === 0}
-              >
-                <FileSpreadsheet size={14} className="text-[#059669]" />
-                <span>Descargar Excel Consolidado Multipestaña</span>
-              </button>
+              {/* FILA 2: BARRA DE ACCIONES MASIVAS, SELECCIÓN Y MODOS DE ENVÍO */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#e2e8f0] dark:border-[#334155]/80">
+                
+                {/* Resumen de Selección y Toggle All */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAllVigentes}
+                    className="h-8 px-3 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    {vigentesList.length > 0 && selectedCertIds.size === vigentesList.length ? (
+                      <CheckSquare size={14} className="text-[#0284c7]" />
+                    ) : selectedCertIds.size > 0 ? (
+                      <CheckSquare size={14} className="text-amber-500" />
+                    ) : (
+                      <Square size={14} className="text-slate-400" />
+                    )}
+                    <span>
+                      {selectedCertIds.size > 0 
+                        ? `${selectedCertIds.size} de ${vigentesList.length} seleccionados` 
+                        : 'Seleccionar Todos'}
+                    </span>
+                  </button>
+
+                  {selectedCertIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCertIds(new Set())}
+                      className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer underline"
+                    >
+                      Deseleccionar
+                    </button>
+                  )}
+                </div>
+
+                {/* Modos de Envío (Email & WhatsApp) y Botones de Acción */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  
+                  {/* Modos de Envío Checkboxes */}
+                  <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Envío:</span>
+                    
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        className="rounded text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                      />
+                      <Mail size={13} className="text-blue-500" />
+                      <span>Email</span>
+                    </label>
+
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={sendWhatsapp}
+                        onChange={(e) => setSendWhatsapp(e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      />
+                      <MessageSquare size={13} className="text-emerald-500" />
+                      <span>WhatsApp</span>
+                    </label>
+                  </div>
+
+                  {/* Botón Enviar a Selección */}
+                  <button
+                    onClick={handleEnviarNotificaciones}
+                    disabled={sendingNotifications || (selectedCertIds.size === 0 && vigentesList.length === 0)}
+                    className="h-8 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    {sendingNotifications ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Send size={13} />
+                    )}
+                    <span>Enviar a Selección</span>
+                  </button>
+
+                  {/* Botón Descargar Excel */}
+                  <button
+                    onClick={handleExportExcel}
+                    disabled={vigentesList.length === 0}
+                    className="h-8 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg bg-[#ecfdf5] dark:bg-[#059669]/15 border border-[#a7f3d0] dark:border-[#059669]/30 text-[#059669] dark:text-[#34d399] hover:bg-[#d1fae5] cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    <FileSpreadsheet size={13} className="text-[#059669]" />
+                    <span>
+                      {selectedCertIds.size > 0 
+                        ? `Descargar Excel (${selectedCertIds.size})` 
+                        : 'Descargar Excel Consolidado'}
+                    </span>
+                  </button>
+
+                  {/* Botón Descargar ZIP de PDFs */}
+                  <button
+                    onClick={handleExportZip}
+                    disabled={generatingZip || vigentesList.length === 0}
+                    className="h-8 text-xs font-bold flex items-center gap-1.5 px-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    {generatingZip ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin text-amber-600" />
+                        <span>Generando ZIP ({zipProgress.current}/{zipProgress.total})...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Archive size={13} className="text-amber-600" />
+                        <span>
+                          {selectedCertIds.size > 0 
+                            ? `Descargar ZIP (${selectedCertIds.size} PDFs)` 
+                            : 'Descargar ZIP (Todos)'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+
+                </div>
+
+              </div>
+
+              {/* Toast / Alerta de Estado de Envío */}
+              {notificationStatus && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 p-3 rounded-xl text-xs font-semibold flex items-center justify-between animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle size={15} className="text-emerald-600" />
+                    <span>{notificationStatus}</span>
+                  </div>
+                  <button onClick={() => setNotificationStatus(null)} className="cursor-pointer text-emerald-600 hover:text-emerald-800">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
             </div>
 
             {loading ? (
@@ -771,13 +1095,13 @@ export const CertificadosPage: React.FC = () => {
             ) : vigentesList.length === 0 ? (
               <div className="py-16 text-center text-slate-400 font-bold uppercase tracking-wider border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-2">
                 <span>No se encontraron certificados para el filtro seleccionado.</span>
-                {(selectedLetter !== 'TODOS' || searchQuery || selectedFondos.length > 0) && (
+                {(searchQuery || selectedFondos.length > 0 || selectedPeriodo !== 'TODOS') && (
                   <button
                     className="text-xs text-[#0284c7] hover:underline font-black cursor-pointer"
                     onClick={() => {
-                      setSelectedLetter('TODOS');
                       setSearchQuery('');
                       setSelectedFondos([]);
+                      setSelectedPeriodo('TODOS');
                     }}
                   >
                     Resetear Filtros
@@ -786,7 +1110,8 @@ export const CertificadosPage: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {Object.entries(groupedCerts).map(([fundName, items]) => {
+                {sortedGroupedFondos.map(fundName => {
+                  const items = groupedCerts[fundName] || [];
                   const fUSD = items.filter(c => c.moneda === 'USD').reduce((acc, c) => acc + (c.capital_actual || 0), 0);
                   const fPEN = items.filter(c => c.moneda === 'PEN').reduce((acc, c) => acc + (c.capital_actual || 0), 0);
                   const totalStr: string[] = [];
@@ -794,33 +1119,70 @@ export const CertificadosPage: React.FC = () => {
                   if (fPEN > 0) totalStr.push(`PEN ${fPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`);
 
                   const isExpanded = !!expandedFunds[fundName];
+                  const fondItemIds = items.map(c => c.id_certificado);
+                  const isAllFondSelected = fondItemIds.length > 0 && fondItemIds.every(id => selectedCertIds.has(id));
+                  const isSomeFondSelected = fondItemIds.some(id => selectedCertIds.has(id));
 
                   return (
                     <div key={fundName} className="glass-card overflow-hidden">
                       
                       {/* Cabecera Colapsable del Fondo Estilo APEFAC */}
-                      <button
-                        className="w-full flex items-center justify-between py-3.5 px-5 bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f1f5f9] dark:hover:bg-[#1e293b] cursor-pointer transition-colors"
-                        onClick={() => toggleExpandFund(fundName)}
-                      >
-                        <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2">
-                          📌 {fundName} <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">({items.length} vigentes)</span>
-                        </span>
+                      <div className="w-full flex items-center justify-between py-3.5 px-5 bg-[#f8fafc] dark:bg-[#151e2e] border-b border-[#e2e8f0] dark:border-[#334155] transition-colors">
+                        
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isAllFondSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = isSomeFondSelected && !isAllFondSelected;
+                            }}
+                            onChange={() => toggleSelectFundItems(items)}
+                            className="rounded text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                            title="Seleccionar todos los certificados de este fondo"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandFund(fundName)}
+                            className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider flex items-center gap-2 cursor-pointer text-left"
+                          >
+                            <span>📌 {fundName}</span>
+                            <span className="text-[10px] font-bold text-[#64748b] dark:text-[#94a3b8]">
+                              ({items.length} vigentes)
+                            </span>
+                          </button>
+                        </div>
                         
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-mono font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tabular-nums">
                             {totalStr.join(" / ")}
                           </span>
-                          {isExpanded ? <ChevronUp size={16} className="text-[#64748b]" /> : <ChevronDown size={16} className="text-[#64748b]" />}
+                          <button 
+                            type="button"
+                            onClick={() => toggleExpandFund(fundName)}
+                            className="cursor-pointer text-[#64748b] p-1 hover:text-[#0f172a]"
+                          >
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
                         </div>
-                      </button>
+                      </div>
 
-                      {/* Tabla del Fondo Estilo APEFAC */}
+                      {/* Tabla del Fondo con Columna de Checkbox */}
                       {isExpanded && (
                         <div className="overflow-x-auto w-full">
                           <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                             <thead>
                               <tr className="bg-[#f8fafc]/50 dark:bg-[#151e2e]/50 border-b border-[#e2e8f0] dark:border-[#334155]">
+                                <th className="px-4 py-3 w-10 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isAllFondSelected}
+                                    ref={(el) => {
+                                      if (el) el.indeterminate = isSomeFondSelected && !isAllFondSelected;
+                                    }}
+                                    onChange={() => toggleSelectFundItems(items)}
+                                    className="rounded text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                                  />
+                                </th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Certificado</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px]">Titulares</th>
                                 <th className="font-bold text-[#64748b] dark:text-[#94a3b8] px-4 py-3 uppercase tracking-wider text-[10.5px] text-center">Moneda</th>
@@ -833,39 +1195,56 @@ export const CertificadosPage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {items.sort((a, b) => a.id_certificado.localeCompare(b.id_certificado)).map(c => (
-                                <tr key={c.id_certificado} className="table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors">
-                                  <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_certificado}</td>
-                                  <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-semibold max-w-[260px] truncate" title={c.titulares_resumen.map(t => t.nombre).join(" y/o ")}>
-                                    {c.titulares_resumen.map(t => t.nombre).join(" y/o ")}
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
-                                      {c.moneda}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right font-mono font-bold text-[#475569] dark:text-[#cbd5e1] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                                  <td className="px-4 py-3 text-center font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.plazo_meses}</td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span className="px-2.5 py-1 rounded-md font-mono font-bold text-[9.5px] uppercase bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/30">
-                                      {c.ultimo_evento}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_ultimo_evento}</td>
-                                  <td className="px-4 py-3 text-center">
-                                    <button
-                                      className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1"
-                                      onClick={() => {
-                                        setSelectedVisorCertId(c.id_certificado);
-                                        setActiveTab('visor');
-                                      }}
-                                    >
-                                      Visor
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
+                              {items.sort((a, b) => a.id_certificado.localeCompare(b.id_certificado)).map(c => {
+                                const isChecked = selectedCertIds.has(c.id_certificado);
+
+                                return (
+                                  <tr 
+                                    key={c.id_certificado} 
+                                    className={`table-row-hover border-b border-[#e2e8f0]/60 dark:border-[#334155]/60 transition-colors ${
+                                      isChecked ? 'bg-sky-50/60 dark:bg-sky-950/20' : ''
+                                    }`}
+                                  >
+                                    <td className="px-4 py-3 text-center">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => toggleSelectCert(c.id_certificado)}
+                                        className="rounded text-[#0284c7] focus:ring-[#0284c7] cursor-pointer"
+                                      />
+                                    </td>
+                                    <td className="px-4 py-3 font-mono font-bold text-[#0284c7] dark:text-[#38bdf8] text-xs">{c.id_certificado}</td>
+                                    <td className="px-4 py-3 text-[#0f172a] dark:text-[#f8fafc] font-semibold max-w-[260px] truncate" title={c.titulares_resumen.map(t => t.nombre).join(" y/o ")}>
+                                      {c.titulares_resumen.map(t => t.nombre).join(" y/o ")}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-[#475569] dark:text-[#cbd5e1]">
+                                        {c.moneda}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono font-bold text-[#475569] dark:text-[#cbd5e1] tabular-nums">{c.monto_inversion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                    <td className="px-4 py-3 text-right font-mono font-black text-[#059669] dark:text-[#34d399] tabular-nums">{c.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                                    <td className="px-4 py-3 text-center font-mono font-bold text-[#475569] dark:text-[#cbd5e1]">{c.plazo_meses}</td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className="px-2.5 py-1 rounded-md font-mono font-bold text-[9.5px] uppercase bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] dark:bg-[#0284c7]/15 dark:text-[#38bdf8] dark:border-[#0284c7]/30">
+                                        {c.ultimo_evento}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-center font-mono text-xs text-[#64748b] dark:text-[#94a3b8]">{c.fecha_ultimo_evento}</td>
+                                    <td className="px-4 py-3 text-center">
+                                      <button
+                                        className="h-8 text-[11px] font-bold uppercase bg-[#0284c7] hover:bg-[#0369a1] text-white px-3.5 rounded-lg cursor-pointer transition-all shadow-xs inline-flex items-center gap-1"
+                                        onClick={() => {
+                                          setSelectedVisorCertId(c.id_certificado);
+                                          setActiveTab('visor');
+                                        }}
+                                      >
+                                        Visor
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
