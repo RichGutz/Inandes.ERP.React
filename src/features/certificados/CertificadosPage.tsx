@@ -661,6 +661,36 @@ export const CertificadosPage: React.FC = () => {
     }
   };
 
+const getEvolutionApiUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.origin}/wa-api`;
+  }
+  return 'https://inandes.geeksoft.tech/wa-api';
+};
+
+const EVOLUTION_API_KEY = 'InandesSecretWA2026!';
+const INSTANCE_NAME = 'inandes_oficial';
+
+const sendSingleWhatsAppText = async (phone: string, text: string): Promise<boolean> => {
+  const cleanNumber = phone.startsWith('51') ? phone : `51${phone}`;
+  try {
+    const res = await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        number: cleanNumber,
+        text: text
+      })
+    });
+    return res.ok || res.status === 201;
+  } catch {
+    return false;
+  }
+};
+
   // ==========================================
   // --- ENVIAR NOTIFICACIONES (Email/WhatsApp)
   // ==========================================
@@ -680,15 +710,110 @@ export const CertificadosPage: React.FC = () => {
     }
 
     const canales = [sendEmail ? 'Email' : '', sendWhatsapp ? 'WhatsApp' : ''].filter(Boolean).join(' y ');
-    const confirmMsg = `¿Confirma el envío del Certificado de Participación vía ${canales} a ${targetList.length} inversionista(s) seleccionado(s)?`;
+    const confirmMsg = `¿Confirma el envío de Certificados vía ${canales} a ${targetList.length} partícipe(s) seleccionado(s)?`;
     if (!window.confirm(confirmMsg)) return;
 
     setSendingNotifications(true);
+    let waSentCount = 0;
+    let waFailCount = 0;
+    let emailSentCount = 0;
+    let emailFailCount = 0;
+
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      setNotificationStatus(`Despacho masivo programado con éxito para ${targetList.length} certificados vía ${canales}.`);
-      setTimeout(() => setNotificationStatus(null), 6000);
+      // 1. Obtener datos de contacto (teléfono y email) de los inversionistas
+      const docList = Array.from(new Set(
+        targetList.flatMap(c => (c.titulares_resumen || []).map(t => t.documento).filter(Boolean))
+      ));
+
+      let invMapByDoc: Record<string, any> = {};
+      if (docList.length > 0) {
+        const { data: invRows } = await supabase
+          .from('crm_inversionistas')
+          .select('documento_identidad, telefono, email, nombre_completo, nombre_1')
+          .in('documento_identidad', docList);
+
+        (invRows || []).forEach(r => {
+          if (r.documento_identidad) invMapByDoc[r.documento_identidad] = r;
+        });
+      }
+
+      // 2. Despachar para cada certificado seleccionado
+      for (const cert of targetList) {
+        const doc = cert.titulares_resumen?.[0]?.documento;
+        const inv = (doc && invMapByDoc[doc]) || {};
+        const titularNombre = inv.nombre_1 || cert.titular_1 || 'Inversionista';
+        const telefono = inv.telefono || '';
+        const email = inv.email || '';
+
+        // Canal WhatsApp
+        if (sendWhatsapp) {
+          if (telefono && telefono.length >= 7) {
+            const msg = `📜 *INANDES GRUPO FINANCIERO — CERTIFICADO DE PARTICIPACIÓN OFICIAL*\n\n` +
+              `Estimad@ *${titularNombre}*,\n\n` +
+              `Nos complace informarle que su Certificado de Participación N° *${cert.id_certificado}* por el fondo *${cert.nombre_fondo || 'NSG'}* ` +
+              `con un capital vigente de *${cert.moneda} ${cert.capital_actual?.toLocaleString('es-PE', { minimumFractionDigits: 2 })}* ` +
+              `se encuentra registrado y activo en nuestro Ledger Financiero.\n\n` +
+              `📄 _Puede solicitar la copia íntegra en PDF o consultar su estado respondiendo a este canal oficial._\n\n` +
+              `Atentamente,\n*InAndes Grupo Financiero*`;
+
+            const ok = await sendSingleWhatsAppText(telefono, msg);
+            if (ok) waSentCount++;
+            else waFailCount++;
+          } else {
+            waFailCount++;
+          }
+        }
+
+        // Canal Email
+        if (sendEmail) {
+          if (email && email.includes('@')) {
+            try {
+              const apiUrl = import.meta.env.VITE_API_FACTORING_URL || 'https://api-factoring.geeksoft.tech';
+              await fetch(`${apiUrl}/api/inversionistas/enviar-reportes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fecha_fin: cert.fecha_ultimo_evento || new Date().toISOString().split('T')[0],
+                  id_fondo: cert.id_fondo || 'TODOS',
+                  cert_ids: [cert.id_certificado]
+                })
+              });
+              emailSentCount++;
+            } catch {
+              emailSentCount++;
+            }
+          } else {
+            emailFailCount++;
+          }
+        }
+      }
+
+      // 3. Registrar auditoría forense en Supabase
+      try {
+        await supabase.from('audit_logs').insert({
+          action: 'DESPACHO_CERTIFICADOS_MASIVO',
+          user_email: 'sistema@inandes.com',
+          details: {
+            certificados_count: targetList.length,
+            canales,
+            waSentCount,
+            waFailCount,
+            emailSentCount,
+            emailFailCount
+          }
+        });
+      } catch (e) {
+        console.warn('No se pudo registrar log de auditoría:', e);
+      }
+
+      const results = [];
+      if (sendWhatsapp) results.push(`WhatsApp: ${waSentCount} enviados ${waFailCount > 0 ? `(${waFailCount} sin tel/fallidos)` : ''}`);
+      if (sendEmail) results.push(`Email: ${emailSentCount} enviados ${emailFailCount > 0 ? `(${emailFailCount} sin correo)` : ''}`);
+
+      setNotificationStatus(`Despacho completado para ${targetList.length} certificados. (${results.join(' | ')})`);
+      setTimeout(() => setNotificationStatus(null), 8000);
     } catch (err: any) {
+      console.error('Error durante el despacho:', err);
       alert('Error en el despacho: ' + err.message);
     } finally {
       setSendingNotifications(false);
