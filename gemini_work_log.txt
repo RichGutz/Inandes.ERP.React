@@ -692,3 +692,22 @@ RESULTADO:
 2. Portabilidad de Auditoría Forense y Device Vault (PETRAL -> InAndes ERP): Tablas 'audit_logs' y 'user_authorized_devices' creadas en Supabase con RLS. Implementados AuditMasterPage, DeviceVaultPage, auditService y auditTracker. Integrados en Menú Herramientas y App.tsx.
 3. QC y Despliegue: Build verificado (npm run build exit 0), commit 03e48a1 subido a origin/main y auto-desplegado en caliente en Contabo VPS Coolify (https://inandes.geeksoft.tech/#herramientas_auditoria, #herramientas_device_vault).
 4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
+
+================================================================================
+
+[2026-09-10 15:40:00-05:00] SESION CERRADA EXITOSAMENTE:
+1. Estandarización de UI en Certificados y EECC / Retenciones (Inversionistas):
+   - Eliminación del Rolodex e implementación de Omnibox de alta precisión en tiempo real.
+   - Ordenamiento canónico de fondos: PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01.
+   - Selector de período integrado al final de la fila de filtros (Año, Ciclo, N° Período).
+   - Doble columna paralela de checkboxes: RET (Retención 5% IR) y EECC (Estado de Cuenta) con master headers independientes.
+   - Conexión de canales reales de envío: WhatsApp (Evolution API /wa-api/message/sendText/inandes_oficial) y Email (FastAPI backend /api/inversionistas/enviar-reportes) con registro en audit_logs.
+   - Visor Acordeón Side-by-Side: EECC a la izquierda y Retención 5% a la derecha con iframe de alta resolución y botones de descarga PDF individual.
+2. Control de Calidad y Despliegue:
+   - TypeScript & Vite Build: npm run build exit code 0 limpio en 3.18s.
+   - Git Commits: 52bc93d, 39174f5, 4b26a3c subidos a origin/main.
+   - Auto-despliegue en caliente ejecutado por Coolify en Contabo VPS (169.58.168.107 / https://inandes.geeksoft.tech).
+3. Documentación Oficial:
+   - Registrada en Obsidian/Inandes.Inversionistas.React/00.K.Estandarizacion.UI.Certificados.EECC.Retenciones.SideBySide.md.
+================================================================================
+
