@@ -649,13 +649,15 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
 
 
-[2026-09-10 15:22:00-05:00] CONEXION CABLES REALES DE ENVIO (WHATSAPP + EMAIL):
-1. Integracion completada en CertificadosPage.tsx:
-   - Canal WhatsApp conectado a Evolution API (/wa-api/message/sendText/inandes_oficial) con resolucion automatica de telefono desde crm_inversionistas.
-   - Canal Email conectado al backend FastAPI (/api/inversionistas/enviar-reportes) con resolucion de correo y respaldo.
-   - Registro de auditoria forense automatico en tabla Supabase audit_logs (DESPACHO_CERTIFICADOS_MASIVO).
-2. QC y Despliegue:
-   - npm run build exit 0 en 4.90s.
-   - Commit 39174f5 subido a origin/main para auto-despliegue en VPS Contabo Coolify.
+[2026-09-10 15:37:00-05:00] MODERNIZACION TAB C (EECC / RETENCIONES) SIDE-BY-SIDE:
+1. Replicacion exacta de UI estandarizada de Certificados en Tab C de InversionistasPage.tsx:
+   - Omnibox estandarizado con busqueda multi-criterio en tiempo real (DNI, RUC, Inversionista, Contrato, Fondo).
+   - Selector de Fondos con pills ordenados de izq. a der. segun prioridad canonica (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01).
+   - Selector de Periodo integrado al final de la fila de filtros (Ano, Ciclo Bimestre/Trimestre, N° Periodo).
+   - Doble columna de checkboxes paralelos: RET (Retencion 5% IR) y EECC (Estado de Cuenta) con sus respectivos master headers.
+   - Barra de acciones con canales conectados: Checkboxes Email y WhatsApp, Enviar a Seleccion, Descargar Excel y Descargar ZIP (PDFs en memoria con JSZip).
+   - Visor Acordeon por fila que expande directamente debajo los dos documentos (EECC a la izquierda, Retencion a la derecha) con previsualizacion y botones de descarga individual.
+2. Control de Calidad:
+   - npm run build exit code 0 limpio en 3.18s.
 ================================================================================
 

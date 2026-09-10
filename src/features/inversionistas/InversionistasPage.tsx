@@ -8,13 +8,14 @@ import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDes
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 import { supabase } from '../../services/supabaseClient';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { generateBcpTelecreditoTxt, downloadBcpTxtFile, generateBcpTelecreditoExcel } from '../../services/bcpTelecreditoService';
 import type { BcpTransferItem, BcpBatchConfig, BcpGeneratedFile } from '../../services/bcpTelecreditoService';
 import { 
   Search, Loader2, AlertCircle, RefreshCw, Edit2, UserPlus, 
   FileSpreadsheet, FileText, CheckCircle, 
-  ShieldCheck, Undo2, X, Calendar, RotateCcw, ExternalLink, Download,
-  LayoutGrid, List, Mail, Send, Landmark
+  ShieldCheck, Undo2, X, Calendar, RotateCcw, Download,
+  LayoutGrid, List, Mail, Send, Landmark, Archive, MessageSquare, ChevronDown, ChevronUp, CheckSquare, Square
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
@@ -152,18 +153,32 @@ export const InversionistasPage: React.FC = () => {
   const [officialRegisterLoading, setOfficialRegisterLoading] = useState<boolean>(false);
   const [registerSuccessMsg, setRegisterSuccessMsg] = useState<string | null>(null);
 
-  // Estado de Generación Documentos y Visores Duales Estilo Forecast
+  // Estado de Generación Documentos, Doble Selección y Visores
   const [docFondo, setDocFondo] = useState<string>('TODOS');
-  const [docViewMode, setDocViewMode] = useState<'dual' | 'eecc' | 'retenciones'>('dual');
   const [docReloadKey, setDocReloadKey] = useState<number>(Date.now());
   const [docEvents, setDocEvents] = useState<any[]>([]);
   const [docLoading, setDocLoading] = useState<boolean>(false);
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
+  // Estados de Selección Doble (Retención y EECC) y Filtros
+  const [selectedRetIds, setSelectedRetIds] = useState<Set<string>>(new Set());
+  const [selectedEeccIds, setSelectedEeccIds] = useState<Set<string>>(new Set());
+  const [expandedVisorIds, setExpandedVisorIds] = useState<Set<string>>(new Set());
+  const [docSearchQuery, setDocSearchQuery] = useState<string>('');
+  const [selectedDocFondos, setSelectedDocFondos] = useState<string[]>([]);
+
+  // Canales de Envío en Tab C (Email y WhatsApp)
+  const [docSendEmail, setDocSendEmail] = useState<boolean>(true);
+  const [docSendWhatsapp, setDocSendWhatsapp] = useState<boolean>(true);
+  const [docSendingNotifications, setDocSendingNotifications] = useState<boolean>(false);
+  const [docNotificationStatus, setDocNotificationStatus] = useState<string | null>(null);
+  const [docGeneratingZip, setDocGeneratingZip] = useState<boolean>(false);
+  const [docZipProgress, setDocZipProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
+
   const handleDownloadFastPdf = async (htmlDoc: string, filename: string) => {
     setDownloadingPdf(filename);
     try {
-      await downloadReportPdf(htmlDoc, filename, 'landscape');
+      await downloadReportPdf(htmlDoc, filename, 'portrait');
     } catch (err: any) {
       alert(`Error descargando PDF: ${err.message}`);
     } finally {
@@ -446,60 +461,149 @@ export const InversionistasPage: React.FC = () => {
     return dStr;
   };
 
-  // Generador en Caliente de HTML para EECC (Estilo Forecast)
-  const htmlEeccDoc = useMemo(() => {
+  const FUND_ORDER_PRIORITY: Record<string, number> = {
+    'FDO NSG MIPYME PEN 01': 1,
+    'FDO NSG MIPYME PEN 02': 2,
+    'FDO NSG MIPYME PEN 03': 3,
+    'FDO NSG MIPYME USD 01': 4,
+    'FDO NSG MIPYME USD 02': 5,
+    'FONDO NSG CAPITAL CONSERVADOR 01': 6,
+  };
+
+  const getFundPriority = (name: string): number => {
+    if (FUND_ORDER_PRIORITY[name]) return FUND_ORDER_PRIORITY[name];
+    const upper = (name || '').toUpperCase();
+    if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01')) return 1;
+    if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02')) return 2;
+    if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03')) return 3;
+    if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01')) return 4;
+    if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02')) return 5;
+    if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON01')) return 6;
+    return 99;
+  };
+
+  const getShortFundLabel = (name: string): string => {
+    const upper = (name || '').toUpperCase();
+    if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01')) return 'PEN 1';
+    if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02')) return 'PEN 2';
+    if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03')) return 'PEN 3';
+    if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01')) return 'USD 01';
+    if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02')) return 'USD 02';
+    if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON01')) return 'CON 01';
+    return name;
+  };
+
+  const getEvolutionApiUrl = (): string => {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return `${window.location.origin}/wa-api`;
+    }
+    return 'https://inandes.geeksoft.tech/wa-api';
+  };
+
+  const EVOLUTION_API_KEY = 'InandesSecretWA2026!';
+  const INSTANCE_NAME = 'inandes_oficial';
+
+  const sendSingleWhatsAppText = async (phone: string, text: string): Promise<boolean> => {
+    const cleanNumber = phone.startsWith('51') ? phone : `51${phone}`;
+    try {
+      const res = await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
+        method: 'POST',
+        headers: {
+          'apikey': EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          number: cleanNumber,
+          text: text
+        })
+      });
+      return res.ok || res.status === 201;
+    } catch {
+      return false;
+    }
+  };
+
+  const findInvDoc = (nombre: string) => {
+    if (!nombre) return { dni: '', direccion: 'Domicilio no registrado' };
+    const n = nombre.toUpperCase().trim();
+    for (const inv of inversionistas) {
+      const comp = (inv.nombre_completo || '').toUpperCase().trim();
+      if (comp && (n.includes(comp) || comp.includes(n))) {
+        return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
+      }
+      const n1 = (inv.nombre_1 || '').toUpperCase();
+      const a1 = (inv.apellido_1 || '').toUpperCase();
+      if (n1 && a1 && n.includes(n1) && n.includes(a1)) {
+        return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
+      }
+    }
+    return { dni: '', direccion: 'Domicilio no registrado' };
+  };
+
+  const getEeccRowData = (e: any) => {
     const fondosMap = new Map(fondosDisponibles.map(f => [f.id_fondo, f]));
-    let filtered = docEvents.filter(e => e.fecha_periodo_fin === fEnd);
-    if (docFondo && docFondo !== 'TODOS') {
-      filtered = filtered.filter(e => 
-        (e.id_certificado && e.id_certificado.startsWith(docFondo)) ||
-        (e.id_contrato && e.id_contrato.startsWith(docFondo))
-      );
-    }
+    const payload = e.payload_asiento || {};
+    const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0];
+    const fInfo = fondosMap.get(fCode) || {};
+    const fondoNombre = fInfo.nombre_fondo || fCode;
+    const moneda = payload.moneda || fInfo.moneda || 'PEN';
+    const inversionista = payload.inversionista || 'Inversionista';
+    const vcFondoEvent = docVcEvents.find(v => v.id_fondo === fCode);
+    const valorCuota = vcFondoEvent ? Number(vcFondoEvent.valor_cuota_final || 1.0) : Number(fInfo.valor_cuota_cierre_periodo || payload.valor_cuota || 1.0);
 
-    if (docLoading) {
-      return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#64748b;background:#0f172a;">
-        <h3 style="color:#38bdf8;">⚡ Cargando datos del periodo cerrado ${fEnd}...</h3>
-      </body></html>`;
-    }
+    return {
+      fondo_nombre: fondoNombre,
+      fecha_inicio_str: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
+      fecha_fin_str: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
+      inversionista_nombre: inversionista,
+      id_certificado: e.id_contrato || e.id_certificado,
+      moneda: moneda,
+      capital_inicial: Number(e.capital_base || 0),
+      bruto_total: Number(e.interes_generado_bruto || 0),
+      impuesto: Number(e.impuestos_renta || 0),
+      deducciones: Number(e.monto_deduccion || 0),
+      neto_disponible: Number(e.interes_neto_disponible || 0),
+      capitalizacion: Number(e.monto_capitalizacion || 0),
+      rescates: Number(e.monto_rescate || 0),
+      monto_transferido: Number(e.monto_reparto || 0) + Number(e.monto_rescate || 0),
+      capital_final: Number(e.capital_final_saldo || 0),
+      valor_cuota: valorCuota
+    };
+  };
 
-    if (filtered.length === 0) {
-      return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#94a3b8;background:#0f172a;">
-        <h3 style="color:#f1f5f9;margin-bottom:8px;">No hay asientos contables oficiales para ${docFondo || 'TODOS'} al ${fEnd}</h3>
-        <p style="font-size:13px;color:#64748b;">Para visualizar los Estados de Cuenta oficiales, oficialice el periodo en la pestaña Auditoría o seleccione otra fecha.</p>
-      </body></html>`;
-    }
+  const getRetencionRowData = (e: any) => {
+    const fondosMap = new Map(fondosDisponibles.map(f => [f.id_fondo, f]));
+    const payload = e.payload_asiento || {};
+    const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0];
+    const fInfo = fondosMap.get(fCode) || {};
+    const fondoNombre = fInfo.nombre_fondo || fCode;
+    const moneda = payload.moneda || fInfo.moneda || 'PEN';
+    const inversionista = payload.inversionista || 'Inversionista';
+    const invDetails = findInvDoc(inversionista);
 
-    const certs = filtered.map(e => {
-      const payload = e.payload_asiento || {};
-      const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0];
-      const fInfo = fondosMap.get(fCode) || {};
-      const fondoNombre = fInfo.nombre_fondo || fCode;
-      const moneda = payload.moneda || fInfo.moneda || 'PEN';
-      const inversionista = payload.inversionista || 'Inversionista';
-      const vcFondoEvent = docVcEvents.find(v => v.id_fondo === fCode);
-      const valorCuota = vcFondoEvent ? Number(vcFondoEvent.valor_cuota_final || 1.0) : Number(fInfo.valor_cuota_cierre_periodo || payload.valor_cuota || 1.0);
+    const TC_USD_PEN = 3.662;
+    const impuestoRaw = Number(e.impuestos_renta || 0);
+    const irPen = moneda === 'USD' ? Math.round(impuestoRaw * TC_USD_PEN * 100) / 100 : Math.round(impuestoRaw * 100) / 100;
 
-      return {
-        fondo_nombre: fondoNombre,
-        fecha_inicio_str: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
-        fecha_fin_str: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
-        inversionista_nombre: inversionista,
-        id_certificado: e.id_contrato || e.id_certificado,
-        moneda: moneda,
-        capital_inicial: Number(e.capital_base || 0),
-        bruto_total: Number(e.interes_generado_bruto || 0),
-        impuesto: Number(e.impuestos_renta || 0),
-        deducciones: Number(e.monto_deduccion || 0),
-        neto_disponible: Number(e.interes_neto_disponible || 0),
-        capitalizacion: Number(e.monto_capitalizacion || 0),
-        rescates: Number(e.monto_rescate || 0),
-        monto_transferido: Number(e.monto_reparto || 0) + Number(e.monto_rescate || 0),
-        capital_final: Number(e.capital_final_saldo || 0),
-        valor_cuota: valorCuota
-      };
-    });
+    return {
+      num_certificado: e.id_contrato || e.id_certificado,
+      nombre_fondo: fondoNombre,
+      nombres_participes: inversionista,
+      dni_participes: invDetails.dni,
+      direccion_fiscal: invDetails.direccion,
+      monto_ir_pen_num: irPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      monto_ir_pen_letras: numeroALetrasDoc(irPen),
+      f_inicio: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
+      f_fin: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
+      moneda: moneda,
+      base_retencion: Number(e.interes_generado_bruto || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      fecha_operacion: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
+      tipo_cambio_display: `PEN ${TC_USD_PEN.toFixed(3)}`,
+      impuestos_renta: impuestoRaw
+    };
+  };
 
+  const generateSingleEeccHtml = (row: any): string => {
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -507,19 +611,18 @@ export const InversionistasPage: React.FC = () => {
   <title>Estado de Cuenta</title>
   <style>
     @page { size: A4 portrait; margin: 0; }
-    body { font-family: sans-serif; font-size: 10pt; line-height: 1.4; color: #1e293b; margin: 0; padding: 10mm; background: #ffffff; box-sizing: border-box; }
-    .sheet { background: #ffffff; padding: 20px 30px; margin: 0 0 10mm 0; max-width: 100%; width: 100%; box-shadow: none; border-radius: 0; border: none; page-break-after: always; box-sizing: border-box; }
-    .header { width: 100%; margin-bottom: 25px; }
+    body { font-family: sans-serif; font-size: 10pt; line-height: 1.4; color: #1e293b; margin: 0; padding: 8mm; background: #ffffff; box-sizing: border-box; }
+    .sheet { background: #ffffff; padding: 15px 25px; margin: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+    .header { width: 100%; margin-bottom: 20px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: middle; border: none; }
     .logo-container { width: 100%; text-align: right; }
-    .logo-container img { max-width: 160px; max-height: 80px; }
-    .title-box { text-align: center; margin-bottom: 25px; }
+    .title-box { text-align: center; margin-bottom: 20px; }
     .title-box h1 { font-size: 11pt; font-weight: 800; margin: 0; line-height: 1.35; text-transform: uppercase; color: #0f172a; }
-    .client-info { width: 100%; margin-bottom: 25px; font-size: 10pt; }
+    .client-info { width: 100%; margin-bottom: 20px; font-size: 10pt; }
     .client-info p { margin: 3px 0; }
-    .client-name { font-weight: 800; color: #0f172a; margin-left: 15px; }
-    .financial-data { width: 100%; margin-bottom: 25px; }
+    .client-name { font-weight: 800; color: #0f172a; margin-left: 10px; }
+    .financial-data { width: 100%; margin-bottom: 20px; }
     .fin-table { width: 100%; border-collapse: collapse; }
     .fin-table td { padding: 4px 0; border: none; font-size: 9.5pt; }
     .col-label { width: 65%; }
@@ -527,194 +630,116 @@ export const InversionistasPage: React.FC = () => {
     .col-amount { width: 25%; text-align: right; padding-right: 10px; font-variant-numeric: tabular-nums; }
     .bold { font-weight: 800; color: #0f172a; }
     .spacer-row td { padding: 6px 0; }
-    .totals-section { width: 100%; margin-top: 30px; margin-bottom: 30px; border: 2px solid #0f172a; padding: 12px; box-sizing: border-box; background: #fafafa; border-radius: 4px; }
-    .footer { font-size: 8pt; margin-top: 40px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+    .totals-section { width: 100%; margin-top: 20px; margin-bottom: 20px; border: 2px solid #0f172a; padding: 10px; box-sizing: border-box; background: #fafafa; border-radius: 4px; }
+    .footer { font-size: 8pt; margin-top: 30px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 8px; }
     .footer p { margin: 2px 0; }
-    .logo-inandes-img { display: block; width: 160px; height: 70px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
+    .logo-inandes-img { display: block; width: 150px; height: 60px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
   </style>
 </head>
 <body>
-  ${certs.map(row => `
-    <div class="sheet">
-      <div class="header">
-        <table>
-          <tr>
-            <td class="logo-container">
-              <div class="logo-inandes-img"></div>
-            </td>
-          </tr>
-        </table>
-      </div>
+  <div class="sheet">
+    <div class="header">
+      <table>
+        <tr>
+          <td class="logo-container">
+            <div class="logo-inandes-img"></div>
+          </td>
+        </tr>
+      </table>
+    </div>
 
-      <div class="title-box">
-        <h1>ESTADO DE CUENTA DEL FONDO ${row.fondo_nombre}</h1>
-        <h1 style="font-size: 10pt; color: #475569; margin-top: 4px;">FONDO DE INVERSION PRIVADO &nbsp;&nbsp;DEL ${row.fecha_inicio_str} AL ${row.fecha_fin_str}</h1>
-      </div>
+    <div class="title-box">
+      <h1>ESTADO DE CUENTA DEL FONDO ${row.fondo_nombre}</h1>
+      <h1 style="font-size: 10pt; color: #475569; margin-top: 4px;">FONDO DE INVERSION PRIVADO &nbsp;&nbsp;DEL ${row.fecha_inicio_str} AL ${row.fecha_fin_str}</h1>
+    </div>
 
-      <div class="client-info">
-        <p style="color: #64748b; font-size: 9pt;">Sr(a)(s):</p>
-        <p class="client-name">${row.inversionista_nombre}</p>
-        <p style="margin-top: 8px; font-size: 9pt; color: #64748b;">Certificado N°: <strong style="color:#0f172a;">${row.id_certificado}</strong></p>
-      </div>
+    <div class="client-info">
+      <p style="color: #64748b; font-size: 9pt;">Sr(a)(s):</p>
+      <p class="client-name">${row.inversionista_nombre}</p>
+      <p style="margin-top: 8px; font-size: 9pt; color: #64748b;">Certificado N°: <strong style="color:#0f172a;">${row.id_certificado}</strong></p>
+    </div>
 
-      <div class="financial-data">
-        <table class="fin-table">
-          <tr>
-            <td class="col-label">Monto inicial invertido:</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.capital_inicial)}</td>
-          </tr>
-          <tr>
-            <td class="col-label">Ganancia bruta obtenida:</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.bruto_total)}</td>
-          </tr>
-          <tr class="spacer-row"><td colspan="3"></td></tr>
+    <div class="financial-data">
+      <table class="fin-table">
+        <tr>
+          <td class="col-label">Monto inicial invertido:</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.capital_inicial)}</td>
+        </tr>
+        <tr>
+          <td class="col-label">Ganancia bruta obtenida:</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.bruto_total)}</td>
+        </tr>
+        <tr class="spacer-row"><td colspan="3"></td></tr>
 
-          <tr>
-            <td class="col-label">(-) Impuesto a la renta retenido</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.impuesto)}</td>
-          </tr>
-          <tr>
-            <td class="col-label">(-) Deducciones</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.deducciones)}</td>
-          </tr>
-          <tr>
-            <td class="col-label bold">Ganancia disponible al inversionista</td>
-            <td class="col-currency bold">${row.moneda}</td>
-            <td class="col-amount bold">${formatNumDoc(row.neto_disponible)}</td>
-          </tr>
-          <tr class="spacer-row"><td colspan="3"></td></tr>
+        <tr>
+          <td class="col-label">(-) Impuesto a la renta retenido</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.impuesto)}</td>
+        </tr>
+        <tr>
+          <td class="col-label">(-) Deducciones</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.deducciones)}</td>
+        </tr>
+        <tr>
+          <td class="col-label bold">Ganancia neta disponible:</td>
+          <td class="col-currency bold">${row.moneda}</td>
+          <td class="col-amount bold">${formatNumDoc(row.neto_disponible)}</td>
+        </tr>
+        <tr class="spacer-row"><td colspan="3"></td></tr>
 
-          <tr>
-            <td class="col-label">Ganancias capitalizadas para adquirir nuevas cuotas</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.capitalizacion)}</td>
-          </tr>
-
-          <tr>
-            <td class="col-label">Rescates</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount">${formatNumDoc(row.rescates)}</td>
-          </tr>
-
-          <tr>
-            <td class="col-label bold">Monto transferido a su cuenta bancaria</td>
-            <td class="col-currency bold">${row.moneda}</td>
-            <td class="col-amount bold">${formatNumDoc(row.monto_transferido)}</td>
-          </tr>
-        </table>
-      </div>
+        <tr>
+          <td class="col-label">Capitalización acordada:</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.capitalizacion)}</td>
+        </tr>
+        <tr>
+          <td class="col-label">Rescates solicitados:</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.rescates)}</td>
+        </tr>
+        <tr>
+          <td class="col-label">Monto transferido / abonado:</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount">${formatNumDoc(row.monto_transferido)}</td>
+        </tr>
+      </table>
 
       <div class="totals-section">
         <table class="fin-table">
           <tr>
-            <td class="col-label bold">Monto de la inversión al ${row.fecha_fin_str}</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount bold">${formatNumDoc(row.capital_final)}</td>
-          </tr>
-          <tr>
-            <td class="col-label bold">Valor cuota al ${row.fecha_fin_str}</td>
-            <td class="col-currency">${row.moneda}</td>
-            <td class="col-amount bold">${formatNumDoc(row.valor_cuota)}</td>
-          </tr>
-          <tr>
-            <td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td>
-            <td class="col-currency">CUOTAS</td>
-            <td class="col-amount bold">${formatNumDoc(row.valor_cuota ? row.capital_final / row.valor_cuota : 0)}</td>
+            <td class="col-label bold" style="font-size: 10pt;">Monto final invertido:</td>
+            <td class="col-currency bold" style="font-size: 10pt; color: #0f172a;">${row.moneda}</td>
+            <td class="col-amount bold" style="font-size: 10pt;">${formatNumDoc(row.capital_final)}</td>
           </tr>
         </table>
       </div>
 
-      <div class="footer">
-        <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima | Teléfono: + (511) 7121700 | info@inandes.com</p>
-      </div>
+      <table class="fin-table" style="margin-top: 15px;">
+        <tr>
+          <td class="col-label bold">Valor cuota del fondo al ${row.fecha_fin_str}</td>
+          <td class="col-currency">${row.moneda}</td>
+          <td class="col-amount bold">${formatNumDoc(row.valor_cuota)}</td>
+        </tr>
+        <tr>
+          <td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td>
+          <td class="col-currency">CUOTAS</td>
+          <td class="col-amount bold">${formatNumDoc(row.valor_cuota ? row.capital_final / row.valor_cuota : 0)}</td>
+        </tr>
+      </table>
     </div>
-  `).join('')}
+
+    <div class="footer">
+      <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima | Teléfono: + (511) 7121700 | info@inandes.com</p>
+    </div>
+  </div>
 </body>
 </html>`;
-  }, [docEvents, docVcEvents, fondosDisponibles, docFondo, fStart, fEnd, docLoading]);
+  };
 
-  // Generador en Caliente de HTML para Retenciones (Estilo Forecast)
-  const htmlRetencionesDoc = useMemo(() => {
-    const fondosMap = new Map(fondosDisponibles.map(f => [f.id_fondo, f]));
-    let filtered = docEvents.filter(e => e.fecha_periodo_fin === fEnd && Number(e.impuestos_renta || 0) > 0);
-    if (docFondo && docFondo !== 'TODOS') {
-      filtered = filtered.filter(e => 
-        (e.id_certificado && e.id_certificado.startsWith(docFondo)) ||
-        (e.id_contrato && e.id_contrato.startsWith(docFondo))
-      );
-    }
-
-    if (docLoading) {
-      return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#64748b;background:#0f172a;">
-        <h3 style="color:#38bdf8;">⚡ Cargando certificados de retención...</h3>
-      </body></html>`;
-    }
-
-    if (filtered.length === 0) {
-      return `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#94a3b8;background:#0f172a;">
-        <h3 style="color:#f1f5f9;margin-bottom:8px;">No hay certificados con retención > 0 para ${docFondo || 'TODOS'} al ${fEnd}</h3>
-        <p style="font-size:13px;color:#64748b;">Los certificados se generan automáticamente para aquellos partícipes con retención de Impuesto a la Renta de 2da Categoría.</p>
-      </body></html>`;
-    }
-
-    const TC_USD_PEN = 3.662;
-    const hoy = new Date();
-    const meses_es = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    const dia_hoy = hoy.getDate();
-    const mes_hoy = meses_es[hoy.getMonth()];
-    const anio_hoy = hoy.getFullYear();
-
-    const findInvDoc = (nombre: string) => {
-      if (!nombre) return { dni: '', direccion: 'Domicilio no registrado' };
-      const n = nombre.toUpperCase().trim();
-      for (const inv of inversionistas) {
-        const comp = (inv.nombre_completo || '').toUpperCase().trim();
-        if (comp && (n.includes(comp) || comp.includes(n))) {
-          return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
-        }
-        const n1 = (inv.nombre_1 || '').toUpperCase();
-        const a1 = (inv.apellido_1 || '').toUpperCase();
-        if (n1 && a1 && n.includes(n1) && n.includes(a1)) {
-          return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
-        }
-      }
-      return { dni: '', direccion: 'Domicilio no registrado' };
-    };
-
-    const certs = filtered.map(e => {
-      const payload = e.payload_asiento || {};
-      const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0];
-      const fInfo = fondosMap.get(fCode) || {};
-      const fondoNombre = fInfo.nombre_fondo || fCode;
-      const moneda = payload.moneda || fInfo.moneda || 'PEN';
-      const inversionista = payload.inversionista || 'Inversionista';
-      const invDetails = findInvDoc(inversionista);
-
-      const impuestoRaw = Number(e.impuestos_renta || 0);
-      const irPen = moneda === 'USD' ? Math.round(impuestoRaw * TC_USD_PEN * 100) / 100 : Math.round(impuestoRaw * 100) / 100;
-
-      return {
-        num_certificado: e.id_contrato || e.id_certificado,
-        nombre_fondo: fondoNombre,
-        nombres_participes: inversionista,
-        dni_participes: invDetails.dni,
-        direccion_fiscal: invDetails.direccion,
-        monto_ir_pen_num: irPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        monto_ir_pen_letras: numeroALetrasDoc(irPen),
-        f_inicio: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
-        f_fin: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
-        moneda: moneda,
-        base_retencion: Number(e.interes_generado_bruto || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        fecha_operacion: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
-        tipo_cambio_display: `PEN ${TC_USD_PEN.toFixed(3)}`
-      };
-    });
-
+  const generateSingleRetencionHtml = (cert: any): string => {
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -722,94 +747,491 @@ export const InversionistasPage: React.FC = () => {
   <title>Certificado de Rentas</title>
   <style>
     @page { size: A4 portrait; margin: 0; }
-    body { font-family: sans-serif; font-size: 11pt; line-height: 1.5; color: #1e293b; margin: 0; padding: 10mm; background: #ffffff; box-sizing: border-box; }
-    .sheet { background: #ffffff; padding: 20px 30px; margin: 0 0 10mm 0; max-width: 100%; width: 100%; box-shadow: none; border-radius: 0; border: none; page-break-after: always; box-sizing: border-box; }
-    .header { width: 100%; margin-bottom: 25px; }
+    body { font-family: sans-serif; font-size: 10pt; line-height: 1.45; color: #1e293b; margin: 0; padding: 8mm; background: #ffffff; box-sizing: border-box; }
+    .sheet { background: #ffffff; padding: 15px 25px; margin: 0; max-width: 100%; width: 100%; box-sizing: border-box; }
+    .header { width: 100%; margin-bottom: 20px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: top; border: none; }
     .logo-container { width: 100%; text-align: right; padding-top: 5px; }
-    .logo-container img { max-width: 160px; max-height: 80px; }
-    .title-box { text-align: center; margin-top: 15px; margin-bottom: 20px; }
-    .title-box h1 { font-size: 12pt; font-weight: 800; margin: 0 0 4px 0; text-transform: uppercase; color: #0f172a; line-height: 1.35; }
-    .cert-num { font-size: 10.5pt; font-weight: 800; text-align: center; margin: 0 0 15px 0; text-transform: uppercase; color: #475569; }
-    .resumen-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; margin: 25px 0 8px 0; color: #0f172a; }
-    .resumen-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 20px; }
-    .resumen-table th { background-color: #334155; color: #ffffff; padding: 8px; text-align: center; font-weight: 700; border: 1px solid #334155; }
-    .resumen-table td { padding: 8px; text-align: center; border: 1px solid #cbd5e1; font-variant-numeric: tabular-nums; }
-    .content { text-align: justify; margin-bottom: 20px; font-size: 10.5pt; line-height: 1.6; }
-    .content p { margin: 10px 0; }
-    .signature-area { text-align: center; margin-top: 40px; font-size: 10pt; }
-    .signature-img { max-height: 90px; margin-bottom: 5px; }
-    .footer { font-size: 8pt; margin-top: 40px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+    .title-box { text-align: center; margin-top: 10px; margin-bottom: 15px; }
+    .title-box h1 { font-size: 11pt; font-weight: 800; margin: 0 0 4px 0; text-transform: uppercase; color: #0f172a; line-height: 1.35; }
+    .cert-num { font-size: 10pt; font-weight: 800; text-align: center; margin: 0 0 12px 0; text-transform: uppercase; color: #475569; }
+    .resumen-title { font-size: 9.5pt; font-weight: 800; text-transform: uppercase; margin: 18px 0 6px 0; color: #0f172a; }
+    .resumen-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 15px; }
+    .resumen-table th { background-color: #334155; color: #ffffff; padding: 6px; text-align: center; font-weight: 700; border: 1px solid #334155; }
+    .resumen-table td { padding: 6px; text-align: center; border: 1px solid #cbd5e1; font-variant-numeric: tabular-nums; }
+    .content { text-align: justify; margin-bottom: 15px; font-size: 9.5pt; line-height: 1.5; }
+    .content p { margin: 8px 0; }
+    .signature-area { text-align: center; margin-top: 25px; font-size: 9.5pt; }
+    .footer { font-size: 8pt; margin-top: 25px; text-align: center; color: #0d47a1; border-top: 1px solid #e2e8f0; padding-top: 8px; }
     .footer p { margin: 2px 0; }
-    .logo-inandes-img { display: block; width: 160px; height: 70px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
-    .firma-inandes-img { display: block; width: 120px; height: 60px; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; margin: 0 auto 5px auto; }
+    .logo-inandes-img { display: block; width: 150px; height: 60px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
+    .firma-inandes-img { display: block; width: 110px; height: 55px; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; margin: 0 auto 4px auto; }
   </style>
 </head>
 <body>
-  ${certs.map(cert => `
-    <div class="sheet">
-      <div class="header">
-        <table>
-          <tr>
-            <td class="logo-container">
-              <div class="logo-inandes-img"></div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="title-box">
-        <h1>CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS<br>DE SEGUNDA CATEGORÍA</h1>
-        <p class="cert-num">CERTIFICADO N° ${cert.num_certificado}</p>
-      </div>
-
-      <div class="content">
-        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr. Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del FONDO <strong>${cert.nombre_fondo}</strong> – FONDO DE INVERSION PRIVADO,</p>
-
-        <p style="font-weight: 800; color: #0f172a; margin-top: 15px;">CERTIFICA QUE:</p>
-
-        <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>${cert.nombres_participes}</strong>, identificado(a) con DNI <strong>${cert.dni_participes}</strong> y con domicilio fiscal en <strong>${cert.direccion_fiscal}</strong>, la suma de <strong>PEN ${cert.monto_ir_pen_num}</strong> (<strong>${cert.monto_ir_pen_letras} soles</strong>) por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las operaciones del FONDO <strong>${cert.nombre_fondo}</strong> – FONDO DE INVERSION PRIVADO, correspondiente al período comprendido entre el <strong>${cert.f_inicio}</strong> al <strong>${cert.f_fin}</strong>.</p>
-
-        <p class="resumen-title">RESUMEN DE LOS MONTOS RETENIDOS</p>
-        <table class="resumen-table">
-          <thead>
-            <tr>
-              <th>BASE DE RETENCION</th>
-              <th>MONTO RETENIDO</th>
-              <th>FECHA DE LA OPERACION</th>
-              ${cert.moneda === 'USD' ? '<th>TIPO DE CAMBIO PEN/USD UTILIZADO</th>' : ''}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>${cert.moneda} ${cert.base_retencion}</td>
-              <td>PEN ${cert.monto_ir_pen_num}</td>
-              <td>${cert.fecha_operacion}</td>
-              ${cert.moneda === 'USD' ? `<td>${cert.tipo_cambio_display}</td>` : ''}
-            </tr>
-          </tbody>
-        </table>
-
-        <p style="text-align: right; margin-top: 25px; color: #475569;">
-          Santiago de Surco, <strong>${dia_hoy}</strong> de <strong>${mes_hoy}</strong> del <strong>${anio_hoy}</strong>
-        </p>
-      </div>
-
-      <div class="signature-area">
-        <div class="firma-inandes-img"></div><br>
-        <strong>Juan Ricardo Gallo Pizarro</strong><br>
-        <span style="font-size: 9pt; color: #64748b;">INANDES ACTIVOS ALTERNATIVOS SAC<br>Gerente General</span>
-      </div>
-
-      <div class="footer">
-        <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima | Teléfono: + (511) 7121700 | info@inandes.com</p>
-      </div>
+  <div class="sheet">
+    <div class="header">
+      <table>
+        <tr>
+          <td class="logo-container">
+            <div class="logo-inandes-img"></div>
+          </td>
+        </tr>
+      </table>
     </div>
-  `).join('')}
+
+    <div class="title-box">
+      <h1>CERTIFICADO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA</h1>
+      <p class="cert-num">CERTIFICADO N° ${cert.num_certificado}</p>
+    </div>
+
+    <div class="content">
+      <p>
+        <strong>INANDES ACTIVOS ALTERNATIVOS SOCIEDAD ADMINISTRADORA DE FONDOS DE INVERSION S.A.C.</strong>, 
+        identificada con <strong>R.U.C. N° 20601245781</strong>, domiciliada en Los Tulipanes 147 oficina 306, 
+        distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del fondo 
+        <strong>${cert.nombre_fondo}</strong>.
+      </p>
+
+      <p style="text-align: center; font-weight: 800; margin: 12px 0; text-transform: uppercase;">CERTIFICA QUE:</p>
+
+      <p>
+        A don(ña)(s) <strong>${cert.nombres_participes}</strong>, 
+        ${cert.dni_participes ? `identificado(a) con documento de identidad N° <strong>${cert.dni_participes}</strong>, ` : ''}
+        ${cert.direccion_fiscal ? `con domicilio fiscal en <strong>${cert.direccion_fiscal}</strong>, ` : ''}
+        se le ha efectuado la retención definitiva del Impuesto a la Renta de Segunda Categoría por los rendimientos generados 
+        en el periodo correspondiente del <strong>${cert.f_inicio}</strong> al <strong>${cert.f_fin}</strong>, conforme al siguiente detalle:
+      </p>
+    </div>
+
+    <div class="resumen-title">Detalle de la Retención Efectuada:</div>
+    <table class="resumen-table">
+      <thead>
+        <tr>
+          <th>Fecha de Corte</th>
+          <th>Moneda</th>
+          <th>Base Imponible</th>
+          <th>Tasa (%)</th>
+          <th>Impuesto Retenido (PEN)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${cert.fecha_operacion}</td>
+          <td>${cert.moneda}</td>
+          <td>${cert.base_retencion}</td>
+          <td>5.00 %</td>
+          <td style="font-weight: 800; color: #0f172a;">PEN ${cert.monto_ir_pen_num}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="content">
+      <p>
+        Monto retenido en letras: <strong>${cert.monto_ir_pen_letras}</strong>.
+        ${cert.moneda === 'USD' ? ` (Tipo de cambio aplicado: <strong>${cert.tipo_cambio_display}</strong>).` : ''}
+      </p>
+      <p>
+        Se expide el presente certificado de conformidad con lo establecido en el Texto Único Ordenado de la Ley del Impuesto a la Renta y su Reglamento.
+      </p>
+    </div>
+
+    <div class="signature-area">
+      <div class="firma-inandes-img"></div>
+      <p style="margin: 0; font-weight: 800; color: #0f172a;">JUAN RICARDO GALLO PIZARRO</p>
+      <p style="margin: 2px 0 0 0; font-size: 8.5pt; color: #64748b;">Gerente General</p>
+      <p style="margin: 0; font-size: 8.5pt; color: #64748b;">INANDES ACTIVOS ALTERNATIVOS S.A.C.</p>
+    </div>
+
+    <div class="footer">
+      <p><strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong> | Los Tulipanes 147 oficina 306, Santiago de Surco, Lima | Teléfono: + (511) 7121700 | info@inandes.com</p>
+    </div>
+  </div>
 </body>
 </html>`;
-  }, [docEvents, fondosDisponibles, inversionistas, docFondo, fStart, fEnd, docLoading]);
+  };
+
+  // Filtrar eventos de documentos por Omnibox y Fondos
+  const docEventsFiltered = useMemo(() => {
+    let list = docEvents.filter(e => e.fecha_periodo_fin === fEnd);
+
+    // Filtro de fondos con pills
+    if (selectedDocFondos.length > 0) {
+      list = list.filter(e => {
+        const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0];
+        const fondoObj = fondosDisponibles.find(f => f.id_fondo === fCode);
+        const fName = fondoObj ? fondoObj.nombre_fondo : fCode;
+        return selectedDocFondos.some(sf => sf === fCode || sf === fName || getShortFundLabel(fName) === sf);
+      });
+    }
+
+    // Filtro Omnibox en tiempo real
+    if (docSearchQuery.trim()) {
+      const q = docSearchQuery.toLowerCase().trim();
+      list = list.filter(e => {
+        const payload = e.payload_asiento || {};
+        const certId = (e.id_contrato || e.id_certificado || '').toLowerCase();
+        const inv = (payload.inversionista || '').toLowerCase();
+        const docId = (payload.documento_identidad || '').toLowerCase();
+        const fCode = (e.id_contrato || e.id_certificado || '').split('.')[0].split('-')[0].toLowerCase();
+        return certId.includes(q) || inv.includes(q) || docId.includes(q) || fCode.includes(q);
+      });
+    }
+
+    return list;
+  }, [docEvents, fEnd, selectedDocFondos, docSearchQuery, fondosDisponibles]);
+
+  // Fondos ordenados según prioridad canónica (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01)
+  const orderedDocFunds = useMemo(() => {
+    const list = [...fondosDisponibles];
+    return list.sort((a, b) => getFundPriority(a.nombre_fondo) - getFundPriority(b.nombre_fondo));
+  }, [fondosDisponibles]);
+
+  // Agrupación de eventos por Fondo
+  const docEventsGroupedByFondo = useMemo(() => {
+    const groups: { fondoKey: string; fondoNombre: string; moneda: string; events: any[] }[] = [];
+    const map = new Map<string, any[]>();
+
+    docEventsFiltered.forEach(e => {
+      const fCode = (e.id_contrato || e.id_certificado || 'OTROS').split('.')[0].split('-')[0];
+      if (!map.has(fCode)) map.set(fCode, []);
+      map.get(fCode)!.push(e);
+    });
+
+    map.forEach((events, fCode) => {
+      const fondoObj = fondosDisponibles.find(f => f.id_fondo === fCode);
+      const fName = fondoObj ? fondoObj.nombre_fondo : fCode;
+      const fMoneda = fondoObj ? fondoObj.moneda : (events[0]?.payload_asiento?.moneda || 'PEN');
+      groups.push({
+        fondoKey: fCode,
+        fondoNombre: fName,
+        moneda: fMoneda,
+        events
+      });
+    });
+
+    return groups.sort((a, b) => getFundPriority(a.fondoNombre) - getFundPriority(b.fondoNombre));
+  }, [docEventsFiltered, fondosDisponibles]);
+
+  // Manejo de Selección de Retención
+  const toggleSelectRet = (id: string) => {
+    setSelectedRetIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Manejo de Selección de EECC
+  const toggleSelectEecc = (id: string) => {
+    setSelectedEeccIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Seleccionar / Deseleccionar Todos Retención
+  const toggleAllRet = () => {
+    const visibleIds = docEventsFiltered.map(e => e.id_evento || e.id_contrato || e.id_certificado);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedRetIds.has(id));
+    setSelectedRetIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        visibleIds.forEach(id => next.delete(id));
+      } else {
+        visibleIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  // Seleccionar / Deseleccionar Todos EECC
+  const toggleAllEecc = () => {
+    const visibleIds = docEventsFiltered.map(e => e.id_evento || e.id_contrato || e.id_certificado);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedEeccIds.has(id));
+    setSelectedEeccIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        visibleIds.forEach(id => next.delete(id));
+      } else {
+        visibleIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  // Toggle de Visor Acordeón por Fila
+  const toggleVisor = (id: string) => {
+    setExpandedVisorIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Exportar Excel de Documentos
+  const handleExportDocExcel = async () => {
+    if (docEventsFiltered.length === 0) {
+      alert("No hay registros en la vista actual para exportar.");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'INANDES GRUPO FINANCIERO';
+    workbook.lastModifiedBy = 'InAndes React CRM';
+    workbook.created = new Date();
+
+    const ws = workbook.addWorksheet('EECC_Retenciones', {
+      views: [{ state: 'frozen', ySplit: 1 }]
+    });
+
+    const headers = [
+      "ID Documento", "Fondo", "Participe / Inversionista", "DNI / RUC", "Moneda",
+      "Capital Base", "Interes Bruto", "Retencion IR 5%", "Deducciones", "Neto Disponible",
+      "Capitalizacion", "Rescates", "Total Transferido", "Capital Final", "Fecha Inicio", "Fecha Fin"
+    ];
+
+    const headerRow = ws.addRow(headers);
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+
+    docEventsFiltered.forEach(e => {
+      const eecc = getEeccRowData(e);
+      const invDetails = findInvDoc(eecc.inversionista_nombre);
+      const row = ws.addRow([
+        eecc.id_certificado,
+        eecc.fondo_nombre,
+        eecc.inversionista_nombre,
+        invDetails.dni || '-',
+        eecc.moneda,
+        eecc.capital_inicial,
+        eecc.bruto_total,
+        eecc.impuesto,
+        eecc.deducciones,
+        eecc.neto_disponible,
+        eecc.capitalizacion,
+        eecc.rescates,
+        eecc.monto_transferido,
+        eecc.capital_final,
+        eecc.fecha_inicio_str,
+        eecc.fecha_fin_str
+      ]);
+      row.height = 20;
+      row.eachCell((cell, colNumber) => {
+        if (colNumber >= 6 && colNumber <= 14) {
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: colNumber <= 2 ? 'center' : 'left' };
+        }
+      });
+    });
+
+    ws.columns.forEach(col => {
+      col.width = 18;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `InAndes_EECC_Retenciones_${fEnd}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Exportar ZIP con PDFs en Memoria (JSZip)
+  const handleExportDocZip = async () => {
+    const hasAnySelection = selectedRetIds.size > 0 || selectedEeccIds.size > 0;
+    
+    let targetEvents = docEventsFiltered;
+    if (hasAnySelection) {
+      targetEvents = docEventsFiltered.filter(e => {
+        const id = e.id_evento || e.id_contrato || e.id_certificado;
+        return selectedRetIds.has(id) || selectedEeccIds.has(id);
+      });
+    }
+
+    if (targetEvents.length === 0) {
+      alert("No hay documentos seleccionados o filtrados para empaquetar en ZIP.");
+      return;
+    }
+
+    setDocGeneratingZip(true);
+    setDocZipProgress({ current: 0, total: targetEvents.length });
+
+    try {
+      const zip = new JSZip();
+      const API_BASE = getApiBaseUrl();
+
+      for (let i = 0; i < targetEvents.length; i++) {
+        const e = targetEvents[i];
+        const id = e.id_evento || e.id_contrato || e.id_certificado;
+        const eeccData = getEeccRowData(e);
+        const retData = getRetencionRowData(e);
+        const certClean = (eeccData.id_certificado || `DOC_${i+1}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        const shouldIncludeEecc = !hasAnySelection || selectedEeccIds.has(id);
+        const shouldIncludeRet = !hasAnySelection || selectedRetIds.has(id);
+
+        // Generar EECC
+        if (shouldIncludeEecc) {
+          const htmlEecc = generateSingleEeccHtml(eeccData);
+          try {
+            const resp = await fetch(`${API_BASE}/api/inversionistas/generar-pdf`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ html: htmlEecc, orientation: 'portrait' })
+            });
+            if (resp.ok) {
+              const blob = await resp.blob();
+              zip.file(`EECC_${certClean}_${fEnd}.pdf`, blob);
+            }
+          } catch (pdfErr) {
+            console.warn(`Error compilando EECC ${certClean}:`, pdfErr);
+          }
+        }
+
+        // Generar Retención
+        if (shouldIncludeRet && Number(e.impuestos_renta || 0) > 0) {
+          const htmlRet = generateSingleRetencionHtml(retData);
+          try {
+            const resp = await fetch(`${API_BASE}/api/inversionistas/generar-pdf`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ html: htmlRet, orientation: 'portrait' })
+            });
+            if (resp.ok) {
+              const blob = await resp.blob();
+              zip.file(`RETENCION_${certClean}_${fEnd}.pdf`, blob);
+            }
+          } catch (pdfErr) {
+            console.warn(`Error compilando Retencion ${certClean}:`, pdfErr);
+          }
+        }
+
+        setDocZipProgress({ current: i + 1, total: targetEvents.length });
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const downloadUrl = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `Documentos_InAndes_${fEnd}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err: any) {
+      alert(`Error generando paquete ZIP: ${err.message}`);
+    } finally {
+      setDocGeneratingZip(false);
+    }
+  };
+
+  // Enviar Notificaciones (Email y WhatsApp)
+  const handleEnviarDocNotificaciones = async () => {
+    const hasAnySelection = selectedRetIds.size > 0 || selectedEeccIds.size > 0;
+    let targetEvents = docEventsFiltered;
+    if (hasAnySelection) {
+      targetEvents = docEventsFiltered.filter(e => {
+        const id = e.id_evento || e.id_contrato || e.id_certificado;
+        return selectedRetIds.has(id) || selectedEeccIds.has(id);
+      });
+    }
+
+    if (targetEvents.length === 0) {
+      alert("Selecciona al menos un documento para enviar notificaciones.");
+      return;
+    }
+
+    if (!docSendEmail && !docSendWhatsapp) {
+      alert("Debes seleccionar al menos un canal de envio (Email o WhatsApp).");
+      return;
+    }
+
+    setDocSendingNotifications(true);
+    setDocNotificationStatus("Iniciando despacho masivo...");
+
+    let emailSentCount = 0;
+    let waSentCount = 0;
+    const API_BASE = getApiBaseUrl();
+
+    try {
+      for (let i = 0; i < targetEvents.length; i++) {
+        const e = targetEvents[i];
+        const eeccData = getEeccRowData(e);
+        const invDetails = findInvDoc(eeccData.inversionista_nombre);
+        const invObj = inversionistas.find(inv => 
+          (inv.documento_identidad && inv.documento_identidad === invDetails.dni) ||
+          ((inv.nombre_completo || '').toUpperCase() === eeccData.inversionista_nombre.toUpperCase())
+        );
+
+        setDocNotificationStatus(`Enviando (${i + 1}/${targetEvents.length}): ${eeccData.inversionista_nombre}...`);
+
+        // Canal Email
+        if (docSendEmail && (invObj?.email || (e.payload_asiento?.email))) {
+          const emailDest = invObj?.email || e.payload_asiento?.email;
+          try {
+            const resp = await fetch(`${API_BASE}/api/inversionistas/enviar-reportes`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: emailDest,
+                inversionista_nombre: eeccData.inversionista_nombre,
+                id_certificado: eeccData.id_certificado,
+                periodo_corte: fEnd,
+                moneda: eeccData.moneda,
+                monto_transferido: eeccData.monto_transferido
+              })
+            });
+            if (resp.ok) emailSentCount++;
+          } catch (emailErr) {
+            console.warn(`Error enviando email a ${emailDest}:`, emailErr);
+          }
+        }
+
+        // Canal WhatsApp
+        const phone = invObj?.telefono || (invObj as any)?.celular || (e.payload_asiento?.telefono);
+        if (docSendWhatsapp && phone) {
+          const waMsg = `Estimado(a) ${eeccData.inversionista_nombre},\n\nLe informamos que sus reportes contables correspondientes al cierre ${fEnd} del fondo ${eeccData.fondo_nombre} (Certificado N° ${eeccData.id_certificado}) ya se encuentran disponibles y formalizados.\n\n*Moneda:* ${eeccData.moneda}\n*Monto Liquidado / Transferido:* ${eeccData.moneda} ${eeccData.monto_transferido.toLocaleString('es-PE', { minimumFractionDigits: 2 })}\n\nGracias por su confianza en InAndes Grupo Financiero.`;
+          const okWa = await sendSingleWhatsAppText(phone, waMsg);
+          if (okWa) waSentCount++;
+        }
+      }
+
+      // Registro de Auditoría
+      try {
+        await supabase.from('audit_logs').insert([{
+          modulo: 'inversionistas_documentos',
+          accion: 'envio_notificaciones',
+          descripcion: `Despacho de reportes cierre ${fEnd}: ${emailSentCount} emails, ${waSentCount} WhatsApps.`
+        }]);
+      } catch (auditErr) {
+        console.warn('Error registrando auditoria:', auditErr);
+      }
+
+      setDocNotificationStatus(`Despacho completado con exito: ${emailSentCount} correos enviados, ${waSentCount} mensajes de WhatsApp entregados.`);
+      setTimeout(() => setDocNotificationStatus(null), 8000);
+    } catch (err: any) {
+      alert(`Error en el despacho de notificaciones: ${err.message}`);
+      setDocNotificationStatus(null);
+    } finally {
+      setDocSendingNotifications(false);
+    }
+  };
 
   // Resumen Consolidado por Fondo para Despacho de Correos
   const fundSummaryForEmail = useMemo(() => {
@@ -2613,11 +3035,11 @@ export const InversionistasPage: React.FC = () => {
       )}
 
 
-      {/* --- PESTAÑA C: EECC / RETENCIONES / 2 VISORES (ESTILO APEFAC) --- */}
+      {/* --- PESTAÑA C: EECC / RETENCIONES / 2 VISORES SIDE-BY-SIDE STANDARDIZED --- */}
       {activeSubTab === 'documentos' && (
-
-        <div className="flex flex-col gap-6 w-full animate-fadeIn">
+        <div className="flex flex-col gap-5 w-full animate-fadeIn">
           
+          {/* Header Card con Título y Estado Oficial */}
           <div className="glass-card p-5">
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
               <div className="flex items-center gap-3">
@@ -2626,306 +3048,537 @@ export const InversionistasPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-                    📄 Auditoría y Emisión: Estados de Cuenta & Certificados de Retención
+                    Auditoria y Emision: Estados de Cuenta & Certificados de Retencion
                   </h3>
                   <p className="text-[11px] text-[#64748b] dark:text-[#94a3b8] font-semibold">
-                    Visualización directa en alta resolución sin popups. Compilación y caché de alta velocidad.
+                    Generacion masiva y visor side-by-side de EECC y Retenciones (5% IR) por contrato/participe.
                   </p>
                 </div>
               </div>
 
-              {/* Indicador de Estado del Período */}
+              {/* Indicador de Estado del Periodo */}
               {collisionCount > 0 ? (
                 <span className="px-3 py-1.5 rounded-lg text-xs font-black bg-[#ecfdf5] text-[#059669] dark:bg-[#059669]/15 dark:text-[#34d399] border border-[#a7f3d0] dark:border-[#059669]/30 flex items-center gap-1.5 shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse"></span>
-                  🟢 PERÍODO OFICIALIZADO ({collisionCount} Asientos)
+                  PERIODO OFICIALIZADO ({collisionCount} Asientos)
                 </span>
               ) : (
                 <span className="px-3 py-1.5 rounded-lg text-xs font-black bg-[#fffbeb] text-[#d97706] dark:bg-[#d97706]/15 dark:text-[#fbbf24] border border-[#fde68a] dark:border-[#d97706]/30 flex items-center gap-1.5 shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-[#d97706]"></span>
-                  🔴 PERÍODO EN BORRADOR / SIMULACIÓN
+                  PERIODO EN BORRADOR / SIMULACION
                 </span>
               )}
             </div>
 
-            {/* Selectores Vinculados al Fondo y Fecha de Corte */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 bg-[#f8fafc] dark:bg-[#0b0f19] p-4 border border-[#e2e8f0] dark:border-[#334155] rounded-xl items-end">
+            {/* FILA 1: OMNIBOX ESTANDARIZADO + PILLS DE FONDOS ORDENADOS + SELECTOR DE PERIODO AL FINAL */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc] dark:bg-[#0b0f19] p-3.5 border border-[#e2e8f0] dark:border-[#334155] rounded-xl mb-4">
               
-              {/* Selector de Fondo */}
-              <div className="flex flex-col gap-1 lg:col-span-2">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Fondo a Emitir</label>
-                <select
-                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                  value={docFondo}
-                  onChange={(e) => {
-                    setDocFondo(e.target.value);
-                  }}
-                >
-                  <option value="TODOS">TODOS LOS FONDOS</option>
-                  {fondosDisponibles.map(f => (
-                    <option key={f.id_fondo} value={f.id_fondo}>{f.nombre_fondo}</option>
-                  ))}
-                </select>
+              {/* Omnibox Estandarizado */}
+              <div className="relative flex-1 min-w-[240px] max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b] dark:text-[#94a3b8]" size={15} />
+                <input
+                  type="text"
+                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 pl-9 pr-8 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] placeholder-[#94a3b8] focus:outline-none focus:border-[#0284c7] transition-all shadow-xs"
+                  placeholder="Buscar por DNI, RUC, Inversionista, Contrato o Fondo..."
+                  value={docSearchQuery}
+                  onChange={(e) => setDocSearchQuery(e.target.value)}
+                />
+                {docSearchQuery && (
+                  <button
+                    onClick={() => setDocSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
 
-              {/* Año */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Año</label>
-                <select
-                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                  value={v40SelYear}
-                  onChange={(e) => {
-                    setV40SelYear(Number(e.target.value));
-                  }}
-                >
-                  <option value={2024}>2024</option>
-                  <option value={2025}>2025</option>
-                  <option value={2026}>2026</option>
-                  <option value={2027}>2027</option>
-                </select>
-              </div>
-
-              {/* Ciclo */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">Ciclo</label>
-                <select
-                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                  value={v40SelCiclo}
-                  onChange={(e) => {
-                    setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre');
-                  }}
-                >
-                  <option value="Bimestre">Bimestre</option>
-                  <option value="Trimestre">Trimestre</option>
-                </select>
-              </div>
-
-              {/* Período / Mes */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">N° Período</label>
-                <select
-                  className="w-full bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
-                  value={v40SelNum}
-                  onChange={(e) => {
-                    setV40SelNum(Number(e.target.value));
-                  }}
-                >
-                  {v40SelCiclo === 'Bimestre' ? (
-                    <>
-                      <option value={1}>1: Ene-Feb (Feb 28)</option>
-                      <option value={2}>2: Mar-Abr (Abr 30)</option>
-                      <option value={3}>3: May-Jun (Jun 30)</option>
-                      <option value={4}>4: Jul-Ago (Ago 31)</option>
-                      <option value={5}>5: Sep-Oct (Oct 31)</option>
-                      <option value={6}>6: Nov-Dic (Dic 31)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value={1}>1: Ene-Mar (Mar 31)</option>
-                      <option value={2}>2: Abr-Jun (Jun 30)</option>
-                      <option value={3}>3: Jul-Sep (Sep 30)</option>
-                      <option value={4}>4: Oct-Dic (Dic 31)</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              {/* Botón de Despacho Oficial por Correo */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black text-[#0284c7] dark:text-[#38bdf8] uppercase tracking-wider">Despacho Oficial</label>
+              {/* Pills de Fondos Ordenados (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01) */}
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEmailConfirmText('');
-                    setEmailDispatchSuccessMsg(null);
-                    setEmailSummaryModalOpen(true);
-                  }}
-                  className="h-[34px] w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer px-2.5"
-                  title="Enviar Estados de Cuenta y Retenciones por correo a partícipes"
+                  onClick={() => setSelectedDocFondos([])}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                    selectedDocFondos.length === 0
+                      ? 'bg-[#0284c7] text-white shadow-xs'
+                      : 'bg-white dark:bg-[#1e293b] text-[#64748b] dark:text-[#94a3b8] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
+                  }`}
                 >
-                  <Mail size={14} />
-                  <span className="truncate">Enviar Correo</span>
+                  TODOS
                 </button>
+                {orderedDocFunds.map(f => {
+                  const label = getShortFundLabel(f.nombre_fondo);
+                  const isSelected = selectedDocFondos.includes(f.id_fondo) || selectedDocFondos.includes(f.nombre_fondo) || selectedDocFondos.includes(label);
+                  return (
+                    <button
+                      key={f.id_fondo}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDocFondos(prev => {
+                          if (prev.includes(f.id_fondo)) return prev.filter(x => x !== f.id_fondo);
+                          return [...prev, f.id_fondo];
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#0284c7] text-white shadow-xs'
+                          : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Selector de Periodo al Final de la Fila */}
+              <div className="flex items-center gap-2 flex-wrap ml-auto">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Ano:</span>
+                  <select
+                    className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1 px-2 text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
+                    value={v40SelYear}
+                    onChange={(e) => setV40SelYear(Number(e.target.value))}
+                  >
+                    <option value={2024}>2024</option>
+                    <option value={2025}>2025</option>
+                    <option value={2026}>2026</option>
+                    <option value={2027}>2027</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Ciclo:</span>
+                  <select
+                    className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1 px-2 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
+                    value={v40SelCiclo}
+                    onChange={(e) => setV40SelCiclo(e.target.value as 'Bimestre' | 'Trimestre')}
+                  >
+                    <option value="Bimestre">Bimestre</option>
+                    <option value="Trimestre">Trimestre</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Periodo:</span>
+                  <select
+                    className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-lg py-1 px-2 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none shadow-xs cursor-pointer"
+                    value={v40SelNum}
+                    onChange={(e) => setV40SelNum(Number(e.target.value))}
+                  >
+                    {v40SelCiclo === 'Bimestre' ? (
+                      <>
+                        <option value={1}>B1 (Feb 28)</option>
+                        <option value={2}>B2 (Abr 30)</option>
+                        <option value={3}>B3 (Jun 30)</option>
+                        <option value={4}>B4 (Ago 31)</option>
+                        <option value={5}>B5 (Oct 31)</option>
+                        <option value={6}>B6 (Dic 31)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value={1}>Q1 (Mar 31)</option>
+                        <option value={2}>Q2 (Jun 30)</option>
+                        <option value={3}>Q3 (Sep 30)</option>
+                        <option value={4}>Q4 (Dic 31)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
 
             </div>
 
-            {/* Barra de Control de Vistas y Recarga en Caliente Estilo APEFAC */}
-            <div className="flex items-center justify-between gap-4 flex-wrap bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] p-3.5 rounded-xl shadow-xs mb-6">
+            {/* FILA 2: BARRA DE ACCIONES, CANALES DE ENVIO (EMAIL Y WHATSAPP) Y DESCARGAS */}
+            <div className="flex items-center justify-between gap-4 flex-wrap bg-[#f8fafc] dark:bg-[#0b0f19] border border-[#e2e8f0] dark:border-[#334155] p-3.5 rounded-xl shadow-xs mb-4">
               
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Modo de Visor:</span>
+              {/* Canales de Notificación y Botón de Envío */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Canales de Envio:</span>
                 
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => setDocViewMode('dual')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
-                      docViewMode === 'dual'
-                        ? 'bg-[#0284c7] text-white shadow-xs'
-                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
-                    }`}
-                  >
-                    🔲 Vista Dual 50/50
-                  </button>
-                  
-                  <button
-                    onClick={() => setDocViewMode('eecc')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
-                      docViewMode === 'eecc'
-                        ? 'bg-[#0284c7] text-white shadow-xs'
-                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
-                    }`}
-                  >
-                    📑 Solo EECC (100%)
-                  </button>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] cursor-pointer bg-white dark:bg-[#1e293b] px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                  <input
+                    type="checkbox"
+                    checked={docSendEmail}
+                    onChange={(e) => setDocSendEmail(e.target.checked)}
+                    className="accent-[#0284c7] cursor-pointer"
+                  />
+                  <Mail size={13} className="text-[#0284c7]" />
+                  <span>Email</span>
+                </label>
 
-                  <button
-                    onClick={() => setDocViewMode('retenciones')}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg transition-all cursor-pointer ${
-                      docViewMode === 'retenciones'
-                        ? 'bg-[#0284c7] text-white shadow-xs'
-                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd]'
-                    }`}
-                  >
-                    📜 Solo Retenciones (100%)
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-xs font-mono text-[#64748b] dark:text-[#94a3b8]">
-                  Corte: <strong className="text-[#059669] dark:text-[#34d399]">{fStart} al {fEnd}</strong>
-                </div>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] cursor-pointer bg-white dark:bg-[#1e293b] px-2.5 py-1.5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                  <input
+                    type="checkbox"
+                    checked={docSendWhatsapp}
+                    onChange={(e) => setDocSendWhatsapp(e.target.checked)}
+                    className="accent-[#25d366] cursor-pointer"
+                  />
+                  <MessageSquare size={13} className="text-[#25d366]" />
+                  <span>WhatsApp</span>
+                </label>
 
                 <button
-                  onClick={() => setDocReloadKey(Date.now())}
-                  className="px-3.5 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] text-[#475569] dark:text-[#cbd5e1] hover:text-[#0284c7] border border-[#e2e8f0] dark:border-[#334155] rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer shadow-xs"
-                  title="Recargar visores en caliente"
+                  type="button"
+                  onClick={handleEnviarDocNotificaciones}
+                  disabled={docSendingNotifications}
+                  className="px-3.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-60 text-white rounded-xl text-xs font-bold font-mono transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title="Enviar reportes seleccionados a participes via Email y WhatsApp"
                 >
-                  <RotateCcw size={14} />
+                  {docSendingNotifications ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                  <span>{docSendingNotifications ? 'Enviando...' : 'Enviar a Seleccion'}</span>
+                </button>
+              </div>
+
+              {/* Botones de Descarga Masiva (Excel y ZIP) y Recarga */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleExportDocExcel}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold font-mono transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title="Descargar reporte consolidado en Excel"
+                >
+                  <FileSpreadsheet size={13} />
+                  <span>Descargar Excel</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportDocZip}
+                  disabled={docGeneratingZip}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold font-mono transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title="Empaquetar y descargar todos los PDFs de seleccion en ZIP"
+                >
+                  {docGeneratingZip ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
+                  <span>
+                    {docGeneratingZip 
+                      ? `Empaquetando (${docZipProgress.current}/${docZipProgress.total})...` 
+                      : 'Descargar ZIP (PDFs)'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDocReloadKey(Date.now())}
+                  className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f0f9ff] text-[#475569] dark:text-[#cbd5e1] hover:text-[#0284c7] border border-[#e2e8f0] dark:border-[#334155] rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Recargar datos de documentos"
+                >
+                  <RotateCcw size={13} />
                   <span>Recargar</span>
                 </button>
               </div>
 
             </div>
 
-            {/* --- CONTENEDORES DE LOS 2 VISORES (ESTILO APEFAC) --- */}
-            <div className={`grid gap-6 ${docViewMode === 'dual' ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
-              
-              {/* VISOR 1: ESTADOS DE CUENTA (EECC) */}
-              {(docViewMode === 'dual' || docViewMode === 'eecc') && (
-                <div className="flex flex-col gap-3 w-full glass-card p-4">
-                  
-                  {/* Header del Visor EECC */}
-                  <div className="bg-[#f8fafc] dark:bg-[#151e2e] border border-[#e2e8f0] dark:border-[#334155] p-3 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                      <FileText size={18} className="text-[#0284c7] dark:text-[#38bdf8]" />
-                      <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
-                          ESTADOS DE CUENTA (EECC) — {docFondo || 'TODOS'}
-                        </h4>
-                        <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
-                          Periodo: {fEnd} | Formato Oficial WeasyPrint
-                        </p>
+            {/* Banner de Estado de Notificación */}
+            {docNotificationStatus && (
+              <div className="p-3 mb-4 rounded-xl bg-[#f0fdf4] dark:bg-[#059669]/20 border border-[#bbf7d0] dark:border-[#059669]/30 text-[#166534] dark:text-[#86efac] text-xs font-bold flex items-center gap-2 animate-fadeIn">
+                <CheckCircle size={15} />
+                <span>{docNotificationStatus}</span>
+              </div>
+            )}
+
+            {/* TABLA PRINCIPAL DE DOCUMENTOS CON DOBLE CHECKBOX Y VISOR ACORDEON */}
+            <div className="w-full overflow-x-auto rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+              <table className="w-full text-left text-xs border-collapse">
+                
+                {/* Cabecera Principal */}
+                <thead>
+                  <tr className="bg-[#0f172a] text-white font-mono text-[10.5px] uppercase">
+                    {/* Checkbox Master Retención */}
+                    <th className="p-2.5 text-center w-12 border-r border-slate-700">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={toggleAllRet}
+                          className="text-white hover:text-amber-300 cursor-pointer"
+                          title="Seleccionar / Deseleccionar todos los Certificados de Retencion"
+                        >
+                          {docEventsFiltered.length > 0 && docEventsFiltered.every(e => selectedRetIds.has(e.id_evento || e.id_contrato || e.id_certificado)) ? (
+                            <CheckSquare size={15} className="text-amber-400" />
+                          ) : (
+                            <Square size={15} />
+                          )}
+                        </button>
+                        <span className="text-[8.5px] text-amber-300 font-bold">RET</span>
                       </div>
-                    </div>
+                    </th>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          const fondo = docFondo || 'TODOS';
-                          const API_BASE = getApiBaseUrl();
-                          window.open(`${API_BASE}/api/inversionistas/eecc/${fondo}/${fEnd}`, '_blank');
-                        }}
-                        className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        title="Abrir en pestaña completa independiente"
-                      >
-                        <ExternalLink size={13} />
-                        <span>Pestaña</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDownloadFastPdf(htmlEeccDoc, `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
-                        disabled={downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3.5 py-1.5 bg-[#0284c7] hover:bg-[#0369a1] disabled:opacity-60 text-white rounded-xl text-xs font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF en caliente"
-                      >
-                        {downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-                        <span>{downloadingPdf === `EECC_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Contenedor IFrame */}
-                  <div className="rounded-xl overflow-hidden border border-[#e2e8f0] dark:border-[#334155] p-1 bg-slate-100 shadow-inner">
-                    <iframe
-                      key={`eecc-frame-${docReloadKey}-${docFondo}-${fEnd}`}
-                      srcDoc={htmlEeccDoc}
-                      className="w-full h-[800px] rounded-lg border-none bg-white"
-                      title="Visor Integrado EECC"
-                    />
-                  </div>
-
-                </div>
-              )}
-
-              {/* VISOR 2: CERTIFICADOS DE RETENCIÓN (5% IR) */}
-              {(docViewMode === 'dual' || docViewMode === 'retenciones') && (
-                <div className="flex flex-col gap-3 w-full glass-card p-4">
-                  
-                  {/* Header del Visor Retenciones */}
-                  <div className="bg-[#f8fafc] dark:bg-[#151e2e] border border-[#e2e8f0] dark:border-[#334155] p-3 rounded-xl flex items-center justify-between flex-wrap gap-2 shadow-xs">
-                    <div className="flex items-center gap-2.5">
-                      <FileSpreadsheet size={18} className="text-[#059669] dark:text-[#34d399]" />
-                      <div>
-                        <h4 className="text-xs font-black uppercase tracking-wider text-[#0f172a] dark:text-[#f8fafc]">
-                          CERTIFICADOS DE RETENCIÓN (5% IR) — {docFondo || 'TODOS'}
-                        </h4>
-                        <p className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-mono">
-                          Periodo: {fEnd} | Impuesto a la Renta de 2da Categoría
-                        </p>
+                    {/* Checkbox Master EECC */}
+                    <th className="p-2.5 text-center w-12 border-r border-slate-700">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={toggleAllEecc}
+                          className="text-white hover:text-sky-300 cursor-pointer"
+                          title="Seleccionar / Deseleccionar todos los Estados de Cuenta (EECC)"
+                        >
+                          {docEventsFiltered.length > 0 && docEventsFiltered.every(e => selectedEeccIds.has(e.id_evento || e.id_contrato || e.id_certificado)) ? (
+                            <CheckSquare size={15} className="text-sky-400" />
+                          ) : (
+                            <Square size={15} />
+                          )}
+                        </button>
+                        <span className="text-[8.5px] text-sky-300 font-bold">EECC</span>
                       </div>
-                    </div>
+                    </th>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          const fondo = docFondo || 'TODOS';
-                          const API_BASE = getApiBaseUrl();
-                          window.open(`${API_BASE}/api/inversionistas/retenciones/${fondo}/${fEnd}`, '_blank');
-                        }}
-                        className="px-3 py-1.5 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] text-[#475569] dark:text-[#cbd5e1] rounded-xl text-xs font-mono font-bold transition-all border border-[#e2e8f0] dark:border-[#334155] flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        title="Abrir en pestaña completa independiente"
-                      >
-                        <ExternalLink size={13} />
-                        <span>Pestaña</span>
-                      </button>
+                    <th className="p-2.5">N° Contrato / Cert.</th>
+                    <th className="p-2.5">Participe / Inversionista</th>
+                    <th className="p-2.5 text-center">Moneda</th>
+                    <th className="p-2.5 text-right">Capital Base</th>
+                    <th className="p-2.5 text-right">Interes Bruto</th>
+                    <th className="p-2.5 text-right">Retencion 5%</th>
+                    <th className="p-2.5 text-right">Deducciones</th>
+                    <th className="p-2.5 text-right">Neto Disp.</th>
+                    <th className="p-2.5 text-right">Transferencia</th>
+                    <th className="p-2.5 text-right">Capital Final</th>
+                    <th className="p-2.5 text-center w-24">Visor</th>
+                  </tr>
+                </thead>
 
-                      <button
-                        onClick={() => handleDownloadFastPdf(htmlRetencionesDoc, `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`)}
-                        disabled={downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf`}
-                        className="px-3.5 py-1.5 bg-[#059669] hover:bg-[#047857] disabled:opacity-60 text-white rounded-xl text-xs font-mono font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                        title="Descargar archivo binario PDF en caliente"
-                      >
-                        {downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
-                        <span>{downloadingPdf === `RETENCIONES_${docFondo || 'TODOS'}_${fEnd}.pdf` ? 'Generando...' : 'Descargar PDF'}</span>
-                      </button>
-                    </div>
-                  </div>
+                {/* Cuerpo de la Tabla */}
+                <tbody className="divide-y divide-[#e2e8f0] dark:divide-[#334155] bg-white dark:bg-[#151e2e]">
+                  {docLoading ? (
+                    <tr>
+                      <td colSpan={13} className="p-8 text-center text-slate-500">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 size={18} className="animate-spin text-[#0284c7]" />
+                          <span className="font-bold text-xs">Cargando documentos contables del periodo...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : docEventsFiltered.length === 0 ? (
+                    <tr>
+                      <td colSpan={13} className="p-8 text-center text-slate-500 font-medium">
+                        No se encontraron registros contables para el periodo {fEnd} con los filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) : (
+                    docEventsGroupedByFondo.map(group => (
+                      <React.Fragment key={group.fondoKey}>
+                        {/* Cabecera de Fondo */}
+                        <tr className="bg-slate-100 dark:bg-slate-800/80 font-bold text-[#0f172a] dark:text-[#f8fafc]">
+                          <td colSpan={13} className="p-2.5 px-4 text-xs tracking-wider uppercase border-y border-slate-200 dark:border-slate-700">
+                            <span className="font-mono text-[#0284c7] dark:text-[#38bdf8] mr-2">●</span>
+                            <span>{group.fondoNombre}</span>
+                            <span className="ml-3 text-[10.5px] font-mono text-slate-500 font-normal">
+                              ({group.events.length} contratos | Moneda: {group.moneda})
+                            </span>
+                          </td>
+                        </tr>
 
-                  {/* Contenedor IFrame */}
-                  <div className="rounded-xl overflow-hidden border border-[#e2e8f0] dark:border-[#334155] p-1 bg-slate-100 shadow-inner">
-                    <iframe
-                      key={`ret-frame-${docReloadKey}-${docFondo}-${fEnd}`}
-                      srcDoc={htmlRetencionesDoc}
-                      className="w-full h-[800px] rounded-lg border-none bg-white"
-                      title="Visor Integrado Retenciones"
-                    />
-                  </div>
+                        {/* Filas de Contratos / Certificados */}
+                        {group.events.map((e, idx) => {
+                          const rowId = e.id_evento || e.id_contrato || e.id_certificado;
+                          const isRetSelected = selectedRetIds.has(rowId);
+                          const isEeccSelected = selectedEeccIds.has(rowId);
+                          const isExpanded = expandedVisorIds.has(rowId);
+                          const eeccData = getEeccRowData(e);
+                          const retData = getRetencionRowData(e);
+                          const hasRetencion = Number(e.impuestos_renta || 0) > 0;
 
-                </div>
-              )}
+                          return (
+                            <React.Fragment key={rowId || idx}>
+                              <tr className={`transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                                isExpanded ? 'bg-[#f0f9ff]/60 dark:bg-[#0284c7]/10' : ''
+                              }`}>
+                                
+                                {/* Checkbox RET */}
+                                <td className="p-2.5 text-center border-r border-slate-200 dark:border-slate-800">
+                                  {hasRetencion ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={isRetSelected}
+                                      onChange={() => toggleSelectRet(rowId)}
+                                      className="accent-amber-500 cursor-pointer w-3.5 h-3.5"
+                                      title="Seleccionar Certificado de Retencion"
+                                    />
+                                  ) : (
+                                    <span className="text-[10px] text-slate-300 dark:text-slate-600 font-mono">-</span>
+                                  )}
+                                </td>
 
+                                {/* Checkbox EECC */}
+                                <td className="p-2.5 text-center border-r border-slate-200 dark:border-slate-800">
+                                  <input
+                                    type="checkbox"
+                                    checked={isEeccSelected}
+                                    onChange={() => toggleSelectEecc(rowId)}
+                                    className="accent-[#0284c7] cursor-pointer w-3.5 h-3.5"
+                                    title="Seleccionar Estado de Cuenta (EECC)"
+                                  />
+                                </td>
+
+                                {/* N° Contrato / Certificado */}
+                                <td className="p-2.5 font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] whitespace-nowrap">
+                                  {eeccData.id_certificado}
+                                </td>
+
+                                {/* Inversionista */}
+                                <td className="p-2.5 font-medium text-[#1e293b] dark:text-[#e2e8f0]">
+                                  {eeccData.inversionista_nombre}
+                                </td>
+
+                                {/* Moneda */}
+                                <td className="p-2.5 text-center font-mono font-bold text-slate-500 text-[11px]">
+                                  {eeccData.moneda}
+                                </td>
+
+                                {/* Capital Base */}
+                                <td className="p-2.5 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                  {formatNumDoc(eeccData.capital_inicial)}
+                                </td>
+
+                                {/* Interés Bruto */}
+                                <td className="p-2.5 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                  {formatNumDoc(eeccData.bruto_total)}
+                                </td>
+
+                                {/* Retención 5% */}
+                                <td className="p-2.5 text-right font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                  {formatNumDoc(eeccData.impuesto)}
+                                </td>
+
+                                {/* Deducciones */}
+                                <td className="p-2.5 text-right font-mono text-slate-500">
+                                  {formatNumDoc(eeccData.deducciones)}
+                                </td>
+
+                                {/* Neto Disponible */}
+                                <td className="p-2.5 text-right font-mono font-bold text-[#0f172a] dark:text-[#f8fafc]">
+                                  {formatNumDoc(eeccData.neto_disponible)}
+                                </td>
+
+                                {/* Total Transferido */}
+                                <td className="p-2.5 text-right font-mono font-black text-[#0284c7] dark:text-[#38bdf8]">
+                                  {formatNumDoc(eeccData.monto_transferido)}
+                                </td>
+
+                                {/* Capital Final */}
+                                <td className="p-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+                                  {formatNumDoc(eeccData.capital_final)}
+                                </td>
+
+                                {/* Botón Visor Acordeón */}
+                                <td className="p-2.5 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleVisor(rowId)}
+                                    className={`h-7 px-2.5 rounded-lg text-xs font-bold font-mono transition-all inline-flex items-center gap-1 cursor-pointer shadow-xs ${
+                                      isExpanded
+                                        ? 'bg-[#0284c7] text-white'
+                                        : 'bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#cbd5e1] border border-[#e2e8f0] dark:border-[#334155] hover:border-[#bae6fd] hover:text-[#0284c7]'
+                                    }`}
+                                  >
+                                    <span>Visor</span>
+                                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {/* FILA ACORDEON EXPANDIDA: 2 VISORES SIDE-BY-SIDE */}
+                              {isExpanded && (
+                                <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-y-2 border-[#0284c7]/40">
+                                  <td colSpan={13} className="p-4">
+                                    <div className="flex flex-col gap-4">
+                                      
+                                      <div className="flex items-center justify-between pb-2 border-b border-[#e2e8f0] dark:border-[#334155]">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc]">
+                                            Visor de Documentos: {eeccData.id_certificado} — {eeccData.inversionista_nombre}
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] font-mono text-slate-500">
+                                          Periodo: {fStart} al {fEnd}
+                                        </div>
+                                      </div>
+
+                                      {/* Contenedor Grid 2 Columnas Side-by-Side */}
+                                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                        
+                                        {/* COLUMNA IZQUIERDA: ESTADO DE CUENTA (EECC) */}
+                                        <div className="flex flex-col gap-2.5 bg-white dark:bg-[#151e2e] p-3.5 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                                          <div className="flex items-center justify-between pb-2 border-b border-slate-150 dark:border-slate-800">
+                                            <div className="flex items-center gap-2">
+                                              <FileText size={16} className="text-[#0284c7] dark:text-[#38bdf8]" />
+                                              <h4 className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc]">
+                                                Estado de Cuenta (EECC)
+                                              </h4>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDownloadFastPdf(generateSingleEeccHtml(eeccData), `EECC_${eeccData.id_certificado}_${fEnd}.pdf`)}
+                                              disabled={downloadingPdf === `EECC_${eeccData.id_certificado}_${fEnd}.pdf`}
+                                              className="h-7 px-2.5 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-lg text-xs font-bold font-mono transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                                            >
+                                              {downloadingPdf === `EECC_${eeccData.id_certificado}_${fEnd}.pdf` ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                                              <span>Descargar EECC PDF</span>
+                                            </button>
+                                          </div>
+
+                                          <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                                            <iframe
+                                              srcDoc={generateSingleEeccHtml(eeccData)}
+                                              className="w-full h-[600px] border-none"
+                                              title={`Visor EECC ${eeccData.id_certificado}`}
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* COLUMNA DERECHA: CERTIFICADO DE RETENCION (5% IR) */}
+                                        <div className="flex flex-col gap-2.5 bg-white dark:bg-[#151e2e] p-3.5 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shadow-xs">
+                                          <div className="flex items-center justify-between pb-2 border-b border-slate-150 dark:border-slate-800">
+                                            <div className="flex items-center gap-2">
+                                              <FileSpreadsheet size={16} className="text-amber-500" />
+                                              <h4 className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc]">
+                                                Certificado de Retencion (5% IR)
+                                              </h4>
+                                            </div>
+                                            {hasRetencion ? (
+                                              <button
+                                                type="button"
+                                                onClick={() => handleDownloadFastPdf(generateSingleRetencionHtml(retData), `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf`)}
+                                                disabled={downloadingPdf === `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf`}
+                                                className="h-7 px-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold font-mono transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                                              >
+                                                {downloadingPdf === `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf` ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                                                <span>Descargar Retencion PDF</span>
+                                              </button>
+                                            ) : (
+                                              <span className="text-[10.5px] font-mono text-slate-400 italic">Sin retencion en el periodo</span>
+                                            )}
+                                          </div>
+
+                                          {hasRetencion ? (
+                                            <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                                              <iframe
+                                                srcDoc={generateSingleRetencionHtml(retData)}
+                                                className="w-full h-[600px] border-none"
+                                                title={`Visor Retencion ${eeccData.id_certificado}`}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="h-[600px] flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 font-medium text-xs">
+                                              Este contrato no genero retenciones de impuesto a la renta en el periodo seleccionado.
+                                            </div>
+                                          )}
+                                        </div>
+
+                                      </div>
+
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
 
           </div>
