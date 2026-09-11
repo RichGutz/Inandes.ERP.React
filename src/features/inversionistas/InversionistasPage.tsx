@@ -668,9 +668,10 @@ export const InversionistasPage: React.FC = () => {
     .totals-section table { width: 100%; border-collapse: collapse; }
     .totals-section td { padding: 4px 0; border: none; font-size: 12.0pt; font-weight: bold; color: #000000; }
     .footer-line { width: 100%; border-top: 0.75pt solid #000000; margin-top: 30px; margin-bottom: 12px; }
-    .footer { text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
+    .footer { text-align: center; color: #3333ff; font-size: 8.5pt; line-height: 1.35; }
     .footer-company { font-weight: bold; font-size: 9.0pt; margin: 0 0 2px 0; color: #3333ff; }
-    .footer-address, .footer-contact { margin: 1px 0; font-size: 10.0pt; color: #3333ff; }
+    .footer-address { margin: 1px 0; font-size: 8.0pt; color: #3333ff; white-space: nowrap; }
+    .footer-contact { margin: 1px 0; font-size: 8.5pt; color: #3333ff; }
   </style>
 </head>
 <body>
@@ -748,9 +749,10 @@ export const InversionistasPage: React.FC = () => {
     .sig-role { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; margin-top: 3px; }
     .sig-company { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; }
     .footer-line { width: 100%; border-top: 0.75pt solid #000000; margin-top: 20px; margin-bottom: 10px; }
-    .footer { text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
+    .footer { text-align: center; color: #3333ff; font-size: 8.5pt; line-height: 1.35; }
     .footer-company { font-weight: bold; font-size: 9.0pt; margin: 0 0 2px 0; color: #3333ff; }
-    .footer-address, .footer-contact { margin: 1px 0; font-size: 10.0pt; color: #3333ff; }
+    .footer-address { margin: 1px 0; font-size: 8.0pt; color: #3333ff; white-space: nowrap; }
+    .footer-contact { margin: 1px 0; font-size: 8.5pt; color: #3333ff; }
   </style>
 </head>
 <body>
