@@ -391,6 +391,66 @@ def format_date_str(d_str: str) -> str:
         pass
     return d_str
 
+def extract_cert_number(id_contrato: str) -> str:
+    if not id_contrato:
+        return "001"
+    try:
+        parts = str(id_contrato).split('-')
+        if len(parts) > 1:
+            sub = parts[1].split('.')[0]
+            return sub
+    except Exception:
+        pass
+    return str(id_contrato)
+
+def get_principal_inversionista(nombre_inv: str) -> str:
+    if not nombre_inv:
+        return "Inversionista"
+    for sep in [' / ', '/', ' & ', ' y ', ' Y ']:
+        if sep in nombre_inv:
+            return nombre_inv.split(sep)[0].strip()
+    return nombre_inv.strip()
+
+def format_date_custom(d_str: str, uppercase=True) -> str:
+    if not d_str:
+        return ""
+    try:
+        parts = d_str.split('-')
+        if len(parts) == 3:
+            y, m, d = parts[0], parts[1], parts[2]
+            meses_map = {
+                "01": "ENE", "02": "FEB", "03": "MAR", "04": "ABR",
+                "05": "MAY", "06": "JUN", "07": "JUL", "08": "AGO",
+                "09": "SET", "10": "OCT", "11": "NOV", "12": "DIC"
+            }
+            mes_txt = meses_map.get(m, m)
+            if not uppercase:
+                mes_txt = mes_txt.lower()
+            return f"{d}-{mes_txt}-{y}"
+    except Exception:
+        pass
+    return d_str
+
+def format_num_or_dash(val) -> str:
+    try:
+        num = float(val or 0.0)
+        if abs(num) < 0.001:
+            return "-"
+        return f"{num:,.2f}"
+    except Exception:
+        return "-"
+
+def format_cuotas(val) -> str:
+    try:
+        num = float(val or 0.0)
+        if abs(num) < 0.001:
+            return "-"
+        if num.is_integer():
+            return f"{int(num):,}"
+        return f"{num:,.2f}"
+    except Exception:
+        return "-"
+
 
 @router.get("/eecc/{id_fondo}/{fecha_fin}")
 def get_eecc_pdf(id_fondo: str, fecha_fin: str):
@@ -403,12 +463,9 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
         cache_file = os.path.join(cache_dir, f"EECC_{id_fondo}_{fecha_fin}.pdf")
         filename = f"EECC_{id_fondo}_{fecha_fin}.pdf"
 
-        if os.path.exists(cache_file):
-            return FileResponse(
-                cache_file,
-                media_type="application/pdf",
-                headers={"Content-Disposition": f"inline; filename={filename}"}
-            )
+        # Si el cache existe pero queremos siempre la versión más fresca o cache-first:
+        # if os.path.exists(cache_file):
+        #     return FileResponse(cache_file, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={filename}"})
 
         supabase = get_supabase_client()
         query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', fecha_fin)
@@ -435,35 +492,46 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
             moneda = payload.get('moneda') or fondo_info.get('moneda') or 'PEN'
             valor_cuota = float(fondo_info.get('valor_cuota_inicial', 1.0))
             
-            inversionista = payload.get('inversionista') or e.get('notas') or 'Inversionista'
+            raw_inv = payload.get('inversionista') or e.get('notas') or 'Inversionista'
+            inversionista = get_principal_inversionista(raw_inv)
+            cid = e.get('id_contrato', e.get('id_certificado'))
+            cid_short = extract_cert_number(cid)
+            
+            cap_final = float(e.get('capital_final_saldo', 0.0))
+            num_cuotas = cap_final / valor_cuota if valor_cuota > 0 else cap_final
 
             cert_data = {
                 'fondo_nombre': nombre_fondo,
-                'fecha_inicio_str': format_date_str(e.get('fecha_periodo_origen', '')),
-                'fecha_fin_str': format_date_str(e.get('fecha_periodo_fin', '')),
+                'id_certificado': cid,
+                'id_certificado_short': cid_short,
+                'fecha_inicio_str': format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True),
+                'fecha_fin_str': format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True),
                 'inversionista_nombre': inversionista,
-                'id_certificado': e.get('id_contrato', e.get('id_certificado')),
                 'moneda': moneda,
-                'capital_inicial': e.get('capital_base', 0.0),
-                'bruto_total': e.get('interes_generado_bruto', 0.0),
-                'impuesto': e.get('impuestos_renta', 0.0),
-                'deducciones': e.get('monto_deduccion', 0.0),
-                'neto_disponible': e.get('interes_neto_disponible', 0.0),
-                'capitalizacion': e.get('monto_capitalizacion', 0.0),
-                'rescates': e.get('monto_rescate', 0.0),
+                'capital_inicial': float(e.get('capital_base', 0.0)),
+                'bruto_total': float(e.get('interes_generado_bruto', 0.0)),
+                'impuesto': float(e.get('impuestos_renta', 0.0)),
+                'deducciones': float(e.get('monto_deduccion', 0.0)),
+                'neto_disponible': float(e.get('interes_neto_disponible', 0.0)),
+                'capitalizacion': float(e.get('monto_capitalizacion', 0.0)),
+                'rescates': float(e.get('monto_rescate', 0.0)),
                 'monto_transferido': float(e.get('monto_reparto', 0.0) or 0.0) + float(e.get('monto_rescate', 0.0) or 0.0),
-                'capital_final': e.get('capital_final_saldo', 0.0),
+                'capital_final': cap_final,
+                'numero_cuotas': num_cuotas,
                 'valor_cuota': valor_cuota,
             }
             certs.append(cert_data)
 
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.globals['format_num'] = format_num
+        env.globals['format_num_or_dash'] = format_num_or_dash
+        env.globals['format_cuotas'] = format_cuotas
         template = env.get_template('estado_cuenta_inversionista_v2.html')
 
         html_out = template.render({
             'certs': certs,
-            'logo_path': logo_path
+            'logo_path': logo_path,
+            'logo_b64': LOGO_B64
         })
 
         HTML(string=html_out, base_url=backend_root).write_pdf(target=cache_file)
@@ -481,10 +549,14 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
 
 
 @router.get("/retenciones/{id_fondo}/{fecha_fin}")
-def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
+def get_retenciones_pdf(
+    id_fondo: str,
+    fecha_fin: str,
+    fecha_operacion: Optional[str] = None,
+    tipo_cambio: Optional[float] = None
+):
     """
     Genera y sirve el PDF de Certificado de Retención de 2da Categoría para el periodo especificado.
-    Utiliza persistencia en disco (Cache-First) para respuesta instantánea idéntica a Forecast.
     """
     try:
         cache_dir = os.path.join(backend_root, 'cache_reports')
@@ -492,12 +564,8 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
         cache_file = os.path.join(cache_dir, f"RETENCIONES_{id_fondo}_{fecha_fin}.pdf")
         filename = f"RETENCIONES_{id_fondo}_{fecha_fin}.pdf"
 
-        if os.path.exists(cache_file):
-            return FileResponse(
-                cache_file,
-                media_type="application/pdf",
-                headers={"Content-Disposition": f"inline; filename={filename}"}
-            )
+        # if os.path.exists(cache_file):
+        #     return FileResponse(cache_file, media_type="application/pdf", headers={"Content-Disposition": f"inline; filename={filename}"})
 
         supabase = get_supabase_client()
         query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', fecha_fin)
@@ -521,7 +589,8 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
         def find_inv_details(nombre_inv: str):
             if not nombre_inv:
                 return {"dni": "", "direccion": "Domicilio no registrado"}
-            n_clean = nombre_inv.upper().strip()
+            princ = get_principal_inversionista(nombre_inv)
+            n_clean = princ.upper().strip()
             for inv in inv_list:
                 comp = inv.get('nombre_completo', '').upper().strip()
                 if n_clean in comp or comp in n_clean:
@@ -538,13 +607,8 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
                     }
             return {"dni": "", "direccion": "Domicilio no registrado"}
 
-        TC_USD_PEN = 3.662
-        hoy = datetime.date.today()
-        meses_es = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-        dia_hoy = str(hoy.day)
-        mes_hoy = meses_es[hoy.month - 1]
-        anio_hoy = str(hoy.year)
+        TC_USD_PEN = float(tipo_cambio or 3.4526)
+        tasa_pct = 5.00
 
         certificados = []
         for e in events:
@@ -554,32 +618,46 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
             nombre_fondo = fondo_info.get('nombre_fondo', f_code)
             moneda = payload.get('moneda') or fondo_info.get('moneda') or 'PEN'
             
-            inversionista = payload.get('inversionista') or 'Inversionista'
+            raw_inv = payload.get('inversionista') or 'Inversionista'
+            inversionista = get_principal_inversionista(raw_inv)
             inv_details = find_inv_details(inversionista)
 
             impuesto_raw = float(e.get('impuestos_renta', 0.0))
             if moneda == 'USD':
+                monto_ir_moneda = impuesto_raw
                 ir_pen = round(impuesto_raw * TC_USD_PEN, 2)
+                tc_display = f"{TC_USD_PEN:.4f}"
             else:
+                monto_ir_moneda = impuesto_raw
                 ir_pen = round(impuesto_raw, 2)
+                tc_display = "-"
+
+            cid = e.get('id_contrato', e.get('id_certificado'))
+            cid_short = extract_cert_number(cid)
+            bruto_total = float(e.get('interes_generado_bruto', 0.0))
+
+            f_ini_lower = format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=False)
+            f_fin_lower = format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=False)
+            f_op_date = fecha_operacion if fecha_operacion else e.get('fecha_periodo_fin', '')
+            f_fin_upper = format_date_custom(f_op_date, uppercase=True)
 
             cert_item = {
-                'num_certificado': e.get('id_contrato', e.get('id_certificado')),
+                'num_certificado': cid,
+                'id_certificado_short': cid_short,
                 'nombre_fondo': nombre_fondo,
                 'nombres_participes': inversionista,
                 'dni_participes': inv_details['dni'],
                 'direccion_fiscal': inv_details['direccion'],
                 'monto_ir_pen_num': f"{ir_pen:,.2f}",
                 'monto_ir_pen_letras': numero_a_letras_soles(ir_pen),
-                'f_inicio': format_date_str(e.get('fecha_periodo_origen', '')),
-                'f_fin': format_date_str(e.get('fecha_periodo_fin', '')),
+                'f_inicio': f_ini_lower,
+                'f_fin': f_fin_lower,
                 'moneda': moneda,
-                'base_retencion': f"{float(e.get('interes_generado_bruto', 0.0)):,.2f}",
-                'fecha_operacion': format_date_str(e.get('fecha_periodo_fin', '')),
-                'tipo_cambio_display': f"PEN {TC_USD_PEN:.3f}",
-                'dia_hoy': dia_hoy,
-                'mes_hoy': mes_hoy,
-                'anio_hoy': anio_hoy
+                'base_imponible_num': f"{bruto_total:,.2f}",
+                'tasa_pct_display': f"{tasa_pct:.2f} %",
+                'monto_ir_moneda_num': f"{monto_ir_moneda:,.2f}",
+                'tc_display': tc_display,
+                'fecha_operacion': f_fin_upper,
             }
             certificados.append(cert_item)
 
@@ -589,7 +667,9 @@ def get_retenciones_pdf(id_fondo: str, fecha_fin: str):
         html_out = template.render({
             'certificados': certificados,
             'logo_path': logo_path,
-            'firma_path': firma_path
+            'logo_b64': LOGO_B64,
+            'firma_path': firma_path,
+            'firma_b64': FIRMA_B64
         })
 
         HTML(string=html_out, base_url=backend_root).write_pdf(target=cache_file)
@@ -616,6 +696,8 @@ class EnviarReportesRequest(BaseModel):
     cert_ids: Optional[List[str]] = None
     override_email: Optional[str] = None  # Para pruebas (redirige todos a este correo)
     cc_email: Optional[str] = "rgutil@gmail.com"
+    fecha_operacion: Optional[str] = None
+    tipo_cambio: Optional[float] = None
 
 
 @router.post("/enviar-reportes")
@@ -651,10 +733,12 @@ def post_enviar_reportes(req: EnviarReportesRequest):
         invs_list = res_invs.data or []
 
         def get_inv_info(name_str):
-            s = (name_str or "").strip().lower()
+            princ = get_principal_inversionista(name_str)
+            s = princ.strip().lower()
             for r in invs_list:
                 full = f"{r.get('nombre_1','')} {r.get('nombre_2','')} {r.get('apellido_1','')} {r.get('apellido_2','')}".strip().lower()
-                if full == s or (s and s in full) or (full and full in s):
+                comp = (r.get('nombre_completo') or '').strip().lower()
+                if full == s or comp == s or (s and (s in full or s in comp)):
                     return {
                         'email': r.get('email') or r.get('correo_electronico') or '',
                         'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
@@ -665,6 +749,8 @@ def post_enviar_reportes(req: EnviarReportesRequest):
 
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.globals['format_num'] = format_num
+        env.globals['format_num_or_dash'] = format_num_or_dash
+        env.globals['format_cuotas'] = format_cuotas
         tpl_eecc = env.get_template('estado_cuenta_inversionista_v2.html')
         tpl_retencion = env.get_template('retencion_renta_v2.html')
 
@@ -676,6 +762,9 @@ def post_enviar_reportes(req: EnviarReportesRequest):
         enviados = []
         errores = []
 
+        TC_USD_PEN = float(req.tipo_cambio or 3.4526)
+        tasa_pct = 5.00
+
         for e in events:
             payload = e.get('payload_asiento') or {}
             f_code = e.get('id_contrato', '').split('-')[0]
@@ -684,8 +773,10 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             moneda = payload.get('moneda') or fondo_info.get('moneda') or 'PEN'
             valor_cuota = float(fondo_info.get('valor_cuota_inicial', 1.0))
             cid = e.get('id_contrato', e.get('id_certificado'))
+            cid_short = extract_cert_number(cid)
 
-            inversionista = payload.get('inversionista') or 'Inversionista'
+            raw_inv = payload.get('inversionista') or 'Inversionista'
+            inversionista = get_principal_inversionista(raw_inv)
             inv_info = get_inv_info(inversionista)
 
             dest_email = req.override_email if req.override_email else inv_info['email']
@@ -693,26 +784,35 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': 'Sin correo electrónico registrado'})
                 continue
 
+            cap_final = float(e.get('capital_final_saldo', 0.0))
+            num_cuotas = cap_final / valor_cuota if valor_cuota > 0 else cap_final
+
             # 1. Generar EECC PDF
             cert_eecc_data = {
                 'fondo_nombre': nombre_fondo,
-                'fecha_inicio_str': format_date_str(e.get('fecha_periodo_origen', '')),
-                'fecha_fin_str': format_date_str(e.get('fecha_periodo_fin', '')),
+                'fecha_inicio_str': format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True),
+                'fecha_fin_str': format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True),
                 'inversionista_nombre': inversionista,
                 'id_certificado': cid,
+                'id_certificado_short': cid_short,
                 'moneda': moneda,
-                'capital_inicial': e.get('capital_base', 0.0),
-                'bruto_total': e.get('interes_generado_bruto', 0.0),
-                'impuesto': e.get('impuestos_renta', 0.0),
-                'deducciones': e.get('monto_deduccion', 0.0),
-                'neto_disponible': e.get('interes_neto_disponible', 0.0),
-                'capitalizacion': e.get('monto_capitalizacion', 0.0),
-                'rescates': e.get('monto_rescate', 0.0),
-                'monto_transferido': e.get('monto_reparto', 0.0),
-                'capital_final': e.get('capital_final_saldo', 0.0),
+                'capital_inicial': float(e.get('capital_base', 0.0)),
+                'bruto_total': float(e.get('interes_generado_bruto', 0.0)),
+                'impuesto': float(e.get('impuestos_renta', 0.0)),
+                'deducciones': float(e.get('monto_deduccion', 0.0)),
+                'neto_disponible': float(e.get('interes_neto_disponible', 0.0)),
+                'capitalizacion': float(e.get('monto_capitalizacion', 0.0)),
+                'rescates': float(e.get('monto_rescate', 0.0)),
+                'monto_transferido': float(e.get('monto_reparto', 0.0) or 0.0) + float(e.get('monto_rescate', 0.0) or 0.0),
+                'capital_final': cap_final,
+                'numero_cuotas': num_cuotas,
                 'valor_cuota': valor_cuota,
             }
-            html_eecc = tpl_eecc.render({'certs': [cert_eecc_data], 'logo_path': logo_path})
+            html_eecc = tpl_eecc.render({
+                'certs': [cert_eecc_data],
+                'logo_path': logo_path,
+                'logo_b64': LOGO_B64
+            })
             pdf_eecc_bytes = HTML(string=html_eecc, base_url=backend_root).write_pdf()
 
             attachments = [{
@@ -723,29 +823,44 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             # 2. Generar Retención PDF si hay impuesto
             impuesto_raw = float(e.get('impuestos_renta', 0.0))
             if impuesto_raw > 0:
-                ir_pen = round(impuesto_raw * 3.75 if moneda == 'USD' else impuesto_raw, 2)
+                if moneda == 'USD':
+                    monto_ir_moneda = impuesto_raw
+                    ir_pen = round(impuesto_raw * TC_USD_PEN, 2)
+                    tc_display = f"{TC_USD_PEN:.4f}"
+                else:
+                    monto_ir_moneda = impuesto_raw
+                    ir_pen = round(impuesto_raw, 2)
+                    tc_display = "-"
+
+                bruto_total = float(e.get('interes_generado_bruto', 0.0))
+                f_ini_lower = format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=False)
+                f_fin_lower = format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=False)
+                f_fin_upper = format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True)
+
                 cert_ret_item = {
                     'num_certificado': cid,
+                    'id_certificado_short': cid_short,
                     'nombre_fondo': nombre_fondo,
                     'nombres_participes': inversionista,
                     'dni_participes': inv_info['dni'],
                     'direccion_fiscal': inv_info['direccion'],
                     'monto_ir_pen_num': f"{ir_pen:,.2f}",
                     'monto_ir_pen_letras': numero_a_letras_soles(ir_pen),
-                    'f_inicio': format_date_str(e.get('fecha_periodo_origen', '')),
-                    'f_fin': format_date_str(e.get('fecha_periodo_fin', '')),
+                    'f_inicio': f_ini_lower,
+                    'f_fin': f_fin_lower,
                     'moneda': moneda,
-                    'base_retencion': f"{float(e.get('interes_generado_bruto', 0.0)):,.2f}",
-                    'fecha_operacion': format_date_str(e.get('fecha_periodo_fin', '')),
-                    'tipo_cambio_display': "PEN 3.750",
-                    'dia_hoy': "28",
-                    'mes_hoy': "febrero",
-                    'anio_hoy': "2026"
+                    'base_imponible_num': f"{bruto_total:,.2f}",
+                    'tasa_pct_display': f"{tasa_pct:.2f} %",
+                    'monto_ir_moneda_num': f"{monto_ir_moneda:,.2f}",
+                    'tc_display': tc_display,
+                    'fecha_operacion': f_fin_upper,
                 }
                 html_ret = tpl_retencion.render({
                     'certificados': [cert_ret_item],
                     'logo_path': logo_path,
-                    'firma_path': firma_path
+                    'logo_b64': LOGO_B64,
+                    'firma_path': firma_path,
+                    'firma_b64': FIRMA_B64
                 })
                 pdf_ret_bytes = HTML(string=html_ret, base_url=backend_root).write_pdf()
                 attachments.append({
@@ -757,14 +872,14 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             body_html = email_html_raw \
                 .replace("{{FONDO_NOMBRE}}", nombre_fondo) \
                 .replace("{{NOMBRE_CORTO}}", inv_info['nombre_corto']) \
-                .replace("{{PERIODO_INICIO}}", format_date_str(e.get('fecha_periodo_origen', ''))) \
-                .replace("{{PERIODO_FIN}}", format_date_str(e.get('fecha_periodo_fin', ''))) \
+                .replace("{{PERIODO_INICIO}}", format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True)) \
+                .replace("{{PERIODO_FIN}}", format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True)) \
                 .replace("{{MONEDA}}", moneda) \
                 .replace("{{CAPITAL_FINAL}}", f"{float(e.get('capital_final_saldo', 0.0)):,.2f}") \
                 .replace("{{ID_CERTIFICADO}}", cid) \
                 .replace("{{EMAIL_DESTINO}}", dest_email)
 
-            asunto = f"Fondo de Inversión {nombre_fondo} – Estado de Cuenta {format_date_str(e.get('fecha_periodo_fin', ''))}"
+            asunto = f"Fondo de Inversión {nombre_fondo} – Estado de Cuenta {format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True)}"
 
             ok, msg = send_email(
                 to_email=dest_email,

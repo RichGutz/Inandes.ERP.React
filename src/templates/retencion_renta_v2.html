@@ -3,31 +3,28 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Certificado de Rentas</title>
+    <title>Documento de Retención</title>
     <style>
         @page {
-            size: A4 portrait;
-            margin: 1.5cm 2cm 2.5cm 2cm;
+            size: letter portrait;
+            margin: 0.75in 1.0in 0.65in 1.0in;
+            @bottom-center {
+                content: none;
+            }
         }
 
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 11pt;
-            /* Tamaño letra documento formal */
-            line-height: 1.5;
-            color: #333;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 11.0pt;
+            line-height: 1.35;
+            color: #000000;
             margin: 0;
             padding: 0;
         }
 
-        .dummy {
-            /* Placeholder quitado rojo */
-            font-weight: bold;
-        }
-
         .header {
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .header table {
@@ -41,63 +38,28 @@
         }
 
         .logo-container {
-            width: 100%;
             text-align: right;
-            padding-top: 5px;
+            padding-top: 0px;
         }
 
         .logo-container img {
-            max-width: 173px;
-            max-height: 96px;
+            width: 130px;
+            height: auto;
         }
 
         .title-box {
             text-align: center;
-            margin-top: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
         }
 
         .title-box h1 {
-            font-size: 13pt;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14.0pt;
             font-weight: bold;
-            margin: 0 0 4px 0;
+            color: #000000;
+            margin: 0;
+            line-height: 1.35;
             text-transform: uppercase;
-        }
-
-        .cert-num {
-            font-size: 11pt;
-            font-weight: bold;
-            text-align: center;
-            margin: 0 0 10px 0;
-            text-transform: uppercase;
-        }
-
-        .resumen-title {
-            font-size: 10pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 30px 0 8px 0;
-        }
-
-        .resumen-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 9.5pt;
-        }
-
-        .resumen-table th {
-            background-color: #555555;
-            color: #ffffff;
-            padding: 6px 8px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #555555;
-        }
-
-        .resumen-table td {
-            padding: 6px 8px;
-            text-align: center;
-            border: 1px solid #cccccc;
         }
 
         .content {
@@ -105,26 +67,108 @@
             margin-bottom: 20px;
         }
 
+        .content p {
+            margin: 12px 0;
+            font-size: 11.0pt;
+            line-height: 1.4;
+        }
+
+        .certifica-title {
+            font-weight: bold;
+            color: #0f172a;
+            margin: 16px 0 8px 0 !important;
+            font-size: 11.0pt;
+        }
+
+        .resumen-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.0pt;
+            margin: 22px 0 22px 0;
+        }
+
+        .resumen-table th {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #334155;
+            color: #ffffff;
+            padding: 7px 4px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #334155;
+            font-size: 9.0pt;
+        }
+
+        .resumen-table td {
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 7px 4px;
+            text-align: center;
+            border: 1px solid #cbd5e1;
+            font-size: 9.0pt;
+            color: #0f172a;
+        }
+
+        .legal-text {
+            margin-top: 22px !important;
+            margin-bottom: 25px !important;
+            font-size: 11.0pt;
+            color: #000000;
+        }
+
         .signature-area {
             text-align: center;
-            margin-top: 80px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+            position: relative;
         }
 
         .signature-img {
-            max-height: 120px;
-            margin-bottom: 5px;
+            width: 151.5pt;
+            height: auto;
+            max-height: 62pt;
+            margin-bottom: -22pt;
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+        }
+
+        .sig-name {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 10.0pt;
+            color: #0f172a;
+        }
+
+        .sig-role {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 10.0pt;
+            color: #64748b;
+        }
+
+        .sig-company {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 10.0pt;
+            color: #64748b;
         }
 
         .footer {
-            font-size: 8pt;
-            margin-top: 60px;
+            margin-top: 35px;
             text-align: center;
-            color: #0d47a1;
-            /* Azul corporativo */
+            color: #3333ff;
+            font-size: 10.0pt;
+            line-height: 1.35;
         }
 
-        .footer p {
-            margin: 2px 0;
+        .footer-company {
+            font-weight: bold;
+            font-size: 9.0pt;
+            margin: 0 0 2px 0;
+            color: #3333ff;
+        }
+
+        .footer-address, .footer-contact {
+            margin: 1px 0;
+            font-size: 10.0pt;
+            color: #3333ff;
         }
 
         .page-break {
@@ -138,73 +182,66 @@
     <div class="header">
         <table>
             <tr>
-                <td class="logo-container">
-                    <img src="file:///{{ logo_path }}" alt="Logo Inandes" />
+                <td style="width: 50%;"></td>
+                <td class="logo-container" style="width: 50%;">
+                    <img src="{{ logo_b64 if logo_b64 else ('file:///' + logo_path.replace('\\', '/')) }}" alt="Logo Inandes" />
                 </td>
             </tr>
         </table>
     </div>
 
     <div class="title-box">
-        <h1>CERTIFICADO DE RENTAS Y RETENCIONES POR RENTAS<br>DE SEGUNDA CATEGORÍA</h1>
-        <p class="cert-num">CERTIFICADO N° {{ cert.num_certificado }}</p>
+        <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA DEL<br>CERTIFICADO N° {{ cert.id_certificado_short }} DEL FONDO {{ cert.nombre_fondo }} – FONDO DE<br>INVERSION PRIVADO</h1>
     </div>
 
     <div class="content">
-        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147
-            oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr.
-            Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del
-            FONDO <strong>{{ cert.nombre_fondo }}</strong> – FONDO DE INVERSION PRIVADO,</p>
+        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>{{ cert.nombre_fondo }} – FONDO DE INVERSION PRIVADO</strong>.</p>
 
-        <p style="font-weight: bold;">CERTIFICA QUE:</p>
+        <p class="certifica-title">CERTIFICA QUE:</p>
 
-        <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>{{
-                cert.nombres_participes }}</strong>, identificado(a) con DNI <strong>{{ cert.dni_participes }}</strong>
-            y con
-            domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, la suma de <strong>PEN {{
-                cert.monto_ir_pen_num }}</strong> (<strong>{{ cert.monto_ir_pen_letras }} soles</strong>)
-            por concepto de Impuesto a la Renta de Segunda Categoría generado por la distribución de beneficios de las
-            operaciones del FONDO <strong>{{ cert.nombre_fondo }}</strong> – FONDO DE INVERSION PRIVADO,
-            correspondiente al período comprendido entre el <strong>{{ cert.f_inicio }}</strong> al <strong>{{
-                cert.f_fin }}</strong>.
-        </p>
+        <p>A Don(ña) <strong>{{ cert.nombres_participes }}</strong>, identificado(a) con DNI N° <strong>{{ cert.dni_participes }}</strong>, con domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, se le ha efectuado la retención definitiva de PEN <strong>{{ cert.monto_ir_pen_num }}</strong> (<strong>{{ cert.monto_ir_pen_letras }} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>{{ cert.f_inicio }}</strong> al <strong>{{ cert.f_fin }}</strong>, conforme al siguiente detalle:</p>
 
-        <p class="resumen-title">RESUMEN DE LOS MONTOS RETENIDOS</p>
         <table class="resumen-table">
             <thead>
                 <tr>
-                    <th>BASE DE RETENCION</th>
-                    <th>MONTO RETENIDO</th>
-                    <th>FECHA DE LA OPERACION</th>
-                    {% if cert.moneda == 'USD' %}
-                    <th>TIPO DE CAMBIO PEN/USD UTILIZADO</th>
-                    {% endif %}
+                    <th>Fecha de<br>Operación</th>
+                    <th>Moneda</th>
+                    <th>Base Imponible</th>
+                    <th>Tasa (%)</th>
+                    <th>Impuesto<br>Retenido ({{ cert.moneda }})</th>
+                    <th>TC</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ cert.moneda }} {{ cert.base_retencion }}</td>
-                    <td>PEN {{ cert.monto_ir_pen_num }}</td>
                     <td>{{ cert.fecha_operacion }}</td>
-                    {% if cert.moneda == 'USD' %}
-                    <td>{{ cert.tipo_cambio_display }}</td>
-                    {% endif %}
+                    <td>{{ cert.moneda }}</td>
+                    <td>{{ cert.base_imponible_num }}</td>
+                    <td>{{ cert.tasa_pct_display }}</td>
+                    <td>{{ cert.monto_ir_moneda_num }}</td>
+                    <td>{{ cert.tc_display }}</td>
                 </tr>
             </tbody>
         </table>
 
-        <p style="text-align: right; margin-top: 30px;">
-            Santiago de Surco, <strong>{{ cert.dia_hoy }}</strong> de <strong>{{ cert.mes_hoy }}</strong> del <strong>{{
-                cert.anio_hoy }}</strong>
+        <p class="legal-text">
+            Se expide el presente certificado de conformidad con lo establecido en el Texto Único Ordenado de la Ley del Impuesto a la Renta y su Reglamento.
         </p>
     </div>
 
     <div class="signature-area">
-        <img class="signature-img" src="file:///{{ firma_path }}" alt="Firma Ricardo Gallo" /><br>
-        Juan Ricardo Gallo Pizarro<br>
-        <strong>INANDES ACTIVOS ALTERNATIVOS SAC</strong><br>
-        Gerente General
+        <img class="signature-img" src="{{ firma_b64 if firma_b64 else ('file:///' + firma_path.replace('\\', '/')) }}" alt="Firma Ricardo Gallo" /><br>
+        <span class="sig-name">JUAN RICARDO GALLO PIZARRO</span><br>
+        <span class="sig-role">Gerente General</span><br>
+        <span class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</span>
     </div>
+
+    <div class="footer">
+        <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
+        <p class="footer-address">Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima</p>
+        <p class="footer-contact">Teléfono: + (511) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
+    </div>
+
     {% if not loop.last %}
     <div class="page-break"></div>
     {% endif %}

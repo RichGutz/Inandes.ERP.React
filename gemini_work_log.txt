@@ -709,5 +709,35 @@ RESULTADO:
    - Auto-despliegue en caliente ejecutado por Coolify en Contabo VPS (169.58.168.107 / https://inandes.geeksoft.tech).
 3. Documentación Oficial:
    - Registrada en Obsidian/Inandes.Inversionistas.React/00.K.Estandarizacion.UI.Certificados.EECC.Retenciones.SideBySide.md.
+
+[2026-09-10T18:07:00-05:00] TAREA: Generar en formato Word (.docx) los formatos oficiales de Estado de Cuenta (EECC) y Certificado de Retención de Rentas de 2da Categoría (5% IR) del módulo Inversionistas.
+[2026-09-10T18:07:30-05:00] ESTADO: Completado con éxito.
+1. Creado el script de automatización 'scripts/generate_word_templates.py'.
+2. Extraídos los assets gráficos oficiales (Logo Inandes y Firma Ricardo Gallo).
+3. Generados 4 documentos Word (.docx) con diseño corporativo de alta precisión en 'c:\Users\rguti\Inandes.ERP.React\Formatos_Word\':
+   - ESTADO_DE_CUENTA_EECC.docx (Con datos de ejemplo del visor: Peña Jimenez Pedro / FDO NSG MIPYME USD 01).
+   - CERTIFICADO_DE_RETENCION_IR.docx (Con datos de retención 5% IR, tabla de corte, montos en letras y firma).
+   - PLANTILLA_ESTADO_DE_CUENTA_EECC.docx (Plantilla limpia con campos editables).
+   - PLANTILLA_CERTIFICADO_RETENCION.docx (Plantilla limpia con campos editables).
+================================================================================
+
+[2026-09-11T08:02:00-05:00] TAREA: Calibrar y actualizar plantillas oficiales de Estado de Cuenta (EECC) y Certificado de Retención de Rentas de 2da Categoría con método canónico Benoit Blanc (LEG, CLON, DIFF, QC, NOTA).
+[2026-09-11T08:02:30-05:00] ESTADO: Completado con éxito.
+1. Calibración Forense de Plantillas (Consolas Letter Portrait):
+   - Truncamiento de números de certificado a su clave corta canónica (ej. '002').
+   - Detección y asignación automática al partícipe principal en copropiedades ('JUAN RICARDO GALLO PIZARRO').
+   - Tipografía exacta Consolas (14pt títulos, 12pt cuerpo/totales en EECC, 11pt cuerpo en Retención, 9pt tabla).
+   - Pie de página corporativo azul #3333ff con la nueva dirección oficial en San Isidro y línea divisoria negra sobre el footer en EECC.
+   - Caja de totales sombreada #f8fafc con borde sólido en EECC.
+   - Firma oficial de Ricardo Gallo calibrada con solapamiento milimétrico sobre el nombre impreso (margin-bottom: -22pt, z-index: 2, fondo PNG transparente RGBA) garantizando documento estricto de 1 sola página.
+2. Controles Operativos Dinámicos en React UI (InversionistasPage.tsx):
+   - Inserción de campos globales en la barra de acciones: 'F. Op' (Fecha de Operación) y 'TC' (Tipo de Cambio USD/PEN para liquidación de retenciones en moneda extranjera).
+   - Generación de HTML dinámico sincronizado en los visores Side-by-Side y descargas PDF individuales / masivas en ZIP.
+3. Actualización de Backend FastAPI (routers/inversionistas.py):
+   - Endpoints /retenciones/{id_fondo}/{fecha_fin} y /enviar-reportes actualizados con soporte para fecha_operacion y tipo_cambio.
+   - Inserción de helpers extract_cert_number, get_principal_inversionista, format_date_custom, format_num_or_dash.
+4. Control de Calidad y Despliegue:
+   - Python syntax py_compile exit code 0.
+   - Vite & TypeScript Build: npm run build exit code 0 limpio en 3.56s.
 ================================================================================
 

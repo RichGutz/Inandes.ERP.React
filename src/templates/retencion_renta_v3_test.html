@@ -116,19 +116,13 @@
 
         .signature-area {
             text-align: center;
-            margin-top: 25px;
-            margin-bottom: 25px;
-            position: relative;
+            margin-top: 30px;
+            margin-bottom: 30px;
         }
 
         .signature-img {
-            width: 151.5pt;
-            height: auto;
-            max-height: 62pt;
-            margin-bottom: -22pt;
-            position: relative;
-            z-index: 2;
-            display: inline-block;
+            max-height: 75px;
+            margin-bottom: 4px;
         }
 
         .sig-name {
@@ -184,7 +178,7 @@
             <tr>
                 <td style="width: 50%;"></td>
                 <td class="logo-container" style="width: 50%;">
-                    <img src="{{ logo_b64 if logo_b64 else ('file:///' + logo_path.replace('\\', '/')) }}" alt="Logo Inandes" />
+                    <img src="file:///{{ logo_path }}" alt="Logo Inandes" />
                 </td>
             </tr>
         </table>
@@ -230,7 +224,7 @@
     </div>
 
     <div class="signature-area">
-        <img class="signature-img" src="{{ firma_b64 if firma_b64 else ('file:///' + firma_path.replace('\\', '/')) }}" alt="Firma Ricardo Gallo" /><br>
+        <img class="signature-img" src="file:///{{ firma_path }}" alt="Firma Ricardo Gallo" /><br>
         <span class="sig-name">JUAN RICARDO GALLO PIZARRO</span><br>
         <span class="sig-role">Gerente General</span><br>
         <span class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</span>
