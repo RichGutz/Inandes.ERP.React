@@ -411,6 +411,12 @@ def get_principal_inversionista(nombre_inv: str) -> str:
             return nombre_inv.split(sep)[0].strip()
     return nombre_inv.strip()
 
+def clean_fund_title(name: str) -> str:
+    if not name:
+        return ""
+    import re
+    return re.sub(r'^(FDO\.?|FONDO)\s+', '', str(name), flags=re.IGNORECASE).strip()
+
 def format_date_custom(d_str: str, uppercase=True) -> str:
     if not d_str:
         return ""
@@ -501,7 +507,7 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
             num_cuotas = cap_final / valor_cuota if valor_cuota > 0 else cap_final
 
             cert_data = {
-                'fondo_nombre': nombre_fondo,
+                'fondo_nombre': clean_fund_title(nombre_fondo),
                 'id_certificado': cid,
                 'id_certificado_short': cid_short,
                 'fecha_inicio_str': format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True),
@@ -644,7 +650,7 @@ def get_retenciones_pdf(
             cert_item = {
                 'num_certificado': cid,
                 'id_certificado_short': cid_short,
-                'nombre_fondo': nombre_fondo,
+                'nombre_fondo': clean_fund_title(nombre_fondo),
                 'nombres_participes': inversionista,
                 'dni_participes': inv_details['dni'],
                 'direccion_fiscal': inv_details['direccion'],
@@ -857,7 +863,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
 
             # 1. Generar EECC PDF
             cert_eecc_data = {
-                'fondo_nombre': nombre_fondo,
+                'fondo_nombre': clean_fund_title(nombre_fondo),
                 'fecha_inicio_str': format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True),
                 'fecha_fin_str': format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True),
                 'inversionista_nombre': inversionista,
@@ -908,7 +914,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 cert_ret_item = {
                     'num_certificado': cid,
                     'id_certificado_short': cid_short,
-                    'nombre_fondo': nombre_fondo,
+                    'nombre_fondo': clean_fund_title(nombre_fondo),
                     'nombres_participes': inversionista,
                     'dni_participes': inv_info['dni'],
                     'direccion_fiscal': inv_info['direccion'],

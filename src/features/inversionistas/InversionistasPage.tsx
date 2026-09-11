@@ -456,11 +456,27 @@ export const InversionistasPage: React.FC = () => {
     return `${txt.trim().toLowerCase()} con ${cc}`;
   };
 
-  const formatDateDisplayDoc = (dStr: string) => {
+  const formatDateDisplayDoc = (dStr: string, uppercase = true) => {
     if (!dStr) return '';
-    const parts = dStr.split('-');
-    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    const clean = dStr.split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts;
+      const mesesMap: Record<string, string> = {
+        '01': 'ENE', '02': 'FEB', '03': 'MAR', '04': 'ABR',
+        '05': 'MAY', '06': 'JUN', '07': 'JUL', '08': 'AGO',
+        '09': 'SET', '10': 'OCT', '11': 'NOV', '12': 'DIC'
+      };
+      let mesTxt = mesesMap[m] || m;
+      if (!uppercase) mesTxt = mesTxt.toLowerCase();
+      return `${d}-${mesTxt}-${y}`;
+    }
     return dStr;
+  };
+
+  const cleanFundTitleDoc = (name: string): string => {
+    if (!name) return '';
+    return name.replace(/^(FDO\.?|FONDO)\s+/i, '').trim();
   };
 
   const FUND_ORDER_PRIORITY: Record<string, number> = {
@@ -666,8 +682,8 @@ export const InversionistasPage: React.FC = () => {
 
     return {
       fondo_nombre: fondoNombre,
-      fecha_inicio_str: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
-      fecha_fin_str: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
+      fecha_inicio_str: formatDateDisplayDoc(e.fecha_periodo_origen || fStart, true),
+      fecha_fin_str: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd, true),
       inversionista_nombre: inversionista,
       id_certificado: cid,
       id_certificado_short: cidShort,
@@ -712,8 +728,8 @@ export const InversionistasPage: React.FC = () => {
       direccion_fiscal: invDetails.direccion,
       monto_ir_pen_num: irPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       monto_ir_pen_letras: numeroALetrasDoc(irPen),
-      f_inicio: formatDateDisplayDoc(e.fecha_periodo_origen || fStart),
-      f_fin: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd),
+      f_inicio: formatDateDisplayDoc(e.fecha_periodo_origen || fStart, false),
+      f_fin: formatDateDisplayDoc(e.fecha_periodo_fin || fEnd, false),
       moneda: moneda,
       base_retencion: Number(e.interes_generado_bruto || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       fecha_operacion: fOpDate,
@@ -766,7 +782,7 @@ export const InversionistasPage: React.FC = () => {
     <table><tr><td class="logo-container"><div class="logo-inandes-img"></div></td></tr></table>
   </div>
   <div class="title-box">
-    <h1>ESTADO DE CUENTA DEL CERTIFICADO N° ${row.id_certificado_short} DEL FONDO ${row.fondo_nombre}<br>– FONDO DE INVERSION PRIVADO</h1>
+    <h1>ESTADO DE CUENTA DEL CERTIFICADO N° ${row.id_certificado_short} DEL FONDO<br>${cleanFundTitleDoc(row.fondo_nombre)} – FONDO DE INVERSION PRIVADO</h1>
     <h2>DEL ${row.fecha_inicio_str} AL ${row.fecha_fin_str}</h2>
   </div>
   <div class="client-info">
@@ -847,10 +863,10 @@ export const InversionistasPage: React.FC = () => {
     <table><tr><td class="logo-container"><div class="logo-inandes-img"></div></td></tr></table>
   </div>
   <div class="title-box">
-    <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA<br>DEL CERTIFICADO N° ${cert.id_certificado_short} DEL FONDO ${cert.nombre_fondo}<br>– FONDO DE INVERSION PRIVADO</h1>
+    <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA<br>DEL CERTIFICADO N° ${cert.id_certificado_short} DEL FONDO<br>${cleanFundTitleDoc(cert.nombre_fondo)} – FONDO DE INVERSION PRIVADO</h1>
   </div>
   <div class="content">
-    <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>${cert.nombre_fondo} – FONDO DE INVERSION PRIVADO</strong>.</p>
+    <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>${cleanFundTitleDoc(cert.nombre_fondo)} – FONDO DE INVERSION PRIVADO</strong>.</p>
     <p class="certifica-title">CERTIFICA QUE:</p>
     <p>A Don(ña) <strong>${cert.nombres_participes}</strong>, identificado(a) con DNI N° <strong>${cert.dni_participes}</strong>, con domicilio fiscal en <strong>${cert.direccion_fiscal}</strong>, se le ha efectuado la retención definitiva de PEN <strong>${cert.monto_ir_pen_num}</strong> (<strong>${cert.monto_ir_pen_letras} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>${cert.f_inicio}</strong> al <strong>${cert.f_fin}</strong>, conforme al siguiente detalle:</p>
     <table class="resumen-table">

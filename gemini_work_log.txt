@@ -752,5 +752,16 @@ RESULTADO:
 3. Control de Calidad (QC):
    - Test de simulacion Python: scripts/test_matching_qc.py (Exit Code 0).
    - Build Vite/TypeScript: npm run build (Exit Code 0).
+[2026-09-11T11:32:00-05:00] TAREA: Calibrar títulos y formato de fechas en EECC y Retenciones (InversionistasPage.tsx, backend/routers/inversionistas.py y plantillas HTML).
+[2026-09-11T11:32:30-05:00] ESTADO: Completado con exito.
+1. Ajuste de Títulos:
+   - Removido el prefijo redundante 'FDO' / 'FONDO' en la interpolación del nombre del fondo ('DEL FONDO NSG MIPYME PEN 01' en lugar de 'DEL FONDO FDO...').
+   - Fusionadas la segunda y tercera línea del título en una sola línea continua ('NSG MIPYME PEN 01 – FONDO DE INVERSION PRIVADO').
+2. Formato de Fechas (3 letras):
+   - Títulos y encabezados en mayúsculas: 'DEL 01-ENE-2026 AL 28-FEB-2026'.
+   - Párrafos legales de texto en minúsculas: 'del 01-ene-2026 al 28-feb-2026'.
+3. Control de Calidad (QC):
+   - Py_compile backend routers: Exit Code 0.
+   - Build Vite/TypeScript: npm run build Exit Code 0 en 8.78s.
 ================================================================================
 
