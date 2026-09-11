@@ -725,9 +725,9 @@ export const InversionistasPage: React.FC = () => {
   <meta charset="UTF-8">
   <title>Documento de Retención</title>
   <style>
-    @page { size: letter portrait; margin: 0.45in 0.8in 0.4in 0.8in; }
-    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.0pt; line-height: 1.32; color: #000000; margin: 0; padding: 0; }
-    .header { width: 100%; margin-bottom: 12px; }
+    @page { size: letter portrait; margin: 0.60in 0.85in 0.50in 0.85in; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.0pt; line-height: 1.35; color: #000000; margin: 0; padding: 0; }
+    .header { width: 100%; margin-bottom: 16px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: top; border: none; }
     .logo-container { width: 100%; text-align: right; }
@@ -735,19 +735,20 @@ export const InversionistasPage: React.FC = () => {
     .title-box { text-align: center; margin-bottom: 18px; }
     .title-box h1 { font-family: 'Consolas', 'Courier New', monospace; font-size: 13.0pt; font-weight: bold; color: #000000; margin: 0; line-height: 1.35; text-transform: uppercase; }
     .content { text-align: justify; margin-bottom: 14px; }
-    .content p { margin: 8px 0; font-size: 11.0pt; line-height: 1.35; }
+    .content p { margin: 9px 0; font-size: 11.0pt; line-height: 1.38; }
     .certifica-title { font-weight: bold; color: #000000; margin: 12px 0 6px 0 !important; font-size: 11.0pt; }
     .resumen-table { width: 100%; border-collapse: collapse; font-size: 9.0pt; margin: 14px 0 14px 0; }
-    .resumen-table th { font-family: 'Consolas', 'Courier New', monospace; background-color: #334155; color: #ffffff; padding: 6px 4px; text-align: center; font-weight: bold; border: 1px solid #334155; font-size: 9.0pt; }
-    .resumen-table td { font-family: 'Consolas', 'Courier New', monospace; padding: 6px 4px; text-align: center; border: 1px solid #cbd5e1; font-size: 9.0pt; color: #0f172a; }
-    .legal-text { margin-top: 14px !important; margin-bottom: 14px !important; font-size: 11.0pt; color: #000000; }
-    .signature-area { text-align: center; margin-top: 14px; margin-bottom: 14px; width: 100%; }
+    .resumen-table th { font-family: 'Consolas', 'Courier New', monospace; background-color: #334155; color: #ffffff; padding: 6.5px 4px; text-align: center; font-weight: bold; border: 1px solid #334155; font-size: 9.0pt; }
+    .resumen-table td { font-family: 'Consolas', 'Courier New', monospace; padding: 6.5px 4px; text-align: center; border: 1px solid #cbd5e1; font-size: 9.0pt; color: #0f172a; }
+    .legal-text { margin-top: 14px !important; margin-bottom: 16px !important; font-size: 11.0pt; color: #000000; }
+    .signature-area { text-align: center; margin-top: 16px; margin-bottom: 16px; width: 100%; }
     .signature-wrapper { position: relative; display: inline-block; text-align: center; margin: 0 auto; }
-    .firma-inandes-img { display: block; margin: 0 auto -24pt auto; width: 150pt; height: 62pt; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: center; position: relative; z-index: 2; }
-    .sig-name { font-family: 'Consolas', 'Courier New', monospace; font-weight: bold; font-size: 10.5pt; color: #0f172a; position: relative; z-index: 1; text-align: center; }
+    .firma-inandes-img { display: block; margin: 0 auto 0 auto; width: 145pt; height: 60pt; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: center; position: relative; z-index: 2; }
+    .sig-name { font-family: 'Consolas', 'Courier New', monospace; font-weight: bold; font-size: 10.5pt; color: #0f172a; position: relative; z-index: 1; text-align: center; margin-top: 2px; }
     .sig-role { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; margin-top: 3px; }
     .sig-company { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; }
-    .footer { margin-top: 18px; text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
+    .footer-line { width: 100%; border-top: 0.75pt solid #000000; margin-top: 20px; margin-bottom: 10px; }
+    .footer { text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
     .footer-company { font-weight: bold; font-size: 9.0pt; margin: 0 0 2px 0; color: #3333ff; }
     .footer-address, .footer-contact { margin: 1px 0; font-size: 10.0pt; color: #3333ff; }
   </style>
@@ -797,6 +798,7 @@ export const InversionistasPage: React.FC = () => {
     <div class="sig-role">Gerente General</div>
     <div class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
   </div>
+  <div class="footer-line"></div>
   <div class="footer">
     <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
     <p class="footer-address">Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima</p>
