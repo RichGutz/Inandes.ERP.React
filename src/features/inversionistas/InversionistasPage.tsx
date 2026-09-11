@@ -170,6 +170,7 @@ export const InversionistasPage: React.FC = () => {
   // Canales de Envío en Tab C (Email y WhatsApp) y Parámetros Globales (Fecha Operación y TC)
   const [docFechaOperacion, setDocFechaOperacion] = useState<string>('2026-09-10');
   const [docTipoCambio, setDocTipoCambio] = useState<number>(3.4526);
+  const [docRegistrarLedger, setDocRegistrarLedger] = useState<boolean>(true);
   const [docSendEmail, setDocSendEmail] = useState<boolean>(true);
   const [docSendWhatsapp, setDocSendWhatsapp] = useState<boolean>(true);
   const [docSendingNotifications, setDocSendingNotifications] = useState<boolean>(false);
@@ -1219,19 +1220,40 @@ export const InversionistasPage: React.FC = () => {
       return;
     }
 
-    if (!docSendEmail && !docSendWhatsapp) {
-      alert("Debes seleccionar al menos un canal de envio (Email o WhatsApp).");
+    if (!docSendEmail && !docSendWhatsapp && !docRegistrarLedger) {
+      alert("Debes seleccionar al menos un canal de envio (Email o WhatsApp) o marcar 'Registrar en Ledger'.");
       return;
     }
 
     setDocSendingNotifications(true);
-    setDocNotificationStatus("Iniciando despacho masivo...");
+    setDocNotificationStatus("Iniciando operacion...");
 
     let emailSentCount = 0;
     let waSentCount = 0;
     const API_BASE = getApiBaseUrl();
 
     try {
+      // 1. Persistencia Inmutable en Ledger (crm_certificados_eventos) si el checkbox está activo
+      if (docRegistrarLedger && targetEvents.length > 0) {
+        setDocNotificationStatus(`Registrando Fecha de Operacion (${docFechaOperacion}) y TC (${docTipoCambio}) en Ledger...`);
+        for (const ev of targetEvents) {
+          if (ev.id_evento) {
+            const existingPayload = ev.payload_asiento || {};
+            await supabase.from('crm_certificados_eventos').update({
+              payload_asiento: {
+                ...existingPayload,
+                fecha_operacion: docFechaOperacion,
+                tipo_cambio: Number(docTipoCambio || 3.4526),
+                registrado_el: new Date().toISOString()
+              },
+              fecha_pago_real: docFechaOperacion,
+              estado_pago: 'pagado'
+            }).eq('id_evento', ev.id_evento);
+          }
+        }
+      }
+
+      // 2. Despacho por Canales (si estan seleccionados)
       for (let i = 0; i < targetEvents.length; i++) {
         const e = targetEvents[i];
         const eeccData = getEeccRowData(e);
@@ -3300,6 +3322,16 @@ export const InversionistasPage: React.FC = () => {
                       title="Tipo de Cambio USD/PEN para Certificado de Retención"
                     />
                   </div>
+
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] cursor-pointer bg-white dark:bg-[#1e293b] px-2.5 py-1 rounded-lg border border-[#e2e8f0] dark:border-[#334155] shadow-xs hover:border-indigo-400 transition-colors" title="Registra y congela la Fecha de Operación y el TC en todos los eventos del corte en el Ledger (crm_certificados_eventos)">
+                    <input
+                      type="checkbox"
+                      checked={docRegistrarLedger}
+                      onChange={(e) => setDocRegistrarLedger(e.target.checked)}
+                      className="accent-[#4f46e5] cursor-pointer"
+                    />
+                    <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-black">💾 Registrar en Ledger</span>
+                  </label>
                 </div>
 
                 <span className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8] uppercase">Canales de Envio:</span>
