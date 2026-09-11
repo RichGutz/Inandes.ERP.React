@@ -209,7 +209,9 @@
                     <th>Base Imponible</th>
                     <th>Tasa (%)</th>
                     <th>Impuesto<br>Retenido ({{ cert.moneda }})</th>
+                    {% if cert.moneda == 'USD' %}
                     <th>TC</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -219,7 +221,9 @@
                     <td>{{ cert.base_imponible_num }}</td>
                     <td>{{ cert.tasa_pct_display }}</td>
                     <td>{{ cert.monto_ir_moneda_num }}</td>
+                    {% if cert.moneda == 'USD' %}
                     <td>{{ cert.tc_display }}</td>
+                    {% endif %}
                 </tr>
             </tbody>
         </table>

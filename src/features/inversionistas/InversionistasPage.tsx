@@ -631,6 +631,7 @@ export const InversionistasPage: React.FC = () => {
       base_retencion: Number(e.interes_generado_bruto || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       fecha_operacion: fOpDate,
       tipo_cambio_display: moneda === 'USD' ? `PEN ${TC_USD_PEN.toFixed(4)}` : '-',
+      monto_ir_moneda_num: impuestoRaw.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       impuestos_renta: impuestoRaw
     };
   };
@@ -769,7 +770,7 @@ export const InversionistasPage: React.FC = () => {
           <th>Base Imponible</th>
           <th>Tasa (%)</th>
           <th>Impuesto<br>Retenido (${cert.moneda})</th>
-          <th>TC</th>
+          ${cert.moneda === 'USD' ? '<th>TC</th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -778,8 +779,8 @@ export const InversionistasPage: React.FC = () => {
           <td>${cert.moneda}</td>
           <td>${cert.base_retencion}</td>
           <td>5.00 %</td>
-          <td>${cert.monto_ir_pen_num}</td>
-          <td>${cert.tipo_cambio_display}</td>
+          <td>${cert.monto_ir_moneda_num}</td>
+          ${cert.moneda === 'USD' ? `<td>${cert.tipo_cambio_display}</td>` : ''}
         </tr>
       </tbody>
     </table>
