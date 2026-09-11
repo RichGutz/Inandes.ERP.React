@@ -649,15 +649,24 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 4. Documentación: Registrada en Obsidian/Mudanza.Contabo/21.Herramientas.Auditoria.Forense.Device.Vault.md.
 
 
-[2026-09-10 15:37:00-05:00] MODERNIZACION TAB C (EECC / RETENCIONES) SIDE-BY-SIDE:
-1. Replicacion exacta de UI estandarizada de Certificados en Tab C de InversionistasPage.tsx:
-   - Omnibox estandarizado con busqueda multi-criterio en tiempo real (DNI, RUC, Inversionista, Contrato, Fondo).
-   - Selector de Fondos con pills ordenados de izq. a der. segun prioridad canonica (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01).
-   - Selector de Periodo integrado al final de la fila de filtros (Ano, Ciclo Bimestre/Trimestre, N° Periodo).
-   - Doble columna de checkboxes paralelos: RET (Retencion 5% IR) y EECC (Estado de Cuenta) con sus respectivos master headers.
-   - Barra de acciones con canales conectados: Checkboxes Email y WhatsApp, Enviar a Seleccion, Descargar Excel y Descargar ZIP (PDFs en memoria con JSZip).
-   - Visor Acordeon por fila que expande directamente debajo los dos documentos (EECC a la izquierda, Retencion a la derecha) con previsualizacion y botones de descarga individual.
-2. Control de Calidad:
-   - npm run build exit code 0 limpio en 3.18s.
+[2026-09-11 12:45:00-05:00] SESION CERRADA EXITOSAMENTE (WHATSAPP BOT ON-DEMAND, TC INMUTABLE Y SEEDING):
+1. Bot de WhatsApp Determinista Multi-Periodo (FastAPI/Uvicorn puerto 8085):
+   - Protocolo de seguridad 3FA (DNI anti-link -> Direccion fiscal -> Moneda de inversion).
+   - Menu de Autoservicio (EECC, Retenciones 5% IR, Ultimo Abono, Asesor Designado con link wa.me, Salir).
+   - Generacion de PDFs Vectoriales ReportLab en memoria con formatos oficiales (titulos fusionados sin 'FDO', meses abreviados en 3 letras ENE/ene, firma facsimilar de Gallo).
+   - Submenus de periodos historicos a pedido: Permite al participe seleccionar y descargar cualquier cierre contable pasado individual o en lote.
+   - Microservicio desplegado y verificado en Contabo VPS ('inandes_wa_bot:8085').
+2. Persistencia Inmutable de Fecha de Operacion y Tipo de Cambio (TC) en Ledger:
+   - Diagnostico de la volatilidad fiscal de TC para SUNAT (5% IR 2da Cat en fondos USD).
+   - Nuevo Checkbox en Tab C de InversionistasPage.tsx: '[ ] Registrar en Ledger'.
+   - Al marcarlo, formaliza y congela en 'crm_certificados_eventos.payload_asiento' { tipo_cambio, fecha_operacion, fecha_pago_real, registrado_el }.
+   - El Bot de WhatsApp consume estos valores congelados de forma determinista.
+3. Hoja de Ruta y Plantilla para Seeding de Periodos Historicos (< 31-AGO-2026):
+   - Generada la plantilla Excel oficial: 'Exceles.Ricardo.Gallo/PLANTILLA_FECHAS_OPERACION_Y_TC_HISTORICOS.xlsx' con los 74 periodos/fondos listados.
+   - Documentacion detallada en 'Obsidian/Inandes.Inversionistas.React/00.A.INVERSIONISTAS.md' (Seccion 5 y Seccion 6 con la hoja de ruta paso a paso).
+4. Control de Calidad y Despliegue:
+   - Branch tags creados: 'BENOIT_BOT_HISTORICOS_PRE', 'BENOIT_REGISTRAR_FECHA_OP_PRE'.
+   - Build React verificado ('npm run build' exit code 0 en 5.04s).
+   - Cambios subidos a 'origin/main' (commits b5c8d0a, 2639d65, a798237, d30ec80).
 ================================================================================
 
