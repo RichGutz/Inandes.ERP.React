@@ -775,5 +775,14 @@ RESULTADO:
 3. Compilación y Despliegue:
    - Python py_compile: Exit Code 0.
    - Vite npm run build: Exit Code 0 en 4.66s.
+[2026-09-11T11:55:00-05:00] TAREA: Incorporar pausas de seguridad anti-ban de Meta (WhatsApp) y límite de tasa SMTP (Email) en despacho masivo (InversionistasPage.tsx y backend/routers/inversionistas.py).
+[2026-09-11T11:55:30-05:00] ESTADO: Completado con exito.
+1. Pausas Implementadas:
+   - Canal WhatsApp: Pausa aleatoria con jitter de 3.0s a 4.5s entre destinatarios consecutivos para simular comportamiento humano y proteger la cuenta contra bloqueos anti-spam de Meta.
+   - Canal Email: Pausa de 1.2s a 2.0s entre peticiones para respetar los límites de conexión de Gmail SMTP.
+   - Feedback UI: Mensaje en tiempo real informando la pausa de seguridad al usuario mientras avanza el lote.
+2. Control de Calidad y Compilación:
+   - Python py_compile: Exit Code 0.
+   - Vite npm run build: Exit Code 0 en 4.59s.
 ================================================================================
 

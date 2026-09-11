@@ -1278,6 +1278,19 @@ export const InversionistasPage: React.FC = () => {
           const okWa = await sendSingleWhatsAppText(phone, waMsg);
           if (okWa) waSentCount++;
         }
+
+        // Pausa de seguridad anti-spam Meta (WhatsApp) y límite de tasa SMTP (Email) entre envíos masivos
+        if (i < targetEvents.length - 1) {
+          if (docSendWhatsapp && phone) {
+            const pauseWaMs = 3000 + Math.floor(Math.random() * 1500); // 3.0s a 4.5s con jitter aleatorio
+            setDocNotificationStatus(`Pausa de seguridad anti-ban WhatsApp (${(pauseWaMs / 1000).toFixed(1)}s)...`);
+            await new Promise(res => setTimeout(res, pauseWaMs));
+          } else if (docSendEmail && emailDest) {
+            const pauseEmailMs = 1200 + Math.floor(Math.random() * 800); // 1.2s a 2.0s
+            setDocNotificationStatus(`Pausa de seguridad SMTP (${(pauseEmailMs / 1000).toFixed(1)}s)...`);
+            await new Promise(res => setTimeout(res, pauseEmailMs));
+          }
+        }
       }
 
       // Registro de Auditoría

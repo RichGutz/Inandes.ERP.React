@@ -978,6 +978,10 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             else:
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': msg})
 
+            if len(events) > 1:
+                import time
+                time.sleep(1.5)
+
         return {
             'status': 'ok',
             'total_procesados': len(events),
