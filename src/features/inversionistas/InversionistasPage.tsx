@@ -506,8 +506,13 @@ export const InversionistasPage: React.FC = () => {
   const INSTANCE_NAME = 'inandes_oficial';
 
   const sendSingleWhatsAppText = async (phone: string, text: string): Promise<boolean> => {
-    const cleanNumber = phone.startsWith('51') ? phone : `51${phone}`;
+    if (!phone) return false;
+    const digitsOnly = String(phone).replace(/\D/g, '');
+    if (!digitsOnly) return false;
+    const cleanNumber = digitsOnly.startsWith('51') ? digitsOnly : `51${digitsOnly}`;
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const res = await fetch(`${getEvolutionApiUrl()}/message/sendText/${INSTANCE_NAME}`, {
         method: 'POST',
         headers: {
@@ -517,10 +522,13 @@ export const InversionistasPage: React.FC = () => {
         body: JSON.stringify({
           number: cleanNumber,
           text: text
-        })
+        }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       return res.ok || res.status === 201;
-    } catch {
+    } catch (e) {
+      console.warn("Error enviando WhatsApp:", e);
       return false;
     }
   };
@@ -1224,18 +1232,23 @@ export const InversionistasPage: React.FC = () => {
         const emailDest = invDetails.email || invObj?.email || (e.payload_asiento?.email);
         if (docSendEmail && emailDest) {
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
             const resp = await fetch(`${API_BASE}/api/inversionistas/enviar-reportes`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
+                fecha_fin: fEnd,
+                id_certificado: eeccData.id_certificado,
+                cert_ids: [eeccData.id_certificado],
                 email: emailDest,
                 inversionista_nombre: eeccData.inversionista_nombre,
-                id_certificado: eeccData.id_certificado,
-                periodo_corte: fEnd,
-                moneda: eeccData.moneda,
-                monto_transferido: eeccData.monto_transferido
-              })
+                fecha_operacion: docFechaOperacion,
+                tipo_cambio: Number(docTipoCambio || 3.4526)
+              }),
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (resp.ok) emailSentCount++;
           } catch (emailErr) {
             console.warn(`Error enviando email a ${emailDest}:`, emailErr);

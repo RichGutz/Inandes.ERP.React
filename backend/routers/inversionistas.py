@@ -692,9 +692,15 @@ def get_retenciones_pdf(
 
 class EnviarReportesRequest(BaseModel):
     id_fondo: str = "TODOS"
-    fecha_fin: str = "2026-02-28"
+    fecha_fin: Optional[str] = "2026-02-28"
+    periodo_corte: Optional[str] = None
     cert_ids: Optional[List[str]] = None
+    id_certificado: Optional[str] = None
+    email: Optional[str] = None
     override_email: Optional[str] = None  # Para pruebas (redirige todos a este correo)
+    inversionista_nombre: Optional[str] = None
+    moneda: Optional[str] = None
+    monto_transferido: Optional[float] = None
     cc_email: Optional[str] = "rgutil@gmail.com"
     fecha_operacion: Optional[str] = None
     tipo_cambio: Optional[float] = None
@@ -710,17 +716,18 @@ def post_enviar_reportes(req: EnviarReportesRequest):
 
     try:
         supabase = get_supabase_client()
-        query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', req.fecha_fin)
+        target_f_fin = req.fecha_fin or req.periodo_corte or "2026-02-28"
+        query = supabase.table('crm_certificados_eventos').select('*').eq('fecha_periodo_fin', target_f_fin)
         res = query.execute()
 
         events = res.data or []
-        if req.id_fondo != 'TODOS':
+        target_certs = req.cert_ids or ([req.id_certificado] if req.id_certificado else None)
+        if target_certs:
+            events = [e for e in events if e.get('id_certificado') in target_certs or e.get('id_contrato') in target_certs]
+        elif req.id_fondo != 'TODOS':
             events = [e for e in events if e.get('id_certificado', '').startswith(req.id_fondo) or e.get('id_contrato', '').startswith(req.id_fondo)]
 
         events = [e for e in events if e.get('tipo_evento') in ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'aumento_capital']]
-
-        if req.cert_ids:
-            events = [e for e in events if e.get('id_certificado') in req.cert_ids or e.get('id_contrato') in req.cert_ids]
 
         if not events:
             raise HTTPException(status_code=404, detail="No se encontraron eventos contables para los parámetros indicados.")
@@ -840,7 +847,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             inversionista = get_principal_inversionista(raw_inv)
             inv_info = get_inv_info(inversionista, cid)
 
-            dest_email = req.override_email if req.override_email else inv_info['email']
+            dest_email = req.override_email if req.override_email else (req.email or inv_info['email'])
             if not dest_email:
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': 'Sin correo electrónico registrado'})
                 continue
