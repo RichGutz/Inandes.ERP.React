@@ -739,5 +739,18 @@ RESULTADO:
 4. Control de Calidad y Despliegue:
    - Python syntax py_compile exit code 0.
    - Vite & TypeScript Build: npm run build exit code 0 limpio en 3.56s.
+[2026-09-11T09:01:00-05:00] TAREA: Auditar y corregir circuito de matching y resolucion de destinatarios de WhatsApp y Correo para Inversionistas (InversionistasPage.tsx y backend/routers/inversionistas.py).
+[2026-09-11T09:01:30-05:00] ESTADO: Completado con exito.
+1. Diagnostico Forense del Incidente:
+   - La funcion previa evaluaba 'n.includes(n1) && n.includes(a1)' (ej. 'JUAN' y 'GALLO').
+   - Al despachar notificaciones a 'JUAN RICARDO GALLO PIZARRO' (padre), coincidia anticipadamente con 'JUAN RICARDO GALLO GONZALES' (hijo), enviando el WhatsApp del padre al telefono del hijo.
+2. Cirugia Aplicada (Protocolo Benoit Blanc):
+   - Prioridad 1: Resolucion relacional exacta por ID de Contrato / Certificado (crm_contratos.id_inversionista_1).
+   - Prioridad 2: Resolucion exacta por Documento de Identidad (DNI/RUC).
+   - Prioridad 3: Resolucion exacta por Nombre Completo Normalizado (sin acentos, mayusculas limpias).
+   - Prioridad 4: Token matching estricto con validacion obligatoria de AMBOS apellidos (apellido_1 y apellido_2), impidiendo colisiones padre-hijo.
+3. Control de Calidad (QC):
+   - Test de simulacion Python: scripts/test_matching_qc.py (Exit Code 0).
+   - Build Vite/TypeScript: npm run build (Exit Code 0).
 ================================================================================
 

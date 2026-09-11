@@ -525,21 +525,100 @@ export const InversionistasPage: React.FC = () => {
     }
   };
 
-  const findInvDoc = (nombre: string) => {
-    if (!nombre) return { dni: '', direccion: 'Domicilio no registrado' };
-    const n = nombre.toUpperCase().trim();
-    for (const inv of inversionistas) {
-      const comp = (inv.nombre_completo || '').toUpperCase().trim();
-      if (comp && (n.includes(comp) || comp.includes(n))) {
-        return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
-      }
-      const n1 = (inv.nombre_1 || '').toUpperCase();
-      const a1 = (inv.apellido_1 || '').toUpperCase();
-      if (n1 && a1 && n.includes(n1) && n.includes(a1)) {
-        return { dni: inv.documento_identidad || '', direccion: inv.direccion_fiscal || 'Domicilio no registrado' };
+  const normalizeTextDoc = (str: string) => {
+    return (str || '')
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const findInvDoc = (nombre: string, contractId?: string) => {
+    if (!nombre && !contractId) return { dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
+
+    // 1. Prioridad Maxima: Vinculo Relacional por ID de Contrato / Certificado
+    if (contractId && contratosListAll && contratosListAll.length > 0) {
+      const ct = contratosListAll.find((c: any) => 
+        c.id_contrato === contractId || 
+        contractId.startsWith(c.id_contrato) ||
+        (c.id_contrato && contractId.includes(c.id_contrato))
+      );
+      if (ct && ct.id_inversionista_1) {
+        const invRel = inversionistas.find(inv => 
+          inv.id === ct.id_inversionista_1 || 
+          inv.codigo_inversionista === ct.id_inversionista_1 ||
+          inv.documento_identidad === ct.id_inversionista_1
+        );
+        if (invRel) {
+          return {
+            dni: invRel.documento_identidad || '',
+            direccion: invRel.direccion_fiscal || 'Domicilio no registrado',
+            telefono: invRel.telefono || (invRel as any).celular || '',
+            email: invRel.email || (invRel as any).correo_electronico || '',
+            inversionista: invRel
+          };
+        }
       }
     }
-    return { dni: '', direccion: 'Domicilio no registrado' };
+
+    if (!nombre) return { dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
+    const n = normalizeTextDoc(nombre);
+
+    // 2. Prioridad: Coincidencia Exacta por Documento de Identidad (DNI/RUC)
+    const invByDoc = inversionistas.find(inv => inv.documento_identidad && inv.documento_identidad.trim() === n);
+    if (invByDoc) {
+      return {
+        dni: invByDoc.documento_identidad || '',
+        direccion: invByDoc.direccion_fiscal || 'Domicilio no registrado',
+        telefono: invByDoc.telefono || (invByDoc as any).celular || '',
+        email: invByDoc.email || (invByDoc as any).correo_electronico || '',
+        inversionista: invByDoc
+      };
+    }
+
+    // 3. Prioridad: Coincidencia Exacta por Nombre Completo Normalizado
+    for (const inv of inversionistas) {
+      const comp = normalizeTextDoc(inv.nombre_completo || '');
+      const full1 = normalizeTextDoc(`${inv.nombre_1 || ''} ${inv.nombre_2 || ''} ${inv.apellido_1 || ''} ${inv.apellido_2 || ''}`);
+      const full2 = normalizeTextDoc(`${inv.apellido_1 || ''} ${inv.apellido_2 || ''} ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`);
+      const full3 = normalizeTextDoc(`${inv.apellido_1 || ''} ${inv.apellido_2 || ''}, ${inv.nombre_1 || ''} ${inv.nombre_2 || ''}`);
+
+      if (n === comp || n === full1 || n === full2 || n === full3) {
+        return {
+          dni: inv.documento_identidad || '',
+          direccion: inv.direccion_fiscal || 'Domicilio no registrado',
+          telefono: inv.telefono || (inv as any).celular || '',
+          email: inv.email || (inv as any).correo_electronico || '',
+          inversionista: inv
+        };
+      }
+    }
+
+    // 4. Prioridad: Coincidencia Estricta de Tokens con verificacion obligatoria de AMBOS apellidos
+    const nTokens = n.split(' ').filter(Boolean);
+    for (const inv of inversionistas) {
+      const a1 = normalizeTextDoc(inv.apellido_1 || '');
+      const a2 = normalizeTextDoc(inv.apellido_2 || '');
+      const n1 = normalizeTextDoc(inv.nombre_1 || '');
+
+      // Si el inversionista tiene segundo apellido registrado, DEBE coincidir obligatoriamente
+      if (a1 && n1 && nTokens.includes(a1) && nTokens.includes(n1)) {
+        if (a2 && !nTokens.includes(a2)) {
+          // No coincide el segundo apellido (evita colision padre vs hijo homonimo)
+          continue;
+        }
+        return {
+          dni: inv.documento_identidad || '',
+          direccion: inv.direccion_fiscal || 'Domicilio no registrado',
+          telefono: inv.telefono || (inv as any).celular || '',
+          email: inv.email || (inv as any).correo_electronico || '',
+          inversionista: inv
+        };
+      }
+    }
+
+    return { dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
   };
 
   const extractCertNumberDoc = (idStr: string) => {
@@ -607,14 +686,14 @@ export const InversionistasPage: React.FC = () => {
     const moneda = payload.moneda || fInfo.moneda || 'PEN';
     const rawInv = payload.inversionista || 'Inversionista';
     const inversionista = getPrincipalInversionistaDoc(rawInv);
-    const invDetails = findInvDoc(inversionista);
+    const cid = e.id_contrato || e.id_certificado;
+    const invDetails = findInvDoc(inversionista, cid);
+    const cidShort = extractCertNumberDoc(cid);
 
     const TC_USD_PEN = Number(docTipoCambio || 3.4526);
     const impuestoRaw = Number(e.impuestos_renta || 0);
     const irPen = moneda === 'USD' ? Math.round(impuestoRaw * TC_USD_PEN * 100) / 100 : Math.round(impuestoRaw * 100) / 100;
     const fOpDate = docFechaOperacion ? formatDateDisplayDoc(docFechaOperacion) : formatDateDisplayDoc(e.fecha_periodo_fin || fEnd);
-    const cid = e.id_contrato || e.id_certificado;
-    const cidShort = extractCertNumberDoc(cid);
 
     return {
       num_certificado: cid,
@@ -964,7 +1043,8 @@ export const InversionistasPage: React.FC = () => {
 
     docEventsFiltered.forEach(e => {
       const eecc = getEeccRowData(e);
-      const invDetails = findInvDoc(eecc.inversionista_nombre);
+      const cid = e.id_contrato || e.id_certificado;
+      const invDetails = findInvDoc(eecc.inversionista_nombre, cid);
       const row = ws.addRow([
         eecc.id_certificado,
         eecc.fondo_nombre,
@@ -1131,17 +1211,18 @@ export const InversionistasPage: React.FC = () => {
       for (let i = 0; i < targetEvents.length; i++) {
         const e = targetEvents[i];
         const eeccData = getEeccRowData(e);
-        const invDetails = findInvDoc(eeccData.inversionista_nombre);
-        const invObj = inversionistas.find(inv => 
-          (inv.documento_identidad && inv.documento_identidad === invDetails.dni) ||
+        const certId = e.id_contrato || e.id_certificado;
+        const invDetails = findInvDoc(eeccData.inversionista_nombre, certId);
+        const invObj = invDetails.inversionista || inversionistas.find(inv => 
+          (invDetails.dni && inv.documento_identidad === invDetails.dni) ||
           ((inv.nombre_completo || '').toUpperCase() === eeccData.inversionista_nombre.toUpperCase())
         );
 
         setDocNotificationStatus(`Enviando (${i + 1}/${targetEvents.length}): ${eeccData.inversionista_nombre}...`);
 
         // Canal Email
-        if (docSendEmail && (invObj?.email || (e.payload_asiento?.email))) {
-          const emailDest = invObj?.email || e.payload_asiento?.email;
+        const emailDest = invDetails.email || invObj?.email || (e.payload_asiento?.email);
+        if (docSendEmail && emailDest) {
           try {
             const resp = await fetch(`${API_BASE}/api/inversionistas/enviar-reportes`, {
               method: 'POST',
@@ -1162,7 +1243,7 @@ export const InversionistasPage: React.FC = () => {
         }
 
         // Canal WhatsApp
-        const phone = invObj?.telefono || (invObj as any)?.celular || (e.payload_asiento?.telefono);
+        const phone = invDetails.telefono || invObj?.telefono || (invObj as any)?.celular || (e.payload_asiento?.telefono);
         if (docSendWhatsapp && phone) {
           const waMsg = `Estimado(a) ${eeccData.inversionista_nombre},\n\nLe informamos que sus reportes contables correspondientes al cierre ${fEnd} del fondo ${eeccData.fondo_nombre} (Certificado N° ${eeccData.id_certificado}) ya se encuentran disponibles y formalizados.\n\n*Moneda:* ${eeccData.moneda}\n*Monto Liquidado / Transferido:* ${eeccData.moneda} ${eeccData.monto_transferido.toLocaleString('es-PE', { minimumFractionDigits: 2 })}\n\nGracias por su confianza en InAndes Grupo Financiero.`;
           const okWa = await sendSingleWhatsAppText(phone, waMsg);

@@ -725,26 +725,87 @@ def post_enviar_reportes(req: EnviarReportesRequest):
         if not events:
             raise HTTPException(status_code=404, detail="No se encontraron eventos contables para los parámetros indicados.")
 
-        # Cargar fondos e inversionistas
+        # Cargar fondos, contratos e inversionistas
         res_fondos = supabase.table('crm_fondos').select('*').execute()
         fondos_map = {f['id_fondo']: f for f in (res_fondos.data or [])}
 
+        res_contratos = supabase.table('crm_contratos').select('*').execute()
+        contratos_map = {c['id_contrato']: c for c in (res_contratos.data or [])}
+
         res_invs = supabase.table('crm_inversionistas').select('*').execute()
         invs_list = res_invs.data or []
+        invs_by_id = {r.get('id'): r for r in invs_list if r.get('id')}
+        invs_by_codigo = {r.get('codigo_inversionista'): r for r in invs_list if r.get('codigo_inversionista')}
+        invs_by_doc = {r.get('documento_identidad'): r for r in invs_list if r.get('documento_identidad')}
 
-        def get_inv_info(name_str):
+        def normalize_py(text: str) -> str:
+            import unicodedata
+            if not text: return ""
+            t = unicodedata.normalize('NFD', str(text).upper())
+            t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
+            return ' '.join(t.split())
+
+        def get_inv_info(name_str, contract_id=None):
+            # 1. Prioridad por Contrato
+            if contract_id:
+                ct = contratos_map.get(contract_id)
+                if not ct:
+                    for cid_key, c_val in contratos_map.items():
+                        if contract_id.startswith(cid_key) or cid_key in contract_id:
+                            ct = c_val
+                            break
+                if ct and ct.get('id_inversionista_1'):
+                    inv_rel = invs_by_id.get(ct['id_inversionista_1']) or invs_by_codigo.get(ct['id_inversionista_1']) or invs_by_doc.get(ct['id_inversionista_1'])
+                    if inv_rel:
+                        return {
+                            'email': inv_rel.get('email') or inv_rel.get('correo_electronico') or '',
+                            'dni': inv_rel.get('documento_identidad') or inv_rel.get('numero_documento') or 'S/D',
+                            'direccion': inv_rel.get('direccion_fiscal') or inv_rel.get('direccion') or 'Lima, Perú',
+                            'nombre_corto': inv_rel.get('nombre_1') or 'Estimado(a) Inversionista'
+                        }
+
             princ = get_principal_inversionista(name_str)
-            s = princ.strip().lower()
+            s_norm = normalize_py(princ)
+
+            # 2. Prioridad por DNI
+            if s_norm in invs_by_doc:
+                r = invs_by_doc[s_norm]
+                return {
+                    'email': r.get('email') or r.get('correo_electronico') or '',
+                    'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
+                    'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
+                    'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
+                }
+
+            # 3. Prioridad por Coincidencia Exacta de Nombre Completo
             for r in invs_list:
-                full = f"{r.get('nombre_1','')} {r.get('nombre_2','')} {r.get('apellido_1','')} {r.get('apellido_2','')}".strip().lower()
-                comp = (r.get('nombre_completo') or '').strip().lower()
-                if full == s or comp == s or (s and (s in full or s in comp)):
+                full1 = normalize_py(f"{r.get('nombre_1','')} {r.get('nombre_2','')} {r.get('apellido_1','')} {r.get('apellido_2','')}")
+                full2 = normalize_py(f"{r.get('apellido_1','')} {r.get('apellido_2','')} {r.get('nombre_1','')} {r.get('nombre_2','')}")
+                comp = normalize_py(r.get('nombre_completo') or '')
+                if s_norm == full1 or s_norm == full2 or s_norm == comp:
                     return {
                         'email': r.get('email') or r.get('correo_electronico') or '',
                         'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
                         'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
                         'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
                     }
+
+            # 4. Coincidencia Estricta por Tokens (validando obligatoriamente segundo apellido si existe)
+            s_tokens = s_norm.split()
+            for r in invs_list:
+                a1 = normalize_py(r.get('apellido_1') or '')
+                a2 = normalize_py(r.get('apellido_2') or '')
+                n1 = normalize_py(r.get('nombre_1') or '')
+                if a1 and n1 and a1 in s_tokens and n1 in s_tokens:
+                    if a2 and a2 not in s_tokens:
+                        continue
+                    return {
+                        'email': r.get('email') or r.get('correo_electronico') or '',
+                        'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
+                        'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
+                        'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
+                    }
+
             return {'email': '', 'dni': 'S/D', 'direccion': 'Lima, Perú', 'nombre_corto': 'Estimado(a) Inversionista'}
 
         env = Environment(loader=FileSystemLoader(templates_dir))
@@ -777,7 +838,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
 
             raw_inv = payload.get('inversionista') or 'Inversionista'
             inversionista = get_principal_inversionista(raw_inv)
-            inv_info = get_inv_info(inversionista)
+            inv_info = get_inv_info(inversionista, cid)
 
             dest_email = req.override_email if req.override_email else inv_info['email']
             if not dest_email:
