@@ -7,16 +7,13 @@
     <style>
         @page {
             size: letter portrait;
-            margin: 0.75in 1.0in 0.65in 1.0in;
-            @bottom-center {
-                content: none;
-            }
+            margin: 0.45in 0.8in 0.4in 0.8in;
         }
 
         body {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 11.0pt;
-            line-height: 1.35;
+            line-height: 1.32;
             color: #000000;
             margin: 0;
             padding: 0;
@@ -24,22 +21,17 @@
 
         .header {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .header table {
             width: 100%;
-            border: none;
-        }
-
-        .header td {
-            vertical-align: top;
-            border: none;
+            border-collapse: collapse;
         }
 
         .logo-container {
             text-align: right;
-            padding-top: 0px;
+            padding-right: 0;
         }
 
         .logo-container img {
@@ -49,12 +41,12 @@
 
         .title-box {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 18px;
         }
 
         .title-box h1 {
             font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 14.0pt;
+            font-size: 13.0pt;
             font-weight: bold;
             color: #000000;
             margin: 0;
@@ -64,19 +56,19 @@
 
         .content {
             text-align: justify;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
 
         .content p {
-            margin: 12px 0;
+            margin: 8px 0;
             font-size: 11.0pt;
-            line-height: 1.4;
+            line-height: 1.35;
         }
 
         .certifica-title {
             font-weight: bold;
-            color: #0f172a;
-            margin: 16px 0 8px 0 !important;
+            color: #000000;
+            margin: 12px 0 6px 0 !important;
             font-size: 11.0pt;
         }
 
@@ -84,14 +76,14 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 9.0pt;
-            margin: 22px 0 22px 0;
+            margin: 14px 0 14px 0;
         }
 
         .resumen-table th {
             font-family: 'Consolas', 'Courier New', monospace;
             background-color: #334155;
             color: #ffffff;
-            padding: 7px 4px;
+            padding: 6px 4px;
             text-align: center;
             font-weight: bold;
             border: 1px solid #334155;
@@ -100,7 +92,7 @@
 
         .resumen-table td {
             font-family: 'Consolas', 'Courier New', monospace;
-            padding: 7px 4px;
+            padding: 6px 4px;
             text-align: center;
             border: 1px solid #cbd5e1;
             font-size: 9.0pt;
@@ -108,50 +100,62 @@
         }
 
         .legal-text {
-            margin-top: 22px !important;
-            margin-bottom: 25px !important;
+            margin-top: 14px !important;
+            margin-bottom: 14px !important;
             font-size: 11.0pt;
             color: #000000;
         }
 
         .signature-area {
             text-align: center;
-            margin-top: 25px;
-            margin-bottom: 25px;
+            margin-top: 14px;
+            margin-bottom: 14px;
+            width: 100%;
+        }
+
+        .signature-wrapper {
             position: relative;
+            display: inline-block;
+            text-align: center;
+            margin: 0 auto;
         }
 
         .signature-img {
-            width: 151.5pt;
+            display: block;
+            margin: 0 auto -24pt auto;
+            width: 150pt;
             height: auto;
-            max-height: 62pt;
-            margin-bottom: -22pt;
             position: relative;
             z-index: 2;
-            display: inline-block;
         }
 
         .sig-name {
             font-family: 'Consolas', 'Courier New', monospace;
             font-weight: bold;
-            font-size: 10.0pt;
+            font-size: 10.5pt;
             color: #0f172a;
+            position: relative;
+            z-index: 1;
+            text-align: center;
         }
 
         .sig-role {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 10.0pt;
             color: #64748b;
+            text-align: center;
+            margin-top: 3px;
         }
 
         .sig-company {
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 10.0pt;
             color: #64748b;
+            text-align: center;
         }
 
         .footer {
-            margin-top: 35px;
+            margin-top: 18px;
             text-align: center;
             color: #3333ff;
             font-size: 10.0pt;
@@ -191,7 +195,7 @@
     </div>
 
     <div class="title-box">
-        <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA DEL<br>CERTIFICADO N° {{ cert.id_certificado_short }} DEL FONDO {{ cert.nombre_fondo }} – FONDO DE<br>INVERSION PRIVADO</h1>
+        <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA<br>DEL CERTIFICADO N° {{ cert.id_certificado_short }} DEL FONDO {{ cert.nombre_fondo }}<br>– FONDO DE INVERSION PRIVADO</h1>
     </div>
 
     <div class="content">
@@ -234,10 +238,12 @@
     </div>
 
     <div class="signature-area">
-        <img class="signature-img" src="{{ firma_b64 if firma_b64 else ('file:///' + firma_path.replace('\\', '/')) }}" alt="Firma Ricardo Gallo" /><br>
-        <span class="sig-name">JUAN RICARDO GALLO PIZARRO</span><br>
-        <span class="sig-role">Gerente General</span><br>
-        <span class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</span>
+        <div class="signature-wrapper">
+            <img class="signature-img" src="{{ firma_b64 if firma_b64 else ('file:///' + firma_path.replace('\\', '/')) }}" alt="Firma Ricardo Gallo" />
+            <div class="sig-name">JUAN RICARDO GALLO PIZARRO</div>
+        </div>
+        <div class="sig-role">Gerente General</div>
+        <div class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
     </div>
 
     <div class="footer">

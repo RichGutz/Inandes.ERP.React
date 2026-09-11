@@ -725,28 +725,29 @@ export const InversionistasPage: React.FC = () => {
   <meta charset="UTF-8">
   <title>Documento de Retención</title>
   <style>
-    @page { size: letter portrait; margin: 0.75in 1.0in 0.65in 1.0in; }
-    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.0pt; line-height: 1.35; color: #000000; margin: 0; padding: 0; }
-    .header { width: 100%; margin-bottom: 20px; }
+    @page { size: letter portrait; margin: 0.45in 0.8in 0.4in 0.8in; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.0pt; line-height: 1.32; color: #000000; margin: 0; padding: 0; }
+    .header { width: 100%; margin-bottom: 12px; }
     .header table { width: 100%; border: none; }
     .header td { vertical-align: top; border: none; }
     .logo-container { width: 100%; text-align: right; }
     .logo-inandes-img { display: block; width: 130px; height: 50px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
-    .title-box { text-align: center; margin-bottom: 25px; }
-    .title-box h1 { font-family: 'Consolas', 'Courier New', monospace; font-size: 14.0pt; font-weight: bold; color: #000000; margin: 0; line-height: 1.35; text-transform: uppercase; }
-    .content { text-align: justify; margin-bottom: 20px; }
-    .content p { margin: 12px 0; font-size: 11.0pt; line-height: 1.4; }
-    .certifica-title { font-weight: bold; color: #0f172a; margin: 16px 0 8px 0 !important; font-size: 11.0pt; }
-    .resumen-table { width: 100%; border-collapse: collapse; font-size: 9.0pt; margin: 22px 0 22px 0; }
-    .resumen-table th { font-family: 'Consolas', 'Courier New', monospace; background-color: #334155; color: #ffffff; padding: 7px 4px; text-align: center; font-weight: bold; border: 1px solid #334155; font-size: 9.0pt; }
-    .resumen-table td { font-family: 'Consolas', 'Courier New', monospace; padding: 7px 4px; text-align: center; border: 1px solid #cbd5e1; font-size: 9.0pt; color: #0f172a; }
-    .legal-text { margin-top: 22px !important; margin-bottom: 25px !important; font-size: 11.0pt; color: #000000; }
-    .signature-area { text-align: center; margin-top: 25px; margin-bottom: 25px; position: relative; }
-    .firma-inandes-img { display: inline-block; width: 151.5pt; height: 62pt; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: center; margin-bottom: -22pt; position: relative; z-index: 2; }
-    .sig-name { font-family: 'Consolas', 'Courier New', monospace; font-weight: bold; font-size: 10.0pt; color: #0f172a; position: relative; z-index: 1; }
-    .sig-role { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; }
-    .sig-company { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; }
-    .footer { margin-top: 35px; text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
+    .title-box { text-align: center; margin-bottom: 18px; }
+    .title-box h1 { font-family: 'Consolas', 'Courier New', monospace; font-size: 13.0pt; font-weight: bold; color: #000000; margin: 0; line-height: 1.35; text-transform: uppercase; }
+    .content { text-align: justify; margin-bottom: 14px; }
+    .content p { margin: 8px 0; font-size: 11.0pt; line-height: 1.35; }
+    .certifica-title { font-weight: bold; color: #000000; margin: 12px 0 6px 0 !important; font-size: 11.0pt; }
+    .resumen-table { width: 100%; border-collapse: collapse; font-size: 9.0pt; margin: 14px 0 14px 0; }
+    .resumen-table th { font-family: 'Consolas', 'Courier New', monospace; background-color: #334155; color: #ffffff; padding: 6px 4px; text-align: center; font-weight: bold; border: 1px solid #334155; font-size: 9.0pt; }
+    .resumen-table td { font-family: 'Consolas', 'Courier New', monospace; padding: 6px 4px; text-align: center; border: 1px solid #cbd5e1; font-size: 9.0pt; color: #0f172a; }
+    .legal-text { margin-top: 14px !important; margin-bottom: 14px !important; font-size: 11.0pt; color: #000000; }
+    .signature-area { text-align: center; margin-top: 14px; margin-bottom: 14px; width: 100%; }
+    .signature-wrapper { position: relative; display: inline-block; text-align: center; margin: 0 auto; }
+    .firma-inandes-img { display: block; margin: 0 auto -24pt auto; width: 150pt; height: 62pt; background-image: url("data:image/png;base64,${FIRMA_RICARDO_GALLO_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: center; position: relative; z-index: 2; }
+    .sig-name { font-family: 'Consolas', 'Courier New', monospace; font-weight: bold; font-size: 10.5pt; color: #0f172a; position: relative; z-index: 1; text-align: center; }
+    .sig-role { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; margin-top: 3px; }
+    .sig-company { font-family: 'Consolas', 'Courier New', monospace; font-size: 10.0pt; color: #64748b; text-align: center; }
+    .footer { margin-top: 18px; text-align: center; color: #3333ff; font-size: 10.0pt; line-height: 1.35; }
     .footer-company { font-weight: bold; font-size: 9.0pt; margin: 0 0 2px 0; color: #3333ff; }
     .footer-address, .footer-contact { margin: 1px 0; font-size: 10.0pt; color: #3333ff; }
   </style>
@@ -756,7 +757,7 @@ export const InversionistasPage: React.FC = () => {
     <table><tr><td class="logo-container"><div class="logo-inandes-img"></div></td></tr></table>
   </div>
   <div class="title-box">
-    <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA DEL<br>CERTIFICADO N° ${cert.id_certificado_short} DEL FONDO ${cert.nombre_fondo} – FONDO DE<br>INVERSION PRIVADO</h1>
+    <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA<br>DEL CERTIFICADO N° ${cert.id_certificado_short} DEL FONDO ${cert.nombre_fondo}<br>– FONDO DE INVERSION PRIVADO</h1>
   </div>
   <div class="content">
     <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>${cert.nombre_fondo} – FONDO DE INVERSION PRIVADO</strong>.</p>
@@ -789,10 +790,12 @@ export const InversionistasPage: React.FC = () => {
     </p>
   </div>
   <div class="signature-area">
-    <div class="firma-inandes-img"></div>
-    <span class="sig-name">JUAN RICARDO GALLO PIZARRO</span><br>
-    <span class="sig-role">Gerente General</span><br>
-    <span class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</span>
+    <div class="signature-wrapper">
+      <div class="firma-inandes-img"></div>
+      <div class="sig-name">JUAN RICARDO GALLO PIZARRO</div>
+    </div>
+    <div class="sig-role">Gerente General</div>
+    <div class="sig-company">INANDES ACTIVOS ALTERNATIVOS S.A.C.</div>
   </div>
   <div class="footer">
     <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
