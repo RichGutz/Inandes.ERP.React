@@ -763,5 +763,17 @@ RESULTADO:
 3. Control de Calidad (QC):
    - Py_compile backend routers: Exit Code 0.
    - Build Vite/TypeScript: npm run build Exit Code 0 en 8.78s.
+[2026-09-11T11:52:00-05:00] TAREA: Configurar credenciales SMTP de Gmail en backend/services/email_service.py y validar despacho real de WhatsApp y Correo a León Vigo Nancy Edelmira (corte 31/08/2026).
+[2026-09-11T11:52:30-05:00] ESTADO: Completado con exito.
+1. Diagnóstico y Corrección de Canales:
+   - WhatsApp Evolution API: Enviado con éxito (Status 201) al número +51991090016.
+   - Email Backend FastAPI: Faltaban credenciales SMTP por defecto en email_service.py. Se configuraron las credenciales oficiales de InAndes (inandesfactorcapital@gmail.com / dvuxqutkyhehcevl).
+   - Backend Router post_enviar_reportes: Ajustado para matching flexible y generación unitaria instantánea con WeasyPrint.
+2. Control de Calidad y Envío Real:
+   - Envío de prueba ejecutado a Nancy: Correo con PDFs adjuntos (EECC y Retenciones) entregado a rgutil@gmail.com (True).
+   - Mensaje de WhatsApp entregado a 991090016 (True).
+3. Compilación y Despliegue:
+   - Python py_compile: Exit Code 0.
+   - Vite npm run build: Exit Code 0 en 4.66s.
 ================================================================================
 

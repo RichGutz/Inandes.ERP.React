@@ -729,7 +729,17 @@ def post_enviar_reportes(req: EnviarReportesRequest):
         events = res.data or []
         target_certs = req.cert_ids or ([req.id_certificado] if req.id_certificado else None)
         if target_certs:
-            events = [e for e in events if e.get('id_certificado') in target_certs or e.get('id_contrato') in target_certs]
+            events = [
+                e for e in events 
+                if any(
+                    c == e.get('id_certificado') or 
+                    c == e.get('id_contrato') or 
+                    (e.get('id_certificado') and str(e.get('id_certificado')).startswith(str(c))) or 
+                    (e.get('id_contrato') and str(e.get('id_contrato')).startswith(str(c))) or
+                    (e.get('id_contrato') and str(c).startswith(str(e.get('id_contrato'))))
+                    for c in target_certs
+                )
+            ]
         elif req.id_fondo != 'TODOS':
             events = [e for e in events if e.get('id_certificado', '').startswith(req.id_fondo) or e.get('id_contrato', '').startswith(req.id_fondo)]
 

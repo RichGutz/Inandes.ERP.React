@@ -144,8 +144,8 @@ def _send_via_smtp(
     """Envío alternativo vía servidor SMTP."""
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = sender_email or os.getenv("SMTP_USER", "")
-    smtp_password = os.getenv("SMTP_PASSWORD", "")
+    smtp_user = os.getenv("SMTP_USER", "inandesfactorcapital@gmail.com")
+    smtp_password = os.getenv("SMTP_PASSWORD", "dvuxqutkyhehcevl")
 
     if not smtp_user or not smtp_password:
         return False, "No se configuraron credenciales SMTP válidas (SMTP_USER / SMTP_PASSWORD)."
