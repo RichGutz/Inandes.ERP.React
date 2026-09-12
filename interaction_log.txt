@@ -679,3 +679,13 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
    - Branch tag 'SAFEPOINT_PRE_ZIP_EECC_FIX' creado.
    - Build TypeScript y Vite verificado ('npm run build' exit code 0).
 ================================================================================
+[2026-09-12 09:30:00-05:00] MEJORA: CONVERSION BINARIA ARRAYBUFFER Y COMPRESION DEFLATE EN ZIP
+1. Diagnostico:
+   - Los Blobs en memoria en JSZip podian quedar con stream diferido durante empaquetado asincrono.
+2. Solucion Aplicada:
+   - Conversion obligatoria de cada PDF a ArrayBuffer ('await blob.arrayBuffer()') con flag '{ binary: true }'.
+   - Compresion DEFLATE nivel 6 en 'zip.generateAsync'.
+   - Label reactivo en boton ('Empaquetando (X/Y)...' -> 'Comprimiendo ZIP...').
+3. Despliegue:
+   - Commit 6b86383 sincronizado a 'origin/main' (Contabo Coolify Auto-deploy).
+================================================================================

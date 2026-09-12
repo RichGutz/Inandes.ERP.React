@@ -795,3 +795,12 @@ RESULTADO:
    - Tag de control SAFEPOINT_PRE_ZIP_EECC_FIX creado.
    - Compilacion de produccion npm run build validada con Exit Code 0.
 ================================================================================
+[2026-09-12T09:30:00-05:00] TAREA: Conversion binaria ArrayBuffer y compresion DEFLATE en ZIP de EECC y Retenciones.
+[2026-09-12T09:30:30-05:00] ESTADO: Completado con exito.
+1. Ajuste JSZip:
+   - Los Blobs de PDF se transforman a ArrayBuffer mediante 'await blob.arrayBuffer()' y se agregan con '{ binary: true }'.
+   - Compresion DEFLATE nivel 6 en 'zip.generateAsync'.
+   - Mensaje de feedback 'Comprimiendo ZIP...' al terminar la compilacion y antes de disparar la descarga.
+2. Despliegue:
+   - Sincronizado a 'origin/main' en commit 6b86383.
+================================================================================
