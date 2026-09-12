@@ -811,7 +811,7 @@ export const InversionistasPage: React.FC = () => {
   <div class="totals-section">
     <table>
       <tr><td class="col-label bold">Monto final invertido:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.capital_final)}</td></tr>
-      <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${Math.round(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE')}</td></tr>
+      <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE')}</td></tr>
     </table>
   </div>
   <div class="footer-line"></div>

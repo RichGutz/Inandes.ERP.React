@@ -451,9 +451,7 @@ def format_cuotas(val) -> str:
         num = float(val or 0.0)
         if abs(num) < 0.001:
             return "-"
-        if num.is_integer():
-            return f"{int(num):,}"
-        return f"{num:,.2f}"
+        return f"{math.floor(num):,}"
     except Exception:
         return "-"
 
