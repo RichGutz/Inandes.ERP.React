@@ -1,3 +1,5 @@
+[2026-09-12 12:33:00-05:00] TAREA: Redondear al entero inferior (Math.floor/math.floor) el número de cuotas en plantillas EECC y vistas de auditoría.
+[2026-09-12 12:33:00-05:00] ESTADO: Completado con éxito. Actualizados templates HTML v1/v2, InversionistasPage.tsx y backend FastAPI.
 [2026-07-13 21:35:11-05:00] TAREA: Transcribir Descripcion.Tarea.ogg con Whisper.
 [2026-07-13 21:36:29-05:00] ESTADO: Completado con éxito. Transcripción guardada.
 [2026-07-13 21:37:49-05:00] TAREA: Analizar estructura del ERP histórico y crear documentación en la bóveda de Obsidian del usuario.

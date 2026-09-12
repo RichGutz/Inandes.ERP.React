@@ -1,3 +1,4 @@
+[2026-09-12 12:33:00-05:00] FORMATO EECC: Ajuste de redondeo de número de cuotas al entero inferior en templates HTML y frontend React (Math.floor).
 [2026-07-13 21:35:11-05:00] INICIO: Transcripción del archivo audio_transcrip/Descripcion.Tarea.ogg usando audio_transcrip/transcribe_whisper.py.
 [2026-07-13 21:36:29-05:00] FIN: Transcripción completada exitosamente y guardada en audio_transcrip/Descripcion.Tarea.ogg_whisper.txt.
 [2026-07-13 21:37:49-05:00] INICIO: Análisis de la arquitectura del ERP de la ruta C:\Users\rguti\mini_erp_v2_antigravity\.
