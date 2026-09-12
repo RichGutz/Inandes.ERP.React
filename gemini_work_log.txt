@@ -804,3 +804,13 @@ RESULTADO:
 2. Despliegue:
    - Sincronizado a 'origin/main' en commit 6b86383.
 ================================================================================
+[2026-09-12T10:30:00-05:00] TAREA: Fila TODOS LOS CONTRATOS (Mono-Scroll Side-by-Side) y cabecera Capital Inicial.
+[2026-09-12T10:30:30-05:00] ESTADO: Completado con exito.
+1. Implementacion:
+   - Fila especial 'TODOS LOS CONTRATOS' en el cierre de cada fondo con sumatorias y boton 'Visor Todos'.
+   - Acordeon mono-scroll que itera correlativamente todos los participes del fondo con layout 2 columnas (EECC + Retencion).
+   - Cabecera de la tabla y Excel actualizada a 'Capital Inicial'.
+2. Control de Calidad:
+   - Branch tag 'SAFEPOINT_PRE_TODOS_CONTRATOS_MONO_SCROLL' creado.
+   - Compilacion de produccion 'npm run build' validada con Exit Code 0.
+================================================================================

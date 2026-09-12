@@ -164,6 +164,7 @@ export const InversionistasPage: React.FC = () => {
   const [selectedRetIds, setSelectedRetIds] = useState<Set<string>>(new Set());
   const [selectedEeccIds, setSelectedEeccIds] = useState<Set<string>>(new Set());
   const [expandedVisorIds, setExpandedVisorIds] = useState<Set<string>>(new Set());
+  const [expandedFundVisorKeys, setExpandedFundVisorKeys] = useState<Set<string>>(new Set());
   const [docSearchQuery, setDocSearchQuery] = useState<string>('');
   const [selectedDocFondos, setSelectedDocFondos] = useState<string[]>([]);
 
@@ -1036,6 +1037,16 @@ export const InversionistasPage: React.FC = () => {
     });
   };
 
+  // Toggle de Visor Acordeón Masivo (Mono-Scroll) por Fondo
+  const toggleFundVisor = (fondoKey: string) => {
+    setExpandedFundVisorKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(fondoKey)) next.delete(fondoKey);
+      else next.add(fondoKey);
+      return next;
+    });
+  };
+
   // Exportar Excel de Documentos
   const handleExportDocExcel = async () => {
     if (docEventsFiltered.length === 0) {
@@ -1054,7 +1065,7 @@ export const InversionistasPage: React.FC = () => {
 
     const headers = [
       "ID Documento", "Fondo", "Participe / Inversionista", "DNI / RUC", "Moneda",
-      "Capital Base", "Interes Bruto", "Retencion IR 5%", "Deducciones", "Neto Disponible",
+      "Capital Inicial", "Interes Bruto", "Retencion IR 5%", "Deducciones", "Neto Disponible",
       "Capitalizacion", "Rescates", "Total Transferido", "Capital Final", "Fecha Inicio", "Fecha Fin"
     ];
 
@@ -3468,7 +3479,7 @@ export const InversionistasPage: React.FC = () => {
                     <th className="p-2.5">N° Contrato / Cert.</th>
                     <th className="p-2.5">Participe / Inversionista</th>
                     <th className="p-2.5 text-center">Moneda</th>
-                    <th className="p-2.5 text-right">Capital Base</th>
+                    <th className="p-2.5 text-right">Capital Inicial</th>
                     <th className="p-2.5 text-right">Interes Bruto</th>
                     <th className="p-2.5 text-right">Retencion 5%</th>
                     <th className="p-2.5 text-right">Deducciones</th>
@@ -3716,6 +3727,199 @@ export const InversionistasPage: React.FC = () => {
                             </React.Fragment>
                           );
                         })}
+
+                        {/* FILA ESPECIAL: TODOS LOS CONTRATOS (CIERRE DE FONDO) */}
+                        {(() => {
+                          const groupTotCapitalInicial = group.events.reduce((acc, e) => acc + Number(e.capital_base || 0), 0);
+                          const groupTotBruto = group.events.reduce((acc, e) => acc + Number(e.interes_generado_bruto || 0), 0);
+                          const groupTotImpuesto = group.events.reduce((acc, e) => acc + Number(e.impuestos_renta || 0), 0);
+                          const groupTotDeducciones = group.events.reduce((acc, e) => acc + Number(e.monto_deduccion || 0), 0);
+                          const groupTotNeto = group.events.reduce((acc, e) => acc + Number(e.interes_neto_disponible || 0), 0);
+                          const groupTotTransferencia = group.events.reduce((acc, e) => acc + Number(e.monto_reparto || 0) + Number(e.monto_rescate || 0), 0);
+                          const groupTotCapitalFinal = group.events.reduce((acc, e) => acc + Number(e.capital_final_saldo || 0), 0);
+                          const isGroupExpanded = expandedFundVisorKeys.has(group.fondoKey);
+
+                          return (
+                            <React.Fragment key={`tot_${group.fondoKey}`}>
+                              <tr className="bg-slate-100/95 dark:bg-slate-800/95 border-t-2 border-b-2 border-indigo-300 dark:border-indigo-700 font-bold">
+                                <td className="p-2.5 text-center text-slate-400 font-mono text-[11px] border-r border-slate-200 dark:border-slate-700">∑</td>
+                                <td className="p-2.5 text-center text-slate-400 font-mono text-[11px] border-r border-slate-200 dark:border-slate-700">∑</td>
+                                <td className="p-2.5 font-mono font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide text-xs whitespace-nowrap">
+                                  TODOS LOS CONTRATOS
+                                </td>
+                                <td className="p-2.5 font-bold text-slate-700 dark:text-slate-300 text-xs">
+                                  {group.fondoNombre} ({group.events.length} contratos)
+                                </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-slate-600 dark:text-slate-400 text-[11px]">
+                                  {group.moneda}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+                                  {formatNumDoc(groupTotCapitalInicial)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  {formatNumDoc(groupTotBruto)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                  {formatNumDoc(groupTotImpuesto)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono text-slate-500">
+                                  {formatNumDoc(groupTotDeducciones)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
+                                  {formatNumDoc(groupTotNeto)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-[#0284c7] dark:text-[#38bdf8]">
+                                  {formatNumDoc(groupTotTransferencia)}
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-black text-slate-900 dark:text-white">
+                                  {formatNumDoc(groupTotCapitalFinal)}
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleFundVisor(group.fondoKey)}
+                                    className={`h-7 px-3 rounded-lg text-xs font-bold font-mono transition-all inline-flex items-center gap-1 cursor-pointer shadow-xs ${
+                                      isGroupExpanded
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white dark:bg-[#1e293b] text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50'
+                                    }`}
+                                    title="Abrir visor continuo mono-scroll de todos los contratos de este fondo"
+                                  >
+                                    <span>Visor Todos</span>
+                                    {isGroupExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {/* ACORDEON CONTINUO MONO-SCROLL: TODOS LOS CONTRATOS (SIDE-BY-SIDE) */}
+                              {isGroupExpanded && (
+                                <tr className="bg-slate-50 dark:bg-slate-950/80 border-b-4 border-indigo-600/50">
+                                  <td colSpan={13} className="p-4">
+                                    <div className="flex flex-col gap-6">
+                                      
+                                      {/* Cabecera de la franja masiva */}
+                                      <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                                        <div className="flex items-center gap-2">
+                                          <Archive size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                          <span className="text-xs font-black uppercase text-indigo-950 dark:text-indigo-200">
+                                            Auditoría Continua Mono-Scroll: {group.fondoNombre} ({group.events.length} Contratos)
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] font-mono text-indigo-700 dark:text-indigo-300">
+                                          Período: {fStart} al {fEnd} | Desplázate verticalmente para auditar lado a lado
+                                        </div>
+                                      </div>
+
+                                      {/* Lista Continua de Documentos Lado a Lado (Mono-Scroll) */}
+                                      <div className="flex flex-col gap-8">
+                                        {group.events.map((e, eIdx) => {
+                                          const eeccData = getEeccRowData(e);
+                                          const retData = getRetencionRowData(e);
+                                          const hasRetencion = Number(e.impuestos_renta || 0) > 0;
+
+                                          return (
+                                            <div 
+                                              key={e.id_evento || e.id_contrato || e.id_certificado || eIdx}
+                                              className="flex flex-col gap-3 p-4 bg-white dark:bg-[#151e2e] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
+                                            >
+                                              {/* Separador de Partícipe */}
+                                              <div className="flex items-center justify-between pb-2 border-b border-slate-150 dark:border-slate-800">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-black font-mono flex items-center justify-center">
+                                                    {eIdx + 1}
+                                                  </span>
+                                                  <span className="text-xs font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
+                                                    {eeccData.id_certificado} — {eeccData.inversionista_nombre}
+                                                  </span>
+                                                  <span className="text-[10.5px] font-mono font-bold text-slate-500">
+                                                    ({eeccData.moneda} • Cap. Inicial: {formatNumDoc(eeccData.capital_inicial)} • Cap. Final: {formatNumDoc(eeccData.capital_final)})
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              {/* Grid Side-by-Side 2 Columnas */}
+                                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                
+                                                {/* Columna Izquierda: Estado de Cuenta (EECC) */}
+                                                <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <FileText size={15} className="text-[#0284c7]" />
+                                                      <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc]">
+                                                        Estado de Cuenta (EECC)
+                                                      </span>
+                                                    </div>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleDownloadFastPdf(generateSingleEeccHtml(eeccData), `EECC_${eeccData.id_certificado}_${fEnd}.pdf`)}
+                                                      disabled={downloadingPdf === `EECC_${eeccData.id_certificado}_${fEnd}.pdf`}
+                                                      className="h-6 px-2 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-md text-[11px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                      {downloadingPdf === `EECC_${eeccData.id_certificado}_${fEnd}.pdf` ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                                                      <span>Descargar PDF</span>
+                                                    </button>
+                                                  </div>
+                                                  <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white shadow-inner">
+                                                    <iframe
+                                                      srcDoc={generateSingleEeccHtml(eeccData)}
+                                                      className="w-full h-[650px] border-none"
+                                                      title={`Visor EECC ${eeccData.id_certificado}`}
+                                                    />
+                                                  </div>
+                                                </div>
+
+                                                {/* Columna Derecha: Certificado de Retención (5% IR) */}
+                                                <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <FileSpreadsheet size={15} className="text-amber-500" />
+                                                      <span className="text-xs font-black uppercase text-[#0f172a] dark:text-[#f8fafc]">
+                                                        Certificado de Retención (5% IR)
+                                                      </span>
+                                                    </div>
+                                                    {hasRetencion ? (
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleDownloadFastPdf(generateSingleRetencionHtml(retData), `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf`)}
+                                                        disabled={downloadingPdf === `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf`}
+                                                        className="h-6 px-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[11px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer"
+                                                      >
+                                                        {downloadingPdf === `RETENCION_${eeccData.id_certificado}_${fEnd}.pdf` ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                                                        <span>Descargar PDF</span>
+                                                      </button>
+                                                    ) : (
+                                                      <span className="text-[10.5px] font-mono text-slate-400 italic">Sin retención en el período</span>
+                                                    )}
+                                                  </div>
+                                                  {hasRetencion ? (
+                                                    <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white shadow-inner">
+                                                      <iframe
+                                                        srcDoc={generateSingleRetencionHtml(retData)}
+                                                        className="w-full h-[650px] border-none"
+                                                        title={`Visor Retención ${eeccData.id_certificado}`}
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <div className="h-[650px] flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 font-medium text-xs bg-slate-50/50">
+                                                      Este contrato no generó retenciones de impuesto a la renta en el período seleccionado.
+                                                    </div>
+                                                  )}
+                                                </div>
+
+                                              </div>
+
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })()}
                       </React.Fragment>
                     ))
                   )}

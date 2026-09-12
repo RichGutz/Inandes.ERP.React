@@ -689,3 +689,12 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 3. Despliegue:
    - Commit 6b86383 sincronizado a 'origin/main' (Contabo Coolify Auto-deploy).
 ================================================================================
+[2026-09-12 10:30:00-05:00] IMPLEMENTACION: FILA 'TODOS LOS CONTRATOS' (MONO-SCROLL SIDE-BY-SIDE) & CAPITAL INICIAL
+1. Transcripcion y Requerimiento:
+   - Procesado audio 'AUDITORIA.PAPEL.HIGIENICO.MONO.SCROLL.ogg'.
+   - Habilitada fila de cierre 'TODOS LOS CONTRATOS' por fondo con boton 'Visor Todos' para auditoria continua side-by-side.
+   - Renombrada columna 'CAPITAL BASE' a 'CAPITAL INICIAL' en UI y Excel.
+2. Control de Calidad y Despliegue:
+   - Branch tag 'SAFEPOINT_PRE_TODOS_CONTRATOS_MONO_SCROLL' creado.
+   - Compilacion de produccion 'npm run build' validada con Exit Code 0 en 3.66s.
+================================================================================
