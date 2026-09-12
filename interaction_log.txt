@@ -669,4 +669,13 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
    - Build React verificado ('npm run build' exit code 0 en 5.04s).
    - Cambios subidos a 'origin/main' (commits b5c8d0a, 2639d65, a798237, d30ec80).
 ================================================================================
-
+[2026-09-12 09:20:00-05:00] CORRECCION: FIX DESCARGA ZIP EECC Y RETENCIONES (INVERSIONISTAS)
+1. Diagnostico:
+   - Error en 'handleExportDocZip' (InversionistasPage.tsx): Invocaba el endpoint inexistente '/api/inversionistas/generar-pdf' (404 Not Found) con schema incompatible.
+2. Solucion Aplicada:
+   - Exportada funcion 'generatePdfBlob' en 'src/utils/pdfDownloadHelper.ts' para reutilizar la comunicacion con el worker WeasyPrint '/api/inversionistas/generate-pdf' y validacion binaria.
+   - Refactorizada 'handleExportDocZip' en 'src/features/inversionistas/InversionistasPage.tsx' para generar los PDFs en lote y empaquetarlos mediante JSZip respetando la seleccion individual (RET y EECC).
+3. Verificacion:
+   - Branch tag 'SAFEPOINT_PRE_ZIP_EECC_FIX' creado.
+   - Build TypeScript y Vite verificado ('npm run build' exit code 0).
+================================================================================

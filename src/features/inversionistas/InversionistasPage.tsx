@@ -1,11 +1,11 @@
 // src/features/inversionistas/InversionistasPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { getInversionistas, upsertInversionista } from '../../services/inversionistasService';
-import { getApiBaseUrl } from '../../config/apiConfig';
 import type { Inversionista } from '../../services/inversionistasService';
+import { getApiBaseUrl } from '../../config/apiConfig';
 import { generateRetornosV40 } from '../../utils/financialCalculator';
 import { generatePdfBelloConDesglose } from '../../utils/pdfGeneratorBelloConDesglose';
-import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
+import { downloadReportPdf, generatePdfBlob } from '../../utils/pdfDownloadHelper';
 import { supabase } from '../../services/supabaseClient';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
@@ -1137,7 +1137,7 @@ export const InversionistasPage: React.FC = () => {
 
     try {
       const zip = new JSZip();
-      const API_BASE = getApiBaseUrl();
+      let filesAdded = 0;
 
       for (let i = 0; i < targetEvents.length; i++) {
         const e = targetEvents[i];
@@ -1152,16 +1152,11 @@ export const InversionistasPage: React.FC = () => {
         // Generar EECC
         if (shouldIncludeEecc) {
           const htmlEecc = generateSingleEeccHtml(eeccData);
+          const filenameEecc = `EECC_${certClean}_${fEnd}.pdf`;
           try {
-            const resp = await fetch(`${API_BASE}/api/inversionistas/generar-pdf`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ html: htmlEecc, orientation: 'portrait' })
-            });
-            if (resp.ok) {
-              const blob = await resp.blob();
-              zip.file(`EECC_${certClean}_${fEnd}.pdf`, blob);
-            }
+            const blob = await generatePdfBlob(htmlEecc, filenameEecc, 'portrait');
+            zip.file(filenameEecc, blob);
+            filesAdded++;
           } catch (pdfErr) {
             console.warn(`Error compilando EECC ${certClean}:`, pdfErr);
           }
@@ -1170,16 +1165,11 @@ export const InversionistasPage: React.FC = () => {
         // Generar Retención
         if (shouldIncludeRet && Number(e.impuestos_renta || 0) > 0) {
           const htmlRet = generateSingleRetencionHtml(retData);
+          const filenameRet = `RETENCION_${certClean}_${fEnd}.pdf`;
           try {
-            const resp = await fetch(`${API_BASE}/api/inversionistas/generar-pdf`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ html: htmlRet, orientation: 'portrait' })
-            });
-            if (resp.ok) {
-              const blob = await resp.blob();
-              zip.file(`RETENCION_${certClean}_${fEnd}.pdf`, blob);
-            }
+            const blob = await generatePdfBlob(htmlRet, filenameRet, 'portrait');
+            zip.file(filenameRet, blob);
+            filesAdded++;
           } catch (pdfErr) {
             console.warn(`Error compilando Retencion ${certClean}:`, pdfErr);
           }
@@ -1188,15 +1178,19 @@ export const InversionistasPage: React.FC = () => {
         setDocZipProgress({ current: i + 1, total: targetEvents.length });
       }
 
+      if (filesAdded === 0) {
+        throw new Error("No se pudo compilar ningun archivo PDF para empaquetar.");
+      }
+
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const downloadUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `Documentos_InAndes_${fEnd}.zip`;
+      link.download = `InAndes_Documentos_EECC_Ret_${fEnd}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(downloadUrl);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
     } catch (err: any) {
       alert(`Error generando paquete ZIP: ${err.message}`);
     } finally {

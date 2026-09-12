@@ -785,4 +785,13 @@ RESULTADO:
    - Python py_compile: Exit Code 0.
    - Vite npm run build: Exit Code 0 en 4.59s.
 ================================================================================
-
+[2026-09-12T09:20:00-05:00] TAREA: Correccion del boton Descargar ZIP (PDFs) en pestana EECC y Retenciones (InversionistasPage.tsx).
+[2026-09-12T09:20:30-05:00] ESTADO: Completado con exito.
+1. Correccion Backend & Helper:
+   - Exportada la funcion generatePdfBlob en src/utils/pdfDownloadHelper.ts para conectar con el worker WeasyPrint (/api/inversionistas/generate-pdf) con sanitizacion de HTML y validacion binaria.
+2. Refactorizacion de Empaquetado en Lote:
+   - Actualizada handleExportDocZip en InversionistasPage.tsx para generar los PDFs en memoria con JSZip, respetando la seleccion granular de casillas RET y EECC.
+3. Control de Calidad:
+   - Tag de control SAFEPOINT_PRE_ZIP_EECC_FIX creado.
+   - Compilacion de produccion npm run build validada con Exit Code 0.
+================================================================================
