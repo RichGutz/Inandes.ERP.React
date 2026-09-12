@@ -1155,7 +1155,8 @@ export const InversionistasPage: React.FC = () => {
           const filenameEecc = `EECC_${certClean}_${fEnd}.pdf`;
           try {
             const blob = await generatePdfBlob(htmlEecc, filenameEecc, 'portrait');
-            zip.file(filenameEecc, blob);
+            const buffer = await blob.arrayBuffer();
+            zip.file(filenameEecc, buffer, { binary: true });
             filesAdded++;
           } catch (pdfErr) {
             console.warn(`Error compilando EECC ${certClean}:`, pdfErr);
@@ -1168,7 +1169,8 @@ export const InversionistasPage: React.FC = () => {
           const filenameRet = `RETENCION_${certClean}_${fEnd}.pdf`;
           try {
             const blob = await generatePdfBlob(htmlRet, filenameRet, 'portrait');
-            zip.file(filenameRet, blob);
+            const buffer = await blob.arrayBuffer();
+            zip.file(filenameRet, buffer, { binary: true });
             filesAdded++;
           } catch (pdfErr) {
             console.warn(`Error compilando Retencion ${certClean}:`, pdfErr);
@@ -1182,7 +1184,11 @@ export const InversionistasPage: React.FC = () => {
         throw new Error("No se pudo compilar ningun archivo PDF para empaquetar.");
       }
 
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      });
       const downloadUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -1190,7 +1196,7 @@ export const InversionistasPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 15000);
     } catch (err: any) {
       alert(`Error generando paquete ZIP: ${err.message}`);
     } finally {
@@ -3386,7 +3392,9 @@ export const InversionistasPage: React.FC = () => {
                   {docGeneratingZip ? <Loader2 size={13} className="animate-spin" /> : <Archive size={13} />}
                   <span>
                     {docGeneratingZip 
-                      ? `Empaquetando (${docZipProgress.current}/${docZipProgress.total})...` 
+                      ? (docZipProgress.current >= docZipProgress.total && docZipProgress.total > 0
+                          ? 'Comprimiendo ZIP...' 
+                          : `Empaquetando (${docZipProgress.current}/${docZipProgress.total})...`)
                       : 'Descargar ZIP (PDFs)'}
                   </span>
                 </button>
