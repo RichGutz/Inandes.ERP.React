@@ -1,3 +1,5 @@
+[2026-09-14 13:12:00-05:00] TAREA: Reemplazar despacho de PDFs únicos por fallback de Logo institucional InAndes con aviso de plataforma en pruebas en el Bot WhatsApp de inversionistas.
+[2026-09-14 13:12:00-05:00] ESTADO: Completado con éxito. Modificado bot_service.py implementando send_whatsapp_image (/app/assets/logo_inandes.png) con aviso de pruebas. Desplegado y verificado en contenedor inandes_wa_bot de Contabo VPS (health: ok).
 [2026-09-12 12:33:00-05:00] TAREA: Redondear al entero inferior (Math.floor/math.floor) el número de cuotas en plantillas EECC y vistas de auditoría.
 [2026-09-12 12:33:00-05:00] ESTADO: Completado con éxito. Actualizados templates HTML v1/v2, InversionistasPage.tsx y backend FastAPI.
 [2026-07-13 21:35:11-05:00] TAREA: Transcribir Descripcion.Tarea.ogg con Whisper.

@@ -1,3 +1,4 @@
+[2026-09-14 13:12:00-05:00] WHATSAPP BOT: Reemplazo del despacho de PDFs por fallback con Logo institucional de InAndes (logo_inandes.png) e inserción de mensaje de aviso de plataforma en fase de pruebas para todas las consultas financieras de inversionistas. Desplegado y verificado en VPS Contabo (inandes_wa_bot).
 [2026-09-12 12:33:00-05:00] FORMATO EECC: Ajuste de redondeo de número de cuotas al entero inferior en templates HTML y frontend React (Math.floor).
 [2026-07-13 21:35:11-05:00] INICIO: Transcripción del archivo audio_transcrip/Descripcion.Tarea.ogg usando audio_transcrip/transcribe_whisper.py.
 [2026-07-13 21:36:29-05:00] FIN: Transcripción completada exitosamente y guardada en audio_transcrip/Descripcion.Tarea.ogg_whisper.txt.
