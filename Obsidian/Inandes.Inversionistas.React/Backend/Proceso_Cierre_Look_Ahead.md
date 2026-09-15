@@ -80,3 +80,15 @@ Al momento de generar y registrar el asiento contable de cierre (`cierre_fin_con
    - Sincronizacion en la generacion de asientos contables.
 2. **Backend FastAPI (`backend/routers/inversionistas.py`):**
    - Lectura del campo `compra_nuevas_cuotas` e `id_contrato_siguiente` desde el payload de eventos para la generacion del PDF oficial.
+
+---
+
+## 7. Dictamen de Ejecucion y Entregables (Sesion 2026-09-15)
+
+1. **Algoritmo Look-Ahead:** Implementado y validado en Frontend (`financialCalculator.ts`, `InversionistasPage.tsx`) y Backend FastAPI.
+2. **Snapshot Total de Respaldo:** 8 tablas de Supabase respaldadas al 100% en `backups/SNAPSHOT_TOTAL_SUPABASE_20260915/` (1,768 registros).
+3. **Enriquecimiento Inmutable de Payloads:** 199 asientos contables de agosto 2026 enriquecidos con campos de Look-Ahead sin alterar importes historicos.
+4. **Caso Mantilla Silva:** Actualizado contrato sucesor a S/ 100,000.00 (Rollover Parcial con devolucion de capital S/ 4,057.99 + rendimientos netos S/ 1,427.31 = Transferencia Total S/ 5,485.30).
+5. **PDFs Oficiales Generados:**
+   - [Reporte_Casos_Look_Ahead_Agosto_2026.pdf](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/Backend/Reporte_Casos_Look_Ahead_Agosto_2026.pdf)
+   - [EECC_Rolleadores_Cierre_Agosto_2026.pdf](file:///C:/Users/rguti/Inandes.ERP.React/Obsidian/Inandes.Inversionistas.React/Backend/EECC_Rolleadores_Cierre_Agosto_2026.pdf)
