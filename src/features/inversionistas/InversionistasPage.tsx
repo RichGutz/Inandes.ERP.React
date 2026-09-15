@@ -682,6 +682,12 @@ export const InversionistasPage: React.FC = () => {
     const cid = e.id_contrato || e.id_certificado;
     const cidShort = extractCertNumberDoc(cid);
 
+    const penalidadVal = Number(e.penalidad_rescate || payload.penalidades || 0);
+    const deducVal = Number(e.monto_deduccion || payload.deducciones_ordinarias || 0);
+    const rescateVal = Number(e.monto_rescate || payload.rescates_capital || 0);
+    const repartoVal = Number(e.monto_reparto || payload.reparto_valor || 0);
+    const transferidoCalculado = Math.max(0, Math.round((repartoVal + rescateVal - penalidadVal - deducVal) * 100) / 100);
+
     return {
       fondo_nombre: fondoNombre,
       fecha_inicio_str: formatDateDisplayDoc(e.fecha_periodo_origen || fStart, true),
@@ -693,11 +699,12 @@ export const InversionistasPage: React.FC = () => {
       capital_inicial: Number(e.capital_base || 0),
       bruto_total: Number(e.interes_generado_bruto || 0),
       impuesto: Number(e.impuestos_renta || 0),
-      deducciones: Number(e.monto_deduccion || 0),
+      deducciones: deducVal,
+      penalidades: penalidadVal,
       neto_disponible: Number(e.interes_neto_disponible || 0),
       capitalizacion: Number(e.monto_capitalizacion || 0),
-      rescates: Number(e.monto_rescate || 0),
-      monto_transferido: Number(e.monto_reparto || 0) + Number(e.monto_rescate || 0),
+      rescates: rescateVal,
+      monto_transferido: transferidoCalculado,
       capital_final: Number(e.capital_final_saldo || 0),
       valor_cuota: valorCuota
     };
@@ -801,6 +808,7 @@ export const InversionistasPage: React.FC = () => {
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label bold">Ganancia neta disponible:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.neto_disponible)}</td></tr>
       <tr><td class="col-label">(-) Deducciones</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.deducciones > 0 ? formatNumDoc(row.deducciones) : '-'}</td></tr>
+      <tr><td class="col-label">(-) Penalidades:</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.penalidades > 0 ? formatNumDoc(row.penalidades) : '-'}</td></tr>
       <tr><td class="col-label">(-) Rescates solicitados:</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.rescates > 0 ? formatNumDoc(row.rescates) : '-'}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label bold">Monto transferido / abonado:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.monto_transferido > 0 ? formatNumDoc(row.monto_transferido) : '-'}</td></tr>
@@ -1065,7 +1073,7 @@ export const InversionistasPage: React.FC = () => {
 
     const headers = [
       "ID Documento", "Fondo", "Participe / Inversionista", "DNI / RUC", "Moneda",
-      "Capital Inicial", "Interes Bruto", "Retencion IR 5%", "Deducciones", "Neto Disponible",
+      "Capital Inicial", "Interes Bruto", "Retencion IR 5%", "Deducciones", "Penalidades", "Neto Disponible",
       "Capitalizacion", "Rescates", "Total Transferido", "Capital Final", "Fecha Inicio", "Fecha Fin"
     ];
 
@@ -1091,6 +1099,7 @@ export const InversionistasPage: React.FC = () => {
         eecc.bruto_total,
         eecc.impuesto,
         eecc.deducciones,
+        eecc.penalidades,
         eecc.neto_disponible,
         eecc.capitalizacion,
         eecc.rescates,
@@ -1101,7 +1110,7 @@ export const InversionistasPage: React.FC = () => {
       ]);
       row.height = 20;
       row.eachCell((cell, colNumber) => {
-        if (colNumber >= 6 && colNumber <= 14) {
+        if (colNumber >= 6 && colNumber <= 15) {
           cell.numFmt = '#,##0.00';
           cell.alignment = { vertical: 'middle', horizontal: 'right' };
         } else {
