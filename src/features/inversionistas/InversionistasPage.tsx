@@ -686,6 +686,9 @@ export const InversionistasPage: React.FC = () => {
     const deducVal = Number(e.monto_deduccion || payload.deducciones_ordinarias || 0);
     const rescateVal = Number(e.monto_rescate || payload.rescates_capital || 0);
     const repartoVal = Number(e.monto_reparto || payload.reparto_valor || 0);
+    const aumentoVal = Number(e.monto_aumento || payload.aumentos_capital || (Array.isArray(payload.detalle_aumentos) ? payload.detalle_aumentos.reduce((acc: number, a: any) => acc + Number(a.monto || 0), 0) : 0));
+    const capVal = Number(e.monto_capitalizacion || payload.capitalizacion || 0);
+    const compraCuotasVal = Math.round((aumentoVal + capVal) * 100) / 100;
     const transferidoCalculado = Math.max(0, Math.round((repartoVal + rescateVal - penalidadVal - deducVal) * 100) / 100);
 
     return {
@@ -702,7 +705,9 @@ export const InversionistasPage: React.FC = () => {
       deducciones: deducVal,
       penalidades: penalidadVal,
       neto_disponible: Number(e.interes_neto_disponible || 0),
-      capitalizacion: Number(e.monto_capitalizacion || 0),
+      aumentos_capital: aumentoVal,
+      capitalizacion: capVal,
+      compra_nuevas_cuotas: compraCuotasVal,
       rescates: rescateVal,
       monto_transferido: transferidoCalculado,
       capital_final: Number(e.capital_final_saldo || 0),
@@ -807,19 +812,21 @@ export const InversionistasPage: React.FC = () => {
       <tr><td class="col-label">(-) Impuesto a la renta retenido</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${formatNumDoc(row.impuesto)}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label bold">Ganancia neta disponible:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.neto_disponible)}</td></tr>
+      <tr><td class="col-label">(+) Aportes nuevos de capital</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.aumentos_capital > 0 ? formatNumDoc(row.aumentos_capital) : '-'}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label">(-) Deducciones</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.deducciones > 0 ? formatNumDoc(row.deducciones) : '-'}</td></tr>
-      <tr><td class="col-label">(-) Penalidades:</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.penalidades > 0 ? formatNumDoc(row.penalidades) : '-'}</td></tr>
+      <tr><td class="col-label">(-) Penalidades por rescate anticipado</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.penalidades > 0 ? formatNumDoc(row.penalidades) : '-'}</td></tr>
       <tr><td class="col-label">(-) Rescates solicitados:</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.rescates > 0 ? formatNumDoc(row.rescates) : '-'}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label bold">Monto transferido / abonado:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.monto_transferido > 0 ? formatNumDoc(row.monto_transferido) : '-'}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
-      <tr><td class="col-label bold">Compra de nuevas cuotas:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.capitalizacion > 0 ? formatNumDoc(row.capitalizacion) : '-'}</td></tr>
+      <tr><td class="col-label bold">Monto destinado para la compra de nuevas cuotas:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.compra_nuevas_cuotas > 0 ? formatNumDoc(row.compra_nuevas_cuotas) : '-'}</td></tr>
     </table>
   </div>
   <div class="totals-section">
     <table>
-      <tr><td class="col-label bold">Monto final invertido:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.capital_final)}</td></tr>
-      <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE')}</td></tr>
+      <tr><td class="col-label bold">Monto final invertido:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.capital_final > 0 ? formatNumDoc(row.capital_final) : '-'}</td></tr>
+      <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${row.capital_final > 0 ? Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE') : '0'}</td></tr>
     </table>
   </div>
   <div class="footer-line"></div>

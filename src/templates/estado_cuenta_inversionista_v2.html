@@ -248,12 +248,18 @@
                 <td class="col-amount bold">{{ format_num_or_dash(row.neto_disponible) }}</td>
             </tr>
             <tr>
+                <td class="col-label">(+) Aportes nuevos de capital</td>
+                <td class="col-currency">{{ row.moneda }}</td>
+                <td class="col-amount">{{ format_num_or_dash(row.aumentos_capital) }}</td>
+            </tr>
+            <tr class="spacer-row"><td colspan="3"></td></tr>
+            <tr>
                 <td class="col-label">(-) Deducciones</td>
                 <td class="col-currency">{{ row.moneda }}</td>
                 <td class="col-amount">{{ format_num_or_dash(row.deducciones) }}</td>
             </tr>
             <tr>
-                <td class="col-label">(-) Penalidades:</td>
+                <td class="col-label">(-) Penalidades por rescate anticipado</td>
                 <td class="col-currency">{{ row.moneda }}</td>
                 <td class="col-amount">{{ format_num_or_dash(row.penalidades) }}</td>
             </tr>
@@ -270,9 +276,9 @@
             </tr>
             <tr class="spacer-row"><td colspan="3"></td></tr>
             <tr>
-                <td class="col-label bold">Compra de nuevas cuotas:</td>
+                <td class="col-label bold">Monto destinado para la compra de nuevas cuotas:</td>
                 <td class="col-currency bold">{{ row.moneda }}</td>
-                <td class="col-amount bold">{{ format_num_or_dash(row.capitalizacion) }}</td>
+                <td class="col-amount bold">{{ format_num_or_dash(row.compra_nuevas_cuotas if row.compra_nuevas_cuotas is defined else row.capitalizacion) }}</td>
             </tr>
         </table>
     </div>
