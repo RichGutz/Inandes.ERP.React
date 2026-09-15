@@ -112,6 +112,12 @@ export const generateRetornosV40 = async (
   const { data: rawContratosMaster, error: contratosErr } = await queryContratos;
   if (contratosErr) throw new Error(`Error en crm_contratos: ${contratosErr.message}`);
 
+  // Carga complementaria de todos los contratos activos para look-ahead de renovaciones
+  const { data: allActiveContratosLookAhead } = await supabase
+    .from('crm_contratos')
+    .select('id_contrato, id_inversionista_1, id_inversionista_2, id_inversionista_3, id_fondo, moneda, monto_inversion, estado, fecha_inicio, fecha_fin')
+    .in('estado', ['emitido', 'activo', 'vigente']);
+
   if (!rawContratosMaster || rawContratosMaster.length === 0) {
     return { asientos: [], xlsDict: {}, pdfData: [] };
   }
@@ -330,6 +336,8 @@ export const generateRetornosV40 = async (
         id_certificado_origen: idCertOrigen,
         id_contrato: mid,
         id_fondo: c.id_fondo,
+        id_inversionista_1: c.id_inversionista_1 || null,
+        fecha_fin: c.fecha_fin || null,
         moneda: c.moneda,
         inversionista: getInvName(c, invMap),
         capital_base: capBaseInicio,
@@ -458,9 +466,54 @@ export const generateRetornosV40 = async (
 
       const rNetoFinal = rep_v_neto;
       const rRescatesNetos = Math.round((rescate_sum - penalidad_sum) * 100) / 100;
-      const rTransferencia = Math.max(0.0, Math.round((rNetoFinal + rRescatesNetos) * 100) / 100);
 
-      // Crear payload de auditoría
+      // Look-Ahead de Contratos Sucesores: Mismo Inversionista + Misma Moneda + fecha_inicio > fecha_corte
+      let contratoSucesor: any = null;
+      let capNuevo = 0;
+      let difCap = 0;
+      let compraNuevasCuotas = Math.round((cap_z_neto + aum_v) * 100) / 100;
+      let tipoLiq = 'RENDIMIENTO_REGULAR';
+      let capitalATransferir = rRescatesNetos;
+
+      const fFinContratoStr = r.fecha_fin ? r.fecha_fin.split('T')[0] : '';
+      const isVencidoOAlCierre = Boolean(
+        (fFinContratoStr && fFinContratoStr <= fEndStr) || 
+        tieneRescateTotal || 
+        tipo_ev === 'cierre_fin_contrato'
+      );
+
+      if (isVencidoOAlCierre && allActiveContratosLookAhead) {
+        contratoSucesor = allActiveContratosLookAhead.find((c: any) => {
+          if (c.id_contrato === r.id_contrato) return false;
+          const sameInv = (c.id_inversionista_1 && r.id_inversionista_1 && String(c.id_inversionista_1).toLowerCase() === String(r.id_inversionista_1).toLowerCase()) ||
+                          (c.id_inversionista_1 && r.inversionista && invMap[String(c.id_inversionista_1).toLowerCase()] === r.inversionista);
+          const sameMoneda = (c.moneda || 'PEN').toUpperCase() === (r.moneda || 'PEN').toUpperCase();
+          const fIniStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '';
+          const isLater = fIniStr ? fIniStr > fEndStr : false;
+          return sameInv && sameMoneda && isLater;
+        });
+
+        if (contratoSucesor) {
+          capNuevo = Number(contratoSucesor.monto_inversion || 0);
+          difCap = Math.max(0, Math.round((r.capital_base - capNuevo) * 100) / 100);
+          compraNuevasCuotas = Math.round((Math.min(r.capital_base, capNuevo) + aum_v + cap_z_neto) * 100) / 100;
+          if (capNuevo >= r.capital_base) {
+            tipoLiq = 'ROLLOVER_TOTAL';
+            capitalATransferir = 0;
+          } else {
+            tipoLiq = 'ROLLOVER_PARCIAL';
+            capitalATransferir = difCap;
+          }
+        } else {
+          tipoLiq = 'EXTINCION_TOTAL';
+          capitalATransferir = rescate_sum > 0 ? rescate_sum : r.capital_base;
+          compraNuevasCuotas = Math.round((aum_v + cap_z_neto) * 100) / 100;
+        }
+      }
+
+      const rTransferencia = Math.max(0.0, Math.round((rNetoFinal + capitalATransferir) * 100) / 100);
+
+      // Crear payload de auditoria
       const payloadEnriquecido = {
         audit_version: "v40 (Ciclo Auditado React)",
         inversionista: r.inversionista,
@@ -477,6 +530,11 @@ export const generateRetornosV40 = async (
         penalidades: penalidad_sum,
         aumentos_capital: aum_v,
         capital_final: cap_final,
+        id_contrato_siguiente: contratoSucesor ? contratoSucesor.id_contrato : null,
+        tipo_liquidacion: tipoLiq,
+        compra_nuevas_cuotas: compraNuevasCuotas,
+        diferencial_capital_devuelto: difCap,
+        monto_transferido_calculado: rTransferencia,
         detalle_aumentos: r.hijos.map((h: any) => ({ fecha: h.fecha.toISOString().split('T')[0], monto: h.monto })),
         detalle_rescates: r.cron_rescates.map((rc: any) => ({ id_registro: rc.id_registro, fecha: rc.fecha.toISOString().split('T')[0], monto: rc.monto, tasa_castigo: rc.tasa })),
         detalle_deducciones: r.cron_deducciones.map((d: any) => ({ id_registro: d.id_cuota, fecha: d.fecha_proyectada_cobro, monto: d.monto_cobrar, tipo: d.tipo_cargo }))

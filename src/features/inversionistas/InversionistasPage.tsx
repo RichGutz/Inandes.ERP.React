@@ -688,8 +688,12 @@ export const InversionistasPage: React.FC = () => {
     const repartoVal = Number(e.monto_reparto || payload.reparto_valor || 0);
     const aumentoVal = Number(e.monto_aumento || payload.aumentos_capital || (Array.isArray(payload.detalle_aumentos) ? payload.detalle_aumentos.reduce((acc: number, a: any) => acc + Number(a.monto || 0), 0) : 0));
     const capVal = Number(e.monto_capitalizacion || payload.capitalizacion || 0);
-    const compraCuotasVal = Math.round((aumentoVal + capVal) * 100) / 100;
-    const transferidoCalculado = Math.max(0, Math.round((repartoVal + rescateVal - penalidadVal - deducVal) * 100) / 100);
+    const compraCuotasVal = payload.compra_nuevas_cuotas !== undefined && payload.compra_nuevas_cuotas !== null
+      ? Number(payload.compra_nuevas_cuotas)
+      : Math.round((aumentoVal + capVal) * 100) / 100;
+    const transferidoCalculado = payload.monto_transferido_calculado !== undefined && payload.monto_transferido_calculado !== null
+      ? Number(payload.monto_transferido_calculado)
+      : Math.max(0, Math.round((repartoVal + rescateVal - penalidadVal - deducVal) * 100) / 100);
 
     return {
       fondo_nombre: fondoNombre,
@@ -1784,11 +1788,6 @@ export const InversionistasPage: React.FC = () => {
 
       const contratosList = todosContratos || [];
 
-      const extractCorrelativoNumber = (idStr: string): number => {
-        const match = String(idStr || '').match(/^[A-Z0-9]+-(\d+)/i);
-        return match ? parseInt(match[1], 10) : 0;
-      };
-
       const invMapLocal: Record<string, any> = {};
       if (invList) {
         for (const i of invList) {
@@ -1814,9 +1813,7 @@ export const InversionistasPage: React.FC = () => {
 
           // Buscar datos del contrato actual en la base de datos
           const contratoActual = contratosList.find((c: any) => c.id_contrato === r.id || c.id === r.id);
-          const numCorrelativo = extractCorrelativoNumber(r.id || contratoActual?.id_contrato || '');
           const invId = contratoActual?.id_inversionista_1 || r.id_inversionista_1 || '';
-          const fondoIdActual = contratoActual?.id_fondo || (r.id ? r.id.split('-')[0] : (fData.fondo?.id || ''));
 
           const capAnterior = Number(r.capital || r.capital_base || contratoActual?.monto_inversion || 0);
 
@@ -1835,18 +1832,18 @@ export const InversionistasPage: React.FC = () => {
           let capNuevo = 0;
           let difCap = 0;
 
-          if (isVencidoOAlCierre && numCorrelativo > 0) {
-            // Buscar si existe un contrato sucesor con el MISMO número correlativo (#0XX)
+          if (isVencidoOAlCierre) {
+            // Buscar si existe un contrato sucesor (Look-Ahead: Mismo Inversionista + Misma Moneda + fecha_inicio > fecha_corte)
             const contratoSucesor = contratosList.find((c: any) => {
               if (c.id_contrato === r.id || c.id === r.id) return false;
-              const sameInv = (c.id_inversionista_1 && c.id_inversionista_1 === invId) || 
-                              (c.id_inversionista && c.id_inversionista === invId);
-              const sameFondo = c.id_fondo === fondoIdActual;
-              const sameNum = extractCorrelativoNumber(c.id_contrato) === numCorrelativo;
+              const sameInv = (c.id_inversionista_1 && invId && String(c.id_inversionista_1).toLowerCase() === String(invId).toLowerCase()) || 
+                              (c.id_inversionista && invId && String(c.id_inversionista).toLowerCase() === String(invId).toLowerCase()) ||
+                              (c.inversionista && r.inversionista && c.inversionista.trim().toUpperCase() === r.inversionista.trim().toUpperCase());
+              const sameMoneda = (c.moneda || 'PEN').toUpperCase() === (monedaFondo || 'PEN').toUpperCase();
               const isActive = ['emitido', 'activo', 'vigente'].includes(String(c.estado || '').toLowerCase());
-              const isLater = !contratoActual?.fecha_inicio || !c.fecha_inicio || 
-                              new Date(c.fecha_inicio) >= new Date(contratoActual.fecha_inicio);
-              return sameInv && sameFondo && sameNum && isActive && isLater;
+              const fInicioStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '';
+              const isLater = fInicioStr ? fInicioStr > fEnd : false;
+              return sameInv && sameMoneda && isActive && isLater;
             });
 
             if (contratoSucesor) {
@@ -1857,18 +1854,18 @@ export const InversionistasPage: React.FC = () => {
                 // Caso A: Rollover Total o Incremento de Capital -> No se transfiere capital
                 tipoLiq = 'ROLLOVER_TOTAL';
                 capitalATransferir = 0;
-                comentario = `🔄 Rollover Total #${String(numCorrelativo).padStart(3, '0')} (Cap. ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} mantenido en ${contratoSucesor.id_contrato}) — Solo Rendimientos`;
+                comentario = `🔄 Rollover Total (Cap. ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} mantenido en ${contratoSucesor.id_contrato}) — Solo Rendimientos`;
               } else {
                 // Caso B: Rollover Parcial -> Se transfiere la diferencia de capital
                 tipoLiq = 'ROLLOVER_PARCIAL';
                 capitalATransferir = difCap;
-                comentario = `✂️ Rollover Parcial #${String(numCorrelativo).padStart(3, '0')} (Cap. anterior ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} ➔ nuevo ${monedaFondo} ${capNuevo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}). Devolución diferencial: ${monedaFondo} ${difCap.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
+                comentario = `✂️ Rollover Parcial (Cap. anterior ${monedaFondo} ${capAnterior.toLocaleString('es-PE', { minimumFractionDigits: 2 })} ➔ nuevo ${monedaFondo} ${capNuevo.toLocaleString('es-PE', { minimumFractionDigits: 2 })} en ${contratoSucesor.id_contrato}). Devolución diferencial: ${monedaFondo} ${difCap.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
               }
             } else {
               // Caso C: No hay renovación activa -> Extinción / Devolución Total de Capital
               tipoLiq = 'EXTINCION_TOTAL';
               capitalATransferir = rRescatesNetos > 0 ? rRescatesNetos : capAnterior;
-              comentario = `🚪 Extinción / Cierre Contrato #${String(numCorrelativo).padStart(3, '0')} (Sin renovación activa). Devolución Total Cap: ${monedaFondo} ${capitalATransferir.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
+              comentario = `🚪 Extinción / Cierre Contrato (Sin renovación activa). Devolución Total Cap: ${monedaFondo} ${capitalATransferir.toLocaleString('es-PE', { minimumFractionDigits: 2 })} + Rendimientos`;
             }
           } else if (rRescatesNetos > 0) {
             comentario = `Liquidación Regular + Rescate Parcial (${monedaFondo} ${rRescatesNetos.toLocaleString('es-PE', { minimumFractionDigits: 2 })})`;
