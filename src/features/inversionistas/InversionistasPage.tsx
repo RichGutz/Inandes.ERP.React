@@ -816,7 +816,7 @@ export const InversionistasPage: React.FC = () => {
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label">(-) Deducciones</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.deducciones > 0 ? formatNumDoc(row.deducciones) : '-'}</td></tr>
       <tr><td class="col-label">(-) Penalidades por rescate anticipado</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.penalidades > 0 ? formatNumDoc(row.penalidades) : '-'}</td></tr>
-      <tr><td class="col-label">(-) Rescates solicitados:</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.rescates > 0 ? formatNumDoc(row.rescates) : '-'}</td></tr>
+      <tr><td class="col-label">(-) Rescates solicitados</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.rescates > 0 ? formatNumDoc(row.rescates) : '-'}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
       <tr><td class="col-label bold">Monto transferido / abonado:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.monto_transferido > 0 ? formatNumDoc(row.monto_transferido) : '-'}</td></tr>
       <tr class="spacer-row"><td colspan="3"></td></tr>
