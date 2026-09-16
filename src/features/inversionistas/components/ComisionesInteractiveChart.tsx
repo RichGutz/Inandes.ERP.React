@@ -182,6 +182,25 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     const isPeriodoFijo = filterPeriodo !== 'ALL';
     const isFondoFijo = filterFondo !== 'ALL';
 
+    const currencySymbol = filterMoneda === 'USD' ? '$' : 'S/';
+
+    const formatVal = (metric: PlotMetric, val: number) => {
+      if (val === undefined || val === null) return '-';
+      if (metric === 'comision_total' || metric === 'capital_base') {
+        return `${currencySymbol} ${val.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+      if (metric === 'tasa_promedio') {
+        return `${val.toFixed(2)}% aa`;
+      }
+      if (metric === 'num_participes') {
+        return `${Math.round(val)} partícipes`;
+      }
+      if (metric === 'num_operaciones') {
+        return `${Math.round(val)} operaciones`;
+      }
+      return `${currencySymbol} ${val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
+    };
+
     // -----------------------------------------------------------------------
     // CASO 1: PERIODO FIJO + FONDO FIJO -> EJE X = LÍNEA DE ASESORES
     // -----------------------------------------------------------------------
@@ -274,9 +293,13 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
               👤 Asesor: ${asesorName}
             </div>`;
             params.forEach(p => {
-              const val = p.value;
-              const formattedVal = typeof val === 'number' ? val.toLocaleString('es-PE', { minimumFractionDigits: 2 }) : val;
-              html += `<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
+              const val = Number(p.value) || 0;
+              const isSec = p.seriesName.includes('(Sec)');
+              const activeM = isSec ? secondaryMetric : primaryMetric;
+              const formattedVal = formatVal(activeM, val);
+
+              html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${p.color};"></span>
                 <span style="color:#475569;">${p.seriesName}:</span>
                 <span style="font-weight:bold;color:#0F172A;">${formattedVal}</span>
               </div>`;
@@ -299,7 +322,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         yAxis: [
           {
             type: 'value',
-            name: getMetricLabel(primaryMetric),
+            name: `${getMetricLabel(primaryMetric)} (${currencySymbol})`,
             nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#4F46E5' },
             axisLabel: { formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val) },
             splitLine: { lineStyle: { type: 'dashed', color: '#E2E8F0' } }
@@ -309,6 +332,12 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
             name: secondaryMetric !== 'none' ? getMetricLabel(secondaryMetric) : '',
             nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#059669' },
             show: secondaryMetric !== 'none',
+            axisLabel: {
+              formatter: (val: number) => {
+                if (secondaryMetric === 'tasa_promedio') return `${val}%`;
+                return val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val);
+              }
+            },
             splitLine: { show: false }
           }
         ],
@@ -391,6 +420,39 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         };
       });
 
+      // Serie secundaria opcional por fondo (solo si secondaryMetric !== 'none')
+      const secSeries = secondaryMetric !== 'none' ? (() => {
+        const secData = fondosList.map((_f, fIdx) => {
+          let totalCap = 0;
+          let totalTasaSum = 0;
+          let totalCom = 0;
+          sortedAsesorKeys.forEach(aKey => {
+            const s = seriesMatrix[aKey];
+            totalCap += s.capital_base[fIdx];
+            totalTasaSum += s.tasa_sum[fIdx];
+            totalCom += s.comision_total[fIdx];
+          });
+
+          if (secondaryMetric === 'tasa_promedio') {
+            return totalCap > 0 ? Math.round((totalTasaSum / totalCap) * 100) / 100 : 0;
+          }
+          if (secondaryMetric === 'capital_base') {
+            return Math.round(totalCap);
+          }
+          return Math.round(totalCom * 100) / 100;
+        });
+
+        return [{
+          name: `${getMetricLabel(secondaryMetric)} (Sec)`,
+          type: secondaryGraphType,
+          yAxisIndex: 1,
+          smooth: true,
+          lineStyle: { width: 3, type: 'dashed' },
+          itemStyle: { color: '#059669' },
+          data: secData
+        }];
+      })() : [];
+
       return {
         tooltip: {
           trigger: 'axis',
@@ -405,12 +467,15 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
 
             params.forEach(p => {
               const val = Number(p.value) || 0;
+              const isSec = p.seriesName.includes('(Sec)');
+              if (!isSec && val > 0) totalFondo += val;
+
               if (val > 0) {
-                totalFondo += val;
+                const formattedVal = isSec ? formatVal(secondaryMetric, val) : `${currencySymbol} ${val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${p.color};"></span>
                   <span style="color:#475569;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.seriesName}:</span>
-                  <span style="font-weight:bold;color:#0F172A;">${val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                  <span style="font-weight:bold;color:#0F172A;">${formattedVal}</span>
                 </div>`;
               }
             });
@@ -418,7 +483,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
             if (totalFondo > 0) {
               html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#4338ca;">
                 <span>Total Comisiones Fondo:</span>
-                <span>${totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                <span>${currencySymbol} ${totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
               </div>`;
             }
 
@@ -436,13 +501,26 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         yAxis: [
           {
             type: 'value',
-            name: 'Comisión por Fondo (PEN / USD)',
+            name: `Comisión por Fondo (${currencySymbol})`,
             nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#4F46E5' },
             axisLabel: { formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val) },
             splitLine: { lineStyle: { type: 'dashed', color: '#E2E8F0' } }
+          },
+          {
+            type: 'value',
+            name: secondaryMetric !== 'none' ? getMetricLabel(secondaryMetric) : '',
+            nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#059669' },
+            show: secondaryMetric !== 'none',
+            axisLabel: {
+              formatter: (val: number) => {
+                if (secondaryMetric === 'tasa_promedio') return `${val}%`;
+                return val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val);
+              }
+            },
+            splitLine: { show: false }
           }
         ],
-        series: priSeries
+        series: [...priSeries, ...secSeries]
       };
     }
 
@@ -540,7 +618,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         }
 
         return {
-          name: `${sKey} ${yAxisIndex === 1 ? '(Sec)' : ''}`,
+          name: `${sKey}${yAxisIndex === 1 ? ' (Sec)' : ''}`,
           type: isBar ? 'bar' : 'line',
           stack: isStack ? 'stack_primary' : undefined,
           yAxisIndex: yAxisIndex,
@@ -594,9 +672,8 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
               const isSec = p.seriesName.includes('(Sec)');
               if (!isSec) totalPriPeriod += Number(val);
 
-              const formattedVal = primaryMetric === 'tasa_promedio' || (isSec && secondaryMetric === 'tasa_promedio')
-                ? `${val.toFixed(2)}% aa`
-                : `${val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
+              const activeM = isSec ? secondaryMetric : primaryMetric;
+              const formattedVal = formatVal(activeM, Number(val));
 
               html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${p.color};"></span>
@@ -609,7 +686,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
           if (primaryGraphType === 'bar_stack' && totalPriPeriod > 0) {
             html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#4338ca;">
               <span>Total Período:</span>
-              <span>${totalPriPeriod.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+              <span>${currencySymbol} ${totalPriPeriod.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
             </div>`;
           }
 
@@ -638,7 +715,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
       yAxis: [
         {
           type: 'value',
-          name: getMetricLabel(primaryMetric),
+          name: `${getMetricLabel(primaryMetric)} (${currencySymbol})`,
           nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#4F46E5' },
           axisLabel: {
             formatter: (val: number) => {
@@ -1013,6 +1090,8 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
             ref={echartsRef}
             option={options}
             style={{ height: '580px', width: '100%' }}
+            notMerge={true}
+            lazyUpdate={true}
             opts={{ renderer: 'svg' }}
           />
         </div>

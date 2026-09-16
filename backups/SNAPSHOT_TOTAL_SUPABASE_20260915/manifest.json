@@ -1,0 +1,46 @@
+{
+  "fecha_backup": "2026-09-15T15:51:41.977414",
+  "descripcion": "Snapshot TOTAL de TODAS las 8 tablas de Supabase (Inversionistas + Factoring)",
+  "tablas": {
+    "crm_certificados_eventos": {
+      "total_registros": 1000,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_certificados_eventos.json",
+      "tamano_bytes": 1472319
+    },
+    "crm_contratos": {
+      "total_registros": 222,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_contratos.json",
+      "tamano_bytes": 243473
+    },
+    "crm_cronograma_deducciones_rescates": {
+      "total_registros": 50,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_cronograma_deducciones_rescates.json",
+      "tamano_bytes": 32530
+    },
+    "crm_fondos": {
+      "total_registros": 17,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_fondos.json",
+      "tamano_bytes": 15152
+    },
+    "crm_inversionistas": {
+      "total_registros": 233,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_inversionistas.json",
+      "tamano_bytes": 329448
+    },
+    "crm_asesores": {
+      "total_registros": 19,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\crm_asesores.json",
+      "tamano_bytes": 29421
+    },
+    "propuestas": {
+      "total_registros": 159,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\propuestas.json",
+      "tamano_bytes": 263759
+    },
+    "EMISORES.ACEPTANTES": {
+      "total_registros": 68,
+      "archivo": "C:\\Users\\rguti\\Inandes.ERP.React\\backups\\SNAPSHOT_TOTAL_SUPABASE_20260915\\EMISORES_ACEPTANTES.json",
+      "tamano_bytes": 170689
+    }
+  }
+}
