@@ -12,7 +12,7 @@ import {
   GripVertical, CheckCircle2, Clock, Users, Briefcase,
   User, Landmark, BarChart3, Table
 } from 'lucide-react';
-import { ComisionesInteractiveChart } from './components/ComisionesInteractiveChart';
+import { ComisionesInteractiveChart, formatShortAdvisorName } from './components/ComisionesInteractiveChart';
 import { LOGO_INANDES_BASE64 } from '../../assets/base64Images';
 
 export const ComisionesAsesoresTab: React.FC = () => {
@@ -99,7 +99,12 @@ export const ComisionesAsesoresTab: React.FC = () => {
   const availableAsesores = useMemo(() => {
     const map = new Map<string, AsesorComercial>();
     asesoresList.forEach(a => {
-      if (a.codigo) map.set(a.codigo, a);
+      if (a.codigo) {
+        map.set(a.codigo, {
+          ...a,
+          nombre_completo: formatShortAdvisorName(a.nombre_completo)
+        });
+      }
     });
     periodosData.forEach(p => {
       p.participes.forEach(part => {
@@ -107,7 +112,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
           map.set(part.id_asesor, {
             id: part.id_asesor,
             codigo: part.id_asesor,
-            nombre_completo: part.nombre_asesor || part.id_asesor
+            nombre_completo: formatShortAdvisorName(part.nombre_asesor || part.id_asesor)
           });
         }
       });
@@ -1008,7 +1013,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
                           if (!asesoresMap.has(part.id_asesor)) {
                             asesoresMap.set(part.id_asesor, {
                               id_asesor: part.id_asesor,
-                              nombre_asesor: part.nombre_asesor || part.id_asesor,
+                              nombre_asesor: formatShortAdvisorName(part.nombre_asesor || part.id_asesor),
                               participes: [],
                               totales: { comision_pen: 0, comision_usd: 0, capital_pen: 0, capital_usd: 0, count_participes: 0, count_contratos: 0 }
                             });
