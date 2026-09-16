@@ -18,6 +18,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [asesoresList, setAsesoresList] = useState<AsesorComercial[]>([]);
   const [selectedAsesorCodigo, setSelectedAsesorCodigo] = useState<string>('TODOS');
+  const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('TODOS');
   
   const [loading, setLoading] = useState<boolean>(true);
   const [periodosData, setPeriodosData] = useState<PeriodoComisionGroup[]>([]);
@@ -91,7 +92,20 @@ export const ComisionesAsesoresTab: React.FC = () => {
     return result;
   }, [periodosData, periodOrder]);
 
-  // Totales acumulados anuales
+  // Períodos filtrados por el selector de Cierre
+  const displayedPeriodos = useMemo(() => {
+    if (selectedPeriodoId === 'TODOS') return orderedPeriodos;
+    return orderedPeriodos.filter(p => p.id === selectedPeriodoId);
+  }, [orderedPeriodos, selectedPeriodoId]);
+
+  // Auto-expandir el período seleccionado
+  useEffect(() => {
+    if (selectedPeriodoId !== 'TODOS') {
+      setExpandedPeriodos(prev => ({ ...prev, [selectedPeriodoId]: true }));
+    }
+  }, [selectedPeriodoId]);
+
+  // Totales acumulados según períodos visibles (anual o por cierre)
   const totalAnual = useMemo(() => {
     let totalPEN = 0;
     let totalUSD = 0;
@@ -100,7 +114,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
     const uniqueParticipes = new Set<string>();
     let totalContratos = 0;
 
-    periodosData.forEach(p => {
+    displayedPeriodos.forEach(p => {
       totalPEN += p.totales.comision_pen;
       totalUSD += p.totales.comision_usd;
       totalCapPEN = Math.max(totalCapPEN, p.totales.capital_pen);
@@ -117,7 +131,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
       countParticipes: uniqueParticipes.size,
       countContratos: totalContratos
     };
-  }, [periodosData]);
+  }, [displayedPeriodos]);
 
   // Alternar acordeón
   const togglePeriodo = (id: string) => {
@@ -203,7 +217,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-      orderedPeriodos.forEach(p => {
+      displayedPeriodos.forEach(p => {
         const row = sheetSummary.addRow([
           p.id,
           p.mes_nombre,
@@ -242,7 +256,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
       detHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
       detHeader.alignment = { horizontal: 'center', vertical: 'middle' };
 
-      orderedPeriodos.forEach(p => {
+      displayedPeriodos.forEach(p => {
         p.participes.forEach(part => {
           const row = sheetDetalle.addRow([
             p.mes_nombre,
@@ -364,7 +378,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
     </table>
   </div>
 
-  ${orderedPeriodos.map(p => `
+  ${displayedPeriodos.map(p => `
     <div class="period-card">
       <div class="period-header">
         <table style="width: 100%;">
@@ -462,7 +476,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
       {/* 1. BARRA SUPERIOR EJECUTIVA */}
       <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         
-        {/* Título y Selector de Año */}
+        {/* Título, Selector de Año y Selector de Cierre */}
         <div className="flex items-center gap-4 flex-wrap">
           <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
             <Briefcase size={26} />
@@ -474,9 +488,6 @@ export const ComisionesAsesoresTab: React.FC = () => {
                 Base 365
               </span>
             </h2>
-            <p className="text-xs text-[#64748b] dark:text-[#94a3b8] font-medium">
-              Determinación de comisiones de captación por asesor en los 8 períodos canónicos de cierre
-            </p>
           </div>
 
           {/* Selector de Año */}
@@ -496,6 +507,22 @@ export const ComisionesAsesoresTab: React.FC = () => {
             >
               ►
             </button>
+          </div>
+
+          {/* Selector de Cierre */}
+          <div className="relative min-w-[210px]">
+            <select
+              value={selectedPeriodoId}
+              onChange={(e) => setSelectedPeriodoId(e.target.value)}
+              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="TODOS">📅 TODOS LOS CIERRES (8 Períodos)</option>
+              {PERIODOS_CANONICOS.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.mes}: {p.label} (Corte {p.corte})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -579,11 +606,11 @@ export const ComisionesAsesoresTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Comisiones Anuales PEN */}
+        {/* Comisiones PEN */}
         <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              Comisión Anual PEN
+              {selectedPeriodoId === 'TODOS' ? 'Comisión Anual PEN' : 'Comisión Período PEN'}
             </span>
             <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
               Soles
@@ -599,11 +626,11 @@ export const ComisionesAsesoresTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Comisiones Anuales USD */}
+        {/* Comisiones USD */}
         <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              Comisión Anual USD
+              {selectedPeriodoId === 'TODOS' ? 'Comisión Anual USD' : 'Comisión Período USD'}
             </span>
             <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
               Dólares
@@ -625,7 +652,9 @@ export const ComisionesAsesoresTab: React.FC = () => {
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-indigo-600 dark:text-indigo-400" />
           <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-            8 Períodos Canónicos de Cierre Contable ({selectedYear})
+            {selectedPeriodoId === 'TODOS' 
+              ? `8 Períodos Canónicos de Cierre Contable (${selectedYear})` 
+              : `Cierre Seleccionado: ${PERIODOS_CANONICOS.find(p => p.id === selectedPeriodoId)?.label || selectedPeriodoId} (${selectedYear})`}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -655,7 +684,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-3.5">
-          {orderedPeriodos.map((periodo) => {
+          {displayedPeriodos.map((periodo) => {
             const isExpanded = !!expandedPeriodos[periodo.id];
             const isDraggingOver = dragOverPeriodId === periodo.id;
 
