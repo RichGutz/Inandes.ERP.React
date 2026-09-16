@@ -9,9 +9,10 @@ import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 import ExcelJS from 'exceljs';
 import { 
   Loader2, FileSpreadsheet, FileText, ChevronDown, ChevronRight, 
-  GripVertical, CheckCircle2, Clock, Users, Briefcase, 
-  Calendar, User, Landmark
+  GripVertical, CheckCircle2, Clock, Users, Briefcase,
+  User, Landmark, BarChart3, Table
 } from 'lucide-react';
+import { ComisionesInteractiveChart } from './components/ComisionesInteractiveChart';
 import { LOGO_INANDES_BASE64 } from '../../assets/base64Images';
 
 export const ComisionesAsesoresTab: React.FC = () => {
@@ -38,6 +39,9 @@ export const ComisionesAsesoresTab: React.FC = () => {
   // Export States
   const [exportingExcel, setExportingExcel] = useState<boolean>(false);
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
+  
+  // Vista: Tabular (acordeones) vs Grafico ECharts
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   // Cargar lista de asesores y fondos
   useEffect(() => {
@@ -672,9 +676,9 @@ export const ComisionesAsesoresTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Lado Derecho: Botones de Exportación (SOLO ICONOS) */}
+        {/* Lado Derecho: Botones de Exportacion & Grafico (SOLO ICONOS) */}
         <div className="flex items-center gap-2 shrink-0 self-end xl:self-center">
-          {/* Botón Excel (Solo Icono) */}
+          {/* Boton Excel (Solo Icono) */}
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel || loading}
@@ -684,11 +688,24 @@ export const ComisionesAsesoresTab: React.FC = () => {
             {exportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
           </button>
 
-          {/* Botón PDF (Solo Icono) */}
+          {/* Boton Analisis Grafico Apache ECharts (Al lado derecho de Excel) */}
+          <button
+            onClick={() => setViewMode(prev => prev === 'chart' ? 'table' : 'chart')}
+            title={viewMode === 'chart' ? "Volver a Vista Tabular de Acordeones" : "Abrir Tablero Grafico ECharts"}
+            className={`w-9 h-9 rounded-xl shadow-xs transition-all flex items-center justify-center cursor-pointer ${
+              viewMode === 'chart' 
+                ? 'bg-purple-600 hover:bg-purple-700 text-white ring-2 ring-purple-400/50' 
+                : 'bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 hover:border-purple-400 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+            }`}
+          >
+            {viewMode === 'chart' ? <Table size={16} /> : <BarChart3 size={16} />}
+          </button>
+
+          {/* Boton PDF (Solo Icono) */}
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf || loading}
-            title="Exportar Liquidación PDF"
+            title="Exportar Liquidacion PDF"
             className="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
           >
             {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
@@ -776,35 +793,38 @@ export const ComisionesAsesoresTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. BARRA DE CONTROL DE ACORDEONES */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-indigo-600 dark:text-indigo-400" />
-          <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
-            {selectedPeriodoId === 'TODOS' 
-              ? `Jerarquía de Liquidación: Períodos ➔ Fondos ➔ Asesores (${selectedYear})` 
-              : `Cierre: ${PERIODOS_CANONICOS.find(p => p.id === selectedPeriodoId)?.label || selectedPeriodoId} ➔ Fondos ➔ Asesores (${selectedYear})`}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => toggleAll(true)}
-            className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-          >
-            Expandir Todos
-          </button>
-          <span className="text-slate-300 dark:text-slate-700">|</span>
-          <button
-            onClick={() => toggleAll(false)}
-            className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] hover:underline cursor-pointer"
-          >
-            Colapsar Todos
-          </button>
-        </div>
-      </div>
+      {/* 3. BARRA DE HERRAMIENTAS Y VISTA */}
+      {viewMode === 'table' && (
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wide flex items-center gap-2">
+            <span>CIERRE: {selectedPeriodoId === 'TODOS' ? `AÑO ${selectedYear}` : selectedPeriodoId} ➔ FONDOS ➔ ASESORES</span>
+          </div>
 
-      {/* 4. LISTA DE ACORDEONES EN JERARQUÍA: PERÍODOS -> FONDOS -> ASESORES -> PARTÍCIPES */}
-      {loading ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleAll(true)}
+              className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+            >
+              Expandir Todos
+            </button>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <button
+              onClick={() => toggleAll(false)}
+              className="text-[11px] font-bold text-[#64748b] dark:text-[#94a3b8] hover:underline cursor-pointer"
+            >
+              Colapsar Todos
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. CONTENIDO: TABLERO GRAFICO ECHARTS O ACORDEONES */}
+      {viewMode === 'chart' ? (
+        <ComisionesInteractiveChart
+          periodosData={periodosData}
+          selectedYear={selectedYear}
+        />
+      ) : loading ? (
         <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
           <Loader2 size={32} className="animate-spin text-indigo-600" />
           <p className="text-xs font-bold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
