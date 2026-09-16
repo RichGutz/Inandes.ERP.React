@@ -1054,136 +1054,178 @@ export const ComisionesAsesoresTab: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* CUERPO NIVEL 2: ACORDEÓN DE ASESORES */}
+                            {/* CUERPO NIVEL 2: DETALLE DEL FONDO */}
                             {isFondoExpanded && (
                               <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-[#fcfcfd] dark:bg-[#090f20] flex flex-col gap-3">
-                                {asesoresArray.map((asesorGroup) => {
-                                  const asesorKey = `${fondoKey}_${asesorGroup.id_asesor}`;
-                                  // Si hay un asesor específico seleccionado en la barra, se expande directamente
-                                  const isAsesorExpanded = selectedAsesorCodigo !== 'TODOS' || !!expandedAsesores[asesorKey];
+                                {selectedAsesorCodigo !== 'TODOS' ? (
+                                  /* Si ya hay un asesor seleccionado en la cabecera, mostramos la tabla directamente sin anidar otro acordeón redundante */
+                                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xs">
+                                    <table className="w-full text-left border-collapse">
+                                      <thead>
+                                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
+                                          <th className="py-2.5 px-3 w-10 text-center">#</th>
+                                          <th className="py-2.5 px-3 min-w-[200px]">Inversionista / Certificado</th>
+                                          <th className="py-2.5 px-3 text-right w-[130px]">Capital Base</th>
+                                          <th className="py-2.5 px-3 text-center w-[90px]">Tasa Asesor</th>
+                                          <th className="py-2.5 px-3 text-center w-[65px]">Días</th>
+                                          <th className="py-2.5 px-3 min-w-[300px]">Determinación Matemática (Base 365)</th>
+                                          <th className="py-2.5 px-3 text-right w-[130px]">Comisión Neta</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                                        {fondoGroup.participes.map((part, pIdx) => (
+                                          <tr 
+                                            key={`${part.id_contrato}_${pIdx}`}
+                                            className="hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                                          >
+                                            <td className="py-2.5 px-3 text-center font-mono text-[11px] font-bold text-slate-400">
+                                              {String(pIdx + 1).padStart(2, '0')}
+                                            </td>
+                                            <td className="py-2.5 px-3">
+                                              <div className="font-black text-[#0f172a] dark:text-[#f8fafc] text-xs">
+                                                {part.inversionista_nombre}
+                                              </div>
+                                              <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">Cert: {part.id_certificado}</span>
+                                                <span>·</span>
+                                                <span>Doc: {part.inversionista_dni}</span>
+                                              </div>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] whitespace-nowrap">
+                                              {part.moneda} {part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                              {part.tasa_comision_asesor.toFixed(2)}% aa
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                              {part.dias_devengados} d
+                                            </td>
+                                            <td className="py-2.5 px-3">
+                                              <div className="inline-flex items-center px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-900/40 text-[10px] font-mono font-bold text-sky-800 dark:text-sky-300 whitespace-nowrap">
+                                                {part.determinacion_texto}
+                                              </div>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap text-sm">
+                                              {part.moneda} {part.comision_calculada.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  /* Si seleccionó TODOS los asesores, se muestra el acordeón por cada Asesor */
+                                  asesoresArray.map((asesorGroup) => {
+                                    const asesorKey = `${fondoKey}_${asesorGroup.id_asesor}`;
+                                    const isAsesorExpanded = !!expandedAsesores[asesorKey];
 
-                                  return (
-                                    <div
-                                      key={asesorKey}
-                                      className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-2xs"
-                                    >
-                                      {/* CABECERA NIVEL 3: ASESOR COMERCIAL */}
+                                    return (
                                       <div
-                                        onClick={() => toggleAsesor(asesorKey)}
-                                        className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 cursor-pointer select-none bg-slate-50/70 dark:bg-slate-900/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                                        key={asesorKey}
+                                        className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-2xs"
                                       >
-                                        <div className="flex items-center gap-2">
-                                          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 shrink-0">
-                                            <User size={14} />
-                                          </div>
-                                          <div>
-                                            <div className="text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] flex items-center gap-2">
-                                              <span>{asesorGroup.nombre_asesor}</span>
-                                              <span className="text-[9.5px] font-mono text-slate-500 dark:text-slate-400">
-                                                ({asesorGroup.id_asesor})
-                                              </span>
+                                        {/* CABECERA NIVEL 3: ASESOR COMERCIAL */}
+                                        <div
+                                          onClick={() => toggleAsesor(asesorKey)}
+                                          className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 cursor-pointer select-none bg-slate-50/70 dark:bg-slate-900/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 shrink-0">
+                                              <User size={14} />
                                             </div>
-                                            <div className="text-[10px] text-[#64748b] dark:text-[#94a3b8]">
-                                              {asesorGroup.totales.count_participes} Partícipes ({asesorGroup.totales.count_contratos} Operaciones)
+                                            <div>
+                                              <div className="text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] flex items-center gap-2">
+                                                <span>{asesorGroup.nombre_asesor}</span>
+                                                <span className="text-[9.5px] font-mono text-slate-500 dark:text-slate-400">
+                                                  ({asesorGroup.id_asesor})
+                                                </span>
+                                              </div>
+                                              <div className="text-[10px] text-[#64748b] dark:text-[#94a3b8]">
+                                                {asesorGroup.totales.count_participes} Partícipes ({asesorGroup.totales.count_contratos} Operaciones)
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-3 self-end sm:self-center">
+                                            <div className="text-right">
+                                              <div className="text-[9px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">
+                                                Comisión Asesor
+                                              </div>
+                                              <div className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                                {asesorGroup.totales.comision_pen > 0 && `PEN ${asesorGroup.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                                {asesorGroup.totales.comision_pen > 0 && asesorGroup.totales.comision_usd > 0 && ' │ '}
+                                                {asesorGroup.totales.comision_usd > 0 && `USD ${asesorGroup.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                              </div>
+                                            </div>
+                                            <div className="p-1 text-slate-400">
+                                              {isAsesorExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                                             </div>
                                           </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3 self-end sm:self-center">
-                                          <div className="text-right">
-                                            <div className="text-[9px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">
-                                              Comisión Asesor
-                                            </div>
-                                            <div className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
-                                              {asesorGroup.totales.comision_pen > 0 && `PEN ${asesorGroup.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
-                                              {asesorGroup.totales.comision_pen > 0 && asesorGroup.totales.comision_usd > 0 && ' │ '}
-                                              {asesorGroup.totales.comision_usd > 0 && `USD ${asesorGroup.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                        {/* CUERPO NIVEL 3: DETALLE DE PARTÍCIPES */}
+                                        {isAsesorExpanded && (
+                                          <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a]">
+                                            <div className="overflow-x-auto rounded-lg border border-slate-200/80 dark:border-slate-800/80">
+                                              <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
+                                                    <th className="py-2.5 px-3 w-10 text-center">#</th>
+                                                    <th className="py-2.5 px-3 min-w-[200px]">Inversionista / Certificado</th>
+                                                    <th className="py-2.5 px-3 text-right w-[130px]">Capital Base</th>
+                                                    <th className="py-2.5 px-3 text-center w-[90px]">Tasa Asesor</th>
+                                                    <th className="py-2.5 px-3 text-center w-[65px]">Días</th>
+                                                    <th className="py-2.5 px-3 min-w-[300px]">Determinación Matemática (Base 365)</th>
+                                                    <th className="py-2.5 px-3 text-right w-[130px]">Comisión Neta</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                                                  {asesorGroup.participes.map((part, pIdx) => (
+                                                    <tr 
+                                                      key={`${part.id_contrato}_${pIdx}`}
+                                                      className="hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                                                    >
+                                                      <td className="py-2.5 px-3 text-center font-mono text-[11px] font-bold text-slate-400">
+                                                        {String(pIdx + 1).padStart(2, '0')}
+                                                      </td>
+                                                      <td className="py-2.5 px-3">
+                                                        <div className="font-black text-[#0f172a] dark:text-[#f8fafc] text-xs">
+                                                          {part.inversionista_nombre}
+                                                        </div>
+                                                        <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                                          <span className="font-semibold text-slate-700 dark:text-slate-300">Cert: {part.id_certificado}</span>
+                                                          <span>·</span>
+                                                          <span>Doc: {part.inversionista_dni}</span>
+                                                        </div>
+                                                      </td>
+                                                      <td className="py-2.5 px-3 text-right font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] whitespace-nowrap">
+                                                        {part.moneda} {part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                                      </td>
+                                                      <td className="py-2.5 px-3 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                                        {part.tasa_comision_asesor.toFixed(2)}% aa
+                                                      </td>
+                                                      <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                                        {part.dias_devengados} d
+                                                      </td>
+                                                      <td className="py-2.5 px-3">
+                                                        <div className="inline-flex items-center px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-900/40 text-[10px] font-mono font-bold text-sky-800 dark:text-sky-300 whitespace-nowrap">
+                                                          {part.determinacion_texto}
+                                                        </div>
+                                                      </td>
+                                                      <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap text-sm">
+                                                        {part.moneda} {part.comision_calculada.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                                      </td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
                                             </div>
                                           </div>
-                                          <div className="p-1 text-slate-400">
-                                            {isAsesorExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                                          </div>
-                                        </div>
+                                        )}
                                       </div>
-
-                                      {/* CUERPO NIVEL 3: DETALLE DE PARTÍCIPES */}
-                                      {isAsesorExpanded && (
-                                        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col gap-2">
-                                          {asesorGroup.participes.map((part, pIdx) => (
-                                            <div
-                                              key={`${part.id_contrato}_${pIdx}`}
-                                              className="bg-[#f8fafc] dark:bg-[#1e293b]/40 border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-colors"
-                                            >
-                                              {/* Inversionista y Certificado */}
-                                              <div className="flex items-center gap-3 min-w-[240px]">
-                                                <span className="text-[10px] font-mono font-bold text-slate-400">
-                                                  {String(pIdx + 1).padStart(2, '0')}
-                                                </span>
-                                                <div>
-                                                  <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc]">
-                                                    {part.inversionista_nombre}
-                                                  </div>
-                                                  <div className="text-[10px] font-mono text-[#64748b] dark:text-[#94a3b8] flex items-center gap-1.5 mt-0.5">
-                                                    <span>Cert: {part.id_certificado}</span>
-                                                    <span>•</span>
-                                                    <span>Doc: {part.inversionista_dni}</span>
-                                                  </div>
-                                                </div>
-                                              </div>
-
-                                              {/* Capital Cartera & Días */}
-                                              <div className="flex items-center gap-5">
-                                                <div className="text-right">
-                                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                                    Capital Base
-                                                  </div>
-                                                  <div className="text-xs font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
-                                                    {part.moneda} {part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                                                  </div>
-                                                </div>
-
-                                                <div className="text-center">
-                                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                                    Tasa Asesor
-                                                  </div>
-                                                  <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                                    {part.tasa_comision_asesor.toFixed(2)}% aa
-                                                  </div>
-                                                </div>
-
-                                                <div className="text-center">
-                                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                                    Días
-                                                  </div>
-                                                  <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                                                    {part.dias_devengados} d
-                                                  </div>
-                                                </div>
-                                              </div>
-
-                                              {/* Pastilla de Determinación Matemática */}
-                                              <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/40 rounded-xl px-3 py-1.5 flex items-center gap-2 max-w-full lg:max-w-md">
-                                                <span className="text-[9.5px] font-mono font-bold text-sky-800 dark:text-sky-300 truncate" title={part.determinacion_texto}>
-                                                  🧮 {part.determinacion_texto}
-                                                </span>
-                                              </div>
-
-                                              {/* Monto de Comisión a Pagar */}
-                                              <div className="text-right min-w-[110px]">
-                                                <div className="text-[9.5px] font-black uppercase text-slate-400">
-                                                  Comisión Neta
-                                                </div>
-                                                <div className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
-                                                  {part.moneda} {part.comision_calculada.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })
+                                )}
                               </div>
                             )}
                           </div>
