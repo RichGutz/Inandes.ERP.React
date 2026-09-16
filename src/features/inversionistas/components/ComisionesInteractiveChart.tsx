@@ -141,15 +141,6 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     };
   }, [periodosData]);
 
-  // Periodos ordenados cronologicamente y filtrados
-  const sortedPeriodos = useMemo(() => {
-    const list = [...periodosData].sort((a, b) => a.mes_num - b.mes_num);
-    if (filterPeriodo !== 'ALL') {
-      return list.filter(p => p.id === filterPeriodo);
-    }
-    return list;
-  }, [periodosData, filterPeriodo]);
-
   const metricOptionsList: { value: PlotMetric; label: string; icon: string; desc: string }[] = [
     { value: 'comision_total', label: 'Comision Devengada', icon: '$', desc: 'Monto total pagado en comisiones comerciales' },
     { value: 'capital_base', label: 'Capital Administrado', icon: '🏦', desc: 'Volumen total de cartera administrada' },
@@ -171,7 +162,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
   };
 
   // Asignador de colores estable por nombre/ID
-  const getColorForKey = (key: string, index: number, type: GroupBy) => {
+  const getColorForKey = (key: string, index: number, type: 'asesor' | 'fondo' | 'moneda' | 'general') => {
     if (type === 'fondo') {
       return FONDO_COLORS[key] || ASESOR_COLORS[index % ASESOR_COLORS.length];
     }
@@ -181,14 +172,288 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     return ASESOR_COLORS[index % ASESOR_COLORS.length];
   };
 
-  // Construccion de Opciones de Apache ECharts
+  // =========================================================================
+  // CONSTRUCCIÓN DINÁMICA DE OPCIONES DE APACHE ECHARTS (LOGICA JERARQUICA)
+  // =========================================================================
   const options = useMemo(() => {
-    if (sortedPeriodos.length === 0) return {};
+    if (periodosData.length === 0) return {};
 
+    // Determinar Modo del Eje X segun los filtros activos
+    const isPeriodoFijo = filterPeriodo !== 'ALL';
+    const isFondoFijo = filterFondo !== 'ALL';
+
+    // -----------------------------------------------------------------------
+    // CASO 1: PERIODO FIJO + FONDO FIJO -> EJE X = LÍNEA DE ASESORES
+    // -----------------------------------------------------------------------
+    if (isPeriodoFijo && isFondoFijo) {
+      const selectedPeriod = periodosData.find(p => p.id === filterPeriodo);
+      const participes = selectedPeriod ? selectedPeriod.participes.filter(p => {
+        if (p.id_fondo !== filterFondo) return false;
+        if (filterAsesor !== 'ALL' && p.id_asesor !== filterAsesor) return false;
+        if (filterMoneda !== 'ALL' && p.moneda !== filterMoneda) return false;
+        return true;
+      }) : [];
+
+      // Agrupar por Asesor
+      const asesorTotalsMap = new Map<string, {
+        nombre: string;
+        comision: number;
+        capital: number;
+        tasa_ponderada: number;
+        participes_set: Set<string>;
+        contratos_count: number;
+      }>();
+
+      participes.forEach(part => {
+        const sKey = part.nombre_asesor || part.id_asesor;
+        if (!asesorTotalsMap.has(sKey)) {
+          asesorTotalsMap.set(sKey, {
+            nombre: sKey,
+            comision: 0,
+            capital: 0,
+            tasa_ponderada: 0,
+            participes_set: new Set<string>(),
+            contratos_count: 0
+          });
+        }
+        const item = asesorTotalsMap.get(sKey)!;
+        item.comision += part.comision_calculada;
+        item.capital += part.capital_base;
+        item.tasa_ponderada += (part.tasa_comision_asesor * part.capital_base);
+        item.participes_set.add(part.inversionista_nombre);
+        item.contratos_count += 1;
+      });
+
+      // Ordenar asesores de MAYOR A MENOR comision (los que mas ganan primero)
+      const sortedAsesores = Array.from(asesorTotalsMap.values()).sort((a, b) => b.comision - a.comision);
+      const xAxisData = sortedAsesores.map(a => a.nombre);
+
+      const getValForMetric = (a: typeof sortedAsesores[0], m: PlotMetric) => {
+        if (m === 'comision_total') return Math.round(a.comision * 100) / 100;
+        if (m === 'capital_base') return Math.round(a.capital);
+        if (m === 'tasa_promedio') return a.capital > 0 ? Math.round((a.tasa_ponderada / a.capital) * 100) / 100 : 0;
+        if (m === 'num_participes') return a.participes_set.size;
+        if (m === 'num_operaciones') return a.contratos_count;
+        return 0;
+      };
+
+      const primaryData = sortedAsesores.map(a => getValForMetric(a, primaryMetric));
+      const secondaryData = secondaryMetric !== 'none' ? sortedAsesores.map(a => getValForMetric(a, secondaryMetric)) : [];
+
+      const priSeries = [{
+        name: getMetricLabel(primaryMetric),
+        type: primaryGraphType.includes('bar') ? 'bar' : 'line',
+        yAxisIndex: 0,
+        smooth: true,
+        barMaxWidth: 45,
+        itemStyle: {
+          color: (params: any) => ASESOR_COLORS[params.dataIndex % ASESOR_COLORS.length],
+          borderRadius: [4, 4, 0, 0]
+        },
+        data: primaryData
+      }];
+
+      const secSeries = secondaryMetric !== 'none' ? [{
+        name: `${getMetricLabel(secondaryMetric)} (Sec)`,
+        type: secondaryGraphType,
+        yAxisIndex: 1,
+        smooth: true,
+        lineStyle: { width: 3, type: 'dashed' },
+        itemStyle: { color: '#059669' },
+        data: secondaryData
+      }] : [];
+
+      return {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross' },
+          formatter: (params: any[]) => {
+            if (!params || params.length === 0) return '';
+            const asesorName = params[0].axisValue;
+            let html = `<div style="font-weight:bold;margin-bottom:4px;border-bottom:1px solid #cbd5e1;padding-bottom:2px;font-size:12px;color:#0f172a;">
+              👤 Asesor: ${asesorName}
+            </div>`;
+            params.forEach(p => {
+              const val = p.value;
+              const formattedVal = typeof val === 'number' ? val.toLocaleString('es-PE', { minimumFractionDigits: 2 }) : val;
+              html += `<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
+                <span style="color:#475569;">${p.seriesName}:</span>
+                <span style="font-weight:bold;color:#0F172A;">${formattedVal}</span>
+              </div>`;
+            });
+            return html;
+          }
+        },
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '10%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: xAxisData,
+          axisTick: { alignWithLabel: true },
+          axisLabel: { 
+            fontWeight: 'bold', 
+            fontSize: 11, 
+            rotate: xAxisData.length > 4 ? 25 : 0,
+            color: '#334155' 
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: getMetricLabel(primaryMetric),
+            nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#4F46E5' },
+            axisLabel: { formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val) },
+            splitLine: { lineStyle: { type: 'dashed', color: '#E2E8F0' } }
+          },
+          {
+            type: 'value',
+            name: secondaryMetric !== 'none' ? getMetricLabel(secondaryMetric) : '',
+            nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#059669' },
+            show: secondaryMetric !== 'none',
+            splitLine: { show: false }
+          }
+        ],
+        series: [...priSeries, ...secSeries]
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // CASO 2: PERIODO FIJO + TODOS LOS FONDOS -> EJE X = LÍNEA DE FONDOS
+    // -----------------------------------------------------------------------
+    if (isPeriodoFijo && !isFondoFijo) {
+      const selectedPeriod = periodosData.find(p => p.id === filterPeriodo);
+      const participes = selectedPeriod ? selectedPeriod.participes.filter(p => {
+        if (filterAsesor !== 'ALL' && p.id_asesor !== filterAsesor) return false;
+        if (filterMoneda !== 'ALL' && p.moneda !== filterMoneda) return false;
+        return true;
+      }) : [];
+
+      // Identificar Fondos presentes (Eje X)
+      const fondosMap = new Map<string, string>();
+      participes.forEach(part => {
+        fondosMap.set(part.id_fondo, part.nombre_fondo || part.id_fondo);
+      });
+      const fondosList = Array.from(fondosMap.entries()).map(([id, nombre]) => ({ id, nombre }));
+      const xAxisData = fondosList.map(f => f.nombre);
+
+      // Identificar Asesores (Series del Stack)
+      const asesoresTotalesMap = new Map<string, number>();
+      const seriesMatrix: Record<string, {
+        comision_total: number[];
+        capital_base: number[];
+        tasa_sum: number[];
+        capital_for_tasa: number[];
+      }> = {};
+
+      participes.forEach(part => {
+        const aKey = part.nombre_asesor || part.id_asesor;
+        asesoresTotalesMap.set(aKey, (asesoresTotalesMap.get(aKey) || 0) + part.comision_calculada);
+
+        if (!seriesMatrix[aKey]) {
+          seriesMatrix[aKey] = {
+            comision_total: new Array(fondosList.length).fill(0),
+            capital_base: new Array(fondosList.length).fill(0),
+            tasa_sum: new Array(fondosList.length).fill(0),
+            capital_for_tasa: new Array(fondosList.length).fill(0),
+          };
+        }
+
+        const fondoIdx = fondosList.findIndex(f => f.id === part.id_fondo);
+        if (fondoIdx >= 0) {
+          const s = seriesMatrix[aKey];
+          s.comision_total[fondoIdx] += part.comision_calculada;
+          s.capital_base[fondoIdx] += part.capital_base;
+          s.tasa_sum[fondoIdx] += (part.tasa_comision_asesor * part.capital_base);
+          s.capital_for_tasa[fondoIdx] += part.capital_base;
+        }
+      });
+
+      // ORDEN DE APILAMIENTO REQUERIDO POR EL USUARIO:
+      // "Dentro de un stack siempre que las mayores comisiones estén ABAJO y va subiendo a la comisión más pequeña"
+      // En ECharts, el primer elemento en series[] se dibuja en la base del stack (ABAJO).
+      // Por tanto, ordenamos DESCENDENTE por comision total: los que mas ganan van primero (abajo).
+      const sortedAsesorKeys = Array.from(asesoresTotalesMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([k]) => k);
+
+      const priSeries = sortedAsesorKeys.map((aKey, aIdx) => {
+        const s = seriesMatrix[aKey];
+        const sColor = ASESOR_COLORS[aIdx % ASESOR_COLORS.length];
+        const dataArr = s.comision_total.map(v => Math.round(v * 100) / 100);
+
+        return {
+          name: aKey,
+          type: 'bar',
+          stack: 'stack_fondos',
+          yAxisIndex: 0,
+          barMaxWidth: 45,
+          itemStyle: { color: sColor },
+          data: dataArr
+        };
+      });
+
+      return {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross' },
+          formatter: (params: any[]) => {
+            if (!params || params.length === 0) return '';
+            const fondoName = params[0].axisValue;
+            let totalFondo = 0;
+            let html = `<div style="font-weight:bold;margin-bottom:6px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;font-size:12px;color:#0f172a;">
+              🏛️ Fondo: ${fondoName}
+            </div>`;
+
+            params.forEach(p => {
+              const val = Number(p.value) || 0;
+              if (val > 0) {
+                totalFondo += val;
+                html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;margin-top:2px;">
+                  <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${p.color};"></span>
+                  <span style="color:#475569;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.seriesName}:</span>
+                  <span style="font-weight:bold;color:#0F172A;">${val.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                </div>`;
+              }
+            });
+
+            if (totalFondo > 0) {
+              html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#4338ca;">
+                <span>Total Comisiones Fondo:</span>
+                <span>${totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+              </div>`;
+            }
+
+            return html;
+          }
+        },
+        legend: { top: 0, type: 'scroll', textStyle: { fontSize: 11, fontWeight: 'bold', color: '#334155' } },
+        grid: { left: '3%', right: '4%', bottom: '10%', top: '10%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: xAxisData,
+          axisTick: { alignWithLabel: true },
+          axisLabel: { fontWeight: 'bold', fontSize: 11, color: '#334155' }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: 'Comisión por Fondo (PEN / USD)',
+            nameTextStyle: { fontWeight: 'bold', fontSize: 11, color: '#4F46E5' },
+            axisLabel: { formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : String(val) },
+            splitLine: { lineStyle: { type: 'dashed', color: '#E2E8F0' } }
+          }
+        ],
+        series: priSeries
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // CASO 3: MULTITEMPORAL (TODOS LOS PERÍODOS) -> EJE X = LÍNEA DE MESES
+    // -----------------------------------------------------------------------
+    const sortedPeriodos = [...periodosData].sort((a, b) => a.mes_num - b.mes_num);
     const xAxisData = sortedPeriodos.map(p => `${p.mes_nombre.slice(0, 3)} ${selectedYear}`);
 
     // Extraer todas las series segun GroupBy
-    const allSeriesKeysSet = new Set<string>();
+    const seriesTotalsMap = new Map<string, number>();
     const seriesDataMap: Record<string, {
       comision_total: number[];
       capital_base: number[];
@@ -208,7 +473,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         if (groupBy === 'fondo') sKey = part.nombre_fondo || part.id_fondo;
         if (groupBy === 'moneda') sKey = part.moneda;
 
-        allSeriesKeysSet.add(sKey);
+        seriesTotalsMap.set(sKey, (seriesTotalsMap.get(sKey) || 0) + part.comision_calculada);
 
         if (!seriesDataMap[sKey]) {
           seriesDataMap[sKey] = {
@@ -231,7 +496,10 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
       });
     });
 
-    const seriesKeys = Array.from(allSeriesKeysSet);
+    // ORDEN DE APILAMIENTO DESCENDENTE: Los que mas ganan van abajo (primeros en series[])
+    const sortedSeriesKeys = Array.from(seriesTotalsMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([k]) => k);
 
     const buildSeriesList = (metric: PlotMetric, graphType: string, yAxisIndex: number) => {
       if (metric === 'none') return [];
@@ -242,7 +510,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
       const isBar = graphType.includes('bar');
       const isArea = graphType === 'area';
 
-      return seriesKeys.map((sKey, sIdx) => {
+      return sortedSeriesKeys.map((sKey, sIdx) => {
         const sData = seriesDataMap[sKey];
         const sColor = getColorForKey(sKey, sIdx, groupBy);
 
@@ -263,7 +531,6 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
           dataArr = sData.contratos_count;
         }
 
-        // Si es secundario y acumulativo
         if (yAxisIndex === 1 && isSecondaryCumulative) {
           let runningTotal = 0;
           dataArr = dataArr.map(v => {
@@ -318,7 +585,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
 
           let totalPriPeriod = 0;
           let html = `<div style="font-weight:bold;margin-bottom:6px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;font-size:12px;color:#0f172a;">
-            Periodo: ${pName}
+            📅 Período: ${pName}
           </div>`;
 
           params.forEach(p => {
@@ -341,7 +608,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
 
           if (primaryGraphType === 'bar_stack' && totalPriPeriod > 0) {
             html += `<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#4338ca;">
-              <span>Total Periodo:</span>
+              <span>Total Período:</span>
               <span>${totalPriPeriod.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
             </div>`;
           }
@@ -398,13 +665,14 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
       series: [...priSeries, ...secSeries]
     };
   }, [
-    sortedPeriodos, 
+    periodosData, 
     groupBy, 
     primaryMetric, 
     primaryGraphType, 
     secondaryMetric, 
     secondaryGraphType, 
     isSecondaryCumulative, 
+    filterPeriodo,
     filterFondo, 
     filterAsesor, 
     filterMoneda,
@@ -490,7 +758,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
 
   return (
     <div className="w-full">
-      {/* TABLERO DE CONTROL Y GRAFICO INTERACTIVO (SIN CARDS SUPERIORES) */}
+      {/* TABLERO DE CONTROL Y GRAFICO INTERACTIVO */}
       <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row gap-5 items-stretch min-h-[640px]">
         
         {/* SIDEBAR IZQUIERDO DE CONTROLES */}
