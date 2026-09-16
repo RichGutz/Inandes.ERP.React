@@ -73,17 +73,56 @@ export const ComisionesAsesoresTab: React.FC = () => {
     loadComisiones();
   }, [selectedYear, selectedAsesorCodigo]);
 
+  // Lista unificada y garantizada de fondos para el selector
+  const availableFondos = useMemo(() => {
+    const map = new Map<string, string>();
+    fondosList.forEach(f => {
+      if (f.id_fondo) map.set(f.id_fondo, f.nombre_fondo || f.id_fondo);
+    });
+    periodosData.forEach(p => {
+      p.participes.forEach(part => {
+        if (part.id_fondo && !map.has(part.id_fondo)) {
+          map.set(part.id_fondo, part.nombre_fondo || part.id_fondo);
+        }
+      });
+    });
+    return Array.from(map.entries())
+      .map(([id, nombre]) => ({ id_fondo: id, nombre_fondo: nombre }))
+      .sort((a, b) => a.nombre_fondo.localeCompare(b.nombre_fondo));
+  }, [fondosList, periodosData]);
+
+  // Lista unificada y garantizada de asesores para el selector
+  const availableAsesores = useMemo(() => {
+    const map = new Map<string, AsesorComercial>();
+    asesoresList.forEach(a => {
+      if (a.codigo) map.set(a.codigo, a);
+    });
+    periodosData.forEach(p => {
+      p.participes.forEach(part => {
+        if (part.id_asesor && !map.has(part.id_asesor)) {
+          map.set(part.id_asesor, {
+            id: part.id_asesor,
+            codigo: part.id_asesor,
+            nombre_completo: part.nombre_asesor || part.id_asesor
+          });
+        }
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+  }, [asesoresList, periodosData]);
+
   // Asesor activo seleccionado
   const selectedAsesorObj = useMemo(() => {
     if (selectedAsesorCodigo === 'TODOS') return null;
-    return asesoresList.find(a => a.codigo === selectedAsesorCodigo) || null;
-  }, [selectedAsesorCodigo, asesoresList]);
+    return availableAsesores.find(a => a.codigo === selectedAsesorCodigo) || null;
+  }, [selectedAsesorCodigo, availableAsesores]);
 
   // Fondo activo seleccionado
   const selectedFondoObj = useMemo(() => {
     if (selectedFondoId === 'TODOS') return null;
-    return fondosList.find(f => f.id_fondo === selectedFondoId) || null;
-  }, [selectedFondoId, fondosList]);
+    return availableFondos.find(f => f.id_fondo === selectedFondoId) || null;
+  }, [selectedFondoId, availableFondos]);
 
   // Lista ordenada de períodos según drag and drop
   const orderedPeriodos = useMemo(() => {
@@ -607,8 +646,8 @@ export const ComisionesAsesoresTab: React.FC = () => {
               onChange={(e) => setSelectedFondoId(e.target.value)}
               className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="TODOS">🏦 TODOS LOS FONDOS ({fondosList.length})</option>
-              {fondosList.map(f => (
+              <option value="TODOS">🏦 TODOS LOS FONDOS ({availableFondos.length})</option>
+              {availableFondos.map(f => (
                 <option key={f.id_fondo} value={f.id_fondo}>
                   🏦 {f.nombre_fondo || f.id_fondo}
                 </option>
@@ -623,8 +662,8 @@ export const ComisionesAsesoresTab: React.FC = () => {
               onChange={(e) => setSelectedAsesorCodigo(e.target.value)}
               className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="TODOS">👥 TODOS LOS ASESORES ({asesoresList.length})</option>
-              {asesoresList.map(a => (
+              <option value="TODOS">👥 TODOS LOS ASESORES ({availableAsesores.length})</option>
+              {availableAsesores.map(a => (
                 <option key={a.codigo} value={a.codigo}>
                   👤 {a.nombre_completo} ({a.codigo})
                 </option>
@@ -673,7 +712,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
               {selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'CONSOLIDADO GENERAL'}
             </div>
             <div className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] truncate">
-              {selectedFondoObj ? selectedFondoObj.nombre_fondo : `${fondosList.length} fondos`} · {selectedAsesorObj ? selectedAsesorObj.codigo : `${asesoresList.length} asesores`}
+              {selectedFondoObj ? selectedFondoObj.nombre_fondo : `${availableFondos.length} fondos`} · {selectedAsesorObj ? selectedAsesorObj.codigo : `${availableAsesores.length} asesores`}
             </div>
           </div>
         </div>

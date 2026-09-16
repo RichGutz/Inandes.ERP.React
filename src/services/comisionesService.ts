@@ -74,23 +74,53 @@ export const PERIODOS_CANONICOS = [
 ];
 
 export const getAsesores = async (): Promise<AsesorComercial[]> => {
-  const { data, error } = await supabase
-    .from('crm_asesores')
-    .select('id, codigo, nombre_completo, tipo_documento_asesor, num_documento_asesor, email, telefono')
-    .order('nombre_completo', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('crm_asesores')
+      .select('id, codigo, nombre_completo, tipo_documento_asesor, num_documento_asesor, email, telefono')
+      .order('nombre_completo', { ascending: true });
 
-  if (error) throw new Error(`Error consultando asesores: ${error.message}`);
-  return data || [];
+    if (error) {
+      console.error('Error consultando asesores:', error);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Exception consultando asesores:', err);
+    return [];
+  }
 };
 
 export const getFondos = async (): Promise<FondoComercial[]> => {
-  const { data, error } = await supabase
-    .from('crm_fondos')
-    .select('id_fondo, nombre_fondo, moneda, tasa_anual_estimada, comision_captacion_fondo')
-    .order('nombre_fondo', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('crm_fondos')
+      .select('id_fondo, nombre_fondo, moneda, tasa_anual_estimada, comision_captacion_fondo')
+      .order('nombre_fondo', { ascending: true });
 
-  if (error) throw new Error(`Error consultando fondos: ${error.message}`);
-  return data || [];
+    if (error) {
+      console.error('Error consultando fondos:', error);
+      return [];
+    }
+    
+    // Deduplicar fondos por id_fondo
+    const uniqueMap = new Map<string, FondoComercial>();
+    (data || []).forEach(f => {
+      if (f.id_fondo && !uniqueMap.has(f.id_fondo)) {
+        uniqueMap.set(f.id_fondo, f);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  } catch (err) {
+    console.error('Exception consultando fondos:', err);
+    return [];
+  }
+};
+
+// Función auxiliar para normalizar códigos de asesor
+export const normalizeAsesorCode = (code: string | null | undefined): string => {
+  if (!code) return '';
+  return code.trim().toUpperCase().replace(/\D/g, '').replace(/^0+/, '');
 };
 
 export const calculateComisionesAnuales = async (
@@ -102,27 +132,57 @@ export const calculateComisionesAnuales = async (
     supabase.from('crm_fondos').select('*'),
     supabase.from('crm_contratos').select('*'),
     supabase.from('crm_inversionistas').select('codigo_inversionista, nombre_completo, documento_identidad, nombre_1, apellido_1'),
-    supabase.from('crm_asesores').select('id, codigo, nombre_completo'),
+    supabase.from('crm_asesores').select('id, codigo, nombre_completo, num_documento_asesor'),
     supabase.from('crm_certificados_eventos')
       .select('*')
       .gte('fecha_periodo_fin', `${year}-01-01`)
       .lte('fecha_periodo_fin', `${year}-12-31`)
   ]);
 
-  if (fondosRes.error) throw fondosRes.error;
-  if (contratosRes.error) throw contratosRes.error;
-  if (inversionistasRes.error) throw inversionistasRes.error;
+  if (fondosRes.error) console.error(fondosRes.error);
+  if (contratosRes.error) console.error(contratosRes.error);
+  if (inversionistasRes.error) console.error(inversionistasRes.error);
 
   const fondosMap = new Map<string, any>();
   (fondosRes.data || []).forEach(f => {
     if (!fondosMap.has(f.id_fondo)) fondosMap.set(f.id_fondo, f);
   });
 
+  // Mapeo robusto y normalizado de asesores
   const asesoresMap = new Map<string, string>();
+  const asesoresByNormMap = new Map<string, { codigo: string; nombre: string }>();
+
   (asesoresRes.data || []).forEach(a => {
-    if (a.codigo) asesoresMap.set(a.codigo, a.nombre_completo);
+    if (a.codigo) {
+      asesoresMap.set(a.codigo, a.nombre_completo);
+      const nCode = normalizeAsesorCode(a.codigo);
+      if (nCode) asesoresByNormMap.set(nCode, { codigo: a.codigo, nombre: a.nombre_completo });
+    }
+    if (a.num_documento_asesor) {
+      const nDoc = normalizeAsesorCode(a.num_documento_asesor);
+      if (nDoc) asesoresByNormMap.set(nDoc, { codigo: a.codigo, nombre: a.nombre_completo });
+    }
     if (a.id) asesoresMap.set(a.id, a.nombre_completo);
   });
+
+  const getAsesorNombre = (aId: string): string => {
+    if (!aId) return 'SIN_ASESOR';
+    if (asesoresMap.has(aId)) return asesoresMap.get(aId)!;
+    const norm = normalizeAsesorCode(aId);
+    if (norm && asesoresByNormMap.has(norm)) {
+      return asesoresByNormMap.get(norm)!.nombre;
+    }
+    return aId;
+  };
+
+  const isAsesorMatch = (contratoAsesorId: string | null | undefined, filterAsesorCode: string | null | undefined): boolean => {
+    if (!filterAsesorCode || filterAsesorCode === 'TODOS') return true;
+    if (!contratoAsesorId) return false;
+    if (contratoAsesorId === filterAsesorCode) return true;
+    const n1 = normalizeAsesorCode(contratoAsesorId);
+    const n2 = normalizeAsesorCode(filterAsesorCode);
+    return n1 !== '' && n1 === n2;
+  };
 
   const inversionistasMap = new Map<string, any>();
   (inversionistasRes.data || []).forEach(i => {
@@ -134,9 +194,9 @@ export const calculateComisionesAnuales = async (
   const allContratos = contratosRes.data || [];
   const allEvents = eventosRes.data || [];
 
-  // Filtrar contratos por asesor si se especificó
+  // Filtrar contratos por asesor si se especificó (con match flexible)
   const contratosFiltrados = selectedAsesorCodigo && selectedAsesorCodigo !== 'TODOS'
-    ? allContratos.filter(c => c.id_asesor === selectedAsesorCodigo)
+    ? allContratos.filter(c => isAsesorMatch(c.id_asesor, selectedAsesorCodigo))
     : allContratos;
 
   const contratosMap = new Map<string, any>();
@@ -200,7 +260,7 @@ export const calculateComisionesAnuales = async (
         const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasDevengados} días = ${moneda} ${comFormatted}`;
 
         const aId = contrato.id_asesor || 'SIN_ASESOR';
-        const aNombre = asesoresMap.get(aId) || aId;
+        const aNombre = getAsesorNombre(aId);
 
         participesList.push({
           id_contrato: contrato.id_contrato,
@@ -254,7 +314,7 @@ export const calculateComisionesAnuales = async (
         const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasExactos} días = ${moneda} ${comFormatted}`;
 
         const aId = contrato.id_asesor || 'SIN_ASESOR';
-        const aNombre = asesoresMap.get(aId) || aId;
+        const aNombre = getAsesorNombre(aId);
 
         participesList.push({
           id_contrato: contrato.id_contrato,
