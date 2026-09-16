@@ -2,11 +2,10 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { PeriodoComisionGroup, ParticipeComisionItem } from '../../../services/comisionesService';
 import { 
-  DollarSign, 
-  Percent, 
-  Award, 
   Layers,
-  ChevronDown
+  ChevronDown,
+  Calendar,
+  RotateCcw
 } from 'lucide-react';
 
 interface ComisionesInteractiveChartProps {
@@ -51,6 +50,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
   selectedYear
 }) => {
   const [groupBy, setGroupBy] = useState<GroupBy>('asesor');
+  const [filterPeriodo, setFilterPeriodo] = useState<string>('ALL');
   const [filterFondo, setFilterFondo] = useState<string>('ALL');
   const [filterAsesor, setFilterAsesor] = useState<string>('ALL');
   const [filterMoneda, setFilterMoneda] = useState<string>('ALL');
@@ -69,6 +69,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
   const secondaryLabelColor = '#0f172a';
 
   // Popovers de filtros
+  const [isPeriodoFilterOpen, setIsPeriodoFilterOpen] = useState(false);
   const [isFondoFilterOpen, setIsFondoFilterOpen] = useState(false);
   const [isAsesorFilterOpen, setIsAsesorFilterOpen] = useState(false);
   const [isPriOpen, setIsPriOpen] = useState(false);
@@ -102,6 +103,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
   // Cerrar popovers al hacer click fuera
   useEffect(() => {
     const handleOutsideClick = () => {
+      setIsPeriodoFilterOpen(false);
       setIsFondoFilterOpen(false);
       setIsAsesorFilterOpen(false);
       setIsPriOpen(false);
@@ -117,6 +119,12 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     const asesoresMap = new Map<string, string>();
     const monedas = new Set<string>();
 
+    const sortedP = [...periodosData].sort((a, b) => a.mes_num - b.mes_num);
+    const periodos = sortedP.map(p => ({
+      id: p.id,
+      nombre: `${p.mes_nombre} (${p.ciclo_label})`
+    }));
+
     periodosData.forEach((p: PeriodoComisionGroup) => {
       p.participes.forEach((part: ParticipeComisionItem) => {
         if (part.id_fondo) fondosMap.set(part.id_fondo, part.nombre_fondo || part.id_fondo);
@@ -126,67 +134,21 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     });
 
     return {
+      periodos,
       fondos: Array.from(fondosMap.entries()).map(([id, nombre]) => ({ id, nombre })),
       asesores: Array.from(asesoresMap.entries()).map(([id, nombre]) => ({ id, nombre })),
       monedas: Array.from(monedas)
     };
   }, [periodosData]);
 
-  // Periodos ordenados cronologicamente
+  // Periodos ordenados cronologicamente y filtrados
   const sortedPeriodos = useMemo(() => {
-    return [...periodosData].sort((a, b) => a.mes_num - b.mes_num);
-  }, [periodosData]);
-
-  // Resumen ejecutivo para el Banner Superior
-  const summaryMetrics = useMemo(() => {
-    let totalComisionPEN = 0;
-    let totalComisionUSD = 0;
-    let totalCapitalPEN = 0;
-    let totalCapitalUSD = 0;
-    const asesorComisionesMap = new Map<string, { nombre: string; comision: number }>();
-    const fondoComisionesMap = new Map<string, { nombre: string; comision: number }>();
-
-    periodosData.forEach((p: PeriodoComisionGroup) => {
-      p.participes.forEach((part: ParticipeComisionItem) => {
-        if (filterFondo !== 'ALL' && part.id_fondo !== filterFondo) return;
-        if (filterAsesor !== 'ALL' && part.id_asesor !== filterAsesor) return;
-        if (filterMoneda !== 'ALL' && part.moneda !== filterMoneda) return;
-
-        if (part.moneda === 'PEN') {
-          totalComisionPEN += part.comision_calculada;
-          totalCapitalPEN += part.capital_base;
-        } else {
-          totalComisionUSD += part.comision_calculada;
-          totalCapitalUSD += part.capital_base;
-        }
-
-        // Asesor map
-        const prevAsesor = asesorComisionesMap.get(part.id_asesor) || { nombre: part.nombre_asesor || part.id_asesor, comision: 0 };
-        prevAsesor.comision += part.comision_calculada;
-        asesorComisionesMap.set(part.id_asesor, prevAsesor);
-
-        // Fondo map
-        const prevFondo = fondoComisionesMap.get(part.id_fondo) || { nombre: part.nombre_fondo || part.id_fondo, comision: 0 };
-        prevFondo.comision += part.comision_calculada;
-        fondoComisionesMap.set(part.id_fondo, prevFondo);
-      });
-    });
-
-    const topAsesor = Array.from(asesorComisionesMap.values()).sort((a, b) => b.comision - a.comision)[0] || null;
-    const topFondo = Array.from(fondoComisionesMap.values()).sort((a, b) => b.comision - a.comision)[0] || null;
-    const totalComisionEqPEN = totalComisionPEN + (totalComisionUSD * 3.75);
-    const totalCapitalEqPEN = totalCapitalPEN + (totalCapitalUSD * 3.75);
-    const tasaEfectivaGlobal = totalCapitalEqPEN > 0 ? (totalComisionEqPEN / totalCapitalEqPEN) * 100 : 0;
-
-    return {
-      totalComisionPEN,
-      totalComisionUSD,
-      totalComisionEqPEN,
-      topAsesor,
-      topFondo,
-      tasaEfectivaGlobal
-    };
-  }, [periodosData, filterFondo, filterAsesor, filterMoneda]);
+    const list = [...periodosData].sort((a, b) => a.mes_num - b.mes_num);
+    if (filterPeriodo !== 'ALL') {
+      return list.filter(p => p.id === filterPeriodo);
+    }
+    return list;
+  }, [periodosData, filterPeriodo]);
 
   const metricOptionsList: { value: PlotMetric; label: string; icon: string; desc: string }[] = [
     { value: 'comision_total', label: 'Comision Devengada', icon: '$', desc: 'Monto total pagado en comisiones comerciales' },
@@ -396,7 +358,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
         left: '3%',
         right: '4%',
         bottom: '8%',
-        top: '12%',
+        top: '10%',
         containLabel: true
       },
       xAxis: {
@@ -465,6 +427,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
       <div className="relative w-full" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => {
+            setIsPeriodoFilterOpen(false);
             setIsFondoFilterOpen(false);
             setIsAsesorFilterOpen(false);
             setIsPriOpen(false);
@@ -512,97 +475,41 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
     );
   };
 
+  const handleResetFilters = () => {
+    setGroupBy('asesor');
+    setFilterPeriodo('ALL');
+    setFilterFondo('ALL');
+    setFilterAsesor('ALL');
+    setFilterMoneda('ALL');
+    setPrimaryMetric('comision_total');
+    setPrimaryGraphType('bar_stack');
+    setSecondaryMetric('tasa_promedio');
+    setSecondaryGraphType('line');
+    setIsSecondaryCumulative(false);
+  };
+
   return (
-    <div className="flex flex-col gap-4 w-full">
-      {/* 1. BANNER SUPERIOR DE CONTROL DE FUGA & GASTO COMERCIAL */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        
-        {/* Desembolso Total */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
-              Gasto Total Comisiones
-            </div>
-            <div className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-              PEN {summaryMetrics.totalComisionPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-            </div>
-            {summaryMetrics.totalComisionUSD > 0 && (
-              <div className="text-[10.5px] font-mono font-bold text-sky-600 dark:text-sky-400">
-                + USD {summaryMetrics.totalComisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-              </div>
-            )}
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
-            <DollarSign size={20} />
-          </div>
-        </div>
-
-        {/* Top Asesor con mayor captacion */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-          <div className="min-w-0 flex-1 pr-2">
-            <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
-              Top Asesor Mayor Comision
-            </div>
-            <div className="text-xs font-black text-slate-900 dark:text-white mt-1 truncate" title={summaryMetrics.topAsesor?.nombre || 'N/A'}>
-              {summaryMetrics.topAsesor ? summaryMetrics.topAsesor.nombre : 'N/A'}
-            </div>
-            <div className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
-              {summaryMetrics.topAsesor ? `PEN ${summaryMetrics.topAsesor.comision.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '-'}
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 shrink-0">
-            <Award size={20} />
-          </div>
-        </div>
-
-        {/* Fondo con mayor costo comercial */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-          <div className="min-w-0 flex-1 pr-2">
-            <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
-              Fondo con Mayor Salida
-            </div>
-            <div className="text-xs font-black text-slate-900 dark:text-white mt-1 truncate" title={summaryMetrics.topFondo?.nombre || 'N/A'}>
-              {summaryMetrics.topFondo ? summaryMetrics.topFondo.nombre : 'N/A'}
-            </div>
-            <div className="text-[11px] font-mono font-bold text-sky-600 dark:text-sky-400">
-              {summaryMetrics.topFondo ? `PEN ${summaryMetrics.topFondo.comision.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '-'}
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/40 shrink-0">
-            <Layers size={20} />
-          </div>
-        </div>
-
-        {/* Tasa Efectiva Global de Costo */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-2xs flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
-              Costo Efectivo sobre Cartera
-            </div>
-            <div className="text-lg font-black font-mono text-purple-600 dark:text-purple-400 mt-1">
-              {summaryMetrics.tasaEfectivaGlobal.toFixed(2)}%
-            </div>
-            <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
-              Ratio global comisiones / capital
-            </div>
-          </div>
-          <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900/40">
-            <Percent size={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* 2. TABLERO DE CONTROL Y GRAFICO INTERACTIVO */}
-      <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row gap-5 items-stretch min-h-[580px]">
+    <div className="w-full">
+      {/* TABLERO DE CONTROL Y GRAFICO INTERACTIVO (SIN CARDS SUPERIORES) */}
+      <div className="bg-white dark:bg-[#0f172a] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row gap-5 items-stretch min-h-[640px]">
         
         {/* SIDEBAR IZQUIERDO DE CONTROLES */}
-        <div className="flex flex-col gap-3 shrink-0 lg:w-[260px]">
+        <div className="flex flex-col gap-3 shrink-0 lg:w-[270px]">
           
-          {/* BLOQUE 1: AGRUPACION & STACKING */}
-          <div className="bg-slate-50/80 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-black uppercase text-slate-700 dark:text-slate-300">
-              <Layers size={14} className="text-indigo-600" />
-              <span>Agrupar / Apilar Por:</span>
+          {/* BLOQUE 1: FILTROS & AGRUPACION */}
+          <div className="bg-slate-50/80 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] font-black uppercase text-slate-700 dark:text-slate-300">
+                <Layers size={14} className="text-indigo-600" />
+                <span>Agrupar / Apilar Por:</span>
+              </div>
+              <button
+                onClick={handleResetFilters}
+                title="Restablecer filtros a valores por defecto"
+                className="p-1 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={13} />
+              </button>
             </div>
 
             <div className="grid grid-cols-3 gap-1 bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg text-[10.5px] font-bold">
@@ -632,15 +539,24 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
               </button>
             </div>
 
-            {/* Filtro Fondo */}
+            {/* Filtro Temporal: Periodo / Cierre */}
             <div className="flex flex-col gap-1 mt-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">Filtrar Fondo:</span>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase">
+                <Calendar size={11} className="text-indigo-500" />
+                <span>Cierre / Período:</span>
+              </div>
+              {renderFilterDropdown(filterPeriodo, setFilterPeriodo, filterOptions.periodos, isPeriodoFilterOpen, setIsPeriodoFilterOpen, 'Cierre')}
+            </div>
+
+            {/* Filtro Fondo */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Fondo de Inversión:</span>
               {renderFilterDropdown(filterFondo, setFilterFondo, filterOptions.fondos, isFondoFilterOpen, setIsFondoFilterOpen, 'Fondo')}
             </div>
 
             {/* Filtro Asesor */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">Filtrar Asesor:</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Asesor Comercial:</span>
               {renderFilterDropdown(filterAsesor, setFilterAsesor, filterOptions.asesores, isAsesorFilterOpen, setIsAsesorFilterOpen, 'Asesor')}
             </div>
 
@@ -828,7 +744,7 @@ export const ComisionesInteractiveChart: React.FC<ComisionesInteractiveChartProp
           <ReactECharts
             ref={echartsRef}
             option={options}
-            style={{ height: '520px', width: '100%' }}
+            style={{ height: '580px', width: '100%' }}
             opts={{ renderer: 'svg' }}
           />
         </div>

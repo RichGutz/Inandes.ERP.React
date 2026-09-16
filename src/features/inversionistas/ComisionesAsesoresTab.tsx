@@ -678,17 +678,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
 
         {/* Lado Derecho: Botones de Exportacion & Grafico (SOLO ICONOS) */}
         <div className="flex items-center gap-2 shrink-0 self-end xl:self-center">
-          {/* Boton Excel (Solo Icono) */}
-          <button
-            onClick={handleExportExcel}
-            disabled={exportingExcel || loading}
-            title="Exportar Excel Maestro"
-            className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
-          >
-            {exportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
-          </button>
-
-          {/* Boton Analisis Grafico Apache ECharts (Al lado derecho de Excel) */}
+          {/* Boton Analisis Grafico Apache ECharts (Al lado IZQUIERDO de Excel) */}
           <button
             onClick={() => setViewMode(prev => prev === 'chart' ? 'table' : 'chart')}
             title={viewMode === 'chart' ? "Volver a Vista Tabular de Acordeones" : "Abrir Tablero Grafico ECharts"}
@@ -699,6 +689,16 @@ export const ComisionesAsesoresTab: React.FC = () => {
             }`}
           >
             {viewMode === 'chart' ? <Table size={16} /> : <BarChart3 size={16} />}
+          </button>
+
+          {/* Boton Excel (Solo Icono) */}
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel || loading}
+            title="Exportar Excel Maestro"
+            className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
+          >
+            {exportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
           </button>
 
           {/* Boton PDF (Solo Icono) */}
@@ -713,85 +713,87 @@ export const ComisionesAsesoresTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. TARJETAS RESUMEN EJECUTIVAS DINÁMICAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        
-        {/* Asesor / Filtro Activo */}
-        <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              Alcance de Liquidación
-            </span>
-            <User size={16} className="text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="mt-2">
-            <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] truncate" title={selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS LOS ASESORES'}>
-              {selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'CONSOLIDADO GENERAL'}
+      {/* 2. TARJETAS RESUMEN EJECUTIVAS DINÁMICAS (Solo en modo tabla) */}
+      {viewMode === 'table' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          
+          {/* Asesor / Filtro Activo */}
+          <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
+                Alcance de Liquidación
+              </span>
+              <User size={16} className="text-indigo-600 dark:text-indigo-400" />
             </div>
-            <div className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] truncate">
-              {selectedFondoObj ? selectedFondoObj.nombre_fondo : `${availableFondos.length} fondos`} · {selectedAsesorObj ? selectedAsesorObj.codigo : `${availableAsesores.length} asesores`}
+            <div className="mt-2">
+              <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] truncate" title={selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS LOS ASESORES'}>
+                {selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'CONSOLIDADO GENERAL'}
+              </div>
+              <div className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] truncate">
+                {selectedFondoObj ? selectedFondoObj.nombre_fondo : `${availableFondos.length} fondos`} · {selectedAsesorObj ? selectedAsesorObj.codigo : `${availableAsesores.length} asesores`}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Partícipes & Contratos */}
-        <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              Cartera Administrada
-            </span>
-            <Users size={16} className="text-sky-600 dark:text-sky-400" />
+          {/* Partícipes & Contratos */}
+          <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
+                Cartera Administrada
+              </span>
+              <Users size={16} className="text-sky-600 dark:text-sky-400" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-xl font-black font-mono text-[#0f172a] dark:text-[#f8fafc]">
+                {totalAnual.countParticipes}
+              </span>
+              <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
+                Partícipes ({totalAnual.countContratos} Operaciones)
+              </span>
+            </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-xl font-black font-mono text-[#0f172a] dark:text-[#f8fafc]">
-              {totalAnual.countParticipes}
-            </span>
-            <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
-              Partícipes ({totalAnual.countContratos} Operaciones)
-            </span>
-          </div>
-        </div>
 
-        {/* Comisiones PEN */}
-        <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              {selectedPeriodoId === 'TODOS' ? 'Comisión Anual PEN' : 'Comisión Período PEN'}
-            </span>
-            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-              Soles
-            </span>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              PEN {totalAnual.comisionPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+          {/* Comisiones PEN */}
+          <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
+                {selectedPeriodoId === 'TODOS' ? 'Comisión Anual PEN' : 'Comisión Período PEN'}
+              </span>
+              <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                Soles
+              </span>
             </div>
-            <div className="text-[10.5px] font-medium text-[#64748b] dark:text-[#94a3b8]">
-              Cartera máx: PEN {totalAnual.maxCapitalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+            <div className="mt-2">
+              <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                PEN {totalAnual.comisionPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[10.5px] font-medium text-[#64748b] dark:text-[#94a3b8]">
+                Cartera máx: PEN {totalAnual.maxCapitalPEN.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Comisiones USD */}
-        <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              {selectedPeriodoId === 'TODOS' ? 'Comisión Anual USD' : 'Comisión Período USD'}
-            </span>
-            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
-              Dólares
-            </span>
-          </div>
-          <div className="mt-2">
-            <div className="text-xl font-black font-mono text-sky-600 dark:text-sky-400">
-              USD {totalAnual.comisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+          {/* Comisiones USD */}
+          <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
+                {selectedPeriodoId === 'TODOS' ? 'Comisión Anual USD' : 'Comisión Período USD'}
+              </span>
+              <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+                Dólares
+              </span>
             </div>
-            <div className="text-[10.5px] font-medium text-[#64748b] dark:text-[#94a3b8]">
-              Cartera máx: USD {totalAnual.maxCapitalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+            <div className="mt-2">
+              <div className="text-xl font-black font-mono text-sky-600 dark:text-sky-400">
+                USD {totalAnual.comisionUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </div>
+              <div className="text-[10.5px] font-medium text-[#64748b] dark:text-[#94a3b8]">
+                Cartera máx: USD {totalAnual.maxCapitalUSD.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 3. BARRA DE HERRAMIENTAS Y VISTA */}
       {viewMode === 'table' && (
