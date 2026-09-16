@@ -11,6 +11,14 @@ export interface AsesorComercial {
   telefono?: string;
 }
 
+export interface FondoComercial {
+  id_fondo: string;
+  nombre_fondo: string;
+  moneda?: string;
+  tasa_anual_estimada?: number;
+  comision_captacion_fondo?: number;
+}
+
 export interface ParticipeComisionItem {
   id_contrato: string;
   id_certificado: string;
@@ -18,6 +26,8 @@ export interface ParticipeComisionItem {
   inversionista_dni: string;
   id_fondo: string;
   nombre_fondo: string;
+  id_asesor: string;
+  nombre_asesor: string;
   moneda: string;
   capital_base: number;
   capital_final_saldo: number;
@@ -73,15 +83,26 @@ export const getAsesores = async (): Promise<AsesorComercial[]> => {
   return data || [];
 };
 
+export const getFondos = async (): Promise<FondoComercial[]> => {
+  const { data, error } = await supabase
+    .from('crm_fondos')
+    .select('id_fondo, nombre_fondo, moneda, tasa_anual_estimada, comision_captacion_fondo')
+    .order('nombre_fondo', { ascending: true });
+
+  if (error) throw new Error(`Error consultando fondos: ${error.message}`);
+  return data || [];
+};
+
 export const calculateComisionesAnuales = async (
   year: number,
   selectedAsesorCodigo: string | null = null
 ): Promise<PeriodoComisionGroup[]> => {
   // 1. Cargar metadatos en paralelo
-  const [fondosRes, contratosRes, inversionistasRes, eventosRes] = await Promise.all([
+  const [fondosRes, contratosRes, inversionistasRes, asesoresRes, eventosRes] = await Promise.all([
     supabase.from('crm_fondos').select('*'),
     supabase.from('crm_contratos').select('*'),
     supabase.from('crm_inversionistas').select('codigo_inversionista, nombre_completo, documento_identidad, nombre_1, apellido_1'),
+    supabase.from('crm_asesores').select('id, codigo, nombre_completo'),
     supabase.from('crm_certificados_eventos')
       .select('*')
       .gte('fecha_periodo_fin', `${year}-01-01`)
@@ -95,6 +116,12 @@ export const calculateComisionesAnuales = async (
   const fondosMap = new Map<string, any>();
   (fondosRes.data || []).forEach(f => {
     if (!fondosMap.has(f.id_fondo)) fondosMap.set(f.id_fondo, f);
+  });
+
+  const asesoresMap = new Map<string, string>();
+  (asesoresRes.data || []).forEach(a => {
+    if (a.codigo) asesoresMap.set(a.codigo, a.nombre_completo);
+    if (a.id) asesoresMap.set(a.id, a.nombre_completo);
   });
 
   const inversionistasMap = new Map<string, any>();
@@ -172,6 +199,9 @@ export const calculateComisionesAnuales = async (
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasDevengados} días = ${moneda} ${comFormatted}`;
 
+        const aId = contrato.id_asesor || 'SIN_ASESOR';
+        const aNombre = asesoresMap.get(aId) || aId;
+
         participesList.push({
           id_contrato: contrato.id_contrato,
           id_certificado: ev.id_certificado || contrato.id_contrato,
@@ -179,6 +209,8 @@ export const calculateComisionesAnuales = async (
           inversionista_dni: inv.documento_identidad || invCode || 'S/N',
           id_fondo: fCode,
           nombre_fondo: fondo.nombre_fondo || fCode,
+          id_asesor: aId,
+          nombre_asesor: aNombre,
           moneda: moneda,
           capital_base: capBase,
           capital_final_saldo: capSaldo,
@@ -221,6 +253,9 @@ export const calculateComisionesAnuales = async (
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasExactos} días = ${moneda} ${comFormatted}`;
 
+        const aId = contrato.id_asesor || 'SIN_ASESOR';
+        const aNombre = asesoresMap.get(aId) || aId;
+
         participesList.push({
           id_contrato: contrato.id_contrato,
           id_certificado: contrato.id_contrato,
@@ -228,6 +263,8 @@ export const calculateComisionesAnuales = async (
           inversionista_dni: inv.documento_identidad || invCode || 'S/N',
           id_fondo: fCode,
           nombre_fondo: fondo.nombre_fondo || fCode,
+          id_asesor: aId,
+          nombre_asesor: aNombre,
           moneda: moneda,
           capital_base: capBase,
           capital_final_saldo: capBase,

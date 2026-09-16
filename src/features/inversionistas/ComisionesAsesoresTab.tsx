@@ -1,33 +1,34 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  getAsesores, calculateComisionesAnuales, PERIODOS_CANONICOS 
+  getAsesores, getFondos, calculateComisionesAnuales, PERIODOS_CANONICOS 
 } from '../../services/comisionesService';
 import type { 
-  AsesorComercial, PeriodoComisionGroup 
+  AsesorComercial, FondoComercial, PeriodoComisionGroup, ParticipeComisionItem 
 } from '../../services/comisionesService';
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
 import ExcelJS from 'exceljs';
 import { 
   Loader2, FileSpreadsheet, FileText, ChevronDown, ChevronRight, 
   GripVertical, CheckCircle2, Clock, Users, Briefcase, 
-  Calendar, User
+  Calendar, User, Landmark
 } from 'lucide-react';
 import { LOGO_INANDES_BASE64 } from '../../assets/base64Images';
 
 export const ComisionesAsesoresTab: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [asesoresList, setAsesoresList] = useState<AsesorComercial[]>([]);
+  const [fondosList, setFondosList] = useState<FondoComercial[]>([]);
   const [selectedAsesorCodigo, setSelectedAsesorCodigo] = useState<string>('TODOS');
   const [selectedPeriodoId, setSelectedPeriodoId] = useState<string>('TODOS');
+  const [selectedFondoId, setSelectedFondoId] = useState<string>('TODOS');
   
   const [loading, setLoading] = useState<boolean>(true);
   const [periodosData, setPeriodosData] = useState<PeriodoComisionGroup[]>([]);
-  const [expandedPeriodos, setExpandedPeriodos] = useState<Record<string, boolean>>({
-    'B1': true,
-    'Q1': true,
-    'B2': true,
-    'B3_Q2': true
-  });
+  
+  // Acordeones jerárquicos: colapsados por defecto
+  const [expandedPeriodos, setExpandedPeriodos] = useState<Record<string, boolean>>({});
+  const [expandedFondos, setExpandedFondos] = useState<Record<string, boolean>>({});
+  const [expandedAsesores, setExpandedAsesores] = useState<Record<string, boolean>>({});
 
   // Drag & Drop
   const [draggedPeriodId, setDraggedPeriodId] = useState<string | null>(null);
@@ -38,17 +39,21 @@ export const ComisionesAsesoresTab: React.FC = () => {
   const [exportingExcel, setExportingExcel] = useState<boolean>(false);
   const [exportingPdf, setExportingPdf] = useState<boolean>(false);
 
-  // Cargar lista de asesores
+  // Cargar lista de asesores y fondos
   useEffect(() => {
-    const fetchAsesores = async () => {
+    const fetchMetadata = async () => {
       try {
-        const data = await getAsesores();
-        setAsesoresList(data);
+        const [asesoresData, fondosData] = await Promise.all([
+          getAsesores(),
+          getFondos()
+        ]);
+        setAsesoresList(asesoresData);
+        setFondosList(fondosData);
       } catch (err: any) {
-        console.error('Error cargando asesores:', err);
+        console.error('Error cargando metadatos:', err);
       }
     };
-    fetchAsesores();
+    fetchMetadata();
   }, []);
 
   // Cargar cálculo de comisiones
@@ -74,6 +79,12 @@ export const ComisionesAsesoresTab: React.FC = () => {
     return asesoresList.find(a => a.codigo === selectedAsesorCodigo) || null;
   }, [selectedAsesorCodigo, asesoresList]);
 
+  // Fondo activo seleccionado
+  const selectedFondoObj = useMemo(() => {
+    if (selectedFondoId === 'TODOS') return null;
+    return fondosList.find(f => f.id_fondo === selectedFondoId) || null;
+  }, [selectedFondoId, fondosList]);
+
   // Lista ordenada de períodos según drag and drop
   const orderedPeriodos = useMemo(() => {
     const map = new Map(periodosData.map(p => [p.id, p]));
@@ -92,20 +103,44 @@ export const ComisionesAsesoresTab: React.FC = () => {
     return result;
   }, [periodosData, periodOrder]);
 
-  // Períodos filtrados por el selector de Cierre
+  // Períodos filtrados por el selector de Cierre y Fondo
   const displayedPeriodos = useMemo(() => {
-    if (selectedPeriodoId === 'TODOS') return orderedPeriodos;
-    return orderedPeriodos.filter(p => p.id === selectedPeriodoId);
-  }, [orderedPeriodos, selectedPeriodoId]);
-
-  // Auto-expandir el período seleccionado
-  useEffect(() => {
+    let list = orderedPeriodos;
     if (selectedPeriodoId !== 'TODOS') {
-      setExpandedPeriodos(prev => ({ ...prev, [selectedPeriodoId]: true }));
+      list = list.filter(p => p.id === selectedPeriodoId);
     }
-  }, [selectedPeriodoId]);
 
-  // Totales acumulados según períodos visibles (anual o por cierre)
+    return list.map(p => {
+      let filteredParts = p.participes;
+      if (selectedFondoId !== 'TODOS') {
+        filteredParts = filteredParts.filter(part => part.id_fondo === selectedFondoId);
+      }
+      if (selectedAsesorCodigo !== 'TODOS') {
+        filteredParts = filteredParts.filter(part => part.id_asesor === selectedAsesorCodigo);
+      }
+
+      const countParts = new Set(filteredParts.map(part => part.inversionista_nombre)).size;
+      const capPen = filteredParts.filter(part => part.moneda === 'PEN').reduce((sum, part) => sum + part.capital_base, 0);
+      const capUsd = filteredParts.filter(part => part.moneda === 'USD').reduce((sum, part) => sum + part.capital_base, 0);
+      const comPen = filteredParts.filter(part => part.moneda === 'PEN').reduce((sum, part) => sum + part.comision_calculada, 0);
+      const comUsd = filteredParts.filter(part => part.moneda === 'USD').reduce((sum, part) => sum + part.comision_calculada, 0);
+
+      return {
+        ...p,
+        participes: filteredParts,
+        totales: {
+          count_participes: countParts,
+          count_contratos: filteredParts.length,
+          capital_pen: capPen,
+          capital_usd: capUsd,
+          comision_pen: comPen,
+          comision_usd: comUsd
+        }
+      };
+    });
+  }, [orderedPeriodos, selectedPeriodoId, selectedFondoId, selectedAsesorCodigo]);
+
+  // Totales acumulados según períodos visibles (anual o por filtros)
   const totalAnual = useMemo(() => {
     let totalPEN = 0;
     let totalUSD = 0;
@@ -133,7 +168,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
     };
   }, [displayedPeriodos]);
 
-  // Alternar acordeón
+  // Alternar acordeón de Período
   const togglePeriodo = (id: string) => {
     setExpandedPeriodos(prev => ({
       ...prev,
@@ -141,13 +176,48 @@ export const ComisionesAsesoresTab: React.FC = () => {
     }));
   };
 
+  // Alternar acordeón de Fondo
+  const toggleFondo = (key: string) => {
+    setExpandedFondos(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Alternar acordeón de Asesor
+  const toggleAsesor = (key: string) => {
+    setExpandedAsesores(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   // Expandir / Colapsar todos
   const toggleAll = (expand: boolean) => {
-    const updated: Record<string, boolean> = {};
-    PERIODOS_CANONICOS.forEach(p => {
-      updated[p.id] = expand;
+    if (!expand) {
+      setExpandedPeriodos({});
+      setExpandedFondos({});
+      setExpandedAsesores({});
+      return;
+    }
+
+    const nextP: Record<string, boolean> = {};
+    const nextF: Record<string, boolean> = {};
+    const nextA: Record<string, boolean> = {};
+
+    displayedPeriodos.forEach(p => {
+      nextP[p.id] = true;
+      p.participes.forEach(part => {
+        const fKey = `${p.id}_${part.id_fondo}`;
+        nextF[fKey] = true;
+        const aKey = `${p.id}_${part.id_fondo}_${part.id_asesor}`;
+        nextA[aKey] = true;
+      });
     });
-    setExpandedPeriodos(updated);
+
+    setExpandedPeriodos(nextP);
+    setExpandedFondos(nextF);
+    setExpandedAsesores(nextA);
   };
 
   // Handlers Drag & Drop
@@ -197,13 +267,14 @@ export const ComisionesAsesoresTab: React.FC = () => {
       workbook.created = new Date();
 
       const asesorName = selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS_LOS_ASESORES';
+      const fondoName = selectedFondoObj ? selectedFondoObj.nombre_fondo : 'TODOS_LOS_FONDOS';
 
       // Hoja 1: Resumen General
       const sheetSummary = workbook.addWorksheet('Resumen Comisiones');
       sheetSummary.views = [{ showGridLines: true }];
 
       sheetSummary.addRow(['INANDES GRUPO FINANCIERO - LIQUIDACIÓN DE COMISIONES COMERCIALES']);
-      sheetSummary.addRow([`AÑO: ${selectedYear} | ASESOR: ${asesorName.toUpperCase()}`]);
+      sheetSummary.addRow([`AÑO: ${selectedYear} | ASESOR: ${asesorName.toUpperCase()} | FONDO: ${fondoName.toUpperCase()}`]);
       sheetSummary.addRow([`FECHA DE EMISIÓN: ${new Date().toLocaleDateString('es-PE')}`]);
       sheetSummary.addRow([]);
 
@@ -243,12 +314,12 @@ export const ComisionesAsesoresTab: React.FC = () => {
       sheetDetalle.views = [{ showGridLines: true }];
 
       sheetDetalle.addRow(['DETALLE ANALÍTICO DE DETERMINACIÓN DE COMISIONES']);
-      sheetDetalle.addRow([`ASESOR: ${asesorName.toUpperCase()} | AÑO ${selectedYear}`]);
+      sheetDetalle.addRow([`ASESOR: ${asesorName.toUpperCase()} | AÑO ${selectedYear} | FONDO: ${fondoName.toUpperCase()}`]);
       sheetDetalle.addRow([]);
 
       sheetDetalle.addRow([
-        'Período', 'Corte', 'Inversionista / Partícipe', 'DNI / RUC', 'Certificado / Contrato',
-        'Fondo', 'Moneda', 'Capital Administrado', 'Días', '% Tasa Com.', 'Fórmula / Determinación', 'Comisión a Pagar'
+        'Período', 'Corte', 'Fondo', 'Asesor Comercial', 'Inversionista / Partícipe', 'DNI / RUC', 'Certificado / Contrato',
+        'Moneda', 'Capital Administrado', 'Días', '% Tasa Com.', 'Fórmula / Determinación', 'Comisión a Pagar'
       ]);
 
       const detHeader = sheetDetalle.getRow(4);
@@ -261,10 +332,11 @@ export const ComisionesAsesoresTab: React.FC = () => {
           const row = sheetDetalle.addRow([
             p.mes_nombre,
             p.corte_str,
+            part.nombre_fondo || part.id_fondo,
+            part.nombre_asesor || part.id_asesor,
             part.inversionista_nombre,
             part.inversionista_dni,
             part.id_certificado,
-            part.id_fondo,
             part.moneda,
             part.capital_base,
             part.dias_devengados,
@@ -273,9 +345,9 @@ export const ComisionesAsesoresTab: React.FC = () => {
             part.comision_calculada
           ]);
 
-          row.getCell(8).numFmt = '#,##0.00';
-          row.getCell(10).numFmt = '0.00%';
-          row.getCell(12).numFmt = '#,##0.00';
+          row.getCell(9).numFmt = '#,##0.00';
+          row.getCell(11).numFmt = '0.00%';
+          row.getCell(13).numFmt = '#,##0.00';
         });
       });
 
@@ -283,7 +355,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
       [sheetSummary, sheetDetalle].forEach(sheet => {
         sheet.columns.forEach(col => {
           if (col) {
-            col.width = 22;
+            col.width = 20;
           }
         });
       });
@@ -313,6 +385,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
     try {
       const asesorName = selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS LOS ASESORES';
       const asesorDoc = selectedAsesorObj ? `${selectedAsesorObj.tipo_documento_asesor || 'DNI'}: ${selectedAsesorObj.num_documento_asesor || selectedAsesorObj.codigo}` : 'CONSOLIDADO INSTITUCIONAL';
+      const fondoName = selectedFondoObj ? selectedFondoObj.nombre_fondo : 'TODOS LOS FONDOS';
 
       const html = `<!DOCTYPE html>
 <html lang="es">
@@ -364,8 +437,8 @@ export const ComisionesAsesoresTab: React.FC = () => {
   <div class="meta-box">
     <table class="meta-grid">
       <tr>
-        <td><strong>Asesor Comercial:</strong> ${asesorName}</td>
-        <td><strong>Documento / Código:</strong> ${asesorDoc}</td>
+        <td><strong>Asesor Comercial:</strong> ${asesorName} (${asesorDoc})</td>
+        <td><strong>Fondo:</strong> ${fondoName}</td>
         <td><strong>Año Liquidado:</strong> ${selectedYear}</td>
         <td><strong>Fecha Emisión:</strong> ${new Date().toLocaleDateString('es-PE')}</td>
       </tr>
@@ -403,9 +476,10 @@ export const ComisionesAsesoresTab: React.FC = () => {
         <thead>
           <tr>
             <th style="width: 25px;">N°</th>
-            <th>Inversionista / Partícipe</th>
-            <th>Certificado / Contrato</th>
             <th>Fondo</th>
+            <th>Asesor</th>
+            <th>Inversionista / Partícipe</th>
+            <th>Certificado</th>
             <th class="text-right">Capital Base</th>
             <th class="text-center">Días</th>
             <th class="text-center">% Com.</th>
@@ -416,16 +490,17 @@ export const ComisionesAsesoresTab: React.FC = () => {
         <tbody>
           ${p.participes.length === 0 ? `
             <tr>
-              <td colspan="9" class="text-center" style="color: #94a3b8; padding: 8px;">
-                No se registraron operaciones vigentes para el asesor en este período.
+              <td colspan="10" class="text-center" style="color: #94a3b8; padding: 8px;">
+                No se registraron operaciones vigentes para los filtros seleccionados en este período.
               </td>
             </tr>
           ` : p.participes.map((part, idx) => `
             <tr>
               <td class="text-center">${String(idx + 1).padStart(2, '0')}</td>
+              <td><b>${part.id_fondo}</b></td>
+              <td>${part.nombre_asesor || part.id_asesor}</td>
               <td class="font-bold">${part.inversionista_nombre}</td>
               <td><code>${part.id_certificado}</code></td>
-              <td>${part.id_fondo}</td>
               <td class="text-right font-bold">${part.moneda} ${part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
               <td class="text-center">${part.dias_devengados}</td>
               <td class="text-center font-bold">${part.tasa_comision_asesor.toFixed(2)}%</td>
@@ -438,7 +513,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
         </tbody>
         <tfoot>
           <tr class="totals-row">
-            <td colspan="4" class="font-bold">TOTALES DEL PERÍODO (${p.participes.length} Operaciones):</td>
+            <td colspan="5" class="font-bold">TOTALES DEL PERÍODO (${p.participes.length} Operaciones):</td>
             <td class="text-right">
               ${p.totales.capital_pen > 0 ? `PEN ${p.totales.capital_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : ''}
               ${p.totales.capital_pen > 0 && p.totales.capital_usd > 0 ? ' / ' : ''}
@@ -473,32 +548,32 @@ export const ComisionesAsesoresTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 animate-fadeIn pb-12">
       
-      {/* 1. BARRA SUPERIOR EJECUTIVA */}
-      <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-5 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      {/* 1. BARRA SUPERIOR EJECUTIVA CON LOS 4 FILTROS EN LÍNEA */}
+      <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 shadow-xs flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         
-        {/* Título, Selector de Año y Selector de Cierre */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
-            <Briefcase size={26} />
+        {/* Lado Izquierdo: Título y Filtros Año, Cierre, Fondo, Asesor */}
+        <div className="flex items-center gap-3 flex-wrap w-full xl:w-auto">
+          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/40 shrink-0">
+            <Briefcase size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[#0f172a] dark:text-[#f8fafc] tracking-tight uppercase flex items-center gap-2">
+            <h2 className="text-sm font-black text-[#0f172a] dark:text-[#f8fafc] tracking-tight uppercase flex items-center gap-2">
               <span>Liquidación de Comisiones</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 font-bold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 font-bold">
                 Base 365
               </span>
             </h2>
           </div>
 
-          {/* Selector de Año */}
-          <div className="flex items-center gap-1 bg-[#f1f5f9] dark:bg-[#1e293b] p-1 rounded-xl border border-[#e2e8f0] dark:border-[#334155]">
+          {/* 1. Selector de Año */}
+          <div className="flex items-center gap-0.5 bg-[#f1f5f9] dark:bg-[#1e293b] p-0.5 rounded-xl border border-[#e2e8f0] dark:border-[#334155] shrink-0">
             <button
               onClick={() => setSelectedYear(y => y - 1)}
               className="px-2 py-1 text-xs font-black text-[#475569] dark:text-[#cbd5e1] hover:bg-white dark:hover:bg-[#0f172a] rounded-lg transition-all"
             >
               ◄
             </button>
-            <span className="px-3 py-1 text-xs font-black text-[#0f172a] dark:text-[#f8fafc] font-mono">
+            <span className="px-2.5 py-1 text-xs font-black text-[#0f172a] dark:text-[#f8fafc] font-mono">
               {selectedYear}
             </span>
             <button
@@ -509,12 +584,12 @@ export const ComisionesAsesoresTab: React.FC = () => {
             </button>
           </div>
 
-          {/* Selector de Cierre */}
-          <div className="relative min-w-[210px]">
+          {/* 2. Selector de Cierre / Mes */}
+          <div className="relative min-w-[190px]">
             <select
               value={selectedPeriodoId}
               onChange={(e) => setSelectedPeriodoId(e.target.value)}
-              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
               <option value="TODOS">📅 TODOS LOS CIERRES (8 Períodos)</option>
               {PERIODOS_CANONICOS.map(p => (
@@ -524,19 +599,31 @@ export const ComisionesAsesoresTab: React.FC = () => {
               ))}
             </select>
           </div>
-        </div>
 
-        {/* Selector de Asesor y Exportadores */}
-        <div className="flex items-center gap-3 flex-wrap w-full lg:w-auto justify-end">
-          
-          {/* Dropdown de Asesores */}
-          <div className="relative min-w-[280px]">
+          {/* 3. Selector de Fondo (Nuevo filtro a la derecha del mes) */}
+          <div className="relative min-w-[200px]">
+            <select
+              value={selectedFondoId}
+              onChange={(e) => setSelectedFondoId(e.target.value)}
+              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value="TODOS">🏦 TODOS LOS FONDOS ({fondosList.length})</option>
+              {fondosList.map(f => (
+                <option key={f.id_fondo} value={f.id_fondo}>
+                  🏦 {f.nombre_fondo || f.id_fondo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. Selector de Asesores */}
+          <div className="relative min-w-[230px]">
             <select
               value={selectedAsesorCodigo}
               onChange={(e) => setSelectedAsesorCodigo(e.target.value)}
-              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-2 px-3 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="w-full bg-[#f8fafc] dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-xl py-1.5 px-2.5 text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="TODOS">👥 TODOS LOS ASESORES ({asesoresList.length} Registrados)</option>
+              <option value="TODOS">👥 TODOS LOS ASESORES ({asesoresList.length})</option>
               {asesoresList.map(a => (
                 <option key={a.codigo} value={a.codigo}>
                   👤 {a.nombre_completo} ({a.codigo})
@@ -544,46 +631,49 @@ export const ComisionesAsesoresTab: React.FC = () => {
               ))}
             </select>
           </div>
+        </div>
 
-          {/* Botón Excel */}
+        {/* Lado Derecho: Botones de Exportación (SOLO ICONOS) */}
+        <div className="flex items-center gap-2 shrink-0 self-end xl:self-center">
+          {/* Botón Excel (Solo Icono) */}
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel || loading}
-            className="h-9 px-4 text-xs font-black uppercase tracking-wider rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            title="Exportar Excel Maestro"
+            className="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
           >
-            {exportingExcel ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} />}
-            <span>Excel Maestro</span>
+            {exportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
           </button>
 
-          {/* Botón PDF */}
+          {/* Botón PDF (Solo Icono) */}
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf || loading}
-            className="h-9 px-4 text-xs font-black uppercase tracking-wider rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            title="Exportar Liquidación PDF"
+            className="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
           >
-            {exportingPdf ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}
-            <span>Liquidación PDF</span>
+            {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
           </button>
         </div>
       </div>
 
-      {/* 2. TARJETAS RESUMEN EJECUTIVAS DEL ASESOR / CONSOLIDADO */}
+      {/* 2. TARJETAS RESUMEN EJECUTIVAS DINÁMICAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Asesor Activo */}
+        {/* Asesor / Filtro Activo */}
         <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase tracking-wider">
-              Asesor Comercial
+              Alcance de Liquidación
             </span>
             <User size={16} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="mt-2">
-            <div className="text-sm font-black text-[#0f172a] dark:text-[#f8fafc] truncate" title={selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS LOS ASESORES'}>
+            <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] truncate" title={selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS LOS ASESORES'}>
               {selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'CONSOLIDADO GENERAL'}
             </div>
-            <div className="text-[11px] font-mono text-[#64748b] dark:text-[#94a3b8]">
-              {selectedAsesorObj ? `${selectedAsesorObj.codigo} · ${selectedAsesorObj.email || 'Sin correo'}` : `${asesoresList.length} asesores en cartera`}
+            <div className="text-[10.5px] font-mono text-[#64748b] dark:text-[#94a3b8] truncate">
+              {selectedFondoObj ? selectedFondoObj.nombre_fondo : `${fondosList.length} fondos`} · {selectedAsesorObj ? selectedAsesorObj.codigo : `${asesoresList.length} asesores`}
             </div>
           </div>
         </div>
@@ -653,8 +743,8 @@ export const ComisionesAsesoresTab: React.FC = () => {
           <Calendar size={16} className="text-indigo-600 dark:text-indigo-400" />
           <span className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] uppercase tracking-wider">
             {selectedPeriodoId === 'TODOS' 
-              ? `8 Períodos Canónicos de Cierre Contable (${selectedYear})` 
-              : `Cierre Seleccionado: ${PERIODOS_CANONICOS.find(p => p.id === selectedPeriodoId)?.label || selectedPeriodoId} (${selectedYear})`}
+              ? `Jerarquía de Liquidación: Períodos ➔ Fondos ➔ Asesores (${selectedYear})` 
+              : `Cierre: ${PERIODOS_CANONICOS.find(p => p.id === selectedPeriodoId)?.label || selectedPeriodoId} ➔ Fondos ➔ Asesores (${selectedYear})`}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -674,7 +764,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. LISTA DE ACORDEONES CON DRAG AND DROP */}
+      {/* 4. LISTA DE ACORDEONES EN JERARQUÍA: PERÍODOS -> FONDOS -> ASESORES -> PARTÍCIPES */}
       {loading ? (
         <div className="bg-white dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#1e293b] rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
           <Loader2 size={32} className="animate-spin text-indigo-600" />
@@ -683,10 +773,53 @@ export const ComisionesAsesoresTab: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-4">
           {displayedPeriodos.map((periodo) => {
-            const isExpanded = !!expandedPeriodos[periodo.id];
+            // Nivel 1: Período
+            const isPeriodoExpanded = !!expandedPeriodos[periodo.id];
             const isDraggingOver = dragOverPeriodId === periodo.id;
+
+            // Agrupar partícipes del período por Fondo
+            const fondosMap = new Map<string, {
+              id_fondo: string;
+              nombre_fondo: string;
+              participes: ParticipeComisionItem[];
+              totales: {
+                comision_pen: number;
+                comision_usd: number;
+                capital_pen: number;
+                capital_usd: number;
+                count_participes: number;
+                count_contratos: number;
+              };
+            }>();
+
+            periodo.participes.forEach(part => {
+              if (!fondosMap.has(part.id_fondo)) {
+                fondosMap.set(part.id_fondo, {
+                  id_fondo: part.id_fondo,
+                  nombre_fondo: part.nombre_fondo || part.id_fondo,
+                  participes: [],
+                  totales: { comision_pen: 0, comision_usd: 0, capital_pen: 0, capital_usd: 0, count_participes: 0, count_contratos: 0 }
+                });
+              }
+              const fg = fondosMap.get(part.id_fondo)!;
+              fg.participes.push(part);
+              if (part.moneda === 'PEN') {
+                fg.totales.comision_pen += part.comision_calculada;
+                fg.totales.capital_pen += part.capital_base;
+              } else {
+                fg.totales.comision_usd += part.comision_calculada;
+                fg.totales.capital_usd += part.capital_base;
+              }
+            });
+
+            fondosMap.forEach(fg => {
+              fg.totales.count_contratos = fg.participes.length;
+              fg.totales.count_participes = new Set(fg.participes.map(p => p.inversionista_nombre)).size;
+            });
+
+            const fondosArray = Array.from(fondosMap.values());
 
             return (
               <div
@@ -701,10 +834,10 @@ export const ComisionesAsesoresTab: React.FC = () => {
                     : 'border-[#e2e8f0] dark:border-[#1e293b] hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
-                {/* CABECERA DEL ACORDEÓN */}
+                {/* CABECERA NIVEL 1: PERÍODO */}
                 <div
                   onClick={() => togglePeriodo(periodo.id)}
-                  className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 cursor-pointer select-none bg-[#f8fafc]/50 dark:bg-[#1e293b]/20 hover:bg-slate-50 dark:hover:bg-[#1e293b]/40 transition-colors"
+                  className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 cursor-pointer select-none bg-[#f8fafc]/60 dark:bg-[#1e293b]/30 hover:bg-slate-50 dark:hover:bg-[#1e293b]/50 transition-colors"
                 >
                   {/* Lado Izquierdo: Grip, Mes, Ciclo y Fechas */}
                   <div className="flex items-center gap-3">
@@ -776,115 +909,247 @@ export const ComisionesAsesoresTab: React.FC = () => {
 
                     {/* Botón Chevron */}
                     <div className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500">
-                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                      {isPeriodoExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </div>
                   </div>
                 </div>
 
-                {/* CUERPO DEL ACORDEÓN: TARJETAS DE PARTÍCIPES & FÓRMULAS */}
-                {isExpanded && (
-                  <div className="p-5 border-t border-[#e2e8f0] dark:border-[#1e293b] bg-white dark:bg-[#0f172a] flex flex-col gap-3">
+                {/* CUERPO NIVEL 1: ACORDEÓN DE FONDOS */}
+                {isPeriodoExpanded && (
+                  <div className="p-4 sm:p-5 border-t border-[#e2e8f0] dark:border-[#1e293b] bg-[#fafafa] dark:bg-[#0b1329] flex flex-col gap-4">
                     
-                    {periodo.participes.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400 text-xs font-medium italic bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                        No existen operaciones ni contratos vigentes para el asesor seleccionado en este período.
+                    {fondosArray.length === 0 ? (
+                      <div className="p-6 text-center text-slate-400 text-xs font-medium italic bg-white dark:bg-[#0f172a] rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                        No se registraron operaciones vigentes para los filtros seleccionados en este período.
                       </div>
                     ) : (
-                      <>
-                        <div className="grid grid-cols-1 gap-2.5">
-                          {periodo.participes.map((part, pIdx) => (
-                            <div 
-                              key={`${part.id_contrato}_${pIdx}`}
-                              className="bg-[#f8fafc] dark:bg-[#1e293b]/40 border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3.5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-colors"
+                      fondosArray.map((fondoGroup) => {
+                        const fondoKey = `${periodo.id}_${fondoGroup.id_fondo}`;
+                        // Si hay un fondo específico seleccionado en la barra, se expande directamente
+                        const isFondoExpanded = selectedFondoId !== 'TODOS' || !!expandedFondos[fondoKey];
+
+                        // Agrupar partícipes del fondo por Asesor
+                        const asesoresMap = new Map<string, {
+                          id_asesor: string;
+                          nombre_asesor: string;
+                          participes: ParticipeComisionItem[];
+                          totales: {
+                            comision_pen: number;
+                            comision_usd: number;
+                            capital_pen: number;
+                            capital_usd: number;
+                            count_participes: number;
+                            count_contratos: number;
+                          };
+                        }>();
+
+                        fondoGroup.participes.forEach(part => {
+                          if (!asesoresMap.has(part.id_asesor)) {
+                            asesoresMap.set(part.id_asesor, {
+                              id_asesor: part.id_asesor,
+                              nombre_asesor: part.nombre_asesor || part.id_asesor,
+                              participes: [],
+                              totales: { comision_pen: 0, comision_usd: 0, capital_pen: 0, capital_usd: 0, count_participes: 0, count_contratos: 0 }
+                            });
+                          }
+                          const ag = asesoresMap.get(part.id_asesor)!;
+                          ag.participes.push(part);
+                          if (part.moneda === 'PEN') {
+                            ag.totales.comision_pen += part.comision_calculada;
+                            ag.totales.capital_pen += part.capital_base;
+                          } else {
+                            ag.totales.comision_usd += part.comision_calculada;
+                            ag.totales.capital_usd += part.capital_base;
+                          }
+                        });
+
+                        asesoresMap.forEach(ag => {
+                          ag.totales.count_contratos = ag.participes.length;
+                          ag.totales.count_participes = new Set(ag.participes.map(p => p.inversionista_nombre)).size;
+                        });
+
+                        const asesoresArray = Array.from(asesoresMap.values());
+
+                        return (
+                          <div
+                            key={fondoKey}
+                            className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden"
+                          >
+                            {/* CABECERA NIVEL 2: FONDO DE INVERSIÓN */}
+                            <div
+                              onClick={() => toggleFondo(fondoKey)}
+                              className="p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer select-none bg-sky-50/40 dark:bg-sky-950/20 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors"
                             >
-                              {/* Inversionista y Certificado */}
-                              <div className="flex items-center gap-3 min-w-[280px]">
-                                <span className="text-[10.5px] font-mono font-bold text-slate-400">
-                                  {String(pIdx + 1).padStart(2, '0')}
-                                </span>
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50 shrink-0">
+                                  <Landmark size={17} />
+                                </div>
                                 <div>
-                                  <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc]">
-                                    {part.inversionista_nombre}
+                                  <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc] flex items-center gap-2 flex-wrap">
+                                    <span>{fondoGroup.nombre_fondo}</span>
+                                    <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300">
+                                      {fondoGroup.id_fondo}
+                                    </span>
                                   </div>
-                                  <div className="text-[10px] font-mono text-[#64748b] dark:text-[#94a3b8] flex items-center gap-1.5 mt-0.5">
-                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{part.id_fondo}</span>
-                                    <span>•</span>
-                                    <span>Cert: {part.id_certificado}</span>
-                                    <span>•</span>
-                                    <span>Doc: {part.inversionista_dni}</span>
+                                  <div className="text-[10px] text-[#64748b] dark:text-[#94a3b8] font-medium">
+                                    {fondoGroup.totales.count_participes} Inversionistas · {fondoGroup.totales.count_contratos} Operaciones
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Capital Cartera & Días */}
-                              <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-4 self-end sm:self-center">
                                 <div className="text-right">
-                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                    Capital Base
+                                  <div className="text-[9px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">
+                                    Subtotal Fondo
                                   </div>
-                                  <div className="text-xs font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
-                                    {part.moneda} {part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                                  </div>
-                                </div>
-
-                                <div className="text-center">
-                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                    Tasa Asesor
-                                  </div>
-                                  <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                    {part.tasa_comision_asesor.toFixed(2)}% aa
+                                  <div className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                    {fondoGroup.totales.comision_pen > 0 && `PEN ${fondoGroup.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                    {fondoGroup.totales.comision_pen > 0 && fondoGroup.totales.comision_usd > 0 && ' │ '}
+                                    {fondoGroup.totales.comision_usd > 0 && `USD ${fondoGroup.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                    {fondoGroup.totales.comision_pen === 0 && fondoGroup.totales.comision_usd === 0 && '0.00'}
                                   </div>
                                 </div>
-
-                                <div className="text-center">
-                                  <div className="text-[9px] font-black uppercase text-slate-400">
-                                    Días
-                                  </div>
-                                  <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                                    {part.dias_devengados} d
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Pastilla de Determinación Matemática Explícita */}
-                              <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/40 rounded-xl px-3 py-1.5 flex items-center gap-2 max-w-full lg:max-w-md">
-                                <span className="text-[9.5px] font-mono font-bold text-sky-800 dark:text-sky-300 truncate" title={part.determinacion_texto}>
-                                  🧮 {part.determinacion_texto}
-                                </span>
-                              </div>
-
-                              {/* Monto de Comisión a Pagar */}
-                              <div className="text-right min-w-[120px]">
-                                <div className="text-[9.5px] font-black uppercase text-slate-400">
-                                  Comisión Neta
-                                </div>
-                                <div className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
-                                  {part.moneda} {part.comision_calculada.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                <div className="p-1 text-slate-400">
+                                  {isFondoExpanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
                                 </div>
                               </div>
                             </div>
-                          ))}
-                        </div>
 
-                        {/* Subtotales del Período */}
-                        <div className="mt-2 pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs gap-2">
-                          <span className="font-bold text-[#64748b] dark:text-[#94a3b8]">
-                            Total {periodo.mes_nombre} ({periodo.participes.length} Operaciones en Cartera)
-                          </span>
-                          <div className="flex items-center gap-4 font-mono font-black">
-                            {periodo.totales.comision_pen > 0 && (
-                              <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-900/30">
-                                Subtotal PEN: S/ {periodo.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                              </span>
-                            )}
-                            {periodo.totales.comision_usd > 0 && (
-                              <span className="text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30 px-3 py-1 rounded-xl border border-sky-200 dark:border-sky-900/30">
-                                Subtotal USD: $ {periodo.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                              </span>
+                            {/* CUERPO NIVEL 2: ACORDEÓN DE ASESORES */}
+                            {isFondoExpanded && (
+                              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-[#fcfcfd] dark:bg-[#090f20] flex flex-col gap-3">
+                                {asesoresArray.map((asesorGroup) => {
+                                  const asesorKey = `${fondoKey}_${asesorGroup.id_asesor}`;
+                                  // Si hay un asesor específico seleccionado en la barra, se expande directamente
+                                  const isAsesorExpanded = selectedAsesorCodigo !== 'TODOS' || !!expandedAsesores[asesorKey];
+
+                                  return (
+                                    <div
+                                      key={asesorKey}
+                                      className="bg-white dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800/80 rounded-xl overflow-hidden shadow-2xs"
+                                    >
+                                      {/* CABECERA NIVEL 3: ASESOR COMERCIAL */}
+                                      <div
+                                        onClick={() => toggleAsesor(asesorKey)}
+                                        className="p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 cursor-pointer select-none bg-slate-50/70 dark:bg-slate-900/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 shrink-0">
+                                            <User size={14} />
+                                          </div>
+                                          <div>
+                                            <div className="text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] flex items-center gap-2">
+                                              <span>{asesorGroup.nombre_asesor}</span>
+                                              <span className="text-[9.5px] font-mono text-slate-500 dark:text-slate-400">
+                                                ({asesorGroup.id_asesor})
+                                              </span>
+                                            </div>
+                                            <div className="text-[10px] text-[#64748b] dark:text-[#94a3b8]">
+                                              {asesorGroup.totales.count_participes} Partícipes ({asesorGroup.totales.count_contratos} Operaciones)
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 self-end sm:self-center">
+                                          <div className="text-right">
+                                            <div className="text-[9px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">
+                                              Comisión Asesor
+                                            </div>
+                                            <div className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                              {asesorGroup.totales.comision_pen > 0 && `PEN ${asesorGroup.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                              {asesorGroup.totales.comision_pen > 0 && asesorGroup.totales.comision_usd > 0 && ' │ '}
+                                              {asesorGroup.totales.comision_usd > 0 && `USD ${asesorGroup.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`}
+                                            </div>
+                                          </div>
+                                          <div className="p-1 text-slate-400">
+                                            {isAsesorExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* CUERPO NIVEL 3: DETALLE DE PARTÍCIPES */}
+                                      {isAsesorExpanded && (
+                                        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col gap-2">
+                                          {asesorGroup.participes.map((part, pIdx) => (
+                                            <div
+                                              key={`${part.id_contrato}_${pIdx}`}
+                                              className="bg-[#f8fafc] dark:bg-[#1e293b]/40 border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-colors"
+                                            >
+                                              {/* Inversionista y Certificado */}
+                                              <div className="flex items-center gap-3 min-w-[240px]">
+                                                <span className="text-[10px] font-mono font-bold text-slate-400">
+                                                  {String(pIdx + 1).padStart(2, '0')}
+                                                </span>
+                                                <div>
+                                                  <div className="text-xs font-black text-[#0f172a] dark:text-[#f8fafc]">
+                                                    {part.inversionista_nombre}
+                                                  </div>
+                                                  <div className="text-[10px] font-mono text-[#64748b] dark:text-[#94a3b8] flex items-center gap-1.5 mt-0.5">
+                                                    <span>Cert: {part.id_certificado}</span>
+                                                    <span>•</span>
+                                                    <span>Doc: {part.inversionista_dni}</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Capital Cartera & Días */}
+                                              <div className="flex items-center gap-5">
+                                                <div className="text-right">
+                                                  <div className="text-[9px] font-black uppercase text-slate-400">
+                                                    Capital Base
+                                                  </div>
+                                                  <div className="text-xs font-mono font-black text-[#0f172a] dark:text-[#f8fafc]">
+                                                    {part.moneda} {part.capital_base.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                                  </div>
+                                                </div>
+
+                                                <div className="text-center">
+                                                  <div className="text-[9px] font-black uppercase text-slate-400">
+                                                    Tasa Asesor
+                                                  </div>
+                                                  <div className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                                    {part.tasa_comision_asesor.toFixed(2)}% aa
+                                                  </div>
+                                                </div>
+
+                                                <div className="text-center">
+                                                  <div className="text-[9px] font-black uppercase text-slate-400">
+                                                    Días
+                                                  </div>
+                                                  <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+                                                    {part.dias_devengados} d
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Pastilla de Determinación Matemática */}
+                                              <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/40 rounded-xl px-3 py-1.5 flex items-center gap-2 max-w-full lg:max-w-md">
+                                                <span className="text-[9.5px] font-mono font-bold text-sky-800 dark:text-sky-300 truncate" title={part.determinacion_texto}>
+                                                  🧮 {part.determinacion_texto}
+                                                </span>
+                                              </div>
+
+                                              {/* Monto de Comisión a Pagar */}
+                                              <div className="text-right min-w-[110px]">
+                                                <div className="text-[9.5px] font-black uppercase text-slate-400">
+                                                  Comisión Neta
+                                                </div>
+                                                <div className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                                  {part.moneda} {part.comision_calculada.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      </>
+                        );
+                      })
                     )}
                   </div>
                 )}
