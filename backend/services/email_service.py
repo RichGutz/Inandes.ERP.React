@@ -32,21 +32,48 @@ GMAIL_SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/gma
 def get_gmail_service(delegated_email: str = DEFAULT_DELEGATED_EMAIL):
     """
     Obtiene el servicio de Google Gmail API usando:
-    1. Service Account con Domain-Wide Delegation (inversionistas@inandes.com) [OFICIAL].
-    2. OAuth2 Token existente (fallback/desarrollo).
+    1. Variable de entorno GMAIL_SA_JSON o GMAIL_SA_BASE64 (ideal para contenedores Coolify).
+    2. Archivo Service Account DWD (inversionistas@inandes.com).
+    3. OAuth2 Token existente (fallback/desarrollo).
     """
-    # 1. Intentar con Service Account DWD oficial
-    if GMAIL_SA_PATH.exists():
+    # 1. Intentar con variable de entorno (GMAIL_SA_JSON o GMAIL_SA_BASE64)
+    sa_env = os.getenv("GMAIL_SA_JSON") or ""
+    sa_b64 = os.getenv("GMAIL_SA_BASE64") or ""
+    if sa_b64 and not sa_env:
         try:
-            creds = service_account.Credentials.from_service_account_file(
-                str(GMAIL_SA_PATH),
+            sa_env = base64.b64decode(sa_b64).decode("utf-8")
+        except Exception as e:
+            print(f"[email_service] Error decodificando GMAIL_SA_BASE64: {e}")
+
+    if sa_env:
+        try:
+            sa_info = json.loads(sa_env)
+            creds = service_account.Credentials.from_service_account_info(
+                sa_info,
                 scopes=["https://mail.google.com/"]
             ).with_subject(delegated_email)
             return build('gmail', 'v1', credentials=creds)
         except Exception as e:
-            print(f"[email_service] Error inicializando Service Account DWD: {e}")
+            print(f"[email_service] Error inicializando Service Account desde env var: {e}")
 
-    # 2. Fallback a Token OAuth2 previo
+    # 2. Intentar con Service Account DWD oficial en disco
+    candidate_paths = [
+        GMAIL_SA_PATH,
+        Path("/data/backend_secrets/gmail_service_account.json"),
+        Path("/app/gmail_service_account.json")
+    ]
+    for p in candidate_paths:
+        if p.exists():
+            try:
+                creds = service_account.Credentials.from_service_account_file(
+                    str(p),
+                    scopes=["https://mail.google.com/"]
+                ).with_subject(delegated_email)
+                return build('gmail', 'v1', credentials=creds)
+            except Exception as e:
+                print(f"[email_service] Error inicializando Service Account DWD desde {p}: {e}")
+
+    # 3. Fallback a Token OAuth2 previo
     if GMAIL_TOKEN_PATH.exists():
         try:
             with open(GMAIL_TOKEN_PATH, 'r', encoding='utf-8') as f:
