@@ -64,18 +64,38 @@ def get_gmail_service(delegated_email: str = DEFAULT_DELEGATED_EMAIL):
     return None
 
 
+MANDATORY_SYSTEM_CC = "inandes@outlook.es"
+
+
+def _resolve_cc_list(cc_email: Optional[str]) -> str:
+    """
+    Garantiza que inandes@outlook.es siempre esté incluido como copia (CC)
+    en todos los correos enviados por el sistema, preservando destinatarios adicionales.
+    """
+    cc_set: List[str] = []
+    if cc_email:
+        for item in cc_email.replace(';', ',').split(','):
+            clean = item.strip()
+            if clean and clean.lower() not in [x.lower() for x in cc_set]:
+                cc_set.append(clean)
+    if MANDATORY_SYSTEM_CC.lower() not in [x.lower() for x in cc_set]:
+        cc_set.append(MANDATORY_SYSTEM_CC)
+    return ", ".join(cc_set)
+
+
 def send_email(
     to_email: str,
     subject: str,
     html_body: str,
     attachments: Optional[List[Dict[str, Any]]] = None,
-    cc_email: str = "rgutil@gmail.com",
+    cc_email: Optional[str] = None,
     sender_email: Optional[str] = None,
     sender_name: str = DEFAULT_SENDER_NAME,
     ribbon_path: Optional[str] = None
 ) -> Tuple[bool, str]:
     """
     Envía un correo con diseño HTML, imagen embebida (ribbon) y archivos adjuntos (PDFs).
+    Siempre incluye inandes@outlook.es en copia (CC).
     
     attachments: [
         {"filename": "EECC_XXX.pdf", "content_bytes": b'...'},
@@ -83,16 +103,18 @@ def send_email(
     ]
     """
     effective_sender = sender_email or DEFAULT_DELEGATED_EMAIL
+    effective_cc = _resolve_cc_list(cc_email)
+
     service = get_gmail_service(delegated_email=effective_sender)
     if not service:
         # Fallback a SMTP si no hay Google API
-        return _send_via_smtp(to_email, subject, html_body, attachments, cc_email, effective_sender, sender_name)
+        return _send_via_smtp(to_email, subject, html_body, attachments, effective_cc, effective_sender, sender_name)
 
     try:
         msg = MIMEMultipart("mixed")
         msg["To"] = to_email
-        if cc_email:
-            msg["Cc"] = cc_email
+        if effective_cc:
+            msg["Cc"] = effective_cc
         
         msg["From"] = f"{sender_name} <{effective_sender}>"
         msg["Subject"] = subject
@@ -168,7 +190,8 @@ def _send_via_smtp(
                 part.add_header("Content-Disposition", f'attachment; filename="{att.get("filename")}"')
                 msg.attach(part)
 
-        recipients = [to_email] + ([cc_email] if cc_email else [])
+        cc_recipients = [e.strip() for e in cc_email.replace(';', ',').split(',') if e.strip()] if cc_email else []
+        recipients = [to_email] + cc_recipients
         server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
         server.login(smtp_user, smtp_password)

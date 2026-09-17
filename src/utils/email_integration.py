@@ -40,6 +40,8 @@ def send_email_with_attachments(to_email: str, subject: str, body: str, attachme
 
     to_list = regex_split_emails(to_email)
     cc_list = regex_split_emails(cc_email)
+    if "inandes@outlook.es" not in [c.lower() for c in cc_list]:
+        cc_list.append("inandes@outlook.es")
     
     if not to_list:
         return False, "No se ha definido ningún destinatario (TO)."

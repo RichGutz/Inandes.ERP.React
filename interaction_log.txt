@@ -715,6 +715,9 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 1. 'src/templates/retencion_renta_v2.html' y 'backend/templates/retencion_renta_v2.html': dinamizado rotulo a '{{ cert.tipo_doc if cert.tipo_doc else "DNI" }}' y actualizado primer parrafo y pie de pagina a Av. Javier Prado Este 560 Int 1403, San Isidro.
 2. 'src/features/inversionistas/InversionistasPage.tsx': propagado 'tipo_doc' en 'findInvDoc' y 'getRetencionRowData', dinamizado template en 'generateSingleRetencionHtml' a '${cert.tipo_doc || "DNI"}' y actualizado domicilio legal.
 3. 'backend/routers/inversionistas.py': propagado 'tipo_doc' en 'find_inv_details' y 'get_inv_info', e inyectado en contextos de renderizado y envio de correos.
-4. 'backend/templates/email_eecc_body.html': actualizado pie de correo con la direccion de San Isidro y telefono +51 (1) 712 1700.
+4. 'backend/templates/email_eecc_body.html' y 'src/templates/email_eecc_body.html': actualizado pie de correo con la direccion de San Isidro y telefono +51 (1) 712 1700.
+5. 'mini_erp_v2_antigravity/Gmail-Sender/email_eecc_body.html', '_preview_email_demo.html', '_send_eecc_v32.py', '_send_eecc_v32_V1_DWD.py', '_send_eecc_v32_V_OLD.py': actualizadas todas las plantillas y scripts de envío de correos masivos/unitarios con la nueva dirección de San Isidro.
+6. 'estado_cuenta_inversionista_v1.html', 'retencion_renta_v1.html', 'ComisionesAsesoresTab.tsx', 'contractTemplates.ts': saneadas todas las referencias de 'Los Tulipanes' a 'Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro'.
+7. Git commit '09f70e2' desplegado en 'origin/main'.
 5. Branch tag 'SAFEPOINT_PRE_FIX_RETENCION_CEX_20260917' creado y sincronizado en origin.
 6. Control de calidad validado con 'py_compile' y 'npm run build' (Exit Code 0).
