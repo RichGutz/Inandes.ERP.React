@@ -578,6 +578,7 @@ export const InversionistasPage: React.FC = () => {
         );
         if (invRel) {
           return {
+            tipo_doc: invRel.tipo_doc || (invRel as any).tipo_documento || 'DNI',
             dni: invRel.documento_identidad || '',
             direccion: invRel.direccion_fiscal || 'Domicilio no registrado',
             telefono: invRel.telefono || (invRel as any).celular || '',
@@ -588,13 +589,14 @@ export const InversionistasPage: React.FC = () => {
       }
     }
 
-    if (!nombre) return { dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
+    if (!nombre) return { tipo_doc: 'DNI', dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
     const n = normalizeTextDoc(nombre);
 
     // 2. Prioridad: Coincidencia Exacta por Documento de Identidad (DNI/RUC)
     const invByDoc = inversionistas.find(inv => inv.documento_identidad && inv.documento_identidad.trim() === n);
     if (invByDoc) {
       return {
+        tipo_doc: invByDoc.tipo_doc || (invByDoc as any).tipo_documento || 'DNI',
         dni: invByDoc.documento_identidad || '',
         direccion: invByDoc.direccion_fiscal || 'Domicilio no registrado',
         telefono: invByDoc.telefono || (invByDoc as any).celular || '',
@@ -612,6 +614,7 @@ export const InversionistasPage: React.FC = () => {
 
       if (n === comp || n === full1 || n === full2 || n === full3) {
         return {
+          tipo_doc: inv.tipo_doc || (inv as any).tipo_documento || 'DNI',
           dni: inv.documento_identidad || '',
           direccion: inv.direccion_fiscal || 'Domicilio no registrado',
           telefono: inv.telefono || (inv as any).celular || '',
@@ -635,6 +638,7 @@ export const InversionistasPage: React.FC = () => {
           continue;
         }
         return {
+          tipo_doc: inv.tipo_doc || (inv as any).tipo_documento || 'DNI',
           dni: inv.documento_identidad || '',
           direccion: inv.direccion_fiscal || 'Domicilio no registrado',
           telefono: inv.telefono || (inv as any).celular || '',
@@ -644,7 +648,7 @@ export const InversionistasPage: React.FC = () => {
       }
     }
 
-    return { dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
+    return { tipo_doc: 'DNI', dni: '', direccion: 'Domicilio no registrado', telefono: '', email: '', inversionista: null as any };
   };
 
   const extractCertNumberDoc = (idStr: string) => {
@@ -742,6 +746,7 @@ export const InversionistasPage: React.FC = () => {
       id_certificado_short: cidShort,
       nombre_fondo: fondoNombre,
       nombres_participes: inversionista,
+      tipo_doc: invDetails.tipo_doc || 'DNI',
       dni_participes: invDetails.dni,
       direccion_fiscal: invDetails.direccion,
       monto_ir_pen_num: irPen.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -887,9 +892,9 @@ export const InversionistasPage: React.FC = () => {
     <h1>DOCUMENTO DE RETENCIÓN DE RENTAS DE SEGUNDA CATEGORÍA<br>DEL CERTIFICADO N° ${cert.id_certificado_short} DEL FONDO<br>${cleanFundTitleDoc(cert.nombre_fondo)} – FONDO DE INVERSION PRIVADO</h1>
   </div>
   <div class="content">
-    <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>${cleanFundTitleDoc(cert.nombre_fondo)} – FONDO DE INVERSION PRIVADO</strong>.</p>
+    <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, distrito de San Isidro, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>${cleanFundTitleDoc(cert.nombre_fondo)} – FONDO DE INVERSION PRIVADO</strong>.</p>
     <p class="certifica-title">CERTIFICA QUE:</p>
-    <p>A Don(ña) <strong>${cert.nombres_participes}</strong>, identificado(a) con DNI N° <strong>${cert.dni_participes}</strong>, con domicilio fiscal en <strong>${cert.direccion_fiscal}</strong>, se le ha efectuado la retención definitiva de PEN <strong>${cert.monto_ir_pen_num}</strong> (<strong>${cert.monto_ir_pen_letras} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>${cert.f_inicio}</strong> al <strong>${cert.f_fin}</strong>, conforme al siguiente detalle:</p>
+    <p>A Don(ña) <strong>${cert.nombres_participes}</strong>, identificado(a) con ${cert.tipo_doc || 'DNI'} N° <strong>${cert.dni_participes}</strong>, con domicilio fiscal en <strong>${cert.direccion_fiscal}</strong>, se le ha efectuado la retención definitiva de PEN <strong>${cert.monto_ir_pen_num}</strong> (<strong>${cert.monto_ir_pen_letras} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>${cert.f_inicio}</strong> al <strong>${cert.f_fin}</strong>, conforme al siguiente detalle:</p>
     <table class="resumen-table">
       <thead>
         <tr>
@@ -928,7 +933,7 @@ export const InversionistasPage: React.FC = () => {
   <div class="footer">
     <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
     <p class="footer-address">Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima</p>
-    <p class="footer-contact">Teléfono: + (511) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
+    <p class="footer-contact">Teléfono: + 51 (1) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
   </div>
 </body>
 </html>`;

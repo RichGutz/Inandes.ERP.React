@@ -820,3 +820,30 @@ RESULTADO:
    - Branch tag 'SAFEPOINT_PRE_TODOS_CONTRATOS_MONO_SCROLL' creado.
    - Compilacion de produccion 'npm run build' validada con Exit Code 0.
 ================================================================================
+[2026-09-16 16:33:14] SESION CERRADA EXITOSAMENTE
+- WhatsApp Bot InAndes:
+  1. Submenus interactivos de seleccion de periodos implementados y activos para EECC y Retenciones.
+  2. Extraccion estricta y 100% contable desde crm_certificados_eventos en Supabase.
+  3. Emision fiel al ERP dirigida al Participe Principal del Contrato (id_inversionista_1: Nancy Leon Vigo) con su DNI, domicilio fiscal y plantilla oficial Consolas / Javier Prado 560.
+  4. Sandbox de 3 DNIs activos (09870156, 02816271, 000949712) y Fallback para terceros.
+  5. Desplegado y validado en caliente en VPS Contabo 169.58.168.107 (puerto 8085).
+  6. Documentacion AS BUILT actualizada en Obsidian/Mudanza.Contabo/Mudanza.Contabo/13.Whats.App.BOT.md y repositorio sincronizado en main.
+
+================================================================================
+[2026-09-17T12:35:00-05:00] TAREA: Correccion de Certificados de Retencion (Soporte dinamico CEX/DNI y actualizacion a nueva direccion legal San Isidro).
+[2026-09-17T12:35:30-05:00] ESTADO: Completado con exito.
+1. Diagnostico & Correccion CEX vs DNI:
+   - Identificada omision en plantillas HTML y generadores donde el rotulo "DNI" estaba quemado en texto estatico.
+   - En Supabase ('crm_inversionistas'), los participes con CEX (como Gladys Yanneth Parra Forero, Doc 000949712) tienen 'tipo_doc = CEX'.
+   - Actualizadas funciones de extraccion 'find_inv_details' y 'get_inv_info' en 'backend/routers/inversionistas.py' para propagar 'tipo_doc'.
+   - Actualizado 'findInvDoc' y 'getRetencionRowData' en 'src/features/inversionistas/InversionistasPage.tsx'.
+   - Dinamizado el template 'retencion_renta_v2.html' (src y backend) y 'generateSingleRetencionHtml' a '{{ cert.tipo_doc or "DNI" }}' / '${cert.tipo_doc || "DNI"}'.
+2. Actualizacion Domicilio Legal InAndes:
+   - Actualizado el primer parrafo y pie de pagina en plantillas de Retenciones y correos al nuevo domicilio institucional de San Isidro:
+     "Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, distrito de San Isidro, provincia y departamento de Lima".
+   - Homologado formato de telefono y correo a "+ 51 (1) 712 1700 | info@inandes.com".
+3. Control de Calidad:
+   - Branch tag 'SAFEPOINT_PRE_FIX_RETENCION_CEX_20260917' creado y sincronizado en origin.
+   - Compilacion de backend Python validada con py_compile (Exit Code 0).
+   - Compilacion de frontend React validada con 'npm run build' (Exit Code 0).
+================================================================================

@@ -213,11 +213,11 @@
     </div>
 
     <div class="content">
-        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Los Tulipanes 147 oficina 306, distrito de Santiago de Surco, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>{{ cert.nombre_fondo }} – FONDO DE INVERSION PRIVADO</strong>.</p>
+        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con R.U.C. N° 20601555256, domiciliada en Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, distrito de San Isidro, provincia y departamento de Lima, en calidad de administradora del FONDO <strong>{{ cert.nombre_fondo }} – FONDO DE INVERSION PRIVADO</strong>.</p>
 
         <p class="certifica-title">CERTIFICA QUE:</p>
 
-        <p>A Don(ña) <strong>{{ cert.nombres_participes }}</strong>, identificado(a) con DNI N° <strong>{{ cert.dni_participes }}</strong>, con domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, se le ha efectuado la retención definitiva de PEN <strong>{{ cert.monto_ir_pen_num }}</strong> (<strong>{{ cert.monto_ir_pen_letras }} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>{{ cert.f_inicio }}</strong> al <strong>{{ cert.f_fin }}</strong>, conforme al siguiente detalle:</p>
+        <p>A Don(ña) <strong>{{ cert.nombres_participes }}</strong>, identificado(a) con {{ cert.tipo_doc if cert.tipo_doc else 'DNI' }} N° <strong>{{ cert.dni_participes }}</strong>, con domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, se le ha efectuado la retención definitiva de PEN <strong>{{ cert.monto_ir_pen_num }}</strong> (<strong>{{ cert.monto_ir_pen_letras }} soles</strong>).por concepto del Impuesto a la Renta de Segunda Categoría por los rendimientos generados en el periodo correspondiente del <strong>{{ cert.f_inicio }}</strong> al <strong>{{ cert.f_fin }}</strong>, conforme al siguiente detalle:</p>
 
         <table class="resumen-table">
             <thead>
@@ -264,7 +264,7 @@
     <div class="footer">
         <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
         <p class="footer-address">Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima</p>
-        <p class="footer-contact">Teléfono: + (511) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
+        <p class="footer-contact">Teléfono: + 51 (1) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
     </div>
 
     {% if not loop.last %}

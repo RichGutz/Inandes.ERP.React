@@ -595,13 +595,14 @@ def get_retenciones_pdf(
         
         def find_inv_details(nombre_inv: str):
             if not nombre_inv:
-                return {"dni": "", "direccion": "Domicilio no registrado"}
+                return {"tipo_doc": "DNI", "dni": "", "direccion": "Domicilio no registrado"}
             princ = get_principal_inversionista(nombre_inv)
             n_clean = princ.upper().strip()
             for inv in inv_list:
                 comp = inv.get('nombre_completo', '').upper().strip()
                 if n_clean in comp or comp in n_clean:
                     return {
+                        "tipo_doc": inv.get('tipo_doc') or inv.get('tipo_documento') or 'DNI',
                         "dni": inv.get('documento_identidad', ''),
                         "direccion": inv.get('direccion_fiscal') or "Domicilio no registrado"
                     }
@@ -609,10 +610,11 @@ def get_retenciones_pdf(
                 a1 = inv.get('apellido_1', '').upper()
                 if n1 and a1 and (n1 in n_clean and a1 in n_clean):
                     return {
+                        "tipo_doc": inv.get('tipo_doc') or inv.get('tipo_documento') or 'DNI',
                         "dni": inv.get('documento_identidad', ''),
                         "direccion": inv.get('direccion_fiscal') or "Domicilio no registrado"
                     }
-            return {"dni": "", "direccion": "Domicilio no registrado"}
+            return {"tipo_doc": "DNI", "dni": "", "direccion": "Domicilio no registrado"}
 
         TC_USD_PEN = float(tipo_cambio or 3.4526)
         tasa_pct = 5.00
@@ -653,6 +655,7 @@ def get_retenciones_pdf(
                 'id_certificado_short': cid_short,
                 'nombre_fondo': clean_fund_title(nombre_fondo),
                 'nombres_participes': inversionista,
+                'tipo_doc': inv_details.get('tipo_doc') or 'DNI',
                 'dni_participes': inv_details['dni'],
                 'direccion_fiscal': inv_details['direccion'],
                 'monto_ir_pen_num': f"{ir_pen:,.2f}",
@@ -783,6 +786,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                     if inv_rel:
                         return {
                             'email': inv_rel.get('email') or inv_rel.get('correo_electronico') or '',
+                            'tipo_doc': inv_rel.get('tipo_doc') or inv_rel.get('tipo_documento') or 'DNI',
                             'dni': inv_rel.get('documento_identidad') or inv_rel.get('numero_documento') or 'S/D',
                             'direccion': inv_rel.get('direccion_fiscal') or inv_rel.get('direccion') or 'Lima, Perú',
                             'nombre_corto': inv_rel.get('nombre_1') or 'Estimado(a) Inversionista'
@@ -796,6 +800,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 r = invs_by_doc[s_norm]
                 return {
                     'email': r.get('email') or r.get('correo_electronico') or '',
+                    'tipo_doc': r.get('tipo_doc') or r.get('tipo_documento') or 'DNI',
                     'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
                     'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
                     'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
@@ -809,6 +814,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 if s_norm == full1 or s_norm == full2 or s_norm == comp:
                     return {
                         'email': r.get('email') or r.get('correo_electronico') or '',
+                        'tipo_doc': r.get('tipo_doc') or r.get('tipo_documento') or 'DNI',
                         'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
                         'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
                         'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
@@ -825,12 +831,13 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                         continue
                     return {
                         'email': r.get('email') or r.get('correo_electronico') or '',
+                        'tipo_doc': r.get('tipo_doc') or r.get('tipo_documento') or 'DNI',
                         'dni': r.get('documento_identidad') or r.get('numero_documento') or 'S/D',
                         'direccion': r.get('direccion_fiscal') or r.get('direccion') or 'Lima, Perú',
                         'nombre_corto': r.get('nombre_1') or 'Estimado(a) Inversionista'
                     }
 
-            return {'email': '', 'dni': 'S/D', 'direccion': 'Lima, Perú', 'nombre_corto': 'Estimado(a) Inversionista'}
+            return {'email': '', 'tipo_doc': 'DNI', 'dni': 'S/D', 'direccion': 'Lima, Perú', 'nombre_corto': 'Estimado(a) Inversionista'}
 
         env = Environment(loader=FileSystemLoader(templates_dir))
         env.globals['format_num'] = format_num
@@ -930,6 +937,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                     'id_certificado_short': cid_short,
                     'nombre_fondo': clean_fund_title(nombre_fondo),
                     'nombres_participes': inversionista,
+                    'tipo_doc': inv_info.get('tipo_doc') or 'DNI',
                     'dni_participes': inv_info['dni'],
                     'direccion_fiscal': inv_info['direccion'],
                     'monto_ir_pen_num': f"{ir_pen:,.2f}",

@@ -701,3 +701,20 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
    - Branch tag 'SAFEPOINT_PRE_TODOS_CONTRATOS_MONO_SCROLL' creado.
    - Compilacion de produccion 'npm run build' validada con Exit Code 0 en 3.66s.
 ================================================================================
+
+[2026-09-16 16:33:14] SESION CERRADA EXITOSAMENTE
+- WhatsApp Bot InAndes:
+  1. Submenus interactivos de seleccion de periodos implementados y activos para EECC y Retenciones.
+  2. Extraccion estricta y 100% contable desde crm_certificados_eventos en Supabase.
+  3. Emision fiel al ERP dirigida al Participe Principal del Contrato (id_inversionista_1: Nancy Leon Vigo) con su DNI, domicilio fiscal y plantilla oficial Consolas / Javier Prado 560.
+  4. Sandbox de 3 DNIs activos (09870156, 02816271, 000949712) y Fallback para terceros.
+  5. Desplegado y validado en caliente en VPS Contabo 169.58.168.107 (puerto 8085).
+  6. Documentacion AS BUILT actualizada en Obsidian/Mudanza.Contabo/Mudanza.Contabo/13.Whats.App.BOT.md y repositorio sincronizado en main.
+
+[2026-09-17 12:35:00-05:00] CORRECCION DE CERTIFICADOS DE RETENCION (CEX VS DNI Y NUEVA DIRECCION LEGAL):
+1. 'src/templates/retencion_renta_v2.html' y 'backend/templates/retencion_renta_v2.html': dinamizado rotulo a '{{ cert.tipo_doc if cert.tipo_doc else "DNI" }}' y actualizado primer parrafo y pie de pagina a Av. Javier Prado Este 560 Int 1403, San Isidro.
+2. 'src/features/inversionistas/InversionistasPage.tsx': propagado 'tipo_doc' en 'findInvDoc' y 'getRetencionRowData', dinamizado template en 'generateSingleRetencionHtml' a '${cert.tipo_doc || "DNI"}' y actualizado domicilio legal.
+3. 'backend/routers/inversionistas.py': propagado 'tipo_doc' en 'find_inv_details' y 'get_inv_info', e inyectado en contextos de renderizado y envio de correos.
+4. 'backend/templates/email_eecc_body.html': actualizado pie de correo con la direccion de San Isidro y telefono +51 (1) 712 1700.
+5. Branch tag 'SAFEPOINT_PRE_FIX_RETENCION_CEX_20260917' creado y sincronizado en origin.
+6. Control de calidad validado con 'py_compile' y 'npm run build' (Exit Code 0).
