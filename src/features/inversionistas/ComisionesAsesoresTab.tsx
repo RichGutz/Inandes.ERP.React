@@ -580,7 +580,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
   `).join('')}
 
   <div class="footer">
-    <p>INANDES ACTIVOS ALTERNATIVOS SAC │ Los Tulipanes 147 Of. 306, Santiago de Surco, Lima │ Tel: + (511) 7121700 │ info@inandes.com</p>
+    <p>INANDES ACTIVOS ALTERNATIVOS SAC │ Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima │ Tel: + 51 (1) 712 1700 │ info@inandes.com</p>
   </div>
 </body>
 </html>`;

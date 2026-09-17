@@ -114,15 +114,15 @@
     </div>
 
     <div class="content">
-        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Los Tulipanes 147
-            oficina 306, Santiago de Surco, provincia y departamento de Lima, representada por su Gerente General, Sr.
+        <p>INANDES ACTIVOS ALTERNATIVOS S.A.C., identificada con RUC N° 20601555256, domiciliada en Av. Javier Prado Este 560 Int 1403
+            Centro Empresarial Javier Prado, distrito de San Isidro, provincia y departamento de Lima, representada por su Gerente General, Sr.
             Juan Ricardo Gallo Pizarro, identificado con DNI 02816271, en su calidad de sociedad administradora del
             FONDO <strong>{{ cert.nombre_fondo }}</strong> – FONDO DE INVERSION PRIVADO,</p>
 
         <p style="font-weight: bold;">CERTIFICA QUE:</p>
 
         <p>De acuerdo con la LEY DEL IMPUESTO A LA RENTA, se le(s) ha(n) retenido al(a) Sr(a). <strong>{{
-                cert.nombres_participes }}</strong>, identificado(a) con DNI <strong>{{ cert.dni_participes }}</strong>
+                cert.nombres_participes }}</strong>, identificado(a) con {{ cert.tipo_doc if cert.tipo_doc else 'DNI' }} <strong>{{ cert.dni_participes }}</strong>
             y con
             domicilio fiscal en <strong>{{ cert.direccion_fiscal }}</strong>, la suma de <strong>{{ cert.moneda }} {{
                 cert.monto_impuesto_num }}</strong> (<strong>{{ cert.monto_impuesto_letras }} dólares de los Estados
@@ -135,7 +135,7 @@
         </p>
 
         <p style="text-align: right; margin-top: 50px;">
-            Santiago de Surco, <strong>{{ cert.dia_hoy }}</strong> de <strong>{{ cert.mes_hoy }}</strong> del <strong>{{
+            San Isidro, <strong>{{ cert.dia_hoy }}</strong> de <strong>{{ cert.mes_hoy }}</strong> del <strong>{{
                 cert.anio_hoy }}</strong>
         </p>
     </div>
