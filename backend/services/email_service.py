@@ -134,8 +134,7 @@ def send_email(
 
     service = get_gmail_service(delegated_email=effective_sender)
     if not service:
-        # Fallback a SMTP si no hay Google API
-        return _send_via_smtp(to_email, subject, html_body, attachments, effective_cc, effective_sender, sender_name)
+        return False, "Error: No se pudo conectar al servicio oficial de Google Gmail API (inversionistas@inandes.com). Proceso pausado para reintento."
 
     try:
         msg = MIMEMultipart("mixed")
@@ -178,52 +177,4 @@ def send_email(
         return True, f"Correo enviado exitosamente a {to_email}"
 
     except Exception as e:
-        return False, f"Error enviando correo vía Gmail API: {str(e)}"
-
-
-def _send_via_smtp(
-    to_email: str,
-    subject: str,
-    html_body: str,
-    attachments: Optional[List[Dict[str, Any]]] = None,
-    cc_email: str = "",
-    sender_email: Optional[str] = None,
-    sender_name: str = DEFAULT_SENDER_NAME
-) -> Tuple[bool, str]:
-    """Envío alternativo vía servidor SMTP."""
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER", "inandesfactorcapital@gmail.com")
-    smtp_password = os.getenv("SMTP_PASSWORD", "dvuxqutkyhehcevl")
-
-    if not smtp_user or not smtp_password:
-        return False, "No se configuraron credenciales SMTP válidas (SMTP_USER / SMTP_PASSWORD)."
-
-    try:
-        msg = MIMEMultipart("mixed")
-        msg["To"] = to_email
-        if cc_email:
-            msg["Cc"] = cc_email
-        msg["From"] = f"{sender_name} <{smtp_user}>"
-        msg["Subject"] = subject
-
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-        if attachments:
-            for att in attachments:
-                part = MIMEBase("application", "octet-stream")
-                part.set_payload(att.get("content_bytes"))
-                encoders.encode_base64(part)
-                part.add_header("Content-Disposition", f'attachment; filename="{att.get("filename")}"')
-                msg.attach(part)
-
-        cc_recipients = [e.strip() for e in cc_email.replace(';', ',').split(',') if e.strip()] if cc_email else []
-        recipients = [to_email] + cc_recipients
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.sendmail(smtp_user, recipients, msg.as_string())
-        server.quit()
-        return True, f"Correo enviado vía SMTP a {to_email}"
-    except Exception as err:
-        return False, f"Error enviando correo vía SMTP: {str(err)}"
+        return False, f"Error enviando correo vía Gmail API (inversionistas@inandes.com): {str(e)}"
