@@ -32,9 +32,9 @@ GMAIL_SCOPES = ["https://mail.google.com/", "https://www.googleapis.com/auth/gma
 def get_gmail_service(delegated_email: str = DEFAULT_DELEGATED_EMAIL):
     """
     Obtiene el servicio de Google Gmail API usando:
-    1. Variable de entorno GMAIL_SA_JSON o GMAIL_SA_BASE64 (ideal para contenedores Coolify).
-    2. Archivo Service Account DWD (inversionistas@inandes.com).
-    3. OAuth2 Token existente (fallback/desarrollo).
+    1. Variable de entorno GMAIL_SA_JSON o GMAIL_SA_BASE64.
+    2. Archivo Service Account DWD en disco.
+    3. OAuth2 Token existente.
     """
     # 1. Intentar con variable de entorno (GMAIL_SA_JSON o GMAIL_SA_BASE64)
     sa_env = os.getenv("GMAIL_SA_JSON") or ""

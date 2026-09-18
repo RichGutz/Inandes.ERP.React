@@ -4853,8 +4853,8 @@ export const InversionistasPage: React.FC = () => {
                   <span className="text-xs font-bold text-[#0284c7] dark:text-[#38bdf8] truncate" title="inversionistas@inandes.com">inversionistas@inandes.com</span>
                 </div>
                 <div className="p-3 bg-[#f8fafc] dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl flex flex-col gap-0.5">
-                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Copia de Auditoría (CC)</span>
-                  <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] truncate" title="rgutil@gmail.com">rgutil@gmail.com</span>
+                  <span className="text-[9.5px] font-black text-[#64748b] dark:text-[#94a3b8] uppercase">Copia Institucional (CC)</span>
+                  <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] truncate" title="inandes@outlook.es">inandes@outlook.es</span>
                 </div>
               </div>
 

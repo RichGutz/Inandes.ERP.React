@@ -871,7 +871,14 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             inversionista = get_principal_inversionista(raw_inv)
             inv_info = get_inv_info(inversionista, cid)
 
-            dest_email = req.override_email if req.override_email else (req.email or inv_info['email'])
+            # Si es despacho unitario con email explícito, se respeta; en lotes o masivo, se toma SIEMPRE el email real del inversionista
+            if req.override_email:
+                dest_email = req.override_email
+            elif req.id_certificado and len(events) == 1 and req.email:
+                dest_email = req.email
+            else:
+                dest_email = inv_info['email']
+
             if not dest_email:
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': 'Sin correo electrónico registrado'})
                 continue
@@ -964,9 +971,9 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                     'content_bytes': pdf_ret_bytes
                 })
 
-            # 3. Ensamblar Cuerpo HTML del Correo
+            # 3. Construir cuerpo del correo con ribbon e información del certificado
             body_html = email_html_raw \
-                .replace("{{FONDO_NOMBRE}}", nombre_fondo) \
+                .replace("{{FONDO_NOMBRE}}", clean_fund_title(nombre_fondo)) \
                 .replace("{{NOMBRE_CORTO}}", inv_info['nombre_corto']) \
                 .replace("{{PERIODO_INICIO}}", format_date_custom(e.get('fecha_periodo_origen', ''), uppercase=True)) \
                 .replace("{{PERIODO_FIN}}", format_date_custom(e.get('fecha_periodo_fin', ''), uppercase=True)) \
@@ -982,7 +989,7 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 subject=asunto,
                 html_body=body_html,
                 attachments=attachments,
-                cc_email=req.cc_email or "rgutil@gmail.com"
+                cc_email=req.cc_email
             )
 
             if ok:
@@ -991,8 +998,10 @@ def post_enviar_reportes(req: EnviarReportesRequest):
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': msg})
 
             if len(events) > 1:
-                import time
-                time.sleep(1.5)
+                import time, random
+                pausa_segundos = random.uniform(30.0, 60.0)
+                logger.info(f"Pausa humana de seguridad antispam: {pausa_segundos:.1f} segundos...")
+                time.sleep(pausa_segundos)
 
         return {
             'status': 'ok',
