@@ -711,7 +711,7 @@ class EnviarReportesRequest(BaseModel):
     inversionista_nombre: Optional[str] = None
     moneda: Optional[str] = None
     monto_transferido: Optional[float] = None
-    cc_email: Optional[str] = "rgutil@gmail.com"
+    cc_email: Optional[str] = None
     fecha_operacion: Optional[str] = None
     tipo_cambio: Optional[float] = None
 
