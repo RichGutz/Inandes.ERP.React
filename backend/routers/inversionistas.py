@@ -1048,5 +1048,87 @@ def post_enviar_reportes(req: EnviarReportesRequest):
     except HTTPException:
         raise
     except Exception as err:
-        raise HTTPException(status_code=500, detail=f"Error al procesar envío masivo: {str(err)}")
+        raise HTTPException(status_code=500, detail=f"Error al procesar envio masivo: {str(err)}")
+
+
+@router.post("/sync-rebotes")
+def post_sync_rebotes():
+    """
+    Escanea la bandeja de Google Workspace (inversionistas@inandes.com)
+    buscando notificaciones de rebote (Mailer-Daemon / NDR) y actualiza
+    los registros correspondientes en Supabase audit_logs cambiando su
+    estado a 'REBOTADO' junto con el motivo del fallo SMTP.
+    """
+    from services.email_service import fetch_gmail_bounces
+
+    try:
+        supabase = get_supabase_client()
+        bounces = fetch_gmail_bounces(max_results=50)
+
+        if not bounces:
+            return {
+                "status": "ok",
+                "message": "No se detectaron rebotes en la bandeja de Google Workspace.",
+                "total_rebotes_detectados": 0,
+                "registros_actualizados": 0,
+                "rebotes": []
+            }
+
+        updated_count = 0
+        rebotes_detallados = []
+
+        # Cargar todos los audit logs de despachos recientes
+        res = supabase.table('audit_logs')\
+            .select('*')\
+            .eq('action', 'DESPACHO_EMAIL')\
+            .order('created_at', desc=True)\
+            .limit(1000)\
+            .execute()
+
+        records = res.data or []
+
+        for b in bounces:
+            target_email = (b.get("email_rebotado") or "").strip().lower()
+            motivo = b.get("motivo_rebote") or b.get("snippet") or "Entrega fallida (Mailer-Daemon)"
+            if not target_email:
+                continue
+
+            matching_records = [
+                r for r in records 
+                if ((r.get('metadata') or {}).get('destinatario_to', '').strip().lower() == target_email)
+            ]
+
+            for rec in matching_records:
+                current_meta = rec.get('metadata') or {}
+                if current_meta.get('estado') != 'REBOTADO':
+                    updated_meta = {
+                        **current_meta,
+                        'estado': 'REBOTADO',
+                        'motivo_rebote': motivo,
+                        'fecha_deteccion_rebote': b.get('fecha_rebote')
+                    }
+                    supabase.table('audit_logs')\
+                        .update({'metadata': updated_meta})\
+                        .eq('id', rec['id'])\
+                        .execute()
+                    updated_count += 1
+
+            rebotes_detallados.append({
+                "email": target_email,
+                "motivo": motivo,
+                "fecha": b.get("fecha_rebote"),
+                "registros_afectados": len(matching_records)
+            })
+
+        return {
+            "status": "ok",
+            "message": f"Sincronizacion completada. Se detectaron {len(bounces)} rebotes y se actualizaron {updated_count} registros en la bitacora.",
+            "total_rebotes_detectados": len(bounces),
+            "registros_actualizados": updated_count,
+            "rebotes": rebotes_detallados
+        }
+    except Exception as e:
+        print(f"[sync-rebotes] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error sincronizando rebotes: {str(e)}")
+
 

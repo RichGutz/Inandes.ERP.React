@@ -177,4 +177,72 @@ def send_email(
         return True, f"Correo enviado exitosamente a {to_email}"
 
     except Exception as e:
-        return False, f"Error enviando correo vía Gmail API (inversionistas@inandes.com): {str(e)}"
+        return False, f"Error enviando correo via Gmail API (inversionistas@inandes.com): {str(e)}"
+
+
+def fetch_gmail_bounces(max_results: int = 50, delegated_email: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Escanea la bandeja de entrada de Google Workspace (inversionistas@inandes.com)
+    buscando notificaciones de rebote (Mailer-Daemon / NDR) y extrae:
+    - email_rebotado
+    - motivo_rebote
+    - fecha_rebote
+    - gmail_msg_id
+    """
+    import re
+
+    effective_sender = delegated_email or DEFAULT_DELEGATED_EMAIL
+    service = get_gmail_service(delegated_email=effective_sender)
+    if not service:
+        print("[email_service] Error: No se pudo conectar a Gmail API para buscar rebotes.")
+        return []
+
+    try:
+        query = 'from:mailer-daemon OR "Delivery Status Notification" OR "Address not found" OR "Undelivered Mail Returned to Sender"'
+        resp = service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()
+        messages = resp.get("messages", [])
+
+        bounces: List[Dict[str, Any]] = []
+        for m in messages:
+            msg_id = m.get("id")
+            detail = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+            headers = {h["name"].lower(): h["value"] for h in detail.get("payload", {}).get("headers", [])}
+
+            snippet = detail.get("snippet", "")
+            subject = headers.get("subject", "")
+            date_str = headers.get("date", "")
+
+            # Extraer direcciones de email dentro del snippet
+            found_emails = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', snippet)
+            target_emails = [
+                em.lower() for em in found_emails 
+                if em.lower() not in ["inversionistas@inandes.com", "inandes@outlook.es", "mailer-daemon@googlemail.com"]
+            ]
+
+            target_email = target_emails[0] if target_emails else None
+
+            # Fallback en headers
+            if not target_email:
+                raw_to = headers.get("to", "")
+                if "mailer-daemon" not in raw_to.lower() and "@" in raw_to:
+                    match_to = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', raw_to)
+                    if match_to:
+                        cand = match_to.group(0).lower()
+                        if cand not in ["inversionistas@inandes.com", "inandes@outlook.es"]:
+                            target_email = cand
+
+            if target_email:
+                bounces.append({
+                    "gmail_msg_id": msg_id,
+                    "email_rebotado": target_email,
+                    "subject": subject,
+                    "fecha_rebote": date_str,
+                    "snippet": snippet,
+                    "motivo_rebote": snippet
+                })
+
+        return bounces
+    except Exception as e:
+        print(f"[email_service] Error obteniendo rebotes de Gmail: {e}")
+        return []
+

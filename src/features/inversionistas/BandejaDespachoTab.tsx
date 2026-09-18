@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../services/supabaseClient';
+import { getApiBaseUrl } from '../../config/apiConfig';
 import ExcelJS from 'exceljs';
 import { 
   Mail, Search, RefreshCw, FileSpreadsheet, CheckCircle2, 
-  XCircle, Clock, ShieldCheck, Eye, X, Paperclip, 
-  AlertCircle, FileText, Send
+  XCircle, ShieldCheck, Eye, X, Paperclip, 
+  AlertCircle, FileText, Send, AlertTriangle, RotateCcw
 } from 'lucide-react';
 
 export interface DespachoItem {
@@ -28,7 +29,9 @@ export interface DespachoItem {
     asunto?: string;
     cuerpo_html?: string;
     adjuntos?: string[];
-    estado?: 'ENVIADO' | 'FALLIDO';
+    estado?: 'ENVIADO' | 'FALLIDO' | 'REBOTADO';
+    motivo_rebote?: string | null;
+    fecha_deteccion_rebote?: string | null;
     error_detalle?: string | null;
     canal?: string;
     moneda?: string;
@@ -40,6 +43,7 @@ export const BandejaDespachoTab: React.FC = () => {
   const [despachos, setDespachos] = useState<DespachoItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncingBounces, setSyncingBounces] = useState<boolean>(false);
 
   // Filtros
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>('TODOS');
@@ -76,6 +80,29 @@ export const BandejaDespachoTab: React.FC = () => {
   useEffect(() => {
     fetchDespachos();
   }, []);
+
+  // Sincronizar rebotes con Google Workspace (Mailer-Daemon)
+  const handleSyncBounces = async () => {
+    setSyncingBounces(true);
+    try {
+      const API_BASE = getApiBaseUrl();
+      const resp = await fetch(`${API_BASE}/api/inversionistas/sync-rebotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!resp.ok) {
+        throw new Error(`Error del servidor (${resp.status}): ${await resp.text()}`);
+      }
+      const resJson = await resp.json();
+      alert(resJson.message || `Rebotes sincronizados exitosamente. Total detectados: ${resJson.total_rebotes_detectados}`);
+      await fetchDespachos();
+    } catch (err: any) {
+      console.error('Error sincronizando rebotes:', err);
+      alert(`Error sincronizando rebotes con Gmail: ${err.message}`);
+    } finally {
+      setSyncingBounces(false);
+    }
+  };
 
   // Listas únicas de Periodos y Fondos para los dropdowns de filtrado
   const availablePeriodos = useMemo(() => {
@@ -124,6 +151,7 @@ export const BandejaDespachoTab: React.FC = () => {
           ${meta.id_certificado || ''}
           ${meta.destinatario_to || ''}
           ${meta.asunto || ''}
+          ${meta.motivo_rebote || ''}
         `.toLowerCase();
         if (!strToSearch.includes(q)) return false;
       }
@@ -136,11 +164,12 @@ export const BandejaDespachoTab: React.FC = () => {
   const stats = useMemo(() => {
     const total = filteredDespachos.length;
     const enviados = filteredDespachos.filter(d => (d.metadata?.estado || 'ENVIADO') === 'ENVIADO').length;
-    const fallidos = total - enviados;
+    const rebotados = filteredDespachos.filter(d => d.metadata?.estado === 'REBOTADO').length;
+    const fallidos = filteredDespachos.filter(d => d.metadata?.estado === 'FALLIDO').length;
     const totalAdjuntos = filteredDespachos.reduce((acc, d) => acc + (d.metadata?.adjuntos?.length || 0), 0);
     const ultimoEnvio = filteredDespachos.length > 0 ? filteredDespachos[0].created_at : null;
 
-    return { total, enviados, fallidos, totalAdjuntos, ultimoEnvio };
+    return { total, enviados, rebotados, fallidos, totalAdjuntos, ultimoEnvio };
   }, [filteredDespachos]);
 
   // Exportar a Excel (ExcelJS)
@@ -158,86 +187,116 @@ export const BandejaDespachoTab: React.FC = () => {
       });
 
       // Cabecera Principal
-      worksheet.mergeCells('A1:J1');
+      worksheet.mergeCells('A1:N1');
       const titleCell = worksheet.getCell('A1');
-      titleCell.value = 'INANDES GRUPO FINANCIERO — BITÁCORA INMUTABLE DE DESPACHO DE CORREOS';
+      titleCell.value = 'INANDES GRUPO FINANCIERO - BITÁCORA INMUTABLE DE DESPACHO DE CORREOS';
       titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
-      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-      worksheet.getRow(1).height = 30;
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.getRow(1).height = 32;
 
-      // Subtítulo
-      worksheet.mergeCells('A2:J2');
-      const subCell = worksheet.getCell('A2');
-      subCell.value = `Exportado el: ${new Date().toLocaleString('es-PE')} | Total Registros: ${filteredDespachos.length} | Remitente Oficial: inversionistas@inandes.com`;
-      subCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF475569' } };
-      subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      // Metadatos de Exportación
+      worksheet.mergeCells('A2:N2');
+      const metaCell = worksheet.getCell('A2');
+      metaCell.value = `Generado el: ${new Date().toLocaleString('es-PE')} | Total Registros: ${filteredDespachos.length} | Exitosos: ${stats.enviados} | Rebotados: ${stats.rebotados} | Fallidos: ${stats.fallidos}`;
+      metaCell.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FF475569' } };
+      metaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      metaCell.alignment = { horizontal: 'center', vertical: 'middle' };
       worksheet.getRow(2).height = 20;
 
-      // Encabezados de Columna
+      // Encabezados de Columnas
       const headers = [
-        'ID Log', 'Fecha / Hora (UTC)', 'Periodo de Corte', 'Fondo', 
-        'Certificado', 'Partícipe / Titular', 'DNI / RUC', 'Destinatario (To)', 
-        'Copia Institucional (CC)', 'Estado', 'Adjuntos Generados'
+        'ID Log', 'Fecha y Hora', 'Estado Entrega', 'Diagnóstico / Motivo Rebote', 'Fondo ID', 'Nombre Fondo', 
+        'Periodo Corte', 'N° Certificado', 'Partícipe / Inversionista', 'DNI / RUC',
+        'Destinatario (To)', 'Copia CC', 'Remitente', 'Asunto del Correo', 'N° Adjuntos', 'Lista de Adjuntos'
       ];
-      const headerRow = worksheet.addRow(headers);
-      headerRow.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-      headerRow.height = 24;
 
+      const headerRow = worksheet.addRow(headers);
+      headerRow.height = 26;
       headerRow.eachCell((cell) => {
+        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.border = {
           top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          bottom: { style: 'medium', color: { argb: 'FF0284C7' } }
+          bottom: { style: 'medium', color: { argb: 'FF0284C7' } },
+          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
         };
       });
 
       // Filas de Datos
       filteredDespachos.forEach((d) => {
         const meta = d.metadata || {};
-        const adjuntosStr = (meta.adjuntos || []).join('; ');
         const row = worksheet.addRow([
           d.id,
           new Date(d.created_at).toLocaleString('es-PE'),
-          meta.periodo_corte || '-',
-          meta.id_fondo || '-',
-          meta.id_certificado || '-',
-          meta.inversionista || '-',
-          meta.dni || '-',
-          meta.destinatario_to || '-',
-          meta.copia_cc || 'inandes@outlook.es',
           meta.estado || 'ENVIADO',
-          adjuntosStr
+          meta.motivo_rebote || meta.error_detalle || 'N/A',
+          meta.id_fondo || 'S/F',
+          meta.nombre_fondo || 'S/N',
+          meta.periodo_corte || 'N/A',
+          meta.id_certificado || d.record_id || 'S/C',
+          meta.inversionista || 'Inversionista',
+          meta.dni || 'S/D',
+          meta.destinatario_to || 'S/C',
+          meta.copia_cc || 'inandes@outlook.es',
+          meta.remitente || 'inversionistas@inandes.com',
+          meta.asunto || 'Sin Asunto',
+          meta.adjuntos?.length || 0,
+          meta.adjuntos?.join(', ') || 'Ninguno'
         ]);
 
-        row.font = { name: 'Calibri', size: 9 };
-        row.alignment = { vertical: 'middle' };
+        row.height = 22;
+        row.eachCell((cell, colNum) => {
+          cell.font = { name: 'Calibri', size: 9 };
+          cell.alignment = { vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
 
-        // Color para el estado
-        const estadoCell = row.getCell(10);
-        if (meta.estado === 'FALLIDO') {
-          estadoCell.font = { color: { argb: 'FFE11D48' }, bold: true };
-        } else {
-          estadoCell.font = { color: { argb: 'FF059669' }, bold: true };
-        }
+          // Formato condicional de celda Estado
+          if (colNum === 3) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            const est = meta.estado || 'ENVIADO';
+            if (est === 'ENVIADO') {
+              cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF047857' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+            } else if (est === 'REBOTADO') {
+              cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFB91C1C' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+            } else {
+              cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFB91C1C' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE4E6' } };
+            }
+          }
+        });
       });
 
-      // Ajuste de Anchos
+      // Anchos de columnas automáticos
       worksheet.columns = [
-        { width: 10 }, // ID Log
-        { width: 22 }, // Fecha / Hora
-        { width: 16 }, // Periodo
-        { width: 14 }, // Fondo
-        { width: 28 }, // Certificado
-        { width: 34 }, // Partícipe
-        { width: 14 }, // DNI
-        { width: 30 }, // To
-        { width: 24 }, // CC
+        { width: 8 },  // ID
+        { width: 20 }, // Fecha
         { width: 14 }, // Estado
-        { width: 45 }  // Adjuntos
+        { width: 35 }, // Motivo Rebote
+        { width: 12 }, // Fondo ID
+        { width: 26 }, // Fondo Nombre
+        { width: 14 }, // Periodo
+        { width: 22 }, // Certificado
+        { width: 32 }, // Inversionista
+        { width: 14 }, // DNI
+        { width: 30 }, // Destinatario
+        { width: 24 }, // CC
+        { width: 28 }, // Remitente
+        { width: 45 }, // Asunto
+        { width: 12 }, // N° Adjuntos
+        { width: 45 }  // Nombres Adjuntos
       ];
 
+      // Generar y descargar archivo
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
@@ -260,7 +319,7 @@ export const BandejaDespachoTab: React.FC = () => {
       {/* 1. TARJETAS KPI DE RESUMEN EJECUTIVO */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
         
-        {/* KPI 1: Total Envíos */}
+        {/* KPI 1: Total Despachos */}
         <div className="glass-card p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-[#0284c7]">
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">
@@ -270,7 +329,7 @@ export const BandejaDespachoTab: React.FC = () => {
               {stats.total}
             </span>
             <span className="text-[10px] text-[#0284c7] font-bold mt-1">
-              ✓ {stats.enviados} Exitosos {stats.fallidos > 0 ? `| ✗ ${stats.fallidos} Fallidos` : ''}
+              ✓ {stats.enviados} Exitosos
             </span>
           </div>
           <div className="p-3 bg-[#f0f9ff] dark:bg-[#0284c7]/15 rounded-xl text-[#0284c7] shrink-0">
@@ -278,7 +337,25 @@ export const BandejaDespachoTab: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 2: Adjuntos Generados */}
+        {/* KPI 2: Correos Rebotados (Bounces) */}
+        <div className="glass-card p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-rose-500">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">
+              Rebotados (Bounces)
+            </span>
+            <span className="text-2xl font-black font-mono text-rose-600 dark:text-rose-400 mt-0.5">
+              {stats.rebotados}
+            </span>
+            <span className="text-[10px] text-rose-500 font-bold mt-1">
+              {stats.rebotados > 0 ? '⚠️ Requiere curar email' : '✓ 0 rebotes detectados'}
+            </span>
+          </div>
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl text-rose-600 shrink-0">
+            <AlertTriangle size={22} />
+          </div>
+        </div>
+
+        {/* KPI 3: Adjuntos Generados */}
         <div className="glass-card p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-emerald-500">
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">
@@ -296,11 +373,11 @@ export const BandejaDespachoTab: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 3: Remitente Oficial y CC Obligatorio */}
+        {/* KPI 4: Canal de Salida & CC Obligatorio */}
         <div className="glass-card p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-indigo-500">
           <div className="flex flex-col min-w-0 pr-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">
-              Canal de Salida
+              Canal Oficial
             </span>
             <span className="text-xs font-bold text-[#0f172a] dark:text-[#f8fafc] truncate mt-0.5" title="inversionistas@inandes.com">
               inversionistas@inandes.com
@@ -311,24 +388,6 @@ export const BandejaDespachoTab: React.FC = () => {
           </div>
           <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl text-indigo-600 shrink-0">
             <ShieldCheck size={22} />
-          </div>
-        </div>
-
-        {/* KPI 4: Último Despacho */}
-        <div className="glass-card p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-sky-400">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-wider text-[#64748b] dark:text-[#94a3b8]">
-              Última Actividad
-            </span>
-            <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] truncate mt-0.5">
-              {stats.ultimoEnvio ? new Date(stats.ultimoEnvio).toLocaleString('es-PE') : 'Sin registros'}
-            </span>
-            <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold mt-1">
-              Google Gmail API (DWD)
-            </span>
-          </div>
-          <div className="p-3 bg-sky-50 dark:bg-sky-950/30 rounded-xl text-sky-500 shrink-0">
-            <Clock size={22} />
           </div>
         </div>
 
@@ -380,6 +439,7 @@ export const BandejaDespachoTab: React.FC = () => {
             >
               <option value="TODOS">Todos</option>
               <option value="ENVIADO">✓ Enviados</option>
+              <option value="REBOTADO">🔴 Rebotados (Bounces)</option>
               <option value="FALLIDO">✗ Fallidos</option>
             </select>
           </div>
@@ -400,6 +460,18 @@ export const BandejaDespachoTab: React.FC = () => {
 
         {/* Botones Derecha */}
         <div className="flex items-center gap-2">
+          
+          {/* Botón Sincronizar Rebotes con Gmail */}
+          <button
+            onClick={handleSyncBounces}
+            disabled={syncingBounces || loading}
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            title="Escanear la bandeja de inversionistas@inandes.com en busca de rebotes (Mailer-Daemon)"
+          >
+            <RotateCcw size={13} className={syncingBounces ? 'animate-spin' : ''} />
+            <span>{syncingBounces ? 'Escaneando...' : 'Sincronizar Rebotes (Gmail)'}</span>
+          </button>
+
           <button
             onClick={fetchDespachos}
             disabled={loading}
@@ -465,7 +537,9 @@ export const BandejaDespachoTab: React.FC = () => {
               ) : (
                 filteredDespachos.map((d) => {
                   const meta = d.metadata || {};
-                  const isOk = (meta.estado || 'ENVIADO') === 'ENVIADO';
+                  const estado = meta.estado || 'ENVIADO';
+                  const isOk = estado === 'ENVIADO';
+                  const isBounced = estado === 'REBOTADO';
                   const adjuntos = meta.adjuntos || [];
 
                   return (
@@ -477,10 +551,12 @@ export const BandejaDespachoTab: React.FC = () => {
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                             isOk 
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' 
-                              : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800'
-                          }`}>
-                            {isOk ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                            <span>{meta.estado || 'ENVIADO'}</span>
+                              : isBounced
+                                ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 animate-pulse'
+                                : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800'
+                          }`} title={isBounced ? (meta.motivo_rebote || 'Rebote detectado por Mailer-Daemon') : undefined}>
+                            {isOk ? <CheckCircle2 size={10} /> : isBounced ? <AlertTriangle size={10} /> : <XCircle size={10} />}
+                            <span>{estado}</span>
                           </span>
                           <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             {new Date(d.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -527,7 +603,7 @@ export const BandejaDespachoTab: React.FC = () => {
                         <div className="flex flex-col gap-1 max-w-[280px]">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[9px] font-black uppercase text-[#0284c7] shrink-0">Para:</span>
-                            <span className="text-xs font-mono font-bold text-[#0f172a] dark:text-[#f8fafc] truncate" title={meta.destinatario_to}>
+                            <span className={`text-xs font-mono font-bold truncate ${isBounced ? 'text-rose-600 dark:text-rose-400 line-through' : 'text-[#0f172a] dark:text-[#f8fafc]'}`} title={meta.destinatario_to}>
                               {meta.destinatario_to || 'Sin correo'}
                             </span>
                           </div>
@@ -537,6 +613,11 @@ export const BandejaDespachoTab: React.FC = () => {
                               {meta.copia_cc || 'inandes@outlook.es'}
                             </span>
                           </div>
+                          {isBounced && meta.motivo_rebote && (
+                            <span className="text-[9.5px] text-rose-600 dark:text-rose-400 font-semibold truncate bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900" title={meta.motivo_rebote}>
+                              ⚠️ {meta.motivo_rebote}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -598,14 +679,14 @@ export const BandejaDespachoTab: React.FC = () => {
           <div className="bg-white dark:bg-[#0f172a] border border-[#bae6fd] dark:border-[#1e293b] rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
             
             {/* Modal Header */}
-            <div className="bg-[#0284c7] px-6 py-4 flex items-center justify-between text-white shrink-0">
+            <div className={`px-6 py-4 flex items-center justify-between text-white shrink-0 ${previewItem.metadata?.estado === 'REBOTADO' ? 'bg-rose-600' : 'bg-[#0284c7]'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/10 rounded-xl">
-                  <Mail size={20} />
+                  {previewItem.metadata?.estado === 'REBOTADO' ? <AlertTriangle size={20} /> : <Mail size={20} />}
                 </div>
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-wider">
-                    Copia Espejo del Correo Despachado
+                    {previewItem.metadata?.estado === 'REBOTADO' ? 'Correo Rebotado (Delivery Status Failure)' : 'Copia Espejo del Correo Despachado'}
                   </h3>
                   <p className="text-[11px] text-sky-100 font-semibold">
                     Certificado: {previewItem.metadata?.id_certificado} | Fecha: {new Date(previewItem.created_at).toLocaleString('es-PE')}
@@ -621,6 +702,24 @@ export const BandejaDespachoTab: React.FC = () => {
               </button>
             </div>
 
+            {/* Banner de Rebote Destacado si aplica */}
+            {previewItem.metadata?.estado === 'REBOTADO' && (
+              <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900 p-4 flex items-start gap-3 text-xs text-rose-900 dark:text-rose-200 shrink-0">
+                <AlertCircle size={20} className="text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-1">
+                  <span className="font-black uppercase tracking-wide text-rose-700 dark:text-rose-300 text-xs">
+                    Rebote Confirmado por Google Mailer-Daemon (550 / Mailbox Not Found)
+                  </span>
+                  <p className="leading-relaxed">
+                    <strong>Motivo:</strong> {previewItem.metadata?.motivo_rebote || 'La dirección de correo destino no existe o no puede recibir correos.'}
+                  </p>
+                  <span className="text-[10.5px] font-mono text-rose-600 dark:text-rose-400 font-bold">
+                    💡 Acción requerida: Corregir la dirección "{previewItem.metadata?.destinatario_to}" en la ficha del inversionista.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Cabecera Técnica del Correo */}
             <div className="p-5 bg-[#f8fafc] dark:bg-[#0b0f19] border-b border-[#e2e8f0] dark:border-[#334155] flex flex-col gap-2 shrink-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -632,7 +731,7 @@ export const BandejaDespachoTab: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">Para (Destinatario):</span>
-                  <p className="font-bold text-[#0284c7] dark:text-[#38bdf8] font-mono">
+                  <p className={`font-bold font-mono ${previewItem.metadata?.estado === 'REBOTADO' ? 'text-rose-600 line-through' : 'text-[#0284c7] dark:text-[#38bdf8]'}`}>
                     {previewItem.metadata?.destinatario_to}
                   </p>
                 </div>
@@ -644,8 +743,8 @@ export const BandejaDespachoTab: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase text-[#64748b] dark:text-[#94a3b8]">Estado de Entrega:</span>
-                  <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                    ✓ {previewItem.metadata?.estado || 'ENVIADO'} (Vía Google Workspace Gmail API)
+                  <p className={`font-bold ${previewItem.metadata?.estado === 'REBOTADO' ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {previewItem.metadata?.estado === 'REBOTADO' ? '🔴 REBOTADO (No entregado)' : '✓ ENVIADO (Vía Google Workspace Gmail API)'}
                   </p>
                 </div>
               </div>
