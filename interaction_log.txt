@@ -1,3 +1,4 @@
+[2026-09-18 09:05:00-05:00] ENVIO DE CORREOS INVERSIONISTAS: Diagnóstico forense y solución integral. Inyectada la credencial base64 de Service Account DWD (GMAIL_SA_BASE64) en la base de datos de Coolify (Contabo VPS) para persistencia total y montado el archivo en el contenedor backend. Aumentado el timeout del cliente React a 60s y procesada la respuesta detallada de errores en InversionistasPage.tsx. Ejecutada prueba de despacho en vivo por API (/api/inversionistas/enviar-reportes) con resultado 100% exitoso (EECC + Retención 2da Cat generados en PDF y enviados desde inversionistas@inandes.com con CC a inandes@outlook.es).
 [2026-09-15 17:45:00-05:00] LOOK-AHEAD CIERRE CONTABLE: Implementado algoritmo Look-Ahead para procesos de cierre de inversionistas con reinversion/rollover. Creado snapshot completo de las 8 tablas de Supabase en backups/. Auditadas modalidades de reparto/capitalizacion evitando distorsion historica de pagos. Enriquecidos quirurgicamente los payloads de los 199 asientos contables de agosto 2026 en Supabase. Actualizado contrato sucesor de Mantilla Silva a S/ 100,000 (Rollover Parcial). Generados PDFs oficiales de Dictamen Forense y Estados de Cuenta consolidados de rolleadores en Obsidian.
 [2026-09-14 13:12:00-05:00] WHATSAPP BOT: Reemplazo del despacho de PDFs por fallback con Logo institucional de InAndes (logo_inandes.png) e inserción de mensaje de aviso de plataforma en fase de pruebas para todas las consultas financieras de inversionistas. Desplegado y verificado en VPS Contabo (inandes_wa_bot).
 [2026-09-12 12:33:00-05:00] FORMATO EECC: Ajuste de redondeo de número de cuotas al entero inferior en templates HTML y frontend React (Math.floor).
@@ -721,3 +722,14 @@ AGENT: Ejecucion de cirugia forense directa en DB Supabase (crm_contratos, crm_c
 7. Git commit '09f70e2' desplegado en 'origin/main'.
 5. Branch tag 'SAFEPOINT_PRE_FIX_RETENCION_CEX_20260917' creado y sincronizado en origin.
 6. Control de calidad validado con 'py_compile' y 'npm run build' (Exit Code 0).
+
+================================================================================
+SESION FINALIZADA: 2026-09-17 20:41:26
+TAREA: Auditoria y Reenvio de Correos de Inversionistas + Despliegue en VPS
+RESULTADOS:
+1. Auditoria completa de bandejas inversionistas@inandes.com (DWD) e inandesfactorcapital@gmail.com (SMTP).
+2. Generacion de reporte PDF forense: INFORME_AUDITORIA_DESPACHO_CORREOS_20260917.pdf.
+3. Reenvio exitoso (Forward) de los 67 correos a inandes@outlook.es e inversionistas@inandes.com con sus respectivos adjuntos.
+4. Blindaje del backend (inversionistas.py y email_service.py): destinatario real de BD, CC exclusivo inandes@outlook.es y pausa humana antispam aleatoria (30-60s).
+5. Despliegue y hot-sync exitoso en VPS Contabo (commit 043c813 en origin/main, contenedor reiniciado OK).
+================================================================================

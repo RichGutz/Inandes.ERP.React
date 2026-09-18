@@ -1307,7 +1307,7 @@ export const InversionistasPage: React.FC = () => {
         if (docSendEmail && emailDest) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000);
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
             const resp = await fetch(`${API_BASE}/api/inversionistas/enviar-reportes`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1323,7 +1323,17 @@ export const InversionistasPage: React.FC = () => {
               signal: controller.signal
             });
             clearTimeout(timeoutId);
-            if (resp.ok) emailSentCount++;
+            if (resp.ok) {
+              const resJson = await resp.json();
+              if (resJson.enviados_count > 0 || (resJson.status === 'ok' && (!resJson.errores || resJson.errores.length === 0))) {
+                emailSentCount++;
+              } else if (resJson.errores && resJson.errores.length > 0) {
+                console.warn(`Respuesta con errores enviando email a ${emailDest}:`, resJson.errores);
+              }
+            } else {
+              const errBody = await resp.text();
+              console.warn(`Error HTTP ${resp.status} enviando email a ${emailDest}:`, errBody);
+            }
           } catch (emailErr) {
             console.warn(`Error enviando email a ${emailDest}:`, emailErr);
           }

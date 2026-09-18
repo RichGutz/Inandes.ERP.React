@@ -847,3 +847,14 @@ RESULTADO:
    - Compilacion de backend Python validada con py_compile (Exit Code 0).
    - Compilacion de frontend React validada con 'npm run build' (Exit Code 0).
 ================================================================================
+
+================================================================================
+SESION FINALIZADA: 2026-09-17 20:41:26
+TAREA: Auditoria y Reenvio de Correos de Inversionistas + Despliegue en VPS
+RESULTADOS:
+1. Auditoria completa de bandejas inversionistas@inandes.com (DWD) e inandesfactorcapital@gmail.com (SMTP).
+2. Generacion de reporte PDF forense: INFORME_AUDITORIA_DESPACHO_CORREOS_20260917.pdf.
+3. Reenvio exitoso (Forward) de los 67 correos a inandes@outlook.es e inversionistas@inandes.com con sus respectivos adjuntos.
+4. Blindaje del backend (inversionistas.py y email_service.py): destinatario real de BD, CC exclusivo inandes@outlook.es y pausa humana antispam aleatoria (30-60s).
+5. Despliegue y hot-sync exitoso en VPS Contabo (commit 043c813 en origin/main, contenedor reiniciado OK).
+================================================================================
