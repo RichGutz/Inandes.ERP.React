@@ -997,6 +997,39 @@ def post_enviar_reportes(req: EnviarReportesRequest):
             else:
                 errores.append({'certificado': cid, 'inversionista': inversionista, 'error': msg})
 
+            # Registro de Auditoría Inmutable en Supabase (Bandeja de Despacho / Outbox Espejo)
+            try:
+                att_names = [a.get('filename') for a in attachments] if attachments else []
+                audit_entry = {
+                    'table_name': 'crm_certificados_eventos',
+                    'record_id': str(cid),
+                    'action': 'DESPACHO_EMAIL',
+                    'user_email': 'inversionistas@inandes.com',
+                    'metadata': {
+                        'periodo_corte': str(e.get('fecha_periodo_fin') or target_f_fin),
+                        'id_fondo': str(f_code),
+                        'nombre_fondo': str(nombre_fondo),
+                        'id_certificado': str(cid),
+                        'inversionista': str(inversionista),
+                        'tipo_doc': str(inv_info.get('tipo_doc') or 'DNI'),
+                        'dni': str(inv_info.get('dni') or 'S/D'),
+                        'destinatario_to': str(dest_email),
+                        'copia_cc': str(req.cc_email or 'inandes@outlook.es'),
+                        'remitente': 'inversionistas@inandes.com',
+                        'asunto': str(asunto),
+                        'cuerpo_html': str(body_html),
+                        'adjuntos': att_names,
+                        'estado': 'ENVIADO' if ok else 'FALLIDO',
+                        'error_detalle': msg if not ok else None,
+                        'canal': 'GMAIL_API',
+                        'moneda': str(moneda),
+                        'capital_final': float(e.get('capital_final_saldo', 0.0))
+                    }
+                }
+                supabase.table('audit_logs').insert(audit_entry).execute()
+            except Exception as audit_err:
+                print(f"[inversionistas] Error registrando audit log de despacho: {audit_err}")
+
             if len(events) > 1:
                 import time, random
                 pausa_segundos = random.uniform(30.0, 60.0)

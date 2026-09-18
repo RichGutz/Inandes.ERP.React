@@ -20,12 +20,13 @@ import {
 import { LOGO_INANDES_BASE64, FIRMA_RICARDO_GALLO_BASE64 } from '../../assets/base64Images';
 import { SBS_BANCOS_NOMBRES } from '../../constants/sbsBancos';
 import { ComisionesAsesoresTab } from './ComisionesAsesoresTab';
+import { BandejaDespachoTab } from './BandejaDespachoTab';
 
 export const InversionistasPage: React.FC = () => {
   // Tabs principales del módulo con persistencia en sessionStorage
-  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos' | 'comisiones'>(() => {
+  const [activeSubTab, setActiveSubTab] = useState<'datos' | 'retornos_react' | 'documentos' | 'outbox' | 'comisiones'>(() => {
     const saved = sessionStorage.getItem('inv_active_subtab');
-    return (saved as 'datos' | 'retornos_react' | 'documentos' | 'comisiones') || 'retornos_react';
+    return (saved as 'datos' | 'retornos_react' | 'documentos' | 'outbox' | 'comisiones') || 'retornos_react';
   });
 
   useEffect(() => {
@@ -2390,6 +2391,17 @@ export const InversionistasPage: React.FC = () => {
 
           <button
             className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
+              activeSubTab === 'outbox' 
+                ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
+                : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
+            }`}
+            onClick={() => setActiveSubTab('outbox')}
+          >
+            📧 Bandeja de Despacho
+          </button>
+
+          <button
+            className={`py-3 px-2 text-xs font-black tracking-wider uppercase border-b-[3px] cursor-pointer transition-colors ${
               activeSubTab === 'comisiones' 
                 ? 'border-[#0284c7] text-[#0284c7] dark:text-[#38bdf8]' 
                 : 'border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]'
@@ -3958,6 +3970,11 @@ export const InversionistasPage: React.FC = () => {
           </div>
 
         </div>
+      )}
+
+      {/* --- PESTAÑA: BANDEJA DE DESPACHO DE CORREOS (OUTBOX ESPEJO) --- */}
+      {activeSubTab === 'outbox' && (
+        <BandejaDespachoTab />
       )}
 
       {/* --- PESTAÑA D: COMISIONES DE ASESORES COMERCIALES --- */}
