@@ -141,7 +141,7 @@ export const InversionistasPage: React.FC = () => {
   const [v40SelFondo, setV40SelFondo] = useState<string>('TODOS');
   const [v40SelYear, setV40SelYear] = useState<number>(2026);
   const [v40SelCiclo, setV40SelCiclo] = useState<'Bimestre' | 'Trimestre'>('Bimestre');
-  const [v40SelNum, setV40SelNum] = useState<number>(1);
+  const [v40SelNum, setV40SelNum] = useState<number>(4);
   const [cycleDashboard, setCycleDashboard] = useState<any>({ B: {}, Q: {} });
 
   const [calcLoading, setCalcLoading] = useState<boolean>(false);
