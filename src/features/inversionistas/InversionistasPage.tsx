@@ -492,15 +492,56 @@ export const InversionistasPage: React.FC = () => {
   };
 
   const getFundPriority = (name: string): number => {
+    if (!name) return 99;
     if (FUND_ORDER_PRIORITY[name]) return FUND_ORDER_PRIORITY[name];
-    const upper = (name || '').toUpperCase();
-    if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01')) return 1;
-    if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02')) return 2;
-    if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03')) return 3;
-    if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01')) return 4;
-    if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02')) return 5;
-    if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON01')) return 6;
+    const upper = name.toUpperCase();
+    if (upper.includes('PEN 01') || upper.includes('PEN 1') || upper.includes('PEN01') || upper.includes('NSGPEN01')) return 1;
+    if (upper.includes('PEN 02') || upper.includes('PEN 2') || upper.includes('PEN02') || upper.includes('NSGPEN02')) return 2;
+    if (upper.includes('PEN 03') || upper.includes('PEN 3') || upper.includes('PEN03') || upper.includes('NSGPEN03')) return 3;
+    if (upper.includes('USD 01') || upper.includes('USD 1') || upper.includes('USD01') || upper.includes('NSGUSD01')) return 4;
+    if (upper.includes('USD 02') || upper.includes('USD 2') || upper.includes('USD02') || upper.includes('NSGUSD02')) return 5;
+    if (upper.includes('CONSERVADOR') || upper.includes('CON 01') || upper.includes('CON 1') || upper.includes('CON01') || upper.includes('NSLCON01')) return 6;
     return 99;
+  };
+
+  const getContractCorrelativeNum = (e: any): number => {
+    if (!e) return 999999;
+    const idStr = String(
+      e.id_contrato || 
+      e.id_certificado || 
+      e.payload_asiento?.id_certificado || 
+      e.payload_asiento?.id_contrato || 
+      ''
+    ).trim();
+
+    if (!idStr) return 999999;
+
+    // 1. Si contiene guion, buscar los digitos inmediatos tras el guion (ej: NSGPEN01-089.2024 -> 89, NSGPEN03-002 -> 2)
+    const matchAfterHyphen = idStr.match(/-(\d+)/);
+    if (matchAfterHyphen && matchAfterHyphen[1]) {
+      const num = parseInt(matchAfterHyphen[1], 10);
+      if (!isNaN(num)) return num;
+    }
+
+    // 2. Si contiene guion bajo (ej: NSGPEN01_089)
+    const matchAfterUnderscore = idStr.match(/_(\d+)/);
+    if (matchAfterUnderscore && matchAfterUnderscore[1]) {
+      const num = parseInt(matchAfterUnderscore[1], 10);
+      if (!isNaN(num)) return num;
+    }
+
+    // 3. Buscar cualquier numero en la parte antes del primer punto (ej: NSGPEN01.089)
+    const beforeDot = idStr.split('.')[0];
+    const matchNumbers = beforeDot.match(/\d+/g);
+    if (matchNumbers && matchNumbers.length > 1) {
+      const lastNum = parseInt(matchNumbers[matchNumbers.length - 1], 10);
+      if (!isNaN(lastNum)) return lastNum;
+    } else if (matchNumbers && matchNumbers.length === 1) {
+      const singleNum = parseInt(matchNumbers[0], 10);
+      if (!isNaN(singleNum)) return singleNum;
+    }
+
+    return 999999;
   };
 
   const getShortFundLabel = (name: string): string => {
@@ -967,16 +1008,35 @@ export const InversionistasPage: React.FC = () => {
       });
     }
 
-    return list;
+    // Ordenar globalmente por prioridad canonica de Fondo y Correlativo Numerico de Contrato
+    return list.sort((a, b) => {
+      const fCodeA = (a.id_contrato || a.id_certificado || '').split('.')[0].split('-')[0];
+      const fCodeB = (b.id_contrato || b.id_certificado || '').split('.')[0].split('-')[0];
+      const fondoObjA = fondosDisponibles.find(f => f.id_fondo === fCodeA);
+      const fondoObjB = fondosDisponibles.find(f => f.id_fondo === fCodeB);
+      const nameA = fondoObjA ? fondoObjA.nombre_fondo : fCodeA;
+      const nameB = fondoObjB ? fondoObjB.nombre_fondo : fCodeB;
+      const prioA = getFundPriority(nameA);
+      const prioB = getFundPriority(nameB);
+      if (prioA !== prioB) return prioA - prioB;
+
+      const numA = getContractCorrelativeNum(a);
+      const numB = getContractCorrelativeNum(b);
+      if (numA !== numB) return numA - numB;
+
+      const idA = String(a.id_contrato || a.id_certificado || '');
+      const idB = String(b.id_contrato || b.id_certificado || '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+    });
   }, [docEvents, fEnd, selectedDocFondos, docSearchQuery, fondosDisponibles]);
 
   // Fondos ordenados según prioridad canónica (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01)
   const orderedDocFunds = useMemo(() => {
     const list = [...fondosDisponibles];
-    return list.sort((a, b) => getFundPriority(a.nombre_fondo) - getFundPriority(b.nombre_fondo));
+    return list.sort((a, b) => getFundPriority(a.nombre_fondo || a.id_fondo) - getFundPriority(b.nombre_fondo || b.id_fondo));
   }, [fondosDisponibles]);
 
-  // Agrupación de eventos por Fondo
+  // Agrupación de eventos por Fondo con orden correlativo numérico
   const docEventsGroupedByFondo = useMemo(() => {
     const groups: { fondoKey: string; fondoNombre: string; moneda: string; events: any[] }[] = [];
     const map = new Map<string, any[]>();
@@ -991,15 +1051,27 @@ export const InversionistasPage: React.FC = () => {
       const fondoObj = fondosDisponibles.find(f => f.id_fondo === fCode);
       const fName = fondoObj ? fondoObj.nombre_fondo : fCode;
       const fMoneda = fondoObj ? fondoObj.moneda : (events[0]?.payload_asiento?.moneda || 'PEN');
+
+      // Ordenar los eventos dentro del fondo por número correlativo ascendente
+      const sortedEvents = [...events].sort((a, b) => {
+        const numA = getContractCorrelativeNum(a);
+        const numB = getContractCorrelativeNum(b);
+        if (numA !== numB) return numA - numB;
+
+        const idA = String(a.id_contrato || a.id_certificado || '');
+        const idB = String(b.id_contrato || b.id_certificado || '');
+        return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
       groups.push({
         fondoKey: fCode,
         fondoNombre: fName,
         moneda: fMoneda,
-        events
+        events: sortedEvents
       });
     });
 
-    return groups.sort((a, b) => getFundPriority(a.fondoNombre) - getFundPriority(b.fondoNombre));
+    return groups.sort((a, b) => getFundPriority(a.fondoNombre || a.fondoKey) - getFundPriority(b.fondoNombre || b.fondoKey));
   }, [docEventsFiltered, fondosDisponibles]);
 
   // Manejo de Selección de Retención
