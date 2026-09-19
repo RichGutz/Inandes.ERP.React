@@ -135,7 +135,6 @@ export const calculateComisionesAnuales = async (
     supabase.from('crm_asesores').select('id, codigo, nombre_completo, num_documento_asesor'),
     supabase.from('crm_certificados_eventos')
       .select('*')
-      .gte('fecha_periodo_fin', `${year}-01-01`)
       .lte('fecha_periodo_fin', `${year}-12-31`)
   ]);
 
@@ -194,6 +193,35 @@ export const calculateComisionesAnuales = async (
   const allContratos = contratosRes.data || [];
   const allEvents = eventosRes.data || [];
 
+  // Mapear eventos de aumento de capital por contrato
+  const aumentosByContratoMap = new Map<string, any[]>();
+  allEvents.forEach(e => {
+    if (e.tipo_evento === 'aumento_capital' && e.id_contrato) {
+      if (!aumentosByContratoMap.has(e.id_contrato)) {
+        aumentosByContratoMap.set(e.id_contrato, []);
+      }
+      aumentosByContratoMap.get(e.id_contrato)!.push(e);
+    }
+  });
+
+  // Helper para extraer el monto exacto de aumento de capital
+  const getMontoAumento = (e: any): number => {
+    let m = Number(e.capital_final_saldo || 0) - Number(e.capital_base || 0);
+    if (m > 0) return m;
+    if (e.notas) {
+      const match = String(e.notas).match(/Aumento\s+de\s+capital\s+por\s+([0-9.,]+)/i) ||
+                    String(e.notas).match(/Aumento\s+Capital\s+([0-9.,]+)k/i);
+      if (match) {
+        const raw = match[1].replace(/,/g, '');
+        if (match[0].toLowerCase().includes('k')) {
+          return (parseFloat(raw) || 0) * 1000;
+        }
+        return parseFloat(raw) || 0;
+      }
+    }
+    return 0;
+  };
+
   // Filtrar contratos por asesor si se especificó (con match flexible)
   const contratosFiltrados = selectedAsesorCodigo && selectedAsesorCodigo !== 'TODOS'
     ? allContratos.filter(c => isAsesorMatch(c.id_asesor, selectedAsesorCodigo))
@@ -224,7 +252,7 @@ export const calculateComisionesAnuales = async (
     const diasExactos = Math.round((dEnd.getTime() - dStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     // Buscar eventos oficiales cerrados en este período
-    const eventsInPeriod = allEvents.filter(e => e.fecha_periodo_fin === fEnd);
+    const eventsInPeriod = allEvents.filter(e => e.fecha_periodo_fin === fEnd && e.tipo_evento !== 'aumento_capital');
     const isCerrado = eventsInPeriod.length > 0;
 
     const participesList: ParticipeComisionItem[] = [];
@@ -245,9 +273,14 @@ export const calculateComisionesAnuales = async (
           String(contrato.estado || '').toLowerCase().includes('rescate') ||
           String(ev.tipo_evento || '').toLowerCase().includes('rescate');
 
-        // Capital Inicial del Contrato (se premia sobre capital captado, no sobre intereses capitalizados)
-        const capBase = Number(contrato.monto_inversion || ev.capital_base || 0);
-        const capSaldo = Number(ev.capital_final_saldo ?? capBase);
+        // Aumentos de capital previos y en ciclo
+        const evAums = aumentosByContratoMap.get(contrato.id_contrato) || [];
+        const aumsPrevios = evAums.filter(e => String(e.fecha_periodo_fin || e.fecha_periodo_origen || '').split('T')[0] < fStart);
+        const sumAumsPrevios = aumsPrevios.reduce((s, e) => s + getMontoAumento(e), 0);
+
+        // Capital Inicial Base + Aumentos Previos
+        const capBasePrincipal = Number(contrato.monto_inversion || ev.capital_base || 0) + sumAumsPrevios;
+        const capSaldo = Number(ev.capital_final_saldo ?? capBasePrincipal);
         const tasaInv = Number(contrato.tasa_pactada || 10.0);
 
         // Tasa de comisión de captación del fondo (ej. 1.5% aa) o tasa asesor específica
@@ -258,12 +291,12 @@ export const calculateComisionesAnuales = async (
         const dFinEv = ev.fecha_periodo_fin ? new Date(ev.fecha_periodo_fin + 'T00:00:00') : dEnd;
         const diasDevengados = Math.max(1, Math.round((dFinEv.getTime() - dIniEv.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
-        // Fórmula Canónica Base 365 (Si hay rescate anticipado, la comisión pasa a ser 0.00 para todo el saldo)
+        // 1. Fila Principal del Contrato
         const comisionCalc = isRescate 
           ? 0.00 
-          : Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasDevengados * 100) / 100;
+          : Math.round(capBasePrincipal * (tasaComision / 100.0 / 365.0) * diasDevengados * 100) / 100;
           
-        const capFormatted = capBase.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const capFormatted = capBasePrincipal.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const detTexto = isRescate
           ? `${moneda} ${capFormatted} × RESCATE ANTICIPADO = ${moneda} 0.00`
@@ -282,7 +315,7 @@ export const calculateComisionesAnuales = async (
           id_asesor: aId,
           nombre_asesor: aNombre,
           moneda: moneda,
-          capital_base: capBase,
+          capital_base: capBasePrincipal,
           capital_final_saldo: capSaldo,
           tasa_inversionista: tasaInv,
           tasa_comision_asesor: tasaComision,
@@ -293,6 +326,52 @@ export const calculateComisionesAnuales = async (
           determinacion_texto: detTexto,
           comision_calculada: comisionCalc
         });
+
+        // 2. Filas Hijas: Aumentos de Capital dentro de este ciclo (Opción A: Desglosado y Prorrateado)
+        const aumsEnCiclo = evAums.filter(e => {
+          const f = String(e.fecha_periodo_fin || e.fecha_periodo_origen || '').split('T')[0];
+          return f >= fStart && f <= fEnd;
+        });
+
+        for (const aumEv of aumsEnCiclo) {
+          const fAum = String(aumEv.fecha_periodo_fin || aumEv.fecha_periodo_origen || fStart).split('T')[0];
+          const montoAum = getMontoAumento(aumEv);
+          if (montoAum <= 0) continue;
+
+          const dAumStart = new Date(fAum + 'T00:00:00');
+          const diasAum = Math.max(1, Math.round((dEnd.getTime() - dAumStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+          const comisionAum = isRescate 
+            ? 0.00 
+            : Math.round(montoAum * (tasaComision / 100.0 / 365.0) * diasAum * 100) / 100;
+
+          const montoAumFmt = montoAum.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const comAumFmt = comisionAum.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const detTextoAum = isRescate
+            ? `${moneda} ${montoAumFmt} × RESCATE ANTICIPADO = ${moneda} 0.00`
+            : `${moneda} ${montoAumFmt} × (${tasaComision.toFixed(2)}% / 365) × ${diasAum} días = ${moneda} ${comAumFmt}`;
+
+          participesList.push({
+            id_contrato: contrato.id_contrato,
+            id_certificado: `${ev.id_certificado || contrato.id_contrato} (Aum. ${fAum})`,
+            inversionista_nombre: `↳ [Aumento Cap. ${fAum}] ${invNombre}`,
+            inversionista_dni: inv.documento_identidad || invCode || 'S/N',
+            id_fondo: fCode,
+            nombre_fondo: fondo.nombre_fondo || fCode,
+            id_asesor: aId,
+            nombre_asesor: aNombre,
+            moneda: moneda,
+            capital_base: montoAum,
+            capital_final_saldo: montoAum,
+            tasa_inversionista: tasaInv,
+            tasa_comision_asesor: tasaComision,
+            tipo_comision_origen: isRescate ? 'Rescate Anticipado (Sin Comisión)' : 'Aumento de Capital (Prorrateado)',
+            dias_devengados: diasAum,
+            fecha_inicio: fAum,
+            fecha_fin: fEnd,
+            determinacion_texto: detTextoAum,
+            comision_calculada: comisionAum
+          });
+        }
       }
     } else {
       // Si el período aún no está cerrado en BD, proyectamos con los contratos vigentes del asesor
@@ -316,22 +395,31 @@ export const calculateComisionesAnuales = async (
         const inv = inversionistasMap.get(invCode) || {};
         const invNombre = inv.nombre_completo || `${inv.nombre_1 || ''} ${inv.apellido_1 || ''}`.trim() || 'Inversionista';
 
-        // Capital Inicial del Contrato
-        const capBase = Number(contrato.monto_inversion || 0);
+        // Aumentos previos y en ciclo para proyección
+        const evAums = aumentosByContratoMap.get(contrato.id_contrato) || [];
+        const aumsPrevios = evAums.filter(e => String(e.fecha_periodo_fin || e.fecha_periodo_origen || '').split('T')[0] < fStart);
+        const sumAumsPrevios = aumsPrevios.reduce((s, e) => s + getMontoAumento(e), 0);
+
+        // Capital Inicial Base + Aumentos Previos
+        const capBasePrincipal = Number(contrato.monto_inversion || 0) + sumAumsPrevios;
         const tasaInv = Number(contrato.tasa_pactada || 10.0);
         const tasaComision = Number(fondo.comision_captacion_fondo || contrato.tasa_comision_asesor || 1.5);
         const moneda = contrato.moneda || fondo.moneda || 'USD';
 
-        // Fórmula Canónica Base 365 (Si hay rescate anticipado, la comisión es 0.00)
+        // Días exactos del contrato en este ciclo
+        const dIniReal = cIni > fStart ? new Date(cIni + 'T00:00:00') : dStart;
+        const diasContrato = Math.max(1, Math.round((dEnd.getTime() - dIniReal.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+        // 1. Fila Principal Proyectada
         const comisionCalc = isRescate 
           ? 0.00 
-          : Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasExactos * 100) / 100;
+          : Math.round(capBasePrincipal * (tasaComision / 100.0 / 365.0) * diasContrato * 100) / 100;
           
-        const capFormatted = capBase.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const capFormatted = capBasePrincipal.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const detTexto = isRescate
           ? `${moneda} ${capFormatted} × RESCATE ANTICIPADO = ${moneda} 0.00`
-          : `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasExactos} días = ${moneda} ${comFormatted}`;
+          : `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasContrato} días = ${moneda} ${comFormatted}`;
 
         const aId = contrato.id_asesor || 'SIN_ASESOR';
         const aNombre = getAsesorNombre(aId);
@@ -346,17 +434,63 @@ export const calculateComisionesAnuales = async (
           id_asesor: aId,
           nombre_asesor: aNombre,
           moneda: moneda,
-          capital_base: capBase,
-          capital_final_saldo: capBase,
+          capital_base: capBasePrincipal,
+          capital_final_saldo: capBasePrincipal,
           tasa_inversionista: tasaInv,
           tasa_comision_asesor: tasaComision,
           tipo_comision_origen: isRescate ? 'Rescate Anticipado (Sin Comisión)' : 'Comisión de Captación Estimada',
-          dias_devengados: diasExactos,
-          fecha_inicio: fStart,
+          dias_devengados: diasContrato,
+          fecha_inicio: cIni > fStart ? cIni : fStart,
           fecha_fin: fEnd,
           determinacion_texto: detTexto,
           comision_calculada: comisionCalc
         });
+
+        // 2. Filas Hijas de Aumentos de Capital en el Ciclo
+        const aumsEnCiclo = evAums.filter(e => {
+          const f = String(e.fecha_periodo_fin || e.fecha_periodo_origen || '').split('T')[0];
+          return f >= fStart && f <= fEnd;
+        });
+
+        for (const aumEv of aumsEnCiclo) {
+          const fAum = String(aumEv.fecha_periodo_fin || aumEv.fecha_periodo_origen || fStart).split('T')[0];
+          const montoAum = getMontoAumento(aumEv);
+          if (montoAum <= 0) continue;
+
+          const dAumStart = new Date(fAum + 'T00:00:00');
+          const diasAum = Math.max(1, Math.round((dEnd.getTime() - dAumStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+          const comisionAum = isRescate 
+            ? 0.00 
+            : Math.round(montoAum * (tasaComision / 100.0 / 365.0) * diasAum * 100) / 100;
+
+          const montoAumFmt = montoAum.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const comAumFmt = comisionAum.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const detTextoAum = isRescate
+            ? `${moneda} ${montoAumFmt} × RESCATE ANTICIPADO = ${moneda} 0.00`
+            : `${moneda} ${montoAumFmt} × (${tasaComision.toFixed(2)}% / 365) × ${diasAum} días = ${moneda} ${comAumFmt}`;
+
+          participesList.push({
+            id_contrato: contrato.id_contrato,
+            id_certificado: `${contrato.id_contrato} (Aum. ${fAum})`,
+            inversionista_nombre: `↳ [Aumento Cap. ${fAum}] ${invNombre}`,
+            inversionista_dni: inv.documento_identidad || invCode || 'S/N',
+            id_fondo: fCode,
+            nombre_fondo: fondo.nombre_fondo || fCode,
+            id_asesor: aId,
+            nombre_asesor: aNombre,
+            moneda: moneda,
+            capital_base: montoAum,
+            capital_final_saldo: montoAum,
+            tasa_inversionista: tasaInv,
+            tasa_comision_asesor: tasaComision,
+            tipo_comision_origen: isRescate ? 'Rescate Anticipado (Sin Comisión)' : 'Aumento de Capital (Prorrateado)',
+            dias_devengados: diasAum,
+            fecha_inicio: fAum,
+            fecha_fin: fEnd,
+            determinacion_texto: detTextoAum,
+            comision_calculada: comisionAum
+          });
+        }
       }
     }
 
