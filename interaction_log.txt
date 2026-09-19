@@ -737,3 +737,18 @@ RESULTADOS:
 4. Blindaje del backend (inversionistas.py y email_service.py): destinatario real de BD, CC exclusivo inandes@outlook.es y pausa humana antispam aleatoria (30-60s).
 5. Despliegue y hot-sync exitoso en VPS Contabo (commit 043c813 en origin/main, contenedor reiniciado OK).
 ================================================================================
+
+[2026-09-19 08:35:00-05:00] NUEVO GENERADOR DE ESTADOS DE CUENTA (EECC V4 RGP) - METODO BENOIT BLANC:
+1. BEN (Listen First & Parafraseo): Diagnostico del modelo anterior vs. nuevo modelo Excel 'Modelos.EE.CC.RGP.18.09.26.xlsx' de Ricardo Gallo. Verificacion matematica integral de los 3 casos (Yanneth, Tejada, Aravena).
+2. LEG (Legacy): Identificadas funciones y plantillas preexistentes ('estado_cuenta_inversionista_v2.html', 'generateSingleEeccHtml').
+3. CLON (Branch Tag): Creado y sincronizado punto de control inmutable 'BRANCH_TAG_EECC_V4_RGP' en 'origin/BRANCH_TAG_EECC_V4_RGP'.
+4. DIFF (Cirugia Minima):
+   - Creada plantilla 'src/templates/estado_cuenta_inversionista_v4_rgp.html' y 'backend/templates/estado_cuenta_inversionista_v4_rgp.html' con bloques celeste (#CCECFF) y verde (#E2EFD9), glosas reformuladas y fecha de cierre de contrato.
+   - En 'src/features/inversionistas/InversionistasPage.tsx': implementada funcion 'generateSingleEeccHtml' V4 RGP preservando generador legacy V2.
+   - En 'backend/routers/inversionistas.py': soporte para renderizado y despacho de plantilla V4 RGP con fallback seguro a V2.
+   - Documentacion forense completa en 'Obsidian/Inandes.Inversionistas.React/Backend/Reformulacion_EECC_RGP.18.09.26.md'.
+5. QC (Control de Calidad):
+   - 'npm run build' completado con Exit Code 0 (Vite / TypeScript 100% limpio).
+   - Renderizado de prueba de 3 certificados completado con exito.
+6. NOTA: Registrado en bitacoras y asentado en memoria forense.
+

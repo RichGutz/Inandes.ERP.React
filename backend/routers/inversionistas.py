@@ -533,7 +533,10 @@ def get_eecc_pdf(id_fondo: str, fecha_fin: str):
         env.globals['format_num'] = format_num
         env.globals['format_num_or_dash'] = format_num_or_dash
         env.globals['format_cuotas'] = format_cuotas
-        template = env.get_template('estado_cuenta_inversionista_v2.html')
+        try:
+            template = env.get_template('estado_cuenta_inversionista_v4_rgp.html')
+        except Exception:
+            template = env.get_template('estado_cuenta_inversionista_v2.html')
 
         html_out = template.render({
             'certs': certs,
@@ -843,7 +846,10 @@ def post_enviar_reportes(req: EnviarReportesRequest):
         env.globals['format_num'] = format_num
         env.globals['format_num_or_dash'] = format_num_or_dash
         env.globals['format_cuotas'] = format_cuotas
-        tpl_eecc = env.get_template('estado_cuenta_inversionista_v2.html')
+        try:
+            tpl_eecc = env.get_template('estado_cuenta_inversionista_v4_rgp.html')
+        except Exception:
+            tpl_eecc = env.get_template('estado_cuenta_inversionista_v2.html')
         tpl_retencion = env.get_template('retencion_renta_v2.html')
 
         # Cargar plantilla HTML del correo

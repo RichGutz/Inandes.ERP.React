@@ -804,7 +804,8 @@ export const InversionistasPage: React.FC = () => {
     };
   };
 
-  const generateSingleEeccHtml = (row: any): string => {
+  // Generador de Estado de Cuenta Legacy V2 (Preservado)
+  const generateSingleEeccHtmlLegacyV2 = (row: any): string => {
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -878,6 +879,97 @@ export const InversionistasPage: React.FC = () => {
     <table>
       <tr><td class="col-label bold">Monto final invertido:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.capital_final > 0 ? formatNumDoc(row.capital_final) : '-'}</td></tr>
       <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${row.capital_final > 0 ? Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE') : '0'}</td></tr>
+    </table>
+  </div>
+  <div class="footer-line"></div>
+  <div class="footer">
+    <p class="footer-company">INANDES ACTIVOS ALTERNATIVOS SAC</p>
+    <p class="footer-address">Av. Javier Prado Este 560 Int 1403 Centro Empresarial Javier Prado, San Isidro, Lima</p>
+    <p class="footer-contact">Teléfono: + 51 (1) 712 1700 &nbsp;|&nbsp; info@inandes.com</p>
+  </div>
+</body>
+</html>`;
+  };
+
+  // Generador Oficial V4 RGP (Modelo Ricardo Gallo con Bloques Celeste #CCECFF y Verde #E2EFD9)
+  const generateSingleEeccHtml = (row: any, version: 'v4' | 'v2' = 'v4'): string => {
+    if (version === 'v2') {
+      return generateSingleEeccHtmlLegacyV2(row);
+    }
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Estado de Cuenta</title>
+  <style>
+    @page { size: letter portrait; margin: 0.65in 0.90in 0.60in 0.90in; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 11.5pt; line-height: 1.30; color: #000000; margin: 0; padding: 0; }
+    .header { width: 100%; margin-bottom: 20px; }
+    .header table { width: 100%; border: none; }
+    .header td { vertical-align: top; border: none; }
+    .logo-container { width: 100%; text-align: right; }
+    .logo-inandes-img { display: block; width: 130px; height: 50px; background-image: url("data:image/png;base64,${LOGO_INANDES_BASE64}"); background-size: contain; background-repeat: no-repeat; background-position: right center; margin-left: auto; }
+    .title-box { text-align: center; margin-bottom: 24px; }
+    .title-box h1 { font-family: 'Consolas', 'Courier New', monospace; font-size: 13.5pt; font-weight: bold; color: #0f172a; margin: 0; line-height: 1.30; text-transform: uppercase; }
+    .title-box h2 { font-family: 'Consolas', 'Courier New', monospace; font-size: 13.5pt; font-weight: bold; color: #000000; margin: 4px 0 0 0; line-height: 1.30; text-transform: uppercase; }
+    .client-info { width: 100%; margin-bottom: 24px; font-size: 11.5pt; }
+    .client-info p { margin: 2px 0; }
+    .client-name { font-size: 13.5pt !important; font-weight: bold !important; color: #000000; margin-left: 26px !important; }
+    .financial-data { width: 100%; margin-bottom: 22px; }
+    .fin-table { width: 100%; border-collapse: collapse; }
+    .fin-table td { padding: 5.0px 6px; border: none; font-size: 11.5pt; }
+    .col-label { width: 60%; text-align: left; color: #000000; }
+    .col-currency { width: 12%; text-align: center; color: #000000; }
+    .col-amount { width: 28%; text-align: right; padding-right: 10px; color: #000000; }
+    .bold { font-weight: bold; }
+    .bg-celeste { background-color: #CCECFF !important; }
+    .bg-verde { background-color: #E2EFD9 !important; }
+    .spacer-row td { padding: 5.5px 0; background-color: transparent !important; }
+    .totals-section { width: 100%; margin-top: 24px; margin-bottom: 25px; border: 1.5px solid #000000; background-color: #ffffff; padding: 10px 10px; box-sizing: border-box; }
+    .totals-section table { width: 100%; border-collapse: collapse; }
+    .totals-section td { padding: 5.0px 6px; border: none; font-size: 11.5pt; font-weight: bold; color: #000000; }
+    .footer-line { width: 100%; border-top: 0.75pt solid #000000; margin-top: 25px; margin-bottom: 10px; }
+    .footer { text-align: center; color: #3333ff; font-size: 8.5pt; line-height: 1.30; }
+    .footer-company { font-weight: bold; font-size: 9.0pt; margin: 0 0 2px 0; color: #3333ff; }
+    .footer-address { margin: 1px 0; font-size: 8.0pt; color: #3333ff; white-space: nowrap; }
+    .footer-contact { margin: 1px 0; font-size: 8.5pt; color: #3333ff; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <table><tr><td class="logo-container"><div class="logo-inandes-img"></div></td></tr></table>
+  </div>
+  <div class="title-box">
+    <h1>ESTADO DE CUENTA DEL CERTIFICADO DE INVERSION ${row.id_certificado_short}<br>DEL FONDO ${cleanFundTitleDoc(row.fondo_nombre)} – FONDO DE INVERSION PRIVADO</h1>
+    <h2>DEL ${row.fecha_inicio_str} AL ${row.fecha_fin_str}</h2>
+  </div>
+  <div class="client-info">
+    <p style="color: #64748b;">Sr(a)(s):</p>
+    <p class="client-name">${row.inversionista_nombre}</p>
+  </div>
+  <div class="financial-data">
+    <table class="fin-table">
+      <tr><td class="col-label bold">Monto inicial invertido:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.capital_inicial)}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
+      <tr class="bg-celeste"><td class="col-label bold">Ganancia bruta obtenida:</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.bruto_total)}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
+      <tr><td class="col-label">(-) Impuesto a la Renta retenido</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${formatNumDoc(row.impuesto)}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
+      <tr class="bg-celeste"><td class="col-label bold">Ganancia disponible del partícipe</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${formatNumDoc(row.neto_disponible)}</td></tr>
+      <tr><td class="col-label">(-) Retenciones a las ganancias obtenidas</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${(row.penalidades || 0) > 0 ? formatNumDoc(row.penalidades) : (row.deducciones > 0 ? formatNumDoc(row.deducciones) : '-')}</td></tr>
+      <tr><td class="col-label">(+) Inversiones adicionales del partícipe</td><td class="col-currency">${row.moneda}</td><td class="col-amount">${row.aumentos_capital > 0 ? formatNumDoc(row.aumentos_capital) : '-'}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
+      <tr class="bg-celeste"><td class="col-label bold">Monto destinado para adquirir nuevas cuotas</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.compra_nuevas_cuotas > 0 ? formatNumDoc(row.compra_nuevas_cuotas) : '-'}</td></tr>
+      <tr class="spacer-row"><td colspan="3"></td></tr>
+      <tr class="bg-verde"><td class="col-label bold">Monto transferido a su cuenta bancaria</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.monto_transferido > 0 ? formatNumDoc(row.monto_transferido) : '-'}</td></tr>
+      <tr class="bg-verde"><td class="col-label bold">Rescates solicitados por el partícipe</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.rescates > 0 ? formatNumDoc(row.rescates) : '-'}</td></tr>
+    </table>
+  </div>
+  <div class="totals-section">
+    <table>
+      <tr><td class="col-label bold">Monto de la inversión al ${row.fecha_fin_str}</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.capital_final > 0 ? formatNumDoc(row.capital_final) : '-'}</td></tr>
+      <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${row.capital_final > 0 ? Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE') : '0'}</td></tr>
+      <tr><td class="col-label bold">Fecha de cierre del fondo / cierre del contrato</td><td class="col-currency bold"></td><td class="col-amount bold">${row.fecha_cierre_contrato_str || '31-DIC-2027'}</td></tr>
     </table>
   </div>
   <div class="footer-line"></div>
