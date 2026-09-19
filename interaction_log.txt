@@ -1,3 +1,4 @@
+[2026-09-19 13:24:00-05:00] COMISIONES ASESORES EXCEL MULTI-PESTAÑA Y REGLAS DE NEGOCIO: Implementado nuevo exportador a Excel con arquitectura Multi-Pestaña (Hoja 1 Resumen General Consolidado + Hojas por cada Cierre). En cada pestaña de cierre, las operaciones se organizan en subgrupos visuales por Fondo con subtotales SUM automáticos. En la tabla de partícipes, la Columna I refleja estrictamente el 'Capital Inicial Contrato' (monto_inversion), excluyendo intereses capitalizados. Se implementó la regla de que contratos con rescate anticipado (cerrado_por_rescate) liquidan con comisión 0.00. Branch Tag 'SAFEPOINT_COMISIONES_EXCEL_SUBGRUPOS' generado y compilación verificada exitosamente (npm run build, Exit Code 0).
 [2026-09-18 11:41:00-05:00] PERIODO POR DEFECTO EECC Y RETENCIONES (B4 AGOSTO 2026): Configurado el selector inicial de período en 'InversionistasPage.tsx' para que cargue por defecto en el último período cerrado con asientos oficiales: Bimestre 4 / B4 (Ago 31 - 2026-08-31). Validación limpia de compilación con 'npm run build' (Exit Code 0), Branch Tag 'BRANCH_TAG_PERIODO_DEFAULT_AGOSTO_20260918' creado y cambios sincronizados en 'main' para auto-despliegue en Contabo VPS.
 [2026-09-18 10:56:00-05:00] DETECTOR Y SINCRONIZADOR DE REBOTES GMAIL (BOUNCES): Implementado sistema completo de detección de rebotes asíncronos (Mailer-Daemon / NDR) vía Google Gmail API. Endpoint '/api/inversionistas/sync-rebotes' escanea la bandeja de inversionistas@inandes.com, extrae destinatarios fallidos (ej: mianguta@gmail.com, lopezthosua637@gmail.com, charliebox39@gmail.com) y actualiza automáticamente los registros en Supabase 'audit_logs' a estado 'REBOTADO' con el diagnóstico SMTP (550 / Mailbox not found). En 'BandejaDespachoTab.tsx' se integró el botón 'Sincronizar Rebotes (Gmail)', tarjeta KPI de Rebotados, badges con alerta visual y exportación a Excel con columna de motivos de rebote. Compilado con éxito (Exit Code 0) y desplegado a producción en Contabo VPS.
 [2026-09-18 09:55:00-05:00] ORDEN CORRELATIVO EECC Y RETENCIONES: Implementado ordenamiento canónico estricto de fondos (PEN 1 -> PEN 2 -> PEN 3 -> USD 01 -> USD 02 -> CON 01) y ordenamiento correlativo numérico ascendente de contratos (001, 002, 003...) tanto en la vista agrupada global (TODOS) como en el filtrado por fondo individual en 'InversionistasPage.tsx'. Validación con 'npm run build' (Exit Code 0), Branch Tag 'BRANCH_TAG_CORRELATIVO_EECC_20260918' creado y cambios sincronizados en 'main' para auto-despliegue en Contabo VPS.
@@ -738,17 +739,17 @@ RESULTADOS:
 5. Despliegue y hot-sync exitoso en VPS Contabo (commit 043c813 en origin/main, contenedor reiniciado OK).
 ================================================================================
 
-[2026-09-19 08:35:00-05:00] NUEVO GENERADOR DE ESTADOS DE CUENTA (EECC V4 RGP) - METODO BENOIT BLANC:
-1. BEN (Listen First & Parafraseo): Diagnostico del modelo anterior vs. nuevo modelo Excel 'Modelos.EE.CC.RGP.18.09.26.xlsx' de Ricardo Gallo. Verificacion matematica integral de los 3 casos (Yanneth, Tejada, Aravena).
-2. LEG (Legacy): Identificadas funciones y plantillas preexistentes ('estado_cuenta_inversionista_v2.html', 'generateSingleEeccHtml').
-3. CLON (Branch Tag): Creado y sincronizado punto de control inmutable 'BRANCH_TAG_EECC_V4_RGP' en 'origin/BRANCH_TAG_EECC_V4_RGP'.
-4. DIFF (Cirugia Minima):
-   - Creada plantilla 'src/templates/estado_cuenta_inversionista_v4_rgp.html' y 'backend/templates/estado_cuenta_inversionista_v4_rgp.html' con bloques celeste (#CCECFF) y verde (#E2EFD9), glosas reformuladas y fecha de cierre de contrato.
-   - En 'src/features/inversionistas/InversionistasPage.tsx': implementada funcion 'generateSingleEeccHtml' V4 RGP preservando generador legacy V2.
-   - En 'backend/routers/inversionistas.py': soporte para renderizado y despacho de plantilla V4 RGP con fallback seguro a V2.
-   - Documentacion forense completa en 'Obsidian/Inandes.Inversionistas.React/Backend/Reformulacion_EECC_RGP.18.09.26.md'.
-5. QC (Control de Calidad):
-   - 'npm run build' completado con Exit Code 0 (Vite / TypeScript 100% limpio).
-   - Renderizado de prueba de 3 certificados completado con exito.
-6. NOTA: Registrado en bitacoras y asentado en memoria forense.
+================================================================================
+SESION FINALIZADA: 2026-09-19 08:46:00
+TAREA: Reformulacion de Estados de Cuenta (EECC V4 RGP), +25% Espaciado y Despliegue en VPS
+RESULTADOS:
+1. Diagnostico y correccion matematica de la penalidad por rescate anticipado en Estados de Cuenta.
+2. Analisis y conciliacion al 100% de los 3 casos de prueba del Excel de Ricardo Gallo (Yanneth, Tejada, Aravena).
+3. Construccion del generador oficial V4 RGP con bandas tematicas celeste (#CCECFF) y verde (#E2EFD9), glosas reformuladas y fecha de cierre de contrato.
+4. Ajuste del 25% en el espaciado vertical de la seccion financiera manteniendo encaje en una sola pagina.
+5. Branch Tag de respaldo creado: 'BRANCH_TAG_EECC_V4_RGP'.
+6. Control de calidad exitoso: 'npm run build' (Exit Code 0) y compilacion de PDFs de prueba.
+7. Despliegue en caliente en VPS Contabo (Coolify) via commit 9a79228 en origin/main.
+8. Documentacion AS BUILT asentada en 'Obsidian/Inandes.Inversionistas.React/Backend/Reformulacion_EECC_RGP.18.09.26.md'.
+================================================================================
 

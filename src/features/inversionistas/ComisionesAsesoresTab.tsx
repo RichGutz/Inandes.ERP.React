@@ -305,7 +305,7 @@ export const ComisionesAsesoresTab: React.FC = () => {
   };
 
   // ==========================================
-  // EXPORTADOR A EXCEL MAESTRO CON FÓRMULAS
+  // EXPORTADOR A EXCEL MAESTRO MULTI-PESTAÑA CON SUBGRUPOS POR FONDO
   // ==========================================
   const handleExportExcel = async () => {
     setExportingExcel(true);
@@ -317,25 +317,35 @@ export const ComisionesAsesoresTab: React.FC = () => {
       const asesorName = selectedAsesorObj ? selectedAsesorObj.nombre_completo : 'TODOS_LOS_ASESORES';
       const fondoName = selectedFondoObj ? selectedFondoObj.nombre_fondo : 'TODOS_LOS_FONDOS';
 
-      // Hoja 1: Resumen General
-      const sheetSummary = workbook.addWorksheet('Resumen Comisiones');
+      // ---------------------------------------------------------
+      // HOJA 1: RESUMEN GENERAL CONSOLIDADO
+      // ---------------------------------------------------------
+      const sheetSummary = workbook.addWorksheet('Resumen General');
       sheetSummary.views = [{ showGridLines: true }];
 
-      sheetSummary.addRow(['INANDES GRUPO FINANCIERO - LIQUIDACIÓN DE COMISIONES COMERCIALES']);
-      sheetSummary.addRow([`AÑO: ${selectedYear} | ASESOR: ${asesorName.toUpperCase()} | FONDO: ${fondoName.toUpperCase()}`]);
-      sheetSummary.addRow([`FECHA DE EMISIÓN: ${new Date().toLocaleDateString('es-PE')}`]);
+      // Título y Metadatos
+      const titleRow = sheetSummary.addRow(['INANDES GRUPO FINANCIERO - LIQUIDACIÓN DE COMISIONES COMERCIALES (BASE 365)']);
+      titleRow.font = { bold: true, size: 13, color: { argb: 'FF0F172A' } };
+      
+      const metaRow1 = sheetSummary.addRow([`AÑO: ${selectedYear} | ASESOR: ${asesorName.toUpperCase()} | FONDO: ${fondoName.toUpperCase()}`]);
+      metaRow1.font = { bold: true, size: 10, color: { argb: 'FF475569' } };
+      
+      const metaRow2 = sheetSummary.addRow([`FECHA DE EMISIÓN: ${new Date().toLocaleDateString('es-PE')} │ TOTAL OPERACIONES: ${totalAnual.countContratos}`]);
+      metaRow2.font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
       sheetSummary.addRow([]);
 
+      // Encabezados Resumen
       sheetSummary.addRow([
         'Cód. Período', 'Mes / Ciclo', 'Rango de Fechas', 'Días', 'Estado BD', 
         'Partícipes', 'Contratos', 'Capital PEN', 'Capital USD', 'Comisión PEN', 'Comisión USD'
       ]);
 
-      const headerRow = sheetSummary.getRow(5);
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
-      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      const sumHeaderRow = sheetSummary.getRow(5);
+      sumHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sumHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
+      sumHeaderRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
+      const summaryStartRow = 6;
       displayedPeriodos.forEach(p => {
         const row = sheetSummary.addRow([
           p.id,
@@ -351,61 +361,183 @@ export const ComisionesAsesoresTab: React.FC = () => {
           p.totales.comision_usd
         ]);
 
+        row.getCell(1).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(5).alignment = { horizontal: 'center' };
+        row.getCell(6).alignment = { horizontal: 'center' };
+        row.getCell(7).alignment = { horizontal: 'center' };
         row.getCell(8).numFmt = '#,##0.00';
         row.getCell(9).numFmt = '#,##0.00';
         row.getCell(10).numFmt = '#,##0.00';
         row.getCell(11).numFmt = '#,##0.00';
       });
 
-      // Hoja 2: Detalle Partícipe por Partícipe
-      const sheetDetalle = workbook.addWorksheet('Detalle de Partícipes');
-      sheetDetalle.views = [{ showGridLines: true }];
-
-      sheetDetalle.addRow(['DETALLE ANALÍTICO DE DETERMINACIÓN DE COMISIONES']);
-      sheetDetalle.addRow([`ASESOR: ${asesorName.toUpperCase()} | AÑO ${selectedYear} | FONDO: ${fondoName.toUpperCase()}`]);
-      sheetDetalle.addRow([]);
-
-      sheetDetalle.addRow([
-        'Período', 'Corte', 'Fondo', 'Asesor Comercial', 'Inversionista / Partícipe', 'DNI / RUC', 'Certificado / Contrato',
-        'Moneda', 'Capital Administrado', 'Días', '% Tasa Com.', 'Fórmula / Determinación', 'Comisión a Pagar'
+      const summaryEndRow = summaryStartRow + displayedPeriodos.length - 1;
+      
+      // Fila de Total Anual Consolidado
+      const sumTotalRow = sheetSummary.addRow([
+        'TOTAL ANUAL', 'CONSOLIDADO', '', '', '',
+        totalAnual.countParticipes,
+        totalAnual.countContratos,
+        { formula: `SUM(H${summaryStartRow}:H${summaryEndRow})` },
+        { formula: `SUM(I${summaryStartRow}:I${summaryEndRow})` },
+        { formula: `SUM(J${summaryStartRow}:J${summaryEndRow})` },
+        { formula: `SUM(K${summaryStartRow}:K${summaryEndRow})` }
       ]);
+      sumTotalRow.font = { bold: true, color: { argb: 'FF0F172A' } };
+      sumTotalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      sumTotalRow.getCell(8).numFmt = '#,##0.00';
+      sumTotalRow.getCell(9).numFmt = '#,##0.00';
+      sumTotalRow.getCell(10).numFmt = '#,##0.00';
+      sumTotalRow.getCell(11).numFmt = '#,##0.00';
 
-      const detHeader = sheetDetalle.getRow(4);
-      detHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      detHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
-      detHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+      // Ajuste de columnas en Hoja 1
+      sheetSummary.columns = [
+        { width: 14 }, { width: 18 }, { width: 24 }, { width: 10 }, { width: 18 },
+        { width: 14 }, { width: 14 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }
+      ];
 
+      // ---------------------------------------------------------
+      // HOJAS 2..N: MULTI-PESTAÑA POR CADA CIERRE (CON SUBGRUPOS POR FONDO)
+      // ---------------------------------------------------------
       displayedPeriodos.forEach(p => {
+        const safeSheetName = `${p.id} - ${p.mes_nombre}`.replace(/[\/\\?*:[\]]/g, '-').slice(0, 31);
+        const sheetPeriodo = workbook.addWorksheet(safeSheetName);
+        sheetPeriodo.views = [{ showGridLines: true }];
+
+        // 1. Cabecera del Período
+        const pTitle = sheetPeriodo.addRow([`INANDES GRUPO FINANCIERO - LIQUIDACIÓN DE COMISIONES (${p.mes_nombre.toUpperCase()} ${selectedYear})`]);
+        pTitle.font = { bold: true, size: 12, color: { argb: 'FF0F172A' } };
+
+        const pMeta1 = sheetPeriodo.addRow([
+          `PERÍODO: ${p.ciclo_label.toUpperCase()} (${p.fecha_inicio} al ${p.fecha_fin} · ${p.dias_periodo} días) │ CORTE: ${p.corte_str} │ ESTADO: ${p.is_cerrado_bd ? 'AUDITADO EN BD' : 'PROYECCIÓN'}`
+        ]);
+        pMeta1.font = { bold: true, size: 9, color: { argb: 'FF334155' } };
+
+        const pMeta2 = sheetPeriodo.addRow([
+          `ASESOR: ${asesorName.toUpperCase()} │ FONDO: ${fondoName.toUpperCase()} │ SUB-TOTAL PERÍODO: PEN ${p.totales.comision_pen.toLocaleString('es-PE', { minimumFractionDigits: 2 })} │ USD ${p.totales.comision_usd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
+        ]);
+        pMeta2.font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
+        sheetPeriodo.addRow([]); // Fila 4 vacía
+
+        // 2. Agrupar partícipes del período por FONDO
+        const fondosGroupMap = new Map<string, typeof p.participes>();
         p.participes.forEach(part => {
-          const row = sheetDetalle.addRow([
-            p.mes_nombre,
-            p.corte_str,
-            part.nombre_fondo || part.id_fondo,
-            part.nombre_asesor || part.id_asesor,
-            part.inversionista_nombre,
-            part.inversionista_dni,
-            part.id_certificado,
-            part.moneda,
-            part.capital_base,
-            part.dias_devengados,
-            part.tasa_comision_asesor / 100.0,
-            part.determinacion_texto,
-            part.comision_calculada
-          ]);
-
-          row.getCell(9).numFmt = '#,##0.00';
-          row.getCell(11).numFmt = '0.00%';
-          row.getCell(13).numFmt = '#,##0.00';
-        });
-      });
-
-      // Auto ajustar anchos
-      [sheetSummary, sheetDetalle].forEach(sheet => {
-        sheet.columns.forEach(col => {
-          if (col) {
-            col.width = 20;
+          const fKey = part.id_fondo || 'FONDO_GENERAL';
+          if (!fondosGroupMap.has(fKey)) {
+            fondosGroupMap.set(fKey, []);
           }
+          fondosGroupMap.get(fKey)!.push(part);
         });
+
+        if (p.participes.length === 0) {
+          const noDataRow = sheetPeriodo.addRow(['No se registraron operaciones vigentes para los filtros seleccionados en este período.']);
+          noDataRow.font = { italic: true, color: { argb: 'FF94A3B8' } };
+        } else {
+          // Iterar cada subgrupo de Fondo
+          fondosGroupMap.forEach((partsInFondo, fondoKey) => {
+            const fNombre = partsInFondo[0]?.nombre_fondo || fondoKey;
+            const fMoneda = partsInFondo[0]?.moneda || 'USD';
+
+            // Fila Sub-encabezado de Fondo (Destacado)
+            const fondoBannerRow = sheetPeriodo.addRow([
+              `🏦 SUBGRUPO FONDO: ${fNombre.toUpperCase()} (${fondoKey}) │ MONEDA BASE: ${fMoneda} │ OPERACIONES: ${partsInFondo.length}`
+            ]);
+            fondoBannerRow.font = { bold: true, size: 10, color: { argb: 'FF0369A1' } };
+            fondoBannerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0F2FE' } };
+
+            // Encabezados de Tabla de Partícipes del Fondo (Columna I = Capital Inicial Contrato)
+            const tableHeaderRow = sheetPeriodo.addRow([
+              'N°', 'Asesor Comercial', 'Inversionista / Partícipe', 'DNI / RUC', 'Certificado / Contrato',
+              'Moneda', 'Fecha Inicio', 'Fecha Fin', 'Capital Inicial Contrato', 'Días', '% Tasa Com.', 'Fórmula / Determinación', 'Comisión a Pagar'
+            ]);
+            tableHeaderRow.font = { bold: true, size: 9, color: { argb: 'FFFFFFFF' } };
+            tableHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            tableHeaderRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            const dataStartRow = sheetPeriodo.rowCount + 1;
+
+            partsInFondo.forEach((part, idx) => {
+              const row = sheetPeriodo.addRow([
+                idx + 1,
+                part.nombre_asesor || part.id_asesor,
+                part.inversionista_nombre,
+                part.inversionista_dni,
+                part.id_certificado,
+                part.moneda,
+                part.fecha_inicio,
+                part.fecha_fin,
+                part.capital_base, // Columna I: Capital Inicial del Contrato
+                part.dias_devengados,
+                part.tasa_comision_asesor / 100.0,
+                part.determinacion_texto,
+                part.comision_calculada
+              ]);
+
+              row.getCell(1).alignment = { horizontal: 'center' };
+              row.getCell(4).alignment = { horizontal: 'center' };
+              row.getCell(6).alignment = { horizontal: 'center' };
+              row.getCell(7).alignment = { horizontal: 'center' };
+              row.getCell(8).alignment = { horizontal: 'center' };
+              row.getCell(9).numFmt = '#,##0.00'; // Columna I Formato Numérico
+              row.getCell(10).alignment = { horizontal: 'center' };
+              row.getCell(11).numFmt = '0.00%';
+              row.getCell(11).alignment = { horizontal: 'center' };
+              row.getCell(13).numFmt = '#,##0.00';
+              row.getCell(13).font = { bold: true, color: { argb: 'FF059669' } };
+            });
+
+            const dataEndRow = sheetPeriodo.rowCount;
+
+            // Fila de Subtotal del Fondo con fórmulas Excel
+            const subtotalRow = sheetPeriodo.addRow([
+              '', '', '', '', '', '', '',
+              `SUBTOTAL ${fondoKey}:`,
+              { formula: `SUM(I${dataStartRow}:I${dataEndRow})` }, // Subtotal Columna I
+              '', '', '',
+              { formula: `SUM(M${dataStartRow}:M${dataEndRow})` }  // Subtotal Columna M
+            ]);
+            subtotalRow.font = { bold: true, size: 9, color: { argb: 'FF0F172A' } };
+            subtotalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+            subtotalRow.getCell(8).alignment = { horizontal: 'right' };
+            subtotalRow.getCell(9).numFmt = '#,##0.00';
+            subtotalRow.getCell(13).numFmt = '#,##0.00';
+            subtotalRow.getCell(13).font = { bold: true, color: { argb: 'FF059669' } };
+
+            sheetPeriodo.addRow([]); // Espacio entre subgrupos de fondo
+          });
+
+          // Fila Gran Total del Período al pie de la pestaña
+          const periodGrandTotalRow = sheetPeriodo.addRow([
+            '', '', '', '', '', '', '',
+            `TOTAL GENERAL DEL PERÍODO (${p.participes.length} Ops):`,
+            p.totales.capital_pen + p.totales.capital_usd,
+            '', '', '',
+            p.totales.comision_pen + p.totales.comision_usd
+          ]);
+          periodGrandTotalRow.font = { bold: true, size: 10, color: { argb: 'FF1E3A8A' } };
+          periodGrandTotalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+          periodGrandTotalRow.getCell(8).alignment = { horizontal: 'right' };
+          periodGrandTotalRow.getCell(9).numFmt = '#,##0.00';
+          periodGrandTotalRow.getCell(13).numFmt = '#,##0.00';
+        }
+
+        // Anchos de columna optimizados para visualización y fórmulas
+        sheetPeriodo.columns = [
+          { width: 6 },   // A: N°
+          { width: 24 },  // B: Asesor
+          { width: 32 },  // C: Inversionista
+          { width: 14 },  // D: DNI / RUC
+          { width: 25 },  // E: Certificado
+          { width: 10 },  // F: Moneda
+          { width: 13 },  // G: Fecha Inicio
+          { width: 13 },  // H: Fecha Fin
+          { width: 24 },  // I: Capital Inicial Contrato
+          { width: 10 },  // J: Días
+          { width: 14 },  // K: % Tasa Com.
+          { width: 44 },  // L: Fórmula
+          { width: 20 }   // M: Comisión a Pagar
+        ];
       });
 
       const buffer = await workbook.xlsx.writeBuffer();

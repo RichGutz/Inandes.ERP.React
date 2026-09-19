@@ -241,7 +241,12 @@ export const calculateComisionesAnuales = async (
         const inv = inversionistasMap.get(invCode) || {};
         const invNombre = ev.payload_asiento?.inversionista || inv.nombre_completo || `${inv.nombre_1 || ''} ${inv.apellido_1 || ''}`.trim() || 'Inversionista';
 
-        const capBase = Number(ev.capital_base || ev.capital_final_saldo || contrato.monto_inversion || 0);
+        const isRescate = contrato.estado === 'cerrado_por_rescate' || 
+          String(contrato.estado || '').toLowerCase().includes('rescate') ||
+          String(ev.tipo_evento || '').toLowerCase().includes('rescate');
+
+        // Capital Inicial del Contrato (se premia sobre capital captado, no sobre intereses capitalizados)
+        const capBase = Number(contrato.monto_inversion || ev.capital_base || 0);
         const capSaldo = Number(ev.capital_final_saldo ?? capBase);
         const tasaInv = Number(contrato.tasa_pactada || 10.0);
 
@@ -253,11 +258,16 @@ export const calculateComisionesAnuales = async (
         const dFinEv = ev.fecha_periodo_fin ? new Date(ev.fecha_periodo_fin + 'T00:00:00') : dEnd;
         const diasDevengados = Math.max(1, Math.round((dFinEv.getTime() - dIniEv.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 
-        // Fórmula Canónica Base 365
-        const comisionCalc = Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasDevengados * 100) / 100;
+        // Fórmula Canónica Base 365 (Si hay rescate anticipado, la comisión pasa a ser 0.00 para todo el saldo)
+        const comisionCalc = isRescate 
+          ? 0.00 
+          : Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasDevengados * 100) / 100;
+          
         const capFormatted = capBase.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasDevengados} días = ${moneda} ${comFormatted}`;
+        const detTexto = isRescate
+          ? `${moneda} ${capFormatted} × RESCATE ANTICIPADO = ${moneda} 0.00`
+          : `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasDevengados} días = ${moneda} ${comFormatted}`;
 
         const aId = contrato.id_asesor || 'SIN_ASESOR';
         const aNombre = getAsesorNombre(aId);
@@ -276,7 +286,7 @@ export const calculateComisionesAnuales = async (
           capital_final_saldo: capSaldo,
           tasa_inversionista: tasaInv,
           tasa_comision_asesor: tasaComision,
-          tipo_comision_origen: 'Comisión de Captación del Fondo',
+          tipo_comision_origen: isRescate ? 'Rescate Anticipado (Sin Comisión)' : 'Comisión de Captación del Fondo',
           dias_devengados: diasDevengados,
           fecha_inicio: ev.fecha_periodo_origen || fStart,
           fecha_fin: ev.fecha_periodo_fin || fEnd,
@@ -292,6 +302,9 @@ export const calculateComisionesAnuales = async (
 
         if (cIni > fEnd || cFin < fStart) continue; // No vigente en el período
 
+        const isRescate = contrato.estado === 'cerrado_por_rescate' || 
+          String(contrato.estado || '').toLowerCase().includes('rescate');
+
         const fCode = contrato.id_fondo;
         const fondo = fondosMap.get(fCode) || {};
         const frecFondo = Number(fondo.frecuencia_cupones_meses || 2);
@@ -303,15 +316,22 @@ export const calculateComisionesAnuales = async (
         const inv = inversionistasMap.get(invCode) || {};
         const invNombre = inv.nombre_completo || `${inv.nombre_1 || ''} ${inv.apellido_1 || ''}`.trim() || 'Inversionista';
 
+        // Capital Inicial del Contrato
         const capBase = Number(contrato.monto_inversion || 0);
         const tasaInv = Number(contrato.tasa_pactada || 10.0);
         const tasaComision = Number(fondo.comision_captacion_fondo || contrato.tasa_comision_asesor || 1.5);
         const moneda = contrato.moneda || fondo.moneda || 'USD';
 
-        const comisionCalc = Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasExactos * 100) / 100;
+        // Fórmula Canónica Base 365 (Si hay rescate anticipado, la comisión es 0.00)
+        const comisionCalc = isRescate 
+          ? 0.00 
+          : Math.round(capBase * (tasaComision / 100.0 / 365.0) * diasExactos * 100) / 100;
+          
         const capFormatted = capBase.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const comFormatted = comisionCalc.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const detTexto = `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasExactos} días = ${moneda} ${comFormatted}`;
+        const detTexto = isRescate
+          ? `${moneda} ${capFormatted} × RESCATE ANTICIPADO = ${moneda} 0.00`
+          : `${moneda} ${capFormatted} × (${tasaComision.toFixed(2)}% / 365) × ${diasExactos} días = ${moneda} ${comFormatted}`;
 
         const aId = contrato.id_asesor || 'SIN_ASESOR';
         const aNombre = getAsesorNombre(aId);
@@ -330,7 +350,7 @@ export const calculateComisionesAnuales = async (
           capital_final_saldo: capBase,
           tasa_inversionista: tasaInv,
           tasa_comision_asesor: tasaComision,
-          tipo_comision_origen: 'Comisión de Captación Estimada',
+          tipo_comision_origen: isRescate ? 'Rescate Anticipado (Sin Comisión)' : 'Comisión de Captación Estimada',
           dias_devengados: diasExactos,
           fecha_inicio: fStart,
           fecha_fin: fEnd,
