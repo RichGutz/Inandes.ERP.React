@@ -1,3 +1,4 @@
+[2026-09-22 20:28:00-05:00] CONMUTACIÓN TEMPORAL DE DOMINIO (BOLT-USA.SHOP): Ante la suspensión administrativa de Google Cloud sobre el proyecto GCP y bloqueo en registrador de geeksoft.tech, se ejecutó protocolo de contingencia hacia inandes.bolt-usa.shop y api-factoring.bolt-usa.shop (IP 169.58.168.107). Resolución DNS verificada en terminal, blindado CertificadosPage.tsx con getApiBaseUrl() dinámico, compilación limpia verificada (npm run build, Exit Code 0) y generada la nota técnica '24. Protocolo.Conmutacion.Dominio.Temporal.bolt-usa.shop.md' en Obsidian detallando la arquitectura y el procedimiento de reversión 100% canónico.
 [2026-09-19 13:24:00-05:00] COMISIONES ASESORES EXCEL MULTI-PESTAÑA Y REGLAS DE NEGOCIO: Implementado nuevo exportador a Excel con arquitectura Multi-Pestaña (Hoja 1 Resumen General Consolidado + Hojas por cada Cierre). En cada pestaña de cierre, las operaciones se organizan en subgrupos visuales por Fondo con subtotales SUM automáticos. En la tabla de partícipes, la Columna I refleja estrictamente el 'Capital Inicial Contrato' (monto_inversion), excluyendo intereses capitalizados. Se implementó la regla de que contratos con rescate anticipado (cerrado_por_rescate) liquidan con comisión 0.00. Branch Tag 'SAFEPOINT_COMISIONES_EXCEL_SUBGRUPOS' generado y compilación verificada exitosamente (npm run build, Exit Code 0).
 [2026-09-18 11:41:00-05:00] PERIODO POR DEFECTO EECC Y RETENCIONES (B4 AGOSTO 2026): Configurado el selector inicial de período en 'InversionistasPage.tsx' para que cargue por defecto en el último período cerrado con asientos oficiales: Bimestre 4 / B4 (Ago 31 - 2026-08-31). Validación limpia de compilación con 'npm run build' (Exit Code 0), Branch Tag 'BRANCH_TAG_PERIODO_DEFAULT_AGOSTO_20260918' creado y cambios sincronizados en 'main' para auto-despliegue en Contabo VPS.
 [2026-09-18 10:56:00-05:00] DETECTOR Y SINCRONIZADOR DE REBOTES GMAIL (BOUNCES): Implementado sistema completo de detección de rebotes asíncronos (Mailer-Daemon / NDR) vía Google Gmail API. Endpoint '/api/inversionistas/sync-rebotes' escanea la bandeja de inversionistas@inandes.com, extrae destinatarios fallidos (ej: mianguta@gmail.com, lopezthosua637@gmail.com, charliebox39@gmail.com) y actualiza automáticamente los registros en Supabase 'audit_logs' a estado 'REBOTADO' con el diagnóstico SMTP (550 / Mailbox not found). En 'BandejaDespachoTab.tsx' se integró el botón 'Sincronizar Rebotes (Gmail)', tarjeta KPI de Rebotados, badges con alerta visual y exportación a Excel con columna de motivos de rebote. Compilado con éxito (Exit Code 0) y desplegado a producción en Contabo VPS.
@@ -753,3 +754,17 @@ RESULTADOS:
 8. Documentacion AS BUILT asentada en 'Obsidian/Inandes.Inversionistas.React/Backend/Reformulacion_EECC_RGP.18.09.26.md'.
 ================================================================================
 
+================================================================================
+SESION FINALIZADA: 2026-09-21 12:55:00
+TAREA: Reestructuracion de Salida y Cronograma de Rescates Sheila Miriam Ojeda Novoa (NSGPEN01-053.20160101)
+RESULTADOS:
+1. Respaldo integral de base de datos Supabase exportado a JSON: backups/SNAPSHOT_TOTAL_SUPABASE_20260921_PRE_SHEILA_OJEDA/ (10 tablas).
+2. Generacion de reporte PDF ejecutivo para aprobacion del usuario: Plan_Salida_Sheila_Ojeda_NSGPEN01_053.pdf.
+3. Validacion matematica: Confirmado que a partir del 01/09/2026 aplica tasa waiver 3.50% anual (ACT/365) y regla de 100% Reparto (0% reinversion).
+4. Ejecucion atomica en Supabase:
+   - Registro de 3 armadas de rescate en 'crm_cronograma_deducciones_rescates' (Armada 1: S/ 250,591.73 APLICADO, Armada 2: S/ 250,000.00 PENDIENTE, Armada 3: S/ 39,547.00 PENDIENTE).
+   - Actualizado evento de cierre 31-ago-2026 (id_evento: 14898) con monto_rescate = 250591.73 y capital_final_saldo = 289547.00.
+   - Actualizado contrato 'NSGPEN01-053.20160101' a porcentaje_reparto = 100 y fecha_fin = 2027-04-30.
+5. Verificacion de efectos: El saldo final de capital remanente al 30/04/2027 queda exactamente en S/ 0.00 (CERO).
+6. Dictamen forense documentado en Obsidian: Obsidian/Inandes.Inversionistas.React/Database/El_caso_Sheila_ojeda.md.
+================================================================================

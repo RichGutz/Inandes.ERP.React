@@ -15,6 +15,7 @@ import html2pdf from 'html2pdf.js';
 import { 
   Loader2, AlertCircle, FileSpreadsheet, CheckCircle, Search, Upload, ChevronDown, ChevronUp, Layers, Calendar, DollarSign, ArrowUpCircle, History, User, Download, Printer, Archive, Mail, MessageSquare, Send, CheckSquare, Square, X
 } from 'lucide-react';
+import { getApiBaseUrl } from '../../config/apiConfig';
 
 const FUND_ORDER_PRIORITY: Record<string, number> = {
   'FDO NSG MIPYME PEN 01': 1,
@@ -768,7 +769,7 @@ const sendSingleWhatsAppText = async (phone: string, text: string): Promise<bool
         if (sendEmail) {
           if (email && email.includes('@')) {
             try {
-              const apiUrl = import.meta.env.VITE_API_FACTORING_URL || 'https://api-factoring.geeksoft.tech';
+              const apiUrl = getApiBaseUrl();
               await fetch(`${apiUrl}/api/inversionistas/enviar-reportes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
