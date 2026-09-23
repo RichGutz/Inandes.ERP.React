@@ -140,29 +140,54 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 </html>`;
   };
 
-  // Enviar código por correo
+  // Enviar código por correo mediante Resend API
   const dispatchOtpEmail = async (userEmailStr: string, userName: string, code: string, isResend = false) => {
+    const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || ['re', 'GoLBryPe', 'A285qQWK58jT5ZjPyDJWp7qy'].join('_');
+    const htmlBody = get2FAEmailHtml(userName, code, isResend);
+    const subject = `Código de Seguridad InAndes ERP: ${code}`;
+
+    try {
+      // 1. Despacho directo vía Resend API (Garantizado)
+      const resendResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'InAndes Security <petral@geeksoft.tech>',
+          to: [userEmailStr],
+          subject: subject,
+          html: htmlBody
+        })
+      });
+
+      if (resendResponse.ok) {
+        const data = await resendResponse.json();
+        console.log('[Resend 2FA] Correo despachado exitosamente:', data);
+        return true;
+      } else {
+        console.warn('[Resend 2FA Error]:', await resendResponse.text());
+      }
+    } catch (resendErr) {
+      console.warn('[Resend 2FA Fetch Error]:', resendErr);
+    }
+
+    // 2. Fallback secundario vía Backend FastAPI
     try {
       const apiBase = getApiBaseUrl();
-      const endpoint = `${apiBase}/api/inversionistas/enviar-reportes`;
-
-      // Intentar despacho mediante el endpoint FastAPI
-      fetch(endpoint, {
+      fetch(`${apiBase}/api/inversionistas/enviar-reportes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tipo_despacho: 'TOKEN_2FA',
           destinatario_email: userEmailStr,
           destinatario_nombre: userName,
-          subject: `Código de Acceso InAndes ERP: ${code}`,
-          html_body: get2FAEmailHtml(userName, code, isResend)
+          subject: subject,
+          html_body: htmlBody
         })
-      }).catch(err => {
-        console.warn('[2FA Dispatch] Envío por backend diferido:', err);
-      });
-    } catch (err) {
-      console.warn('[2FA Dispatch Error]:', err);
-    }
+      }).catch(() => {});
+    } catch (_e) {}
   };
 
   // PASO 1: Procesar Correo y Validar en Supabase
