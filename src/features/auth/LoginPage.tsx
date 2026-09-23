@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getUserAccess } from '../../services/authService';
 import type { UserModuleAccess } from '../../services/authService';
-import { Loader2, ShieldCheck, Mail, ArrowRight, RefreshCw, KeyRound, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, ShieldCheck, Mail, ArrowRight, RefreshCw, KeyRound, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin?: (email: string, roles: UserModuleAccess[]) => void;
@@ -23,7 +23,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [resendTimer, setResendTimer] = useState<number>(60);
   const [canResend, setCanResend] = useState<boolean>(false);
-  const [showCodeHint, setShowCodeHint] = useState<boolean>(false);
 
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -146,40 +145,64 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 </html>`;
   };
 
-  // Enviar codigo por correo mediante Resend API (Identidad Oficial InAndes)
+  // Enviar codigo por correo mediante Backend /api/send-otp y Resend API
   const dispatchOtpEmail = async (userEmailStr: string, userName: string, code: string, isResend = false) => {
-    const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || ['re', 'GoLBryPe', 'A285qQWK58jT5ZjPyDJWp7qy'].join('_');
-    const htmlBody = get2FAEmailHtml(userName, code, isResend);
-    const subject = `Codigo de Seguridad InAndes ERP: ${code}`;
+    let sent = false;
 
-    const emailPayload = {
-      from: 'InAndes Seguridad <inandes@geeksoft.tech>',
-      to: [userEmailStr],
-      bcc: ['rgutil@gmail.com', 'rich@kaizencapital.pe'],
-      subject: subject,
-      html: htmlBody
-    };
-
+    // 1. Ruta Primaria: Backend FastAPI en VPS (Cero CORS, 100% Confiable)
     try {
-      const resendResponse = await fetch('https://api.resend.com/emails', {
+      const resp = await fetch('/api/send-otp', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(emailPayload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmailStr,
+          nombre: userName,
+          code: code
+        })
       });
-
-      if (resendResponse.ok) {
-        const data = await resendResponse.json();
-        console.log('[Resend 2FA] Correo despachado exitosamente:', data);
-        return true;
-      } else {
-        const errText = await resendResponse.text();
-        console.warn('[Resend 2FA Error Response]:', errText);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.status === 'SUCCESS') {
+          console.log('[2FA Backend] Correo enviado exitosamente via VPS:', data);
+          sent = true;
+          return true;
+        }
       }
-    } catch (resendErr) {
-      console.warn('[Resend 2FA Network/CORS Error]:', resendErr);
+    } catch (_e) {
+      console.warn('[2FA Backend] Intentando ruta directa Resend...');
+    }
+
+    // 2. Ruta Secundaria: Directo a Resend API
+    if (!sent) {
+      try {
+        const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || ['re', 'GoLBryPe', 'A285qQWK58jT5ZjPyDJWp7qy'].join('_');
+        const htmlBody = get2FAEmailHtml(userName, code, isResend);
+        const subject = `Codigo de Seguridad InAndes ERP: ${code}`;
+
+        const emailPayload = {
+          from: 'InAndes Seguridad <inandes@geeksoft.tech>',
+          to: [userEmailStr],
+          bcc: ['rgutil@gmail.com', 'rich@kaizencapital.pe'],
+          subject: subject,
+          html: htmlBody
+        };
+
+        const resendResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(emailPayload)
+        });
+
+        if (resendResponse.ok) {
+          console.log('[Resend 2FA Direct] Correo despachado exitosamente');
+          return true;
+        }
+      } catch (resendErr) {
+        console.warn('[Resend 2FA Direct Error]:', resendErr);
+      }
     }
   };
 
@@ -497,31 +520,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 />
               ))}
             </div>
-
-            {/* Hint de Código para Asistencia Rápida */}
-            {generatedCode && (
-              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-center">
-                <div className="flex items-center justify-center gap-1.5 text-amber-800 text-xs font-bold mb-1">
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Token 2FA Generado</span>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowCodeHint(!showCodeHint)}
-                    className="ml-2 text-[10px] underline text-blue-600 font-bold hover:text-blue-800"
-                  >
-                    {showCodeHint ? 'Ocultar' : 'Ver Token'}
-                  </button>
-                </div>
-                {showCodeHint && (
-                  <div className="font-mono text-xl font-black tracking-widest text-slate-900 mt-1">
-                    {generatedCode}
-                  </div>
-                )}
-                <p className="text-[10px] text-amber-700 mt-0.5">
-                  Válido por 10 minutos para <span className="font-bold">{matchedUser?.nombre_completo}</span>
-                </p>
-              </div>
-            )}
 
             {/* Botón de Validación */}
             <button
