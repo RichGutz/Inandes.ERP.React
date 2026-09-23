@@ -94,6 +94,25 @@ function App() {
   }, [activeTab]);
 
   useEffect(() => {
+    // 1. Revisar sesión 2FA en LocalStorage
+    const saved2FASession = typeof window !== 'undefined' ? localStorage.getItem('inandes_auth_session') : null;
+    if (saved2FASession) {
+      try {
+        const parsed = JSON.parse(saved2FASession);
+        if (parsed?.email && parsed?.roles && parsed.roles.length > 0) {
+          setIsAuthenticated(true);
+          setUserEmail(parsed.email);
+          setUserFullName(parsed.nombre_completo || parsed.email);
+          setUserRoles(parsed.roles);
+          setAuthChecking(false);
+          setAuthError(null);
+          return;
+        }
+      } catch (e) {
+        console.warn('Error parsing 2FA session:', e);
+      }
+    }
+
     const isDevLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && sessionStorage.getItem('dev_local_login') === 'true';
 
     if (isDevLocal) {
@@ -124,7 +143,6 @@ function App() {
           setUserFullName(roles[0]?.nombre_completo || email);
           setAuthError(null);
         } else {
-          // El usuario de Google no tiene acceso
           setIsAuthenticated(false);
           setAuthError(`El correo ${email} no tiene permisos asignados en el sistema.`);
         }
@@ -136,7 +154,7 @@ function App() {
       }
     };
 
-    // Revisar sesion inicial
+    // Revisar sesion inicial de Supabase (si existe)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isSubscribed) {
         checkUser(session, true);

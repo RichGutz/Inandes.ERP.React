@@ -103,6 +103,7 @@ export const MasterTemplate: React.FC<MasterTemplateProps> = ({
 
   const handleLogout = () => {
     if (confirm('¿Desea cerrar la sesión de usuario?')) {
+      localStorage.removeItem('inandes_auth_session');
       sessionStorage.removeItem('dev_local_login');
       supabase.auth.signOut();
       window.location.reload();
