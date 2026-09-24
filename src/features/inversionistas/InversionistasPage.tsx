@@ -969,7 +969,6 @@ export const InversionistasPage: React.FC = () => {
     <table>
       <tr><td class="col-label bold">Monto de la inversión al ${row.fecha_fin_str}</td><td class="col-currency bold">${row.moneda}</td><td class="col-amount bold">${row.capital_final > 0 ? formatNumDoc(row.capital_final) : '-'}</td></tr>
       <tr><td class="col-label bold">Número de cuotas al ${row.fecha_fin_str}</td><td class="col-currency bold">CUOTAS</td><td class="col-amount bold">${row.capital_final > 0 ? Math.floor(row.valor_cuota ? row.capital_final / row.valor_cuota : row.capital_final).toLocaleString('es-PE') : '0'}</td></tr>
-      <tr><td class="col-label bold">Fecha de cierre del fondo / cierre del contrato</td><td class="col-currency bold"></td><td class="col-amount bold">${row.fecha_cierre_contrato_str || '31-DIC-2027'}</td></tr>
     </table>
   </div>
   <div class="footer-line"></div>
