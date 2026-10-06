@@ -3,7 +3,7 @@ import { LOGO_INANDES_BASE64, LOGO_GEEKSOFT_BASE64 } from '../assets/base64Image
 export interface CertRow {
   num?: number | string;
   n_orden?: number | string;
-  tipo: 'PADRE' | 'AUMENTO' | 'SPACER' | 'TOTAL';
+  tipo: 'PADRE' | 'AUMENTO' | 'SPACER' | 'TOTAL' | 'CERT' | string;
   id?: string;
   id_certificado?: string;
   inversionista?: string;
@@ -116,7 +116,7 @@ export function generateReporteBelloPdfHtml(
     const totRescatesNetos = Math.round(((totals.devolucion_capital || 0) - (totals.penalidad_rescate || 0)) * 100) / 100;
     const totTransferencia = Math.round((totNetoFinal + totRescatesNetos) * 100) / 100;
 
-    const certCount = allRows.filter(r => r.tipo === 'PADRE' || (!r.tipo && !r.is_aumento)).length;
+    const certCount = allRows.filter(r => r.tipo === 'PADRE' || r.tipo === 'CERT' || (!r.tipo && !r.is_aumento)).length;
 
     // 🎯 ALGORITMO COMPAGINADOR INTELIGENTE (<= 40 Filas Útiles por Hoja A4 Landscape)
     const MAX_ROWS_SINGLE_PAGE = 40;
@@ -142,6 +142,7 @@ export function generateReporteBelloPdfHtml(
       const fStartFund = fData.fStart || fStart;
       const fEndFund = fData.fEnd || fEnd;
       const diasBaseFund = fData.diasBase || fData.blocks?.[0]?.days?.length || diasBase;
+      const cleanFondoNombre = (fData.fondo.nombre_fondo || fData.fondo.id_fondo).replace(/^FONDO\s+/i, '');
 
       pagesHtml.push(`
         <div class="report-page">
@@ -163,7 +164,7 @@ export function generateReporteBelloPdfHtml(
 
           <!-- 2. Banner Oficial del Fondo -->
           <div class="fund-badge-banner">
-            FONDO ${fData.fondo.nombre_fondo || fData.fondo.id_fondo} (${fData.fondo.id_fondo}) — MONEDA: ${moneda} &nbsp;|&nbsp; ${certCount} INVERSIONISTAS${parteStr}
+            FONDO ${cleanFondoNombre} (${fData.fondo.id_fondo}) — MONEDA: ${moneda} &nbsp;|&nbsp; ${certCount} INVERSIONISTA${certCount === 1 ? '' : 'S'}${parteStr}
           </div>
 
           <!-- 3. Cajas KPI de Cabecera Inteligentes (Solo se muestran si tienen valor > 0) -->
