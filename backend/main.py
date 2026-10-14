@@ -1,7 +1,7 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import retornos, comisiones, valor_cuota, originacion, liquidaciones, aprobacion, desembolsos, inversionistas
+from routers import retornos, comisiones, valor_cuota, originacion, liquidaciones, aprobacion, desembolsos, inversionistas, auth
 import uvicorn
 from dotenv import load_dotenv
 
@@ -18,7 +18,9 @@ origins = [
     "http://localhost:3000",
     "https://inandes.react.geeksoft.tech",
     "https://inandes.geeksoft.tech",
-    "https://api.geeksoft.tech"
+    "https://api.geeksoft.tech",
+    "https://inandes.kaizencapital.pe",
+    "https://inandes.bolt-usa.shop"
 ]
 
 app.add_middleware(
@@ -29,6 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix="/api/auth", tags=["Autenticacion Soberana"])
+app.include_router(auth.legacy_router, tags=["Autenticacion Legacy"])
 app.include_router(desembolsos.router, prefix="/api/desembolsos", tags=["desembolsos"])
 app.include_router(aprobacion.router, prefix="/api/aprobacion", tags=["aprobacion"])
 app.include_router(retornos.router, prefix="/api/retornos", tags=["Retornos"])

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getUserAccess } from '../../services/authService';
 import type { UserModuleAccess } from '../../services/authService';
-import { Loader2, ShieldCheck, Mail, ArrowRight, RefreshCw, KeyRound, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { getDeviceFingerprint } from '../../utils/deviceFingerprint';
+import { Loader2, ShieldCheck, Mail, ArrowRight, RefreshCw, KeyRound, CheckCircle2, AlertTriangle, Shield } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin?: (email: string, roles: UserModuleAccess[]) => void;
@@ -17,12 +18,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   } | null>(null);
 
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
-  const [generatedCode, setGeneratedCode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [resendTimer, setResendTimer] = useState<number>(60);
   const [canResend, setCanResend] = useState<boolean>(false);
+  const [deviceAlert, setDeviceAlert] = useState<{ status: string; fingerprint: string; name?: string; message: string } | null>(null);
 
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -58,155 +59,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, [step]);
 
-  // Plantilla HTML de correo corporativo para el Token 2FA con Branding Oficial InAndes
-  const get2FAEmailHtml = (name: string, code: string, isResend = false) => {
-    return `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Codigo de Seguridad InAndes ERP</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1e293b;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:36px 12px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 12px 30px -5px rgba(15,23,42,0.1);border:1px solid #e2e8f0;">
-          <tr>
-            <td style="height:6px;background:linear-gradient(90deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%);line-height:6px;font-size:0;">&nbsp;</td>
-          </tr>
-          <tr>
-            <td style="background-color:#ffffff;padding:28px 36px 20px 36px;border-bottom:1px solid #f1f5f9;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="left" style="vertical-align:middle;">
-                    <img src="https://inandes.kaizencapital.pe/Logo.Inandes.png" alt="InAndes Grupo Financiero" height="42" style="height:42px;max-height:42px;display:block;border:0;" />
-                  </td>
-                  <td align="right" style="vertical-align:middle;">
-                    <img src="https://inandes.kaizencapital.pe/Logo.Geeksoft.png" alt="Geeksoft" height="28" style="height:28px;max-height:28px;display:block;border:0;opacity:0.85;" />
-                  </td>
-                </tr>
-              </table>
-              <div style="margin-top:16px;padding-top:12px;border-top:1px solid #f8fafc;color:#1e3a8a;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;">
-                ERP INANDES • FACTORING & INVERSIONISTAS • CONTROL 2FA
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px 36px;">
-              <div style="margin-bottom:16px;">
-                <span style="background-color:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;text-transform:uppercase;border:1px solid #bfdbfe;letter-spacing:0.5px;">
-                  ${isResend ? 'Reenvio de Clave 2FA' : 'Autenticacion de Dos Factores (2FA)'}
-                </span>
-              </div>
-              <h1 style="margin:0 0 12px 0;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">
-                ${isResend ? 'Nuevo Codigo de Autorizacion' : 'Verificacion de Acceso Seguro'}
-              </h1>
-              <p style="margin:0 0 14px 0;font-size:14.5px;color:#334155;">
-                Estimado(a) <strong>${name}</strong>,
-              </p>
-              <p style="margin:0 0 22px 0;font-size:14px;line-height:1.55;color:#475569;">
-                Se ha iniciado una sesion en la plataforma central de <strong>InAndes Grupo Financiero</strong>. Ingrese el siguiente codigo transaccional en la pantalla de inicio de sesion:
-              </p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);border:2px dashed #059669;border-radius:14px;margin:22px 0 26px 0;">
-                <tr>
-                  <td style="padding:24px;text-align:center;">
-                    <p style="margin:0 0 8px 0;font-size:11px;font-weight:800;color:#047857;text-transform:uppercase;letter-spacing:2px;">
-                      Codigo de Acceso Seguro
-                    </p>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:42px;font-weight:900;color:#0f172a;letter-spacing:12px;padding:6px 0;">
-                      ${code}
-                    </div>
-                    <p style="margin:8px 0 0 0;font-size:11.5px;color:#64748b;font-weight:600;">
-                      Valido durante los proximos <strong>10 minutos</strong>.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-              <div style="background-color:#f8fafc;border-left:4px solid #1e3a8a;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:20px;">
-                <p style="margin:0;font-size:12px;color:#475569;line-height:1.45;">
-                  <strong>Aviso de Seguridad:</strong> Este codigo es personal e intransferible. Nunca comparta esta clave con terceras personas. El equipo de soporte de InAndes nunca le solicitara su codigo por telefono ni correo.
-                </p>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="background-color:#0f172a;padding:18px 36px;text-align:center;">
-              <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.5;">
-                © 2026 INANDES Grupo Financiero • Tecnologia Operativa GeekSoft<br>
-                Cifrado TLS 1.3 de Extremo a Extremo
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-  };
-
-  // Enviar codigo por correo mediante Backend /api/send-otp y Resend API
-  const dispatchOtpEmail = async (userEmailStr: string, userName: string, code: string, isResend = false) => {
-    let sent = false;
-
-    // 1. Ruta Primaria: Backend FastAPI en VPS (Cero CORS, 100% Confiable)
-    try {
-      const resp = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmailStr,
-          nombre: userName,
-          code: code
-        })
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.status === 'SUCCESS') {
-          console.log('[2FA Backend] Correo enviado exitosamente via VPS:', data);
-          sent = true;
-          return true;
-        }
-      }
-    } catch (_e) {
-      console.warn('[2FA Backend] Intentando ruta directa Resend...');
-    }
-
-    // 2. Ruta Secundaria: Directo a Resend API
-    if (!sent) {
-      try {
-        const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || ['re', 'GoLBryPe', 'A285qQWK58jT5ZjPyDJWp7qy'].join('_');
-        const htmlBody = get2FAEmailHtml(userName, code, isResend);
-        const subject = `Codigo de Seguridad InAndes ERP: ${code}`;
-
-        const emailPayload = {
-          from: 'InAndes Seguridad <inandes@geeksoft.tech>',
-          to: [userEmailStr],
-          bcc: ['rgutil@gmail.com', 'rich@kaizencapital.pe'],
-          subject: subject,
-          html: htmlBody
-        };
-
-        const resendResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(emailPayload)
-        });
-
-        if (resendResponse.ok) {
-          console.log('[Resend 2FA Direct] Correo despachado exitosamente');
-          return true;
-        }
-      } catch (resendErr) {
-        console.warn('[Resend 2FA Direct Error]:', resendErr);
-      }
-    }
-  };
-
-  // PASO 1: Procesar Correo y Validar en Supabase
+  // PASO 1: Solicitar Codigo OTP al Servidor Oficial de FastAPI (Server-Side 2FA)
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -221,41 +74,50 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
 
     try {
-      // 1. Consultar permisos en Supabase (user_module_access)
-      const roles = await getUserAccess(cleanEmail);
+      // 1. Solicitar OTP al Backend Oficial de FastAPI
+      const resp = await fetch('/api/auth/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail })
+      });
 
-      if (!roles || roles.length === 0) {
+      if (resp.ok) {
+        const data = await resp.json();
+        // Consultar roles para preparar contexto
+        const roles = await getUserAccess(cleanEmail);
+        const fullName = roles[0]?.nombre_completo || cleanEmail.split('@')[0];
+
+        setMatchedUser({
+          email: cleanEmail,
+          nombre_completo: fullName,
+          roles: roles
+        });
+
+        setStep(2);
+        setResendTimer(60);
+        setCanResend(false);
         setLoading(false);
-        setErrorMsg(`Acceso Restringido: El correo "${cleanEmail}" no tiene autorización registrada en el ERP. Solicite el alta al Administrador de INANDES.`);
+        setSuccessMsg(data.message || `Código de seguridad enviado a ${cleanEmail}. Ingrese los 6 dígitos recibidos.`);
         return;
       }
 
-      const fullName = roles[0]?.nombre_completo || cleanEmail.split('@')[0];
-      setMatchedUser({
-        email: cleanEmail,
-        nombre_completo: fullName,
-        roles: roles
-      });
+      // Si el backend devolvio error estructurado
+      const errData = await resp.json().catch(() => ({}));
+      if (resp.status === 403) {
+        setLoading(false);
+        setErrorMsg(errData.detail || `Acceso Restringido: El correo "${cleanEmail}" no tiene autorización registrada en el ERP.`);
+        return;
+      } else if (resp.status === 429) {
+        setLoading(false);
+        setErrorMsg(errData.detail || 'Demasiados intentos. Por favor espere unos momentos antes de reintentar.');
+        return;
+      }
 
-      // 2. Generar codigo 2FA aleatorio de 6 digitos
-      const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedCode(randomCode);
-      try {
-        sessionStorage.setItem('inandes_otp_code', randomCode);
-      } catch (_e) {}
-
-      // 3. Despachar correo electronico
-      await dispatchOtpEmail(cleanEmail, fullName, randomCode, false);
-
-      // 4. Cambiar a Paso 2
-      setStep(2);
-      setResendTimer(60);
-      setCanResend(false);
       setLoading(false);
-      setSuccessMsg(`Codigo de seguridad generado para ${cleanEmail}. Ingrese el codigo recibido o use el token mostrado.`);
+      setErrorMsg(errData.detail || 'Error al solicitar el código de seguridad. Intente nuevamente.');
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg(err.message || 'Error al conectar con la base de datos de autorizacion.');
+      setErrorMsg(err.message || 'Error de conexión con el servidor de autenticación.');
     }
   };
 
@@ -326,67 +188,102 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   };
 
-  // Reenviar Codigo
+  // Reenviar Codigo (Server-Side)
   const handleResend = async () => {
     if (!matchedUser || !canResend) return;
     setLoading(true);
     setErrorMsg('');
-    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(newCode);
-    try {
-      sessionStorage.setItem('inandes_otp_code', newCode);
-    } catch (_e) {}
     setOtp(['', '', '', '', '', '']);
-    setResendTimer(60);
-    setCanResend(false);
 
-    await dispatchOtpEmail(matchedUser.email, matchedUser.nombre_completo, newCode, true);
+    try {
+      const resp = await fetch('/api/auth/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: matchedUser.email })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        setResendTimer(60);
+        setCanResend(false);
+        setLoading(false);
+        setSuccessMsg(data.message || 'Nuevo código de seguridad enviado exitosamente.');
+        inputRefs[0].current?.focus();
+        return;
+      }
+      const errData = await resp.json().catch(() => ({}));
+      setErrorMsg(errData.detail || 'Error al reenviar el código.');
+    } catch (_e) {
+      setErrorMsg('Error de conexión al solicitar el nuevo código.');
+    }
     setLoading(false);
-    setSuccessMsg('Nuevo codigo de seguridad enviado exitosamente.');
-    inputRefs[0].current?.focus();
   };
 
-  // PASO 2: Verificar Codigo e Iniciar Sesion
-  const verifyCode = (codeToVerify: string) => {
+  // PASO 2: Verificar Codigo e Iniciar Sesion en el Servidor
+  const verifyCode = async (codeToVerify: string) => {
+    if (!matchedUser) return;
     setErrorMsg('');
+    setDeviceAlert(null);
     setLoading(true);
 
-    setTimeout(() => {
-      let storedOtp = '';
-      try {
-        storedOtp = sessionStorage.getItem('inandes_otp_code') || '';
-      } catch (_e) {}
+    try {
+      const deviceInfo = getDeviceFingerprint();
+      const resp = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: matchedUser.email,
+          code: codeToVerify,
+          device_fingerprint: deviceInfo.fingerprint,
+          device_name: deviceInfo.deviceName
+        })
+      });
 
-      // Verificacion del codigo generado o codigos maestros de emergencia
-      const isValid = codeToVerify === generatedCode || (storedOtp && codeToVerify === storedOtp) || codeToVerify === '999888' || codeToVerify === '777888';
+      if (resp.ok) {
+        const data = await resp.json();
+        // Autenticación Exitosa con Token JWT firmado por Backend
+        const sessionPayload = {
+          email: data.user?.email || matchedUser.email,
+          nombre_completo: data.user?.nombre_completo || matchedUser.nombre_completo,
+          roles: data.user?.roles || matchedUser.roles,
+          token: data.token,
+          device_fingerprint: data.device_fingerprint || deviceInfo.fingerprint,
+          authType: '2FA_SERVER_JWT',
+          timestamp: Date.now()
+        };
 
-      if (isValid) {
-        // Autenticacion Exitosa
-        if (matchedUser) {
-          const sessionPayload = {
-            email: matchedUser.email,
-            nombre_completo: matchedUser.nombre_completo,
-            roles: matchedUser.roles,
-            authType: '2FA_OTP',
-            timestamp: Date.now()
-          };
-
-          // Persistencia en LocalStorage
-          localStorage.setItem('inandes_auth_session', JSON.stringify(sessionPayload));
-          sessionStorage.setItem('dev_local_login', 'true');
-
-          if (onLogin) {
-            onLogin(matchedUser.email, matchedUser.roles);
-          }
-
-          // Recarga suave para inicializar App
-          window.location.reload();
+        // Persistencia segura de sesión y Bearer Token
+        localStorage.setItem('inandes_auth_session', JSON.stringify(sessionPayload));
+        if (data.token) {
+          localStorage.setItem('inandes_jwt_token', data.token);
+          sessionStorage.setItem('inandes_jwt_token', data.token);
         }
-      } else {
-        setLoading(false);
-        setErrorMsg('Codigo de verificacion incorrecto o expirado. Verifiquelo e intente nuevamente.');
+        sessionStorage.setItem('dev_local_login', 'true');
+
+        if (onLogin) {
+          onLogin(sessionPayload.email, sessionPayload.roles);
+        }
+
+        window.location.reload();
+        return;
       }
-    }, 300);
+
+      const errData = await resp.json().catch(() => ({}));
+      if (errData.device_status) {
+        setDeviceAlert({
+          status: errData.device_status,
+          fingerprint: errData.device_fingerprint || deviceInfo.fingerprint,
+          name: errData.device_name || deviceInfo.deviceName,
+          message: errData.detail || 'Dispositivo no autorizado en la Bóveda de Seguridad.'
+        });
+      }
+      setErrorMsg(errData.detail || 'Código de seguridad incorrecto o expirado.');
+      setLoading(false);
+      setOtp(['', '', '', '', '', '']);
+      inputRefs[0].current?.focus();
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || 'Error de conexión con el servidor al verificar el código.');
+    }
   };
 
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -574,8 +471,39 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
         )}
 
+        {/* Alerta de Bóveda de Dispositivos (Device Vault) */}
+        {deviceAlert && (
+          <div className="mt-5 p-4 bg-amber-50/90 border border-amber-200 rounded-xl text-left animate-in fade-in space-y-2">
+            <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
+              <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Bóveda de Dispositivos (Device Vault Zero Trust)</span>
+            </div>
+            <p className="text-xs text-amber-900 leading-relaxed font-medium">
+              {deviceAlert.message}
+            </p>
+            <div className="bg-white/80 p-2.5 rounded-lg border border-amber-200/60 font-mono text-[11px] text-slate-700 flex flex-col gap-1">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-sans">Huella Digital:</span>
+                <strong className="text-indigo-700 font-black">{deviceAlert.fingerprint}</strong>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 font-sans">Estado en Bóveda:</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  deviceAlert.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                  deviceAlert.status === 'REVOKED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {deviceAlert.status === 'APPROVED' ? 'AUTORIZADO' : deviceAlert.status === 'REVOKED' ? 'REVOCADO' : 'PENDIENTE DE AUTORIZACIÓN'}
+                </span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 italic">
+              Para autorizar este equipo, ingrese como Administrador al menú Herramientas &gt; Device Vault o solicite la aprobación al Oficial de Seguridad.
+            </p>
+          </div>
+        )}
+
         {/* Mensajes de Alerta y Notificación */}
-        {errorMsg && (
+        {errorMsg && !deviceAlert && (
           <div className="mt-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-red-700 text-xs leading-relaxed animate-in fade-in">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
