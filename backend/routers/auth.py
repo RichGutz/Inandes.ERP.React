@@ -14,19 +14,23 @@ from fastapi import APIRouter, HTTPException, Request, Header, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Clave secreta para firma JWT
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "InAndes_Secret_Key_2026_Kaizen_Capital_Z3N_H0ld1ngs")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "InAndes_Secret_Key_Kaizen_Capital_2026")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_SECONDS = 8 * 3600  # 8 horas de sesion valida
 
 # Configuracion Resend API
-RESEND_API_KEY = os.getenv("RESEND_API_KEY") or base64.b64decode("cmVfR29MQnJ5UGVfQTI4NXFRV0s1OGpUNVpqUHlESldwN3F5").decode('utf-8')
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 DEFAULT_FROM_EMAIL = "InAndes Seguridad <inandes@geeksoft.tech>"
 AUDIT_BCC_EMAILS = ["rgutil@gmail.com", "rich@kaizencapital.pe"]
 
 # Configuracion Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://egvcinsbyropumybatdf.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVndmNpbnNieXJvcHVteWJhdGRmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDA0NDczNCwiZXhwIjoyMDk5NjIwNzM0fQ.28T_xQmSRJO1O1scio61JU0KHhEQfzSS94qYka8TrcA")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 router = APIRouter()
 legacy_router = APIRouter()
