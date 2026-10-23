@@ -470,12 +470,23 @@ export const InversionesPage: React.FC = () => {
   };
 
   const handleDeleteDraft = async (id: string) => {
-    if (confirm('¿Está seguro de eliminar este borrador de contrato permanente?')) {
+    if (confirm('¿Está seguro de eliminar este borrador de contrato? Esta acción es permanente.')) {
       try {
         await deleteContrato(id);
         fetchContratosData();
       } catch (err: any) {
         alert(err.message || 'Error al eliminar borrador.');
+      }
+    }
+  };
+
+  const handleDeletePending = async (id: string) => {
+    if (confirm('¿Está seguro de eliminar este contrato por aprobar? Esta acción no se puede deshacer.')) {
+      try {
+        await deleteContrato(id);
+        fetchContratosData();
+      } catch (err: any) {
+        alert(err.message || 'Error al eliminar contrato por aprobar.');
       }
     }
   };
@@ -1213,10 +1224,11 @@ export const InversionesPage: React.FC = () => {
                               <span>Solicitar Aprobación</span>
                             </button>
                             <button
-                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-2 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer ml-auto"
+                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-2.5 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer ml-auto transition-colors"
+                              title="Eliminar borrador de contrato"
                               onClick={() => handleDeleteDraft(c.id_contrato)}
                             >
-                              <Trash2 size={10} />
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         </div>
@@ -1259,13 +1271,20 @@ export const InversionesPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="border-t border-slate-150 dark:border-slate-800 pt-3">
+                          <div className="flex gap-2 border-t border-slate-150 dark:border-slate-800 pt-3">
                             <button
-                              className="w-full h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-sm"
+                              className="flex-1 h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-sm transition-colors"
                               onClick={() => handleOpenApproveView(c)}
                             >
                               <Eye size={10} />
                               <span>Revisar y Aprobar Depósito</span>
+                            </button>
+                            <button
+                              className="h-8 text-[10px] font-bold flex items-center justify-center gap-1.5 px-2.5 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer transition-colors"
+                              title="Eliminar contrato por aprobar"
+                              onClick={() => handleDeletePending(c.id_contrato)}
+                            >
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         </div>
@@ -2176,6 +2195,25 @@ export const InversionesPage: React.FC = () => {
               onClick={() => setView('list')}
             >
               ⬅ Volver
+            </button>
+            <button
+              type="button"
+              className="h-8 text-[10px] font-bold px-3 rounded-lg border border-rose-200 dark:border-rose-950 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer flex items-center gap-1.5 transition-colors"
+              title="Eliminar este contrato por aprobar"
+              onClick={async () => {
+                if (confirm('¿Está seguro de eliminar este contrato por aprobar? Esta acción no se puede deshacer.')) {
+                  try {
+                    await deleteContrato(selectedContract.id_contrato);
+                    setView('list');
+                    fetchContratosData();
+                  } catch (err: any) {
+                    alert(err.message || 'Error al eliminar contrato.');
+                  }
+                }
+              }}
+            >
+              <Trash2 size={12} />
+              <span>Eliminar Contrato</span>
             </button>
           </div>
 
