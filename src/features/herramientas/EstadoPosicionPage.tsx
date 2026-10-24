@@ -11,16 +11,20 @@ import {
   ChevronRight, 
   ChevronDown, 
   X, 
-  RefreshCw
+  RefreshCw,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   getAllInvestorsForSearch, 
   getInvestorPositionReport, 
+  getParticipesPrincipalesTrancheado,
   type InvestorSearchResult, 
-  type InvestorPositionReport 
+  type InvestorPositionReport,
+  type ParticipePrincipalItem
 } from '../../services/estadoPosicionService';
 import { generatePdfEstadoPosicion } from '../../utils/pdfGeneratorEstadoPosicion';
 import { downloadReportPdf } from '../../utils/pdfDownloadHelper';
+import { generateTrancheadoNavidadExcel } from '../../utils/excelGeneratorTrancheadoNavidad';
 
 const ALPHABET = [
   'TODOS', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -46,6 +50,10 @@ export const EstadoPosicionPage: React.FC = () => {
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
+
+  // Estados para Trancheado de Navidad (Tipo de Cambio y Exportación Excel)
+  const [tipoCambio, setTipoCambio] = useState<number | string>(3.40);
+  const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
 
   // Contratos expandidos en el acordeón
   const [expandedContracts, setExpandedContracts] = useState<Record<string, boolean>>({});
@@ -192,6 +200,60 @@ export const EstadoPosicionPage: React.FC = () => {
     setIsPreviewModalOpen(true);
   };
 
+  // Acción: Descargar Excel Trancheado Navidad por Partícipe Principal
+  const handleDownloadExcelTrancheado = async () => {
+    const numTc = Number(tipoCambio);
+    if (!numTc || numTc <= 0) {
+      alert('Por favor ingrese un Tipo de Cambio válido mayor a 0 (ej. 3.40).');
+      return;
+    }
+
+    try {
+      setIsExportingExcel(true);
+      const allPrincipals = await getParticipesPrincipalesTrancheado(numTc);
+
+      // Aplicar filtros activos (Rolodex A-Z y OmniBuscador)
+      let itemsToExport: ParticipePrincipalItem[] = allPrincipals;
+
+      if (selectedLetter !== 'TODOS') {
+        if (selectedLetter === '#') {
+          itemsToExport = itemsToExport.filter(p => {
+            const firstChar = (p.nombre_completo || '').trim().charAt(0).toUpperCase();
+            return !/^[A-Z]$/.test(firstChar);
+          });
+        } else {
+          itemsToExport = itemsToExport.filter(p => {
+            const firstChar = (p.nombre_completo || '').trim().charAt(0).toUpperCase();
+            return firstChar === selectedLetter;
+          });
+        }
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        itemsToExport = itemsToExport.filter(p => 
+          (p.nombre_completo || '').toLowerCase().includes(q) ||
+          (p.documento_identidad || '').toLowerCase().includes(q) ||
+          (p.codigo_inversionista || '').toLowerCase().includes(q)
+        );
+      }
+
+      const filtroNombre = selectedLetter === 'TODOS'
+        ? (searchQuery.trim() ? `Busqueda_${searchQuery.trim()}` : 'TODOS')
+        : (searchQuery.trim() ? `Letra_${selectedLetter}_${searchQuery.trim()}` : `Letra_${selectedLetter}`);
+
+      await generateTrancheadoNavidadExcel({
+        items: itemsToExport,
+        tipoCambio: numTc,
+        filtroNombre
+      });
+    } catch (err: any) {
+      alert(`Error al generar Excel Trancheado: ${err.message}`);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full animate-fadeIn pb-12">
       
@@ -219,6 +281,45 @@ export const EstadoPosicionPage: React.FC = () => {
               </button>
             )}
           </div>
+        </div>
+
+        {/* CONTROLES DE TIPO DE CAMBIO Y DESCARGA EXCEL TRANCHEADO NAVIDAD */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Ventanita de Tipo de Cambio */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              T.C.
+            </span>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              className="w-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 text-xs font-black text-indigo-700 dark:text-indigo-300 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 text-center"
+              value={tipoCambio}
+              onChange={e => setTipoCambio(e.target.value)}
+              placeholder="3.40"
+              title="Tipo de Cambio para Consolidación (PEN / USD)"
+            />
+          </div>
+
+          {/* Botón burbuja Descargar Excel */}
+          <button
+            onClick={handleDownloadExcelTrancheado}
+            disabled={isExportingExcel || !tipoCambio || Number(tipoCambio) <= 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm ${
+              isExportingExcel || !tipoCambio || Number(tipoCambio) <= 0
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 active:scale-95'
+            }`}
+            title={`Descargar Excel Trancheado Navidad (${selectedLetter === 'TODOS' ? 'Todos los partícipes' : `Letra ${selectedLetter}`})`}
+          >
+            {isExportingExcel ? (
+              <RefreshCw size={13} className="animate-spin text-white" />
+            ) : (
+              <FileSpreadsheet size={13} className="text-white" />
+            )}
+            <span>Descargar Excel</span>
+          </button>
         </div>
 
         {/* ROLODEX DE BOTONES A-Z A LA DERECHA */}

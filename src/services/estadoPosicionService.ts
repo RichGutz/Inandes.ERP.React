@@ -513,3 +513,109 @@ export async function getInvestorPositionReport(codigoInversionista: string): Pr
     fecha_reporte: new Date().toISOString().split('T')[0]
   };
 }
+
+export interface ParticipePrincipalItem {
+  codigo_inversionista: string;
+  documento_identidad: string;
+  nombre_completo: string;
+  contratos_count: number;
+  saldo_pen: number;
+  saldo_usd: number;
+  consolidado_pen: number;
+  consolidado_usd: number;
+}
+
+/**
+ * Obtiene el listado consolidado de Partícipes Principales (id_inversionista_1)
+ * con la suma de saldos de contratos/certificados en Soles, Dólares y consolidados por Tipo de Cambio.
+ */
+export async function getParticipesPrincipalesTrancheado(tipoCambio: number = 3.40): Promise<ParticipePrincipalItem[]> {
+  const tc = Number(tipoCambio) > 0 ? Number(tipoCambio) : 3.40;
+
+  const [ctRes, evtRes, invRes] = await Promise.all([
+    supabase
+      .from('crm_contratos')
+      .select('id_contrato, id_inversionista_1, moneda, monto_inversion, estado'),
+    supabase
+      .from('crm_certificados_eventos')
+      .select('id_contrato, id_certificado, capital_final_saldo, fecha_periodo_fin')
+      .order('fecha_periodo_fin', { ascending: false }),
+    supabase
+      .from('crm_inversionistas')
+      .select('codigo_inversionista, documento_identidad, nombre_completo, nombre_1, nombre_2, apellido_1, apellido_2')
+  ]);
+
+  if (ctRes.error) throw new Error(`Error cargando contratos: ${ctRes.error.message}`);
+  if (invRes.error) throw new Error(`Error cargando inversionistas: ${invRes.error.message}`);
+
+  const latestEventByContract = new Map<string, number>();
+  if (evtRes.data) {
+    for (const ev of evtRes.data) {
+      if (ev.id_contrato && !latestEventByContract.has(ev.id_contrato)) {
+        latestEventByContract.set(ev.id_contrato, Number(ev.capital_final_saldo || 0));
+      }
+    }
+  }
+
+  const invMap = new Map<string, { nombre: string; documento: string }>();
+  (invRes.data || []).forEach(inv => {
+    let fullName = inv.nombre_completo;
+    if (!fullName) {
+      const nombres = [inv.nombre_1, inv.nombre_2].filter(Boolean).join(' ');
+      const apellidos = [inv.apellido_1, inv.apellido_2].filter(Boolean).join(' ');
+      fullName = `${nombres} ${apellidos}`.trim();
+    }
+    invMap.set(inv.codigo_inversionista, {
+      nombre: fullName || 'Sin Nombre',
+      documento: inv.documento_identidad || 'S/D'
+    });
+  });
+
+  // Agrupar contratos exclusivamente por id_inversionista_1 (Partícipe Principal)
+  const principalContracts = new Map<string, any[]>();
+  (ctRes.data || []).forEach(ct => {
+    const p1 = ct.id_inversionista_1;
+    if (!p1) return;
+    if (!principalContracts.has(p1)) {
+      principalContracts.set(p1, []);
+    }
+    principalContracts.get(p1)!.push(ct);
+  });
+
+  const results: ParticipePrincipalItem[] = [];
+
+  for (const [p1Code, contracts] of principalContracts.entries()) {
+    const info = invMap.get(p1Code) || { nombre: p1Code, documento: 'S/D' };
+    let pen = 0;
+    let usd = 0;
+
+    contracts.forEach(ct => {
+      const cap = latestEventByContract.has(ct.id_contrato)
+        ? latestEventByContract.get(ct.id_contrato)!
+        : Number(ct.monto_inversion || 0);
+
+      if (ct.moneda === 'PEN') {
+        pen += cap;
+      } else {
+        usd += cap;
+      }
+    });
+
+    const consolPen = pen + (usd * tc);
+    const consolUsd = usd + (tc > 0 ? (pen / tc) : 0);
+
+    results.push({
+      codigo_inversionista: p1Code,
+      documento_identidad: info.documento,
+      nombre_completo: info.nombre,
+      contratos_count: contracts.length,
+      saldo_pen: pen,
+      saldo_usd: usd,
+      consolidado_pen: consolPen,
+      consolidado_usd: consolUsd
+    });
+  }
+
+  return results.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
+}
+
