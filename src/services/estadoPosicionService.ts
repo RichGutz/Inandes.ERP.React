@@ -519,43 +519,58 @@ export interface ParticipePrincipalItem {
   documento_identidad: string;
   nombre_completo: string;
   contratos_count: number;
-  saldo_pen: number;
-  saldo_usd: number;
+  
+  // Posicion Soles (PEN)
+  cap_inicial_pen: number;
+  adiciones_pen: number;
+  accruals_pen: number;
+  total_posicion_pen: number;
+
+  // Posicion Dolares (USD)
+  cap_inicial_usd: number;
+  adiciones_usd: number;
+  accruals_usd: number;
+  total_posicion_usd: number;
+
+  // Consolidados Multidivisa
   consolidado_pen: number;
   consolidado_usd: number;
+
+  // Campos de compatibilidad
+  saldo_pen: number;
+  saldo_usd: number;
 }
 
 /**
- * Obtiene el listado consolidado de Partícipes Principales (id_inversionista_1)
- * con la suma de saldos de contratos/certificados en Soles, Dólares y consolidados por Tipo de Cambio.
+ * Obtiene el listado consolidado de Participes Principales (id_inversionista_1)
+ * con calculo dinamico de Capital Inicial, Adiciones de Periodo y Accruals (devengue diario)
+ * a la fecha de corte, filtrando contratos extintos o no renovados.
  */
-export async function getParticipesPrincipalesTrancheado(tipoCambio: number = 3.40): Promise<ParticipePrincipalItem[]> {
+export async function getParticipesPrincipalesTrancheado(
+  tipoCambio: number = 3.40,
+  fechaCorte?: string
+): Promise<ParticipePrincipalItem[]> {
   const tc = Number(tipoCambio) > 0 ? Number(tipoCambio) : 3.40;
+  const fCorte = fechaCorte && /^\d{4}-\d{2}-\d{2}$/.test(fechaCorte)
+    ? fechaCorte
+    : new Date().toISOString().split('T')[0];
+  const fCorteDate = new Date(fCorte + 'T00:00:00');
 
-  const [ctRes, evtRes, invRes] = await Promise.all([
-    supabase
-      .from('crm_contratos')
-      .select('id_contrato, id_inversionista_1, moneda, monto_inversion, estado'),
-    supabase
-      .from('crm_certificados_eventos')
-      .select('id_contrato, id_certificado, capital_final_saldo, fecha_periodo_fin')
-      .order('fecha_periodo_fin', { ascending: false }),
+  const [invRes, ctRes, evtRes] = await Promise.all([
     supabase
       .from('crm_inversionistas')
-      .select('codigo_inversionista, documento_identidad, nombre_completo, nombre_1, nombre_2, apellido_1, apellido_2')
+      .select('codigo_inversionista, documento_identidad, nombre_completo, nombre_1, nombre_2, apellido_1, apellido_2'),
+    supabase
+      .from('crm_contratos')
+      .select('id_contrato, id_inversionista_1, id_fondo, moneda, monto_inversion, tasa_pactada, fecha_inicio, fecha_fin, estado'),
+    supabase
+      .from('crm_certificados_eventos')
+      .select('*')
+      .order('fecha_periodo_fin', { ascending: true })
   ]);
 
   if (ctRes.error) throw new Error(`Error cargando contratos: ${ctRes.error.message}`);
   if (invRes.error) throw new Error(`Error cargando inversionistas: ${invRes.error.message}`);
-
-  const latestEventByContract = new Map<string, number>();
-  if (evtRes.data) {
-    for (const ev of evtRes.data) {
-      if (ev.id_contrato && !latestEventByContract.has(ev.id_contrato)) {
-        latestEventByContract.set(ev.id_contrato, Number(ev.capital_final_saldo || 0));
-      }
-    }
-  }
 
   const invMap = new Map<string, { nombre: string; documento: string }>();
   (invRes.data || []).forEach(inv => {
@@ -571,51 +586,160 @@ export async function getParticipesPrincipalesTrancheado(tipoCambio: number = 3.
     });
   });
 
-  // Agrupar contratos exclusivamente por id_inversionista_1 (Partícipe Principal)
-  const principalContracts = new Map<string, any[]>();
-  (ctRes.data || []).forEach(ct => {
-    const p1 = ct.id_inversionista_1;
-    if (!p1) return;
-    if (!principalContracts.has(p1)) {
-      principalContracts.set(p1, []);
-    }
-    principalContracts.get(p1)!.push(ct);
+  const eventsByContract = new Map<string, any[]>();
+  (evtRes.data || []).forEach(e => {
+    const cid = e.id_contrato || e.id_certificado;
+    if (!eventsByContract.has(cid)) eventsByContract.set(cid, []);
+    eventsByContract.get(cid)!.push(e);
   });
 
-  const results: ParticipePrincipalItem[] = [];
+  const contratos = ctRes.data || [];
+  const principalMap = new Map<string, ParticipePrincipalItem>();
 
-  for (const [p1Code, contracts] of principalContracts.entries()) {
-    const info = invMap.get(p1Code) || { nombre: p1Code, documento: 'S/D' };
-    let pen = 0;
-    let usd = 0;
+  for (const c of contratos) {
+    const p1 = c.id_inversionista_1;
+    if (!p1) continue;
 
-    contracts.forEach(ct => {
-      const cap = latestEventByContract.has(ct.id_contrato)
-        ? latestEventByContract.get(ct.id_contrato)!
-        : Number(ct.monto_inversion || 0);
+    const fIniStr = c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '2000-01-01';
+    const fFinStr = c.fecha_fin ? c.fecha_fin.split('T')[0] : '2099-12-31';
 
-      if (ct.moneda === 'PEN') {
-        pen += cap;
-      } else {
-        usd += cap;
+    // Si la fecha de inicio es posterior a la fecha de corte, aun no participa
+    if (fIniStr > fCorte) continue;
+
+    const evs = eventsByContract.get(c.id_contrato) || [];
+    const cierreFinal = evs.filter(e => ['cierre_fin_contrato', 'cierre_por_rescate'].includes(e.tipo_evento));
+    const tieneCierreFinalCero = cierreFinal.some(e => Number(e.capital_final_saldo ?? e.capital_base ?? 0) <= 0);
+
+    // Contrato formalmente cerrado o con saldo cero
+    if (c.estado === 'cerrado_fin_contrato' || c.estado === 'cerrado_por_rescate' || tieneCierreFinalCero) {
+      continue;
+    }
+
+    // Filtrar contratos vencidos al 31 de agosto (no renovados o cuyo sucesor ya tiene su propio registro)
+    const isVencidoPrevio = fFinStr <= '2026-08-31';
+    if (isVencidoPrevio) {
+      continue;
+    }
+
+    // 1. Capital Inicial de Periodo (saldo del ultimo cierre antes de septiembre o monto inicial si es nuevo)
+    const cierresPrevios = evs.filter(e => 
+      ['cierre_fin_ciclo', 'cierre_fin_contrato', 'emision_inicial', 'emision'].includes(e.tipo_evento) &&
+      e.fecha_periodo_fin && e.fecha_periodo_fin.split('T')[0] <= '2026-08-31'
+    );
+
+    let capInicial = 0;
+    if (cierresPrevios.length > 0) {
+      const lastC = cierresPrevios[cierresPrevios.length - 1];
+      capInicial = Number(lastC.capital_final_saldo ?? lastC.capital_base ?? 0);
+    } else {
+      capInicial = Number(c.monto_inversion || 0);
+    }
+
+    if (fIniStr > '2026-08-31') {
+      capInicial = Number(c.monto_inversion || 0);
+    }
+
+    // Si el capital base es 0 o menor, omitir
+    if (capInicial <= 0) continue;
+
+    // 2. Adiciones de Capital en el periodo actual (> 31 Ago y <= Fecha Corte)
+    let adiciones = 0;
+    const adicionesEventos = evs.filter(e => 
+      ['aumento_capital', 'reinvierte_interes'].includes(e.tipo_evento) &&
+      (e.fecha_evento || e.fecha_periodo_fin) > '2026-08-31' &&
+      (e.fecha_evento || e.fecha_periodo_fin) <= fCorte
+    );
+    for (const aEv of adicionesEventos) {
+      let m = Number(aEv.capital_final_saldo || 0) - Number(aEv.capital_base || 0);
+      if (m <= 0 && aEv.notas) {
+        const match = String(aEv.notas).match(/Aumento\s+de\s+capital\s+por\s+([0-9.,]+)/i);
+        if (match) m = parseFloat(match[1].replace(/,/g, '')) || 0;
       }
-    });
+      if (m > 0) adiciones += m;
+    }
 
-    const consolPen = pen + (usd * tc);
-    const consolUsd = usd + (tc > 0 ? (pen / tc) : 0);
+    // 3. Calculo Diario de Accruals (Devengue dia a dia)
+    const startDevengueStr = fIniStr > '2026-08-31' ? fIniStr : '2026-09-01';
+    const startDevengue = new Date(startDevengueStr + 'T00:00:00');
+    const endDevengue = fFinStr < fCorte ? new Date(fFinStr + 'T00:00:00') : fCorteDate;
 
-    results.push({
-      codigo_inversionista: p1Code,
-      documento_identidad: info.documento,
-      nombre_completo: info.nombre,
-      contratos_count: contracts.length,
-      saldo_pen: pen,
-      saldo_usd: usd,
-      consolidado_pen: consolPen,
-      consolidado_usd: consolUsd
-    });
+    const diffMs = endDevengue.getTime() - startDevengue.getTime();
+    const diasDevengue = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+
+    const tasaAnual = Number(c.tasa_pactada || 0) / 100;
+    let accruals = capInicial * (tasaAnual / 365.0) * diasDevengue;
+
+    for (const aEv of adicionesEventos) {
+      const fEvStr = (aEv.fecha_evento || aEv.fecha_periodo_fin).split('T')[0];
+      const dEv = new Date(fEvStr + 'T00:00:00');
+      const diasHijo = Math.max(0, Math.round((endDevengue.getTime() - dEv.getTime()) / (1000 * 60 * 60 * 24)));
+      let m = Number(aEv.capital_final_saldo || 0) - Number(aEv.capital_base || 0);
+      accruals += m * (tasaAnual / 365.0) * diasHijo;
+    }
+
+    accruals = Math.round(accruals * 100) / 100;
+    const totalPosicion = Math.round((capInicial + adiciones + accruals) * 100) / 100;
+
+    if (!principalMap.has(p1)) {
+      const info = invMap.get(p1) || { nombre: p1, documento: 'S/D' };
+      principalMap.set(p1, {
+        codigo_inversionista: p1,
+        documento_identidad: info.documento,
+        nombre_completo: info.nombre,
+        contratos_count: 0,
+        cap_inicial_pen: 0,
+        adiciones_pen: 0,
+        accruals_pen: 0,
+        total_posicion_pen: 0,
+        cap_inicial_usd: 0,
+        adiciones_usd: 0,
+        accruals_usd: 0,
+        total_posicion_usd: 0,
+        consolidado_pen: 0,
+        consolidado_usd: 0,
+        saldo_pen: 0,
+        saldo_usd: 0
+      });
+    }
+
+    const item = principalMap.get(p1)!;
+    item.contratos_count += 1;
+
+    if (c.moneda === 'PEN') {
+      item.cap_inicial_pen += capInicial;
+      item.adiciones_pen += adiciones;
+      item.accruals_pen += accruals;
+      item.total_posicion_pen += totalPosicion;
+    } else {
+      item.cap_inicial_usd += capInicial;
+      item.adiciones_usd += adiciones;
+      item.accruals_usd += accruals;
+      item.total_posicion_usd += totalPosicion;
+    }
   }
+
+  // Redondear y calcular valores consolidados
+  const results = Array.from(principalMap.values()).map(p => {
+    p.cap_inicial_pen = Math.round(p.cap_inicial_pen * 100) / 100;
+    p.adiciones_pen = Math.round(p.adiciones_pen * 100) / 100;
+    p.accruals_pen = Math.round(p.accruals_pen * 100) / 100;
+    p.total_posicion_pen = Math.round(p.total_posicion_pen * 100) / 100;
+
+    p.cap_inicial_usd = Math.round(p.cap_inicial_usd * 100) / 100;
+    p.adiciones_usd = Math.round(p.adiciones_usd * 100) / 100;
+    p.accruals_usd = Math.round(p.accruals_usd * 100) / 100;
+    p.total_posicion_usd = Math.round(p.total_posicion_usd * 100) / 100;
+
+    p.consolidado_pen = Math.round((p.total_posicion_pen + (p.total_posicion_usd * tc)) * 100) / 100;
+    p.consolidado_usd = Math.round((p.total_posicion_usd + (tc > 0 ? (p.total_posicion_pen / tc) : 0)) * 100) / 100;
+
+    p.saldo_pen = p.total_posicion_pen;
+    p.saldo_usd = p.total_posicion_usd;
+
+    return p;
+  }).filter(p => p.consolidado_pen > 0 || p.consolidado_usd > 0);
 
   return results.sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
 }
+
 

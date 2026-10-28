@@ -163,3 +163,34 @@ graph TD
 - [x] **Regla 8 (Cero cambios no solicitados):** Modificaciones estrictamente focalizadas en la barra de controles de `EstadoPosicionPage.tsx`.
 - [x] **Regla 9 (Trabajo exclusivo en MAIN):** Todo desarrollo en la rama `main`.
 - [x] **Regla 13 (No generar PDFs automáticos):** Plan redactado y mantenido 100% en formato Markdown (`.md`).
+
+---
+
+## 7. 🚀 Fase 2: Incorporación de Accruals Diarios y Depuración de No Renovados (28 Octubre 2026)
+
+### 7.1 Diagnóstico Forense y Requerimiento
+A partir del feedback del usuario sobre la primera versión:
+1. **Problema de contratos vencidos al 31 de agosto:** La versión anterior consultaba únicamente el último evento en `crm_certificados_eventos` de forma estática, arrastrando contratos que vencieron al 31 de agosto y no renovaron para septiembre (contratos extintos con devolución de capital).
+2. **Requerimiento de Devengue Vivo (Accruals):** La posición debía consolidar:
+   - **Capital Inicial de Período:** Saldo base arrastrado al cierre previo o monto de emisión.
+   - **Adiciones de Capital:** Incrementos realizados durante el período actual.
+   - **Accruals (Devengue Diario):** Intereses calculados día por día hasta la fecha de corte seleccionada:
+     $$\text{Accruals} = \text{Capital Base} \times \left(\frac{\text{Tasa}}{365}\right) \times \text{Días Transcurridos}$$
+
+### 7.2 Cambios Realizados
+1. **Punto de Control Git (`CLON`):**
+   - Branch & Tag: `BRANCH_TAG_TRANCHEADO_NAVIDAD_ACCRUALS` sincronizado en `origin` y retorno inmediato a `main`.
+2. **Servicio (`estadoPosicionService.ts`):**
+   - Se extendió `getParticipesPrincipalesTrancheado(tipoCambio, fechaCorte)`.
+   - Se implementó el filtrado de contratos terminados al 31 de agosto sin renovación.
+   - Se calcula `cap_inicial`, `adiciones` y `accruals` día a día para cada contrato activo.
+   - Se agrupan los montos en PEN y USD por Partícipe Principal (`id_inversionista_1`).
+3. **Generador Excel (`excelGeneratorTrancheadoNavidad.ts`):**
+   - Se expandió la matriz a **14 columnas oficiales**:
+     `N°`, `PARTÍCIPE PRINCIPAL`, `DOCUMENTO`, `N° CONTRATOS`, `CAP. INICIAL (PEN)`, `ADICIONES (PEN)`, `ACCRUALS (PEN)`, `TOTAL POSICIÓN (PEN)`, `CAP. INICIAL (USD)`, `ADICIONES (USD)`, `ACCRUALS (USD)`, `TOTAL POSICIÓN (USD)`, `CONSOLIDADO SOLES (PEN)`, `CONSOLIDADO DÓLARES (USD)`.
+   - Fila de totales generales consolidada.
+4. **Interfaz de Usuario (`EstadoPosicionPage.tsx`):**
+   - Se integró un selector de **Fecha de Corte** (`input type="date"`, por defecto fecha actual) junto al Tipo de Cambio y botón Descargar Excel.
+5. **Control de Calidad (`QC`):**
+   - Compilación exitosa con `npm run build` (`exit code 0`).
+

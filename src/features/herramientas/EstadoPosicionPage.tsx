@@ -51,8 +51,9 @@ export const EstadoPosicionPage: React.FC = () => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
 
-  // Estados para Trancheado de Navidad (Tipo de Cambio y Exportación Excel)
+  // Estados para Trancheado de Navidad (Tipo de Cambio, Fecha de Corte y Exportación Excel)
   const [tipoCambio, setTipoCambio] = useState<number | string>(3.40);
+  const [fechaCorteExcel, setFechaCorteExcel] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
 
   // Contratos expandidos en el acordeón
@@ -210,7 +211,7 @@ export const EstadoPosicionPage: React.FC = () => {
 
     try {
       setIsExportingExcel(true);
-      const allPrincipals = await getParticipesPrincipalesTrancheado(numTc);
+      const allPrincipals = await getParticipesPrincipalesTrancheado(numTc, fechaCorteExcel);
 
       // Aplicar filtros activos (Rolodex A-Z y OmniBuscador)
       let itemsToExport: ParticipePrincipalItem[] = allPrincipals;
@@ -245,6 +246,7 @@ export const EstadoPosicionPage: React.FC = () => {
       await generateTrancheadoNavidadExcel({
         items: itemsToExport,
         tipoCambio: numTc,
+        fechaCorte: fechaCorteExcel,
         filtroNombre
       });
     } catch (err: any) {
@@ -260,7 +262,7 @@ export const EstadoPosicionPage: React.FC = () => {
       {/* OMNIBUSCADOR + ROLODEX ALFABÉTICO EN UNA SOLA FILA COMPACTA */}
       <div className="glass-card p-3 rounded-2xl shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* OMNIBUSCADOR INTEGRADO A LA IZQUIERDA */}
-        <div className="w-full lg:w-80 shrink-0">
+        <div className="w-full lg:w-72 shrink-0">
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
               <Search size={14} />
@@ -283,8 +285,22 @@ export const EstadoPosicionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* CONTROLES DE TIPO DE CAMBIO Y DESCARGA EXCEL TRANCHEADO NAVIDAD */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* CONTROLES DE FECHA DE CORTE, TIPO DE CAMBIO Y DESCARGA EXCEL TRANCHEADO NAVIDAD */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Ventanita de Fecha de Corte */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Corte
+            </span>
+            <input
+              type="date"
+              className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-0.5 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 text-center"
+              value={fechaCorteExcel}
+              onChange={e => setFechaCorteExcel(e.target.value)}
+              title="Fecha de Corte para el cálculo de devengue y posición"
+            />
+          </div>
+
           {/* Ventanita de Tipo de Cambio */}
           <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
