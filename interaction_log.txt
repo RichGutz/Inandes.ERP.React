@@ -804,3 +804,32 @@ RESULTADOS:
 10. Diagnostico forense via SSH confirmando que el codigo nuevo esta compilado en el contenedor vivo de produccion.
 11. Documentacion de cierre y protocolo de cache en: 'Obsidian/Mudanza.Contabo/Mudanza.Contabo/27. Protocolo Maestro de Despliegue y Ciclo de Cache Contabo.md'.
 ================================================================================
+
+================================================================================
+SESION FINALIZADA: 2026-10-28 09:56:00
+TAREA: Trancheado Navidad V2 - Calculo de Accruals Diarios, Filtro de No Renovados y Desglose en 14 Columnas
+RESULTADOS:
+1. Creacion de BRANCH TAG de seguridad previo a modificaciones: 'BRANCH_TAG_TRANCHEADO_NAVIDAD_ACCRUALS' (branch y tag sincronizados en origin, retorno inmediato a main).
+2. Depuracion de Contratos No Renovados:
+   - Se filtran y excluyen contratos que culminaron al 31 de agosto de 2026 y no tuvieron renovacion para septiembre (o cuyo sucesor activo ya cuenta con su propio registro individual).
+   - Se descartan 28 contratos extintos, dejando 196 contratos activos de 140 participes principales unicos.
+3. Incorporacion del Motor de Accruals y Periodo en 'src/services/estadoPosicionService.ts':
+   - Capital Inicial de Periodo: saldo base arrastrado del ultimo cierre contable.
+   - Adiciones de Capital: aumentos registrados en el periodo.
+   - Accruals (Devengue Diario): calculo dia por dia segun tasa pactada anual y base de 365 dias hasta la Fecha de Corte seleccionada.
+   - Posicion Total: Capital Inicial + Adiciones + Accruals.
+   - Consolidacion multidivisa por Participe Principal con Tipo de Cambio parametrico.
+4. Estructura Oficial del Excel en 14 Columnas en 'src/utils/excelGeneratorTrancheadoNavidad.ts':
+   - N, Participe Principal, Documento, N Contratos, Cap. Inicial PEN, Adiciones PEN, Accruals PEN, Total Posicion PEN, Cap. Inicial USD, Adiciones USD, Accruals USD, Total Posicion USD, Consolidado PEN, Consolidado USD.
+   - Fila de totales generales consolidada.
+5. Modificacion de UI en 'src/features/herramientas/EstadoPosicionPage.tsx':
+   - Agregado input de Fecha de Corte (por defecto fecha actual).
+   - Mantenimiento del input de T.C. y boton verde esmeralda Descargar Excel.
+6. Control de Calidad: 'npm run build' limpio con Exit Code 0.
+7. Generacion y prueba local del Excel a fecha de hoy (28/10/2026): 'TRANCHEADO_INVERSIONISTAS_NAVIDAD_TC_3.40_TODOS_20261028.xlsx'.
+   - Totales: 140 participes, S/ 27.88M en PEN, $ 3.35M en USD, Consolidado S/ 39.29M / $ 11.55M.
+8. Despliegue en produccion en VPS Contabo via commit 12350c3 en origin/main.
+   - Nuevo contenedor Docker activo en Coolify: yjttbctaekty8zb5ode0hiu4-20261028T144255.
+   - Respuesta HTTP/2 200 OK en https://inandes.geeksoft.tech.
+9. Documentacion en Obsidian: 'Obsidian/Inandes.Inversionistas.React/Frontend/Plan - Trancheado de Inversionistas para Regalos de Navidad (Estado de Posicion).md'.
+================================================================================
